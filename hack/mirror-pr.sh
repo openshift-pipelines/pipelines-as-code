@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 no_verify=
 test_mode=
+update_mode=
 
 show_help() {
   cat <<EOF
@@ -18,12 +19,13 @@ show_help() {
 💡 Example:
   ./mirror-pr.sh 1234 my-github-user
 
-If no PR number or not fork are provided, it will prompt you to select one
+If no PR number or fork are provided, it will prompt you to select one
 using fzf.
 
 Options:
   -n        Do not run pre-commit checks
   -t        Test mode (dry run, print commands only)
+  -u        Update mode (only list mirrored PRs and update existing mirrored PR)
   -h        Show this help message
 
 EOF
@@ -33,20 +35,17 @@ run() {
   if [[ -n $test_mode ]]; then
     echo "[TEST MODE] $*"
   else
-    eval "$@"
+    "$@"
   fi
 }
 
-while getopts "hnt" opt; do
+while getopts "hntu" opt; do
   case $opt in
-  n) ## do not run pre-commit checks
-    no_verify=yes
-    ;;
-  t) ## test mode (dry run)
-    test_mode=yes
-    ;;
+  n) no_verify=yes ;;
+  t) test_mode=yes ;;
+  u) update_mode=yes ;;
   h)
-    echo "usage: $(basename $(readlink -f $0))"
+    echo "usage: $(basename "$(readlink -f "$0")")"
     show_help
     exit 0
     ;;
@@ -89,7 +88,19 @@ trap resetgitbranch EXIT
 
 # 🎯 Select PR number if not provided
 if [[ -z ${PR_NUMBER} ]]; then
-  if [[ ${CURRENT_BRANCH} =~ test-pr-([0-9]+)-([a-zA-Z0-9_-]+) ]]; then
+  if [[ -n $update_mode ]]; then
+    PR_SELECTION=$(gh pr list --repo "$UPSTREAM_REPO" --json number,title,author,headRefName |
+      jq -r '
+            .[] 
+            | select(.headRefName | startswith("test-pr-")) 
+            | . as $pr
+            | ($pr.headRefName | capture("^test-pr-(?<orig_number>[^-]+)-(?<orig_author>.+)$")) as $m
+            | ($pr.title | sub("^\\[MIRRORED\\]\\s*"; "")) as $clean_title
+            | "\($pr.number): \($clean_title)) [Original: #\($m.orig_number) by \($m.orig_author)]"
+        ' | fzf --prompt="🔎 Select mirrored PR to update: ")
+    PR_NUMBER=$(echo "$PR_SELECTION" | sed 's/.*Original: #\([0-9]*\).*/\1/' | xargs)
+    echo "🔍 Selected PR #${PR_NUMBER} to update."
+  elif [[ ${CURRENT_BRANCH} =~ test-pr-([0-9]+)-([a-zA-Z0-9_-]+) ]]; then
     PR_NUMBER="${BASH_REMATCH[1]}"
   else
     PR_SELECTION=$(gh pr list --repo "$UPSTREAM_REPO" --json number,title,author --template '{{range .}}{{.number}}: {{.title}} (by {{.author.login}})
@@ -100,7 +111,7 @@ fi
 
 # 🔍 Check if a mirrored PR already exists
 already_opened_pr=$(
-  gh pr list --repo $UPSTREAM_REPO \
+  gh pr list --repo "$UPSTREAM_REPO" \
     --json number,headRepositoryOwner,headRepository,headRefName |
     jq -r --arg pn "$PR_NUMBER" \
       '.[] | select(.headRefName | test("^test-pr-\($pn)-.*")) | "git@github.com:\(.headRepositoryOwner.login)/\(.headRepository.name).git"'
