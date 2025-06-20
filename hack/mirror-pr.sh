@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-#
 no_verify=
+test_mode=
+
 show_help() {
   cat <<EOF
 🪞 Mirror an external contributor's pull request to a maintainer's fork for E2E tests.
@@ -20,21 +21,29 @@ show_help() {
 If no PR number or not fork are provided, it will prompt you to select one
 using fzf.
 
-EOF
-  grep -E "[ ]*[a-zA-Z0-9-]\) ##" $0 |
-    sed -e 's/^[ ]*/-/' \
-      -e 's/-\([0-9A-Za-z]*\)[  ]*|[  ]*\([0-9A-Za-z]*\)/-\1, -\2/' \
-      -e 's/##//' -e 's/)[ ]*/ - /' |
-    awk -F" - " '{printf "%-10s %s\n", $1, $2}'
-
-  cat <<EOF
+Options:
+  -n        Do not run pre-commit checks
+  -t        Test mode (dry run, print commands only)
+  -h        Show this help message
 
 EOF
 }
-while getopts "hn" opt; do
+
+run() {
+  if [[ -n $test_mode ]]; then
+    echo "[TEST MODE] $*"
+  else
+    eval "$@"
+  fi
+}
+
+while getopts "hnt" opt; do
   case $opt in
   n) ## do not run pre-commit checks
     no_verify=yes
+    ;;
+  t) ## test mode (dry run)
+    test_mode=yes
     ;;
   h)
     echo "usage: $(basename $(readlink -f $0))"
@@ -74,7 +83,7 @@ CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 resetgitbranch() {
   new_branch_name=$(git rev-parse --abbrev-ref HEAD)
   echo "↩️  Resetting to original branch ${CURRENT_BRANCH} from ${new_branch_name}"
-  git checkout "$CURRENT_BRANCH" || true
+  run git checkout "$CURRENT_BRANCH" || true
 }
 trap resetgitbranch EXIT
 
@@ -128,7 +137,7 @@ echo "👤  - Author: $PR_AUTHOR"
 
 # 1️⃣ Checkout the PR locally
 echo "📥 Checking out PR #${PR_NUMBER} locally..."
-gh pr checkout --force "$PR_NUMBER" --repo "$UPSTREAM_REPO"
+run gh pr checkout --force "$PR_NUMBER" --repo "$UPSTREAM_REPO"
 
 # 2️⃣ Push the branch to your fork
 NEW_BRANCH_NAME="test-pr-${PR_NUMBER}-${PR_AUTHOR}"
@@ -149,17 +158,22 @@ else
     exit 1
   fi
   echo "🚜 Running pre-commit checks before pushing..."
-  pre-commit run --all-files --show-diff-on-failure || {
-    echo "❗ Pre-commit checks failed. Please fix the issues before pushing."
-    echo "You can fix user errors locally and pushing to the user branch."
-    echo "git commit --amend the commit (or add a new commit) and then run this command"
-    gh pr view "$PR_NUMBER" --repo "$UPSTREAM_REPO" --json headRefName,headRepositoryOwner,headRepository |
-      jq -r '"git push --force-with-lease git@github.com:\(.headRepositoryOwner.login)/\(.headRepository.name).git HEAD:\(.headRefName)"'
-    echo "(or use --force if you know what you are doing)"
-    exit 1
-  }
+  if [[ -n $test_mode ]]; then
+    echo "[TEST MODE] pre-commit run --all-files --show-diff-on-failure"
+  else
+    pre-commit run --all-files --show-diff-on-failure || {
+      echo "❗ Pre-commit checks failed. Please fix the issues before pushing."
+      echo "You can fix user errors locally and pushing to the user branch."
+      echo "git commit --amend the commit (or add a new commit) and then run this command"
+      gh pr view "$PR_NUMBER" --repo "$UPSTREAM_REPO" --json headRefName,headRepositoryOwner,headRepository |
+        jq -r '"git push --force-with-lease git@github.com:\(.headRepositoryOwner.login)/\(.headRepository.name).git HEAD:\(.headRefName)"'
+      echo "(or use --force if you know what you are doing)"
+      exit 1
+    }
+  fi
 fi
-git push "$FORK_REMOTE" "HEAD:${NEW_BRANCH_NAME}" --force --no-verify
+
+run git push "$FORK_REMOTE" "HEAD:${NEW_BRANCH_NAME}" --force --no-verify
 
 if [[ -n ${already_opened_pr} ]]; then
   exit 0
@@ -172,14 +186,19 @@ DO_NOT_MERGE_LABEL="do-not-merge" # You might need to create this label in your 
 
 echo "🆕 Creating a new mirrored pull request on ${UPSTREAM_REPO}..."
 
-# 📝 Create the PR as a draft to prevent accidental merges before tests run.
-CREATED_PR_URL=$(gh pr create \
-  --repo "$UPSTREAM_REPO" \
-  --title "$MIRRORED_PR_TITLE" \
-  --body "$MIRRORED_PR_BODY" \
-  --head "${FORK_REMOTE}:${NEW_BRANCH_NAME}" \
-  --label "$DO_NOT_MERGE_LABEL" \
-  --draft)
+if [[ -n $test_mode ]]; then
+  echo "[TEST MODE] gh pr create --repo \"$UPSTREAM_REPO\" --title \"$MIRRORED_PR_TITLE\" --body \"$MIRRORED_PR_BODY\" --head \"${FORK_REMOTE}:${NEW_BRANCH_NAME}\" --label \"$DO_NOT_MERGE_LABEL\" --draft"
+  CREATED_PR_URL="https://github.com/${UPSTREAM_REPO}/pull/FAKE"
+else
+  # 📝 Create the PR as a draft to prevent accidental merges before tests run.
+  CREATED_PR_URL=$(gh pr create \
+    --repo "$UPSTREAM_REPO" \
+    --title "$MIRRORED_PR_TITLE" \
+    --body "$MIRRORED_PR_BODY" \
+    --head "${FORK_REMOTE}:${NEW_BRANCH_NAME}" \
+    --label "$DO_NOT_MERGE_LABEL" \
+    --draft)
+fi
 
 # ✅ Check if the PR was created successfully
 if [[ -z "$CREATED_PR_URL" ]]; then
@@ -187,11 +206,15 @@ if [[ -z "$CREATED_PR_URL" ]]; then
   exit 1
 fi
 
-gh pr comment "$PR_NUMBER" --repo "$UPSTREAM_REPO" --body \
-  "🚀 **Mirrored PR Created for E2E Testing**<br><br>\
+if [[ -n $test_mode ]]; then
+  echo "[TEST MODE] gh pr comment \"$PR_NUMBER\" --repo \"$UPSTREAM_REPO\" --body \"🚀 **Mirrored PR Created for E2E Testing**<br><br>A mirrored PR has been opened for end-to-end testing: [View PR](${CREATED_PR_URL})<br><br>⏳ Follow progress there for E2E results.<br>If you need to update the PR with new changes, please ask a maintainer to rerun \`hack/mirror-pr.sh\`.\""
+else
+  gh pr comment "$PR_NUMBER" --repo "$UPSTREAM_REPO" --body \
+    "🚀 **Mirrored PR Created for E2E Testing**<br><br>\
 A mirrored PR has been opened for end-to-end testing: [View PR](${CREATED_PR_URL})<br><br>\
 ⏳ Follow progress there for E2E results.<br>\
 If you need to update the PR with new changes, please ask a maintainer to rerun \`hack/mirror-pr.sh\`."
+fi
 
 echo "🎉 Successfully created mirrored pull request!"
 echo "   ${CREATED_PR_URL}"
