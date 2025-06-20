@@ -173,6 +173,9 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 		}
 	}
 
+	if r.run.Clients.Log == nil {
+		r.run.Clients.Log = logger
+	}
 	err = provider.SetClient(ctx, r.run, event, repo, r.eventEmitter)
 	if err != nil {
 		return repo, fmt.Errorf("cannot set client: %w", err)

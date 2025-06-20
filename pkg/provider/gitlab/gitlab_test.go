@@ -210,6 +210,7 @@ func TestCreateStatus(t *testing.T) {
 			run := &params.Run{
 				Clients: clients.Clients{
 					Kube: stdata.Kube,
+					Log:  logger,
 				},
 			}
 			v := &Provider{
@@ -261,23 +262,54 @@ func TestGetConfig(t *testing.T) {
 
 func TestSetClient(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
+	core, observer := zapobserver.New(zap.InfoLevel)
+	fakelogger := zap.New(core).Sugar()
+
+	run := &params.Run{
+		Clients: clients.Clients{
+			Log: fakelogger,
+		},
+	}
+
 	v := &Provider{}
-	assert.Assert(t, v.SetClient(ctx, nil, info.NewEvent(), nil, nil) != nil)
+	assert.Assert(t, v.SetClient(ctx, run, info.NewEvent(), nil, nil) != nil)
 
 	client, _, tearDown := thelp.Setup(t)
 	defer tearDown()
+
 	vv := &Provider{gitlabClient: client}
-	err := vv.SetClient(ctx, nil, &info.Event{
+	err := vv.SetClient(ctx, run, &info.Event{
 		Provider: &info.Provider{
 			Token: "hello",
 		},
+		Organization:    "my-org",
+		Repository:      "my-repo",
+		SourceProjectID: 1234,
+		TargetProjectID: 1234,
 	}, nil, nil)
+
 	assert.NilError(t, err)
 	assert.Assert(t, *vv.Token != "")
+
+	logs := observer.TakeAll()
+	assert.Assert(t, len(logs) > 0, "expected a log entry, got none")
+
+	expected := fmt.Sprintf(
+		"gitlab: initialized for client with token for apiURL=%s, org=%s, repo=%s",
+		vv.apiURL, "my-org", "my-repo")
+
+	assert.Equal(t, expected, logs[0].Message)
 }
 
 func TestSetClientDetectAPIURL(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	fakelogger := zap.New(observer).Sugar()
+	run := &params.Run{
+		Clients: clients.Clients{
+			Log: fakelogger,
+		},
+	}
 	mockClient, _, tearDown := thelp.Setup(t)
 	defer tearDown()
 
@@ -394,7 +426,7 @@ func TestSetClientDetectAPIURL(t *testing.T) {
 
 			// Execute the function under test
 			// Using placeholder nil values for arguments not directly related to URL detection
-			err := v.SetClient(ctx, nil, event, nil, nil)
+			err := v.SetClient(ctx, run, event, nil, nil)
 
 			// Assertions
 			if tc.expectedError != "" {

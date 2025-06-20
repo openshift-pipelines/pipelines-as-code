@@ -1,11 +1,13 @@
 package bitbucketcloud
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/ktrysmt/go-bitbucket"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
@@ -145,14 +147,29 @@ func TestSetClient(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
+			core, observer := zapobserver.New(zap.InfoLevel)
+			testLog := zap.New(core).Sugar()
+
+			fakeRun := &params.Run{
+				Clients: clients.Clients{
+					Log: testLog,
+				},
+			}
+
 			v := Provider{}
-			err := v.SetClient(ctx, nil, tt.event, nil, nil)
+			err := v.SetClient(ctx, fakeRun, tt.event, nil, nil)
+
 			if tt.wantErrSubstr != "" {
 				assert.ErrorContains(t, err, tt.wantErrSubstr)
 				return
 			}
 			assert.Equal(t, tt.event.Provider.Token, *v.Token)
 			assert.Equal(t, tt.event.Provider.User, *v.Username)
+
+			logs := observer.TakeAll()
+			assert.Assert(t, len(logs) > 0, "expected a log entry, got none")
+			expected := fmt.Sprintf("bitbucket-cloud: initialized client with provided token for user=%s", tt.event.Provider.User)
+			assert.Equal(t, expected, logs[0].Message)
 		})
 	}
 }
