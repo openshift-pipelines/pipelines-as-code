@@ -2,6 +2,7 @@
 no_verify=
 test_mode=
 update_mode=
+list_mode=
 
 show_help() {
   cat <<EOF
@@ -26,6 +27,7 @@ Options:
   -n        Do not run pre-commit checks
   -t        Test mode (dry run, print commands only)
   -u        Update mode (only list mirrored PRs and update existing mirrored PR)
+  -c        List all mirrored PRs and optionally close them if original PR is merged/closed
   -h        Show this help message
 
 EOF
@@ -39,11 +41,12 @@ run() {
   fi
 }
 
-while getopts "hntu" opt; do
+while getopts "hntuc" opt; do
   case $opt in
   n) no_verify=yes ;;
   t) test_mode=yes ;;
   u) update_mode=yes ;;
+  c) list_mode=yes ;;
   h)
     echo "usage: $(basename "$(readlink -f "$0")")"
     show_help
@@ -60,17 +63,42 @@ shift $((OPTIND - 1))
 
 set -eo pipefail
 
+UPSTREAM_REPO=${GH_UPSTREAM_REPO:-"openshift-pipelines/pipelines-as-code"}
+
 if ! command -v gh &>/dev/null; then
   echo "🛑 Error: GitHub CLI ('gh') is not installed. Please install it to continue."
   echo "🔗 See: https://cli.github.com/"
   exit 1
 fi
 
+if [[ -n $list_mode ]]; then
+  gh pr list --repo "$UPSTREAM_REPO" --json number,title,author,headRefName,state |
+    jq -r '
+      .[]
+      | select(.headRefName | startswith("test-pr-"))
+      | . as $pr
+      | ($pr.headRefName | capture("^test-pr-(?<orig_number>[^-]+)-(?<orig_author>.+)$")) as $m
+      | ($pr.title | sub("^\\[MIRRORED\\]\\s*"; "")) as $clean_title
+      | "\($pr.number): \($clean_title) [Original: #\($m.orig_number) by \($m.orig_author)] (State: \($pr.state))"
+    ' | while read -r line; do
+    pr_num=$(echo "$line" | awk -F: '{print $1}')
+    orig_num=$(echo "$line" | sed -n 's/.*Original: #\([0-9]*\).*/\1/p')
+    orig_state=$(gh pr view "$orig_num" --repo "$UPSTREAM_REPO" --json state,mergedAt -q 'if .state == "MERGED" or .mergedAt != null then "merged" else .state end' 2>/dev/null || echo "unknown")
+    if [[ "$orig_state" == "merged" || "$orig_state" == "closed" ]]; then
+      read -n1 -r -p "❓ Original PR #$orig_num is $orig_state. Close mirrored PR #$pr_num? [y/N]: " ans </dev/tty
+      if [[ "$ans" =~ ^[Yy]$ ]]; then
+        echo "🔒 Closing mirrored PR #$pr_num..."
+        run gh pr close "$pr_num" --repo "$UPSTREAM_REPO"
+      fi
+    fi
+  done
+  exit 0
+fi
+
 echo "✅ GitHub CLI is installed. Ready to proceed!"
 
 PR_NUMBER=${1:-}
 FORK_REMOTE=${GH_FORK_REMOTE:-$2}
-UPSTREAM_REPO=${GH_UPSTREAM_REPO:-"openshift-pipelines/pipelines-as-code"}
 
 # 🛡️ Check for uncommitted changes
 if ! git diff-index --quiet HEAD --; then
@@ -96,7 +124,7 @@ if [[ -z ${PR_NUMBER} ]]; then
             | . as $pr
             | ($pr.headRefName | capture("^test-pr-(?<orig_number>[^-]+)-(?<orig_author>.+)$")) as $m
             | ($pr.title | sub("^\\[MIRRORED\\]\\s*"; "")) as $clean_title
-            | "\($pr.number): \($clean_title)) [Original: #\($m.orig_number) by \($m.orig_author)]"
+            | "\($pr.number): \($clean_title) [Original: #\($m.orig_number) by \($m.orig_author)]"
         ' | fzf --prompt="🔎 Select mirrored PR to update: ")
     PR_NUMBER=$(echo "$PR_SELECTION" | sed 's/.*Original: #\([0-9]*\).*/\1/' | xargs)
     echo "🔍 Selected PR #${PR_NUMBER} to update."
