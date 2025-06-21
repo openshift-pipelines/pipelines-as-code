@@ -660,6 +660,19 @@ func TestParsePayload(t *testing.T) {
 			payloadEvent: bbv1test.MakePREvent(ev1, "/cancel"),
 			expEvent:     ev1,
 		},
+		{
+			name:      "deleted branch should be ignored",
+			eventType: "repo:refs_changed",
+			payloadEvent: bbv1test.MakePushEvent(ev1, []types.PushRequestEventChange{
+				{
+					ToHash: "0000000000000000000000000000000000000000",
+					RefID:  "refs/heads/feature-branch",
+					Type:   "DELETE",
+				},
+			}, []types.Commit{},
+			),
+			expEvent: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -685,7 +698,12 @@ func TestParsePayload(t *testing.T) {
 				return
 			}
 			assert.NilError(t, err)
-
+			if tt.expEvent == nil {
+				if got != nil {
+					t.Fatalf("expected event to be nil, got: %+v", got)
+				}
+				return
+			}
 			assert.Equal(t, got.AccountID, tt.expEvent.AccountID)
 
 			// test that we got slashed
