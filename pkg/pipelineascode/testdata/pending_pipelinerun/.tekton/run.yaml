@@ -1,0 +1,17 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: pull_request-test1
+  annotations:
+    pipelinesascode.tekton.dev/on-target-branch: "[main]"
+    pipelinesascode.tekton.dev/on-event: "[pull_request]"
+spec:
+  status: PipelineRunPending
+  pipelineSpec:
+    tasks:
+      - name: max
+        taskSpec:
+          steps:
+            - name: success
+              image: registry.access.redhat.com/ubi9/ubi-minimal
+              script: 'exit 0'
