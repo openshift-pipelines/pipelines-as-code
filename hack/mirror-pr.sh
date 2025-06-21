@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-#
 no_verify=
+test_mode=
+update_mode=
+list_mode=
+
 show_help() {
   cat <<EOF
 🪞 Mirror an external contributor's pull request to a maintainer's fork for E2E tests.
@@ -17,27 +20,35 @@ show_help() {
 💡 Example:
   ./mirror-pr.sh 1234 my-github-user
 
-If no PR number or not fork are provided, it will prompt you to select one
+If no PR number or fork are provided, it will prompt you to select one
 using fzf.
 
-EOF
-  grep -E "[ ]*[a-zA-Z0-9-]\) ##" $0 |
-    sed -e 's/^[ ]*/-/' \
-      -e 's/-\([0-9A-Za-z]*\)[  ]*|[  ]*\([0-9A-Za-z]*\)/-\1, -\2/' \
-      -e 's/##//' -e 's/)[ ]*/ - /' |
-    awk -F" - " '{printf "%-10s %s\n", $1, $2}'
-
-  cat <<EOF
+Options:
+  -n        Do not run pre-commit checks
+  -t        Test mode (dry run, print commands only)
+  -u        Update mode (only list mirrored PRs and update existing mirrored PR)
+  -c        List all mirrored PRs and optionally close them if original PR is merged/closed
+  -h        Show this help message
 
 EOF
 }
-while getopts "hn" opt; do
+
+run() {
+  if [[ -n $test_mode ]]; then
+    echo "[TEST MODE] $*"
+  else
+    "$@"
+  fi
+}
+
+while getopts "hntuc" opt; do
   case $opt in
-  n) ## do not run pre-commit checks
-    no_verify=yes
-    ;;
+  n) no_verify=yes ;;
+  t) test_mode=yes ;;
+  u) update_mode=yes ;;
+  c) list_mode=yes ;;
   h)
-    echo "usage: $(basename $(readlink -f $0))"
+    echo "usage: $(basename "$(readlink -f "$0")")"
     show_help
     exit 0
     ;;
@@ -52,17 +63,42 @@ shift $((OPTIND - 1))
 
 set -eo pipefail
 
+UPSTREAM_REPO=${GH_UPSTREAM_REPO:-"openshift-pipelines/pipelines-as-code"}
+
 if ! command -v gh &>/dev/null; then
   echo "🛑 Error: GitHub CLI ('gh') is not installed. Please install it to continue."
   echo "🔗 See: https://cli.github.com/"
   exit 1
 fi
 
+if [[ -n $list_mode ]]; then
+  gh pr list --repo "$UPSTREAM_REPO" --json number,title,author,headRefName,state |
+    jq -r '
+      .[]
+      | select(.headRefName | startswith("test-pr-"))
+      | . as $pr
+      | ($pr.headRefName | capture("^test-pr-(?<orig_number>[^-]+)-(?<orig_author>.+)$")) as $m
+      | ($pr.title | sub("^\\[MIRRORED\\]\\s*"; "")) as $clean_title
+      | "\($pr.number): \($clean_title) [Original: #\($m.orig_number) by \($m.orig_author)] (State: \($pr.state))"
+    ' | while read -r line; do
+    pr_num=$(echo "$line" | awk -F: '{print $1}')
+    orig_num=$(echo "$line" | sed -n 's/.*Original: #\([0-9]*\).*/\1/p')
+    orig_state=$(gh pr view "$orig_num" --repo "$UPSTREAM_REPO" --json state,mergedAt -q 'if .state == "MERGED" or .mergedAt != null then "merged" else .state end' 2>/dev/null || echo "unknown")
+    if [[ "$orig_state" == "merged" || "$orig_state" == "closed" ]]; then
+      read -n1 -r -p "❓ Original PR #$orig_num is $orig_state. Close mirrored PR #$pr_num? [y/N]: " ans </dev/tty
+      if [[ "$ans" =~ ^[Yy]$ ]]; then
+        echo "🔒 Closing mirrored PR #$pr_num..."
+        run gh pr close "$pr_num" --repo "$UPSTREAM_REPO"
+      fi
+    fi
+  done
+  exit 0
+fi
+
 echo "✅ GitHub CLI is installed. Ready to proceed!"
 
 PR_NUMBER=${1:-}
 FORK_REMOTE=${GH_FORK_REMOTE:-$2}
-UPSTREAM_REPO=${GH_UPSTREAM_REPO:-"openshift-pipelines/pipelines-as-code"}
 
 # 🛡️ Check for uncommitted changes
 if ! git diff-index --quiet HEAD --; then
@@ -74,13 +110,25 @@ CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 resetgitbranch() {
   new_branch_name=$(git rev-parse --abbrev-ref HEAD)
   echo "↩️  Resetting to original branch ${CURRENT_BRANCH} from ${new_branch_name}"
-  git checkout "$CURRENT_BRANCH" || true
+  run git checkout "$CURRENT_BRANCH" || true
 }
 trap resetgitbranch EXIT
 
 # 🎯 Select PR number if not provided
 if [[ -z ${PR_NUMBER} ]]; then
-  if [[ ${CURRENT_BRANCH} =~ test-pr-([0-9]+)-([a-zA-Z0-9_-]+) ]]; then
+  if [[ -n $update_mode ]]; then
+    PR_SELECTION=$(gh pr list --repo "$UPSTREAM_REPO" --json number,title,author,headRefName |
+      jq -r '
+            .[] 
+            | select(.headRefName | startswith("test-pr-")) 
+            | . as $pr
+            | ($pr.headRefName | capture("^test-pr-(?<orig_number>[^-]+)-(?<orig_author>.+)$")) as $m
+            | ($pr.title | sub("^\\[MIRRORED\\]\\s*"; "")) as $clean_title
+            | "\($pr.number): \($clean_title) [Original: #\($m.orig_number) by \($m.orig_author)]"
+        ' | fzf --prompt="🔎 Select mirrored PR to update: ")
+    PR_NUMBER=$(echo "$PR_SELECTION" | sed 's/.*Original: #\([0-9]*\).*/\1/' | xargs)
+    echo "🔍 Selected PR #${PR_NUMBER} to update."
+  elif [[ ${CURRENT_BRANCH} =~ test-pr-([0-9]+)-([a-zA-Z0-9_-]+) ]]; then
     PR_NUMBER="${BASH_REMATCH[1]}"
   else
     PR_SELECTION=$(gh pr list --repo "$UPSTREAM_REPO" --json number,title,author --template '{{range .}}{{.number}}: {{.title}} (by {{.author.login}})
@@ -91,7 +139,7 @@ fi
 
 # 🔍 Check if a mirrored PR already exists
 already_opened_pr=$(
-  gh pr list --repo $UPSTREAM_REPO \
+  gh pr list --repo "$UPSTREAM_REPO" \
     --json number,headRepositoryOwner,headRepository,headRefName |
     jq -r --arg pn "$PR_NUMBER" \
       '.[] | select(.headRefName | test("^test-pr-\($pn)-.*")) | "git@github.com:\(.headRepositoryOwner.login)/\(.headRepository.name).git"'
@@ -128,7 +176,7 @@ echo "👤  - Author: $PR_AUTHOR"
 
 # 1️⃣ Checkout the PR locally
 echo "📥 Checking out PR #${PR_NUMBER} locally..."
-gh pr checkout --force "$PR_NUMBER" --repo "$UPSTREAM_REPO"
+run gh pr checkout --force "$PR_NUMBER" --repo "$UPSTREAM_REPO"
 
 # 2️⃣ Push the branch to your fork
 NEW_BRANCH_NAME="test-pr-${PR_NUMBER}-${PR_AUTHOR}"
@@ -149,17 +197,22 @@ else
     exit 1
   fi
   echo "🚜 Running pre-commit checks before pushing..."
-  pre-commit run --all-files --show-diff-on-failure || {
-    echo "❗ Pre-commit checks failed. Please fix the issues before pushing."
-    echo "You can fix user errors locally and pushing to the user branch."
-    echo "git commit --amend the commit (or add a new commit) and then run this command"
-    gh pr view "$PR_NUMBER" --repo "$UPSTREAM_REPO" --json headRefName,headRepositoryOwner,headRepository |
-      jq -r '"git push --force-with-lease git@github.com:\(.headRepositoryOwner.login)/\(.headRepository.name).git HEAD:\(.headRefName)"'
-    echo "(or use --force if you know what you are doing)"
-    exit 1
-  }
+  if [[ -n $test_mode ]]; then
+    echo "[TEST MODE] pre-commit run --all-files --show-diff-on-failure"
+  else
+    pre-commit run --all-files --show-diff-on-failure || {
+      echo "❗ Pre-commit checks failed. Please fix the issues before pushing."
+      echo "You can fix user errors locally and pushing to the user branch."
+      echo "git commit --amend the commit (or add a new commit) and then run this command"
+      gh pr view "$PR_NUMBER" --repo "$UPSTREAM_REPO" --json headRefName,headRepositoryOwner,headRepository |
+        jq -r '"git push --force-with-lease git@github.com:\(.headRepositoryOwner.login)/\(.headRepository.name).git HEAD:\(.headRefName)"'
+      echo "(or use --force if you know what you are doing)"
+      exit 1
+    }
+  fi
 fi
-git push "$FORK_REMOTE" "HEAD:${NEW_BRANCH_NAME}" --force --no-verify
+
+run git push "$FORK_REMOTE" "HEAD:${NEW_BRANCH_NAME}" --force --no-verify
 
 if [[ -n ${already_opened_pr} ]]; then
   exit 0
@@ -172,14 +225,19 @@ DO_NOT_MERGE_LABEL="do-not-merge" # You might need to create this label in your 
 
 echo "🆕 Creating a new mirrored pull request on ${UPSTREAM_REPO}..."
 
-# 📝 Create the PR as a draft to prevent accidental merges before tests run.
-CREATED_PR_URL=$(gh pr create \
-  --repo "$UPSTREAM_REPO" \
-  --title "$MIRRORED_PR_TITLE" \
-  --body "$MIRRORED_PR_BODY" \
-  --head "${FORK_REMOTE}:${NEW_BRANCH_NAME}" \
-  --label "$DO_NOT_MERGE_LABEL" \
-  --draft)
+if [[ -n $test_mode ]]; then
+  echo "[TEST MODE] gh pr create --repo \"$UPSTREAM_REPO\" --title \"$MIRRORED_PR_TITLE\" --body \"$MIRRORED_PR_BODY\" --head \"${FORK_REMOTE}:${NEW_BRANCH_NAME}\" --label \"$DO_NOT_MERGE_LABEL\" --draft"
+  CREATED_PR_URL="https://github.com/${UPSTREAM_REPO}/pull/FAKE"
+else
+  # 📝 Create the PR as a draft to prevent accidental merges before tests run.
+  CREATED_PR_URL=$(gh pr create \
+    --repo "$UPSTREAM_REPO" \
+    --title "$MIRRORED_PR_TITLE" \
+    --body "$MIRRORED_PR_BODY" \
+    --head "${FORK_REMOTE}:${NEW_BRANCH_NAME}" \
+    --label "$DO_NOT_MERGE_LABEL" \
+    --draft)
+fi
 
 # ✅ Check if the PR was created successfully
 if [[ -z "$CREATED_PR_URL" ]]; then
@@ -187,11 +245,15 @@ if [[ -z "$CREATED_PR_URL" ]]; then
   exit 1
 fi
 
-gh pr comment "$PR_NUMBER" --repo "$UPSTREAM_REPO" --body \
-  "🚀 **Mirrored PR Created for E2E Testing**<br><br>\
+if [[ -n $test_mode ]]; then
+  echo "[TEST MODE] gh pr comment \"$PR_NUMBER\" --repo \"$UPSTREAM_REPO\" --body \"🚀 **Mirrored PR Created for E2E Testing**<br><br>A mirrored PR has been opened for end-to-end testing: [View PR](${CREATED_PR_URL})<br><br>⏳ Follow progress there for E2E results.<br>If you need to update the PR with new changes, please ask a maintainer to rerun \`hack/mirror-pr.sh\`.\""
+else
+  gh pr comment "$PR_NUMBER" --repo "$UPSTREAM_REPO" --body \
+    "🚀 **Mirrored PR Created for E2E Testing**<br><br>\
 A mirrored PR has been opened for end-to-end testing: [View PR](${CREATED_PR_URL})<br><br>\
 ⏳ Follow progress there for E2E results.<br>\
 If you need to update the PR with new changes, please ask a maintainer to rerun \`hack/mirror-pr.sh\`."
+fi
 
 echo "🎉 Successfully created mirrored pull request!"
 echo "   ${CREATED_PR_URL}"
