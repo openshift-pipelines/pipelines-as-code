@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	pacerrors "github.com/openshift-pipelines/pipelines-as-code/pkg/errors"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -15,7 +17,6 @@ import (
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8scheme "k8s.io/client-go/kubernetes/scheme"
 	yaml "sigs.k8s.io/yaml/goyaml.v2"
 )
@@ -26,7 +27,7 @@ type TektonTypes struct {
 	Pipelines        []*tektonv1.Pipeline
 	TaskRuns         []*tektonv1.TaskRun
 	Tasks            []*tektonv1.Task
-	ValidationErrors map[string]string
+	ValidationErrors []*pacerrors.PacYamlValidations
 }
 
 // Contains Fetched Resources for Event, with key equals to annotation value.
@@ -43,31 +44,34 @@ type FetchedResourcesForRun struct {
 
 func NewTektonTypes() TektonTypes {
 	return TektonTypes{
-		ValidationErrors: map[string]string{},
+		ValidationErrors: []*pacerrors.PacYamlValidations{},
 	}
 }
 
 var yamlDocSeparatorRe = regexp.MustCompile(`(?m)^---\s*$`)
 
-// detectAtleastNameOrGenerateNameFromPipelineRun detects the name or
+// detectAtleastNameOrGenerateNameAndSchemaFromPipelineRun detects the name or
 // generateName of a yaml files even if there is an error decoding it as tekton types.
-func detectAtleastNameOrGenerateNameFromPipelineRun(data string) string {
-	var metadataName struct {
-		Metadata metav1.ObjectMeta
+func detectAtleastNameOrGenerateNameAndSchemaFromPipelineRun(data string) (string, string) {
+	var genericKubeObj struct {
+		APIVersion string `yaml:"apiVersion"`
+		Metadata   struct {
+			Name         string `yaml:"name,omitempty"`
+			GenerateName string `yaml:"generateName,omitempty"`
+		} `yaml:"metadata"`
 	}
-	err := yaml.Unmarshal([]byte(data), &metadataName)
+	err := yaml.Unmarshal([]byte(data), &genericKubeObj)
 	if err != nil {
-		return ""
+		return "nokube", ""
 	}
-	if metadataName.Metadata.Name != "" {
-		return metadataName.Metadata.Name
+	if genericKubeObj.Metadata.Name != "" {
+		return genericKubeObj.Metadata.Name, genericKubeObj.APIVersion
 	}
 
-	// TODO: yaml Unmarshal don't want to parse generatename and i have no idea why
-	if metadataName.Metadata.GenerateName != "" {
-		return metadataName.Metadata.GenerateName
+	if genericKubeObj.Metadata.GenerateName != "" {
+		return genericKubeObj.Metadata.GenerateName, genericKubeObj.APIVersion
 	}
-	return "unknown"
+	return "unknown", genericKubeObj.APIVersion
 }
 
 // getPipelineByName returns the Pipeline with the given name the first one found
@@ -106,15 +110,6 @@ func pipelineRunsWithSameName(prs []*tektonv1.PipelineRun) error {
 	return nil
 }
 
-func skippingTask(taskName string, skippedTasks []string) bool {
-	for _, value := range skippedTasks {
-		if value == taskName {
-			return true
-		}
-	}
-	return false
-}
-
 func isTektonAPIVersion(apiVersion string) bool {
 	return strings.HasPrefix(apiVersion, "tekton.dev/") || apiVersion == ""
 }
@@ -126,7 +121,7 @@ func inlineTasks(tasks []tektonv1.PipelineTask, ropt *Opts, remoteResource Fetch
 			task.TaskRef.Resolver == "" &&
 			isTektonAPIVersion(task.TaskRef.APIVersion) &&
 			string(task.TaskRef.Kind) != "ClusterTask" &&
-			!skippingTask(task.TaskRef.Name, ropt.SkipInlining) {
+			!slices.Contains(ropt.SkipInlining, task.TaskRef.Name) {
 			taskResolved, ok := remoteResource.Tasks[task.TaskRef.Name]
 			if !ok {
 				return nil, fmt.Errorf("cannot find referenced task %s. if it's a remote task make sure to add it in the annotations", task.TaskRef.Name)
@@ -164,7 +159,12 @@ func ReadTektonTypes(ctx context.Context, log *zap.SugaredLogger, data string) (
 
 		obj, _, err := decoder.Decode([]byte(doc), nil, nil)
 		if err != nil {
-			types.ValidationErrors[detectAtleastNameOrGenerateNameFromPipelineRun(doc)] = err.Error()
+			dt, dv := detectAtleastNameOrGenerateNameAndSchemaFromPipelineRun(doc)
+			types.ValidationErrors = append(types.ValidationErrors, &pacerrors.PacYamlValidations{
+				Name:   dt,
+				Err:    fmt.Errorf("error decoding yaml document: %w", err),
+				Schema: dv,
+			})
 			continue
 		}
 		switch o := obj.(type) {
