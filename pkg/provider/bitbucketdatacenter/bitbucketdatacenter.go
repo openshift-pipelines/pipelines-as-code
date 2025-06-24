@@ -212,7 +212,7 @@ func (v *Provider) GetTektonDir(ctx context.Context, event *info.Event, path, pr
 	at := ""
 	if v.provenance == "source" {
 		at = event.SHA
-		v.Logger.Infof("Using PipelineRun definition from source pull request SHA: %s", event.SHA)
+		v.Logger.Infof("Using PipelineRun definition from source %s commit SHA: %s", event.TriggerTarget.String(), event.SHA)
 	} else {
 		v.Logger.Infof("Using PipelineRun definition from default_branch: %s", event.DefaultBranch)
 	}
@@ -307,6 +307,9 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 			},
 		}
 		v.client = client
+
+		// Added for security audit purposes to log client access when a token is used
+		run.Clients.Log.Infof("bitbucket-datacenter: initialized client with provided token for user=%s providerURL=%s", event.Provider.User, event.Provider.URL)
 	}
 	v.run = run
 	v.repo = repo

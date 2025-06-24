@@ -171,7 +171,7 @@ func (v *Provider) getDir(event *info.Event, path string) ([]bitbucket.Repositor
 		revision = event.DefaultBranch
 		v.Logger.Infof("Using PipelineRun definition from default_branch: %s", event.DefaultBranch)
 	} else {
-		v.Logger.Infof("Using PipelineRun definition from source pull request SHA: %s", event.SHA)
+		v.Logger.Infof("Using PipelineRun definition from source %s commit SHA: %s", event.TriggerTarget.String(), event.SHA)
 	}
 	repoFileOpts := &bitbucket.RepositoryFilesOptions{
 		Owner:    event.Organization,
@@ -203,6 +203,10 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, event *info.Eve
 		return fmt.Errorf("no git_provider.user has been in repo crd")
 	}
 	v.bbClient = bitbucket.NewBasicAuth(event.Provider.User, event.Provider.Token)
+
+	// Added log for security audit purposes to log client access when a token is used
+	run.Clients.Log.Infof("bitbucket-cloud: initialized client with provided token for user=%s", event.Provider.User)
+
 	v.Token = &event.Provider.Token
 	v.Username = &event.Provider.User
 	v.run = run

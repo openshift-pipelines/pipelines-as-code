@@ -1,13 +1,16 @@
 package bitbucketcloud
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/ktrysmt/go-bitbucket"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	bbcloudtest "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/test"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
@@ -35,11 +38,18 @@ func TestGetTektonDir(t *testing.T) {
 		filterMessageSnippet string
 	}{
 		{
-			name:                 "Get Tekton Directory",
-			event:                bbcloudtest.MakeEvent(nil),
+			name:                 "Get Tekton Directory on pull request",
+			event:                bbcloudtest.MakeEvent(&info.Event{TriggerTarget: triggertype.PullRequest}),
 			testDirPath:          "../../pipelineascode/testdata/pull_request/.tekton",
 			contentContains:      "kind: PipelineRun",
-			filterMessageSnippet: "Using PipelineRun definition from source pull request SHA",
+			filterMessageSnippet: "Using PipelineRun definition from source pull_request commit SHA",
+		},
+		{
+			name:                 "Get Tekton Directory on push",
+			event:                bbcloudtest.MakeEvent(&info.Event{TriggerTarget: triggertype.Push}),
+			testDirPath:          "../../pipelineascode/testdata/pull_request/.tekton",
+			contentContains:      "kind: PipelineRun",
+			filterMessageSnippet: "Using PipelineRun definition from source push commit SHA",
 		},
 		{
 			name:                 "Get Tekton Directory Mainbranch",
@@ -137,14 +147,29 @@ func TestSetClient(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
+			core, observer := zapobserver.New(zap.InfoLevel)
+			testLog := zap.New(core).Sugar()
+
+			fakeRun := &params.Run{
+				Clients: clients.Clients{
+					Log: testLog,
+				},
+			}
+
 			v := Provider{}
-			err := v.SetClient(ctx, nil, tt.event, nil, nil)
+			err := v.SetClient(ctx, fakeRun, tt.event, nil, nil)
+
 			if tt.wantErrSubstr != "" {
 				assert.ErrorContains(t, err, tt.wantErrSubstr)
 				return
 			}
 			assert.Equal(t, tt.event.Provider.Token, *v.Token)
 			assert.Equal(t, tt.event.Provider.User, *v.Username)
+
+			logs := observer.TakeAll()
+			assert.Assert(t, len(logs) > 0, "expected a log entry, got none")
+			expected := fmt.Sprintf("bitbucket-cloud: initialized client with provided token for user=%s", tt.event.Provider.User)
+			assert.Equal(t, expected, logs[0].Message)
 		})
 	}
 }

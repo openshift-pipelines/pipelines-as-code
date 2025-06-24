@@ -75,20 +75,29 @@ spec:
                 fi
 
                 git config --global --add safe.directory $(workspaces.source.path)
+                git config --global user.name "Pipelines as Code"
+                git config --global user.email "email@email.org"
                 git log -1 --format=format:%s |grep -E -q '^Merge branch' && exit 0
                 pip3 install gitlint
 
                 # Check all commits between base_sha and HEAD
                 base_sha="{{ body.pull_request.base.sha }}"
-                failed=0
+                failed=()
                 while read -r commit_hash; do
                   echo "Checking commit: $commit_hash"
-                  if ! gitlint --commit "$commit_hash" --ignore "Merge branch"; then
-                    failed=1
+                  if ! git log -1 --pretty=format:%B "$commit_hash" | gitlint --staged; then
+                    echo "Gitlint failed for commit: $commit_hash"
+                    failed+=("$commit_hash")
                   fi
                 done < <(git log "${base_sha}..HEAD" --format=format:%H --no-merges)
 
-                exit $failed
+                if [ "${#failed[@]}" -ne 0 ]; then
+                  echo "Failed commits: ${failed[@]}"
+                  exit 1
+                else
+                  echo "Gitlint completed. All commits passed."
+                  exit 0
+                fi
 
             - name: check-generated-schemas
               displayName: "Check generated OpenAPI schemas"
