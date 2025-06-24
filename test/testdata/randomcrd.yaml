@@ -1,0 +1,6 @@
+apiVersion: blah.openshift.io/v1
+kind: Blahblah
+metadata:
+  name: blahblah
+spec:
+  blah: blah

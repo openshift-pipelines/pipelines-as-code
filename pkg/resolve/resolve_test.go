@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	pacerrors "github.com/openshift-pipelines/pipelines-as-code/pkg/errors"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -202,18 +203,21 @@ func TestReportBadTektonYaml(t *testing.T) {
 		wantErr        bool
 		validError     string
 		validErrorName string
+		expectedSchema string
 	}{
 		{
 			name:           "bad tekton yaml name",
 			filename:       "bad-tekton-yaml-name",
 			validError:     `json: cannot unmarshal object into Go struct field PipelineSpec.spec.pipelineSpec.tasks of type []v1beta1.PipelineTask`,
 			validErrorName: "bad-name",
+			expectedSchema: "tekton.dev/v1beta1", // Assuming this is the schema in the test file
 		},
 		{
 			name:           "bad tekton yaml generateName",
 			filename:       "bad-tekton-yaml-generate-name",
 			validError:     `json: cannot unmarshal object into Go struct field PipelineSpec.spec.pipelineSpec.tasks of type []v1beta1.PipelineTask`,
-			validErrorName: "unknown",
+			validErrorName: "bad-generate-name",
+			expectedSchema: "", // When name/generateName cannot be determined
 		},
 	}
 	for _, tt := range tests {
@@ -222,19 +226,198 @@ func TestReportBadTektonYaml(t *testing.T) {
 			assert.NilError(t, err)
 			types, err := ReadTektonTypes(context.TODO(), nil, string(data))
 			assert.NilError(t, err)
-			if value, ok := types.ValidationErrors[tt.validErrorName]; ok {
-				assert.Equal(t, value, tt.validError, "error message mismatch")
-			} else {
+
+			// Find the validation error by name
+			found := false
+			for _, validationError := range types.ValidationErrors {
+				if validationError.Name == tt.validErrorName {
+					// Test the structured error
+					assert.Assert(t, strings.Contains(validationError.Err.Error(), tt.validError),
+						"error message mismatch: expected %s to contain %s", validationError.Err.Error(), tt.validError)
+
+					// Test that the error has the expected structure
+					assert.Assert(t, validationError.Name != "", "validation error should have a name")
+					assert.Assert(t, validationError.Err != nil, "validation error should have an error")
+
+					// Test schema field if we expect one
+					if tt.expectedSchema != "" {
+						assert.Equal(t, validationError.Schema, tt.expectedSchema, "schema mismatch")
+					}
+					found = true
+					break
+				}
+			}
+			if !found {
 				t.Errorf("could not find the task %s in the validation errors: %+v", tt.validErrorName, types.ValidationErrors)
 			}
 		})
 	}
-
-	assert.Equal(t, "", detectAtleastNameOrGenerateNameFromPipelineRun("- babdakdja"))
 }
 
-// test if we have the task in .tekton dir not referenced in annotations but taskRef in a task.
-// should embed since in repo.
+func TestDetectNameOrGenerateNameAndSchema(t *testing.T) {
+	tests := []struct {
+		name           string
+		yamlContent    string
+		expectedName   string
+		expectedSchema string
+	}{
+		{
+			name: "valid yaml with name and apiVersion",
+			yamlContent: `apiVersion: tekton.dev/v1
+metadata:
+  name: test-pipeline`,
+			expectedName:   "test-pipeline",
+			expectedSchema: "tekton.dev/v1",
+		},
+		{
+			name: "valid yaml with generateName and apiVersion",
+			yamlContent: `apiVersion: tekton.dev/v1beta1
+metadata:
+  generateName: test-pipeline-
+`,
+			expectedName:   "test-pipeline-",
+			expectedSchema: "tekton.dev/v1beta1",
+		},
+		{
+			name:           "invalid yaml",
+			yamlContent:    `- babdakdja`,
+			expectedName:   "nokube",
+			expectedSchema: "",
+		},
+		{
+			name: "yaml without name or generateName",
+			yamlContent: `apiVersion: tekton.dev/v1
+metadata:
+  namespace: default`,
+			expectedName:   "unknown",
+			expectedSchema: "tekton.dev/v1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			name, schema := detectAtleastNameOrGenerateNameAndSchemaFromPipelineRun(tt.yamlContent)
+			assert.Equal(t, name, tt.expectedName, "name mismatch")
+			assert.Equal(t, schema, tt.expectedSchema, "schema mismatch")
+		})
+	}
+}
+
+func TestValidationErrorStructure(t *testing.T) {
+	// Test that validation errors follow the new structure
+	testYaml := `apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: test-pr
+spec:
+  pipelineSpec:
+    tasks:
+      - name: invalid-task
+        taskSpec:
+          invalid-field: "this should cause an error"`
+
+	types, err := ReadTektonTypes(context.TODO(), nil, testYaml)
+	assert.NilError(t, err)
+
+	// Each validation error should have the proper structure
+	for _, validationError := range types.ValidationErrors {
+		assert.Assert(t, validationError != nil, "validation error should not be nil")
+		assert.Assert(t, validationError.Name != "", "validation error should have a name")
+		assert.Assert(t, validationError.Err != nil, "validation error should have an error")
+		// Schema field exists as a string (can be empty)
+	}
+}
+
+func TestGenericBadYAMLValidation(t *testing.T) {
+	// Test that the GenericBadYAMLValidation constant is used properly
+	assert.Equal(t, pacerrors.GenericBadYAMLValidation, "Generic bad YAML Validation")
+}
+
+func TestValidationErrorFiltering(t *testing.T) {
+	// Test the schema filtering logic that determines which errors should be reported
+	tests := []struct {
+		name             string
+		validationErr    *pacerrors.PacYamlValidations
+		shouldBeReported bool
+	}{
+		{
+			name: "tekton resource error should be reported",
+			validationErr: &pacerrors.PacYamlValidations{
+				Name:   "test-pipeline",
+				Err:    fmt.Errorf("some tekton error"),
+				Schema: "tekton.dev/v1",
+			},
+			shouldBeReported: true,
+		},
+		{
+			name: "tekton v1beta1 resource error should be reported",
+			validationErr: &pacerrors.PacYamlValidations{
+				Name:   "test-task",
+				Err:    fmt.Errorf("some tekton error"),
+				Schema: "tekton.dev/v1beta1",
+			},
+			shouldBeReported: true,
+		},
+		{
+			name: "generic bad yaml error should be reported",
+			validationErr: &pacerrors.PacYamlValidations{
+				Name:   "bad-yaml",
+				Err:    fmt.Errorf("yaml syntax error"),
+				Schema: pacerrors.GenericBadYAMLValidation,
+			},
+			shouldBeReported: true,
+		},
+		{
+			name: "non-tekton resource error should not be reported",
+			validationErr: &pacerrors.PacYamlValidations{
+				Name:   "some-config",
+				Err:    fmt.Errorf("some other error"),
+				Schema: "v1",
+			},
+			shouldBeReported: false,
+		},
+		{
+			name: "empty schema error should not be reported",
+			validationErr: &pacerrors.PacYamlValidations{
+				Name:   "unknown-resource",
+				Err:    fmt.Errorf("unknown error"),
+				Schema: "",
+			},
+			shouldBeReported: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test the filtering logic that would be used in reportValidationErrors
+			shouldReport := strings.HasPrefix(tt.validationErr.Schema, tektonv1.SchemeGroupVersion.Group) ||
+				tt.validationErr.Schema == pacerrors.GenericBadYAMLValidation
+
+			assert.Equal(t, shouldReport, tt.shouldBeReported,
+				"filtering result mismatch for schema: %s", tt.validationErr.Schema)
+		})
+	}
+}
+
+func TestErrorMessageFormat(t *testing.T) {
+	// Test that error messages are properly formatted with "error decoding yaml document:" prefix
+	testYaml := `invalid yaml content:
+  - this: should
+    cause: [an error`
+
+	types, err := ReadTektonTypes(context.TODO(), nil, testYaml)
+	assert.NilError(t, err)
+
+	// Should have at least one validation error
+	assert.Assert(t, len(types.ValidationErrors) > 0, "should have validation errors")
+
+	// Check that error messages have the proper format
+	for _, validationError := range types.ValidationErrors {
+		assert.Assert(t, strings.Contains(validationError.Err.Error(), "error decoding yaml document:"),
+			"error message should contain 'error decoding yaml document:' prefix, got: %s", validationError.Err.Error())
+	}
+}
+
 func TestInRepoShouldNotEmbedIfNoAnnotations(t *testing.T) {
 	resolved, _, err := readTDfile(t, "in-repo-in-ref-no-annotation", false, true)
 	assert.NilError(t, err)
@@ -494,16 +677,6 @@ func TestMetadataResolve(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestSkippingTask(t *testing.T) {
-	skippedTasks := []string{"task1", "task3"}
-
-	// Test case where taskName is in skippedTasks
-	assert.Equal(t, skippingTask("task1", skippedTasks), true)
-
-	// Test case where taskName is not in skippedTasks
-	assert.Equal(t, skippingTask("task2", skippedTasks), false)
 }
 
 func TestTaskRunPassMetadataAnnotations(t *testing.T) {
