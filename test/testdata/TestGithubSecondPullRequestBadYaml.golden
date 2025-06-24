@@ -3,4 +3,4 @@
 
 | PipelineRun | Error |
 |------|-------|
-| bad-yaml.yaml | `line 3: could not find expected ':'` |
+| bad-yaml.yaml | `yaml validation error: line 3: could not find expected ':'` |
