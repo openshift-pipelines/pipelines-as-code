@@ -30,6 +30,7 @@ func createTaskURL(pipelines map[string]*tektonv1.Pipeline, tasks []string) ([]s
 			return tasks, err
 		}
 		pPath := strings.SplitAfter(pURL.Path, "/")
+		// pop the pipeline target path from the URL
 		pPath = pPath[:len(pPath)-1]
 
 		var newPath string
@@ -45,8 +46,9 @@ func createTaskURL(pipelines map[string]*tektonv1.Pipeline, tasks []string) ([]s
 			taskURLS[i] = t
 			continue // it's already an absolute URL
 		}
-		pURL = pURL.JoinPath(t)
-		taskURLS[i] = pURL.String()
+		tURL = pURL
+		tURL = tURL.JoinPath(t)
+		taskURLS[i] = tURL.String()
 	}
 	return taskURLS, nil
 }
