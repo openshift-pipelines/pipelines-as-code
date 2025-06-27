@@ -1,0 +1,41 @@
+---
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: jira
+  annotations:
+    pipelinesascode.tekton.dev/pipeline: "https://raw.githubusercontent.com/chmouel/pipelinerun-jira-pullrequest/main/tekton/jira.yaml"
+    pipelinesascode.tekton.dev/on-comment: "^/jira"
+    pipelinesascode.tekton.dev/max-keep-runs: "2"
+spec:
+  pipelineRef:
+    name: create-jira-from-pr
+  params:
+    - name: PR_URL
+      value: "{{ repo_url }}/pull/{{ pull_request_number }}"
+    - name: GITHUB_TOKEN_SECRET
+      value: "{{ git_auth_secret }}"
+    - name: GITHUB_TOKEN_SECRET_KEY
+      value: "git-provider-token"
+    - name: AI_TOKEN_SECRET
+      value: "gemini"
+    - name: AI_TOKEN_SECRET_KEY
+      value: "secret"
+    - name: JIRA_ENDPOINT
+      value: "https://issues.redhat.com"
+    - name: JIRA_TOKEN_SECRET
+      value: "jira"
+    - name: JIRA_TOKEN_SECRET_KEY
+      value: "secret"
+    - name: JIRA_USER_EMAIL
+      value: "cboudjna@redhat.com"
+    - name: JIRA_PROJECT
+      # value: "TP"
+      value: "SRVKP"
+    - name: JIRA_COMPONENT
+      # value: "Internal Tools"
+      value: "Pipelines as Code"
+    - name: PR_QUERY
+      value: "{{ trigger_comment }}"
+    - name: CREATE_IN_JIRA
+      value: "true"
