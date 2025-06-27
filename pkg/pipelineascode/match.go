@@ -9,6 +9,7 @@ import (
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	pacerrors "github.com/openshift-pipelines/pipelines-as-code/pkg/errors"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
@@ -186,7 +187,15 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 		reg := regexp.MustCompile(`error unmarshalling yaml file\s([^:]*):\s*(yaml:\s*)?(.*)`)
 		matches := reg.FindStringSubmatch(err.Error())
 		if len(matches) == 4 {
-			p.reportValidationErrors(ctx, repo, map[string]string{matches[1]: matches[3]})
+			p.reportValidationErrors(ctx, repo,
+				[]*pacerrors.PacYamlValidations{
+					{
+						Name:   matches[1],
+						Err:    fmt.Errorf("yaml validation error: %s", matches[3]),
+						Schema: pacerrors.GenericBadYAMLValidation,
+					},
+				},
+			)
 			return nil, nil
 		}
 
@@ -463,12 +472,19 @@ func (p *PacRun) createNeutralStatus(ctx context.Context) error {
 // 1. Creating error messages for each validation error
 // 2. Emitting error messages to the event system
 // 3. Creating a markdown formatted comment on the repository with all errors.
-func (p *PacRun) reportValidationErrors(ctx context.Context, repo *v1alpha1.Repository, validationErrors map[string]string) {
+func (p *PacRun) reportValidationErrors(ctx context.Context, repo *v1alpha1.Repository, validationErrors []*pacerrors.PacYamlValidations) {
 	errorRows := make([]string, 0, len(validationErrors))
-	for name, err := range validationErrors {
-		errorRows = append(errorRows, fmt.Sprintf("| %s | `%s` |", name, err))
+	for _, err := range validationErrors {
+		// if the error is a TektonConversionError, we don't want to report it since it may be a file that is not a tekton resource
+		// and we don't want to report it as a validation error.
+		if strings.HasPrefix(err.Schema, tektonv1.SchemeGroupVersion.Group) || err.Schema == pacerrors.GenericBadYAMLValidation {
+			errorRows = append(errorRows, fmt.Sprintf("| %s | `%s` |", err.Name, err.Err.Error()))
+		}
 		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "PipelineRunValidationErrors",
-			fmt.Sprintf("cannot read the PipelineRun: %s, error: %s", name, err))
+			fmt.Sprintf("cannot read the PipelineRun: %s, error: %s", err.Name, err.Err.Error()))
+	}
+	if len(errorRows) == 0 {
+		return
 	}
 	markdownErrMessage := fmt.Sprintf(`%s
 %s`, validationErrorTemplate, strings.Join(errorRows, "\n"))

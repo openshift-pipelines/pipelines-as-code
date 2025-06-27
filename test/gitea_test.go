@@ -238,6 +238,20 @@ func TestGiteaBadYamlReportingOnPR(t *testing.T) {
 	assert.Equal(t, len(comments), 1, "should have only one comment")
 }
 
+func TestGiteaYamlReportingNotReportingNotTektonResources(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		TargetEvent:  triggertype.PullRequest.String(),
+		YAMLFiles:    map[string]string{".tekton/randomcrd.yaml": "testdata/randomcrd.yaml"},
+		ExpectEvents: true,
+	}
+
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+	comments, _, err := topts.GiteaCNX.Client().ListRepoIssueComments(topts.PullRequest.Base.Repository.Owner.UserName, topts.PullRequest.Base.Repository.Name, gitea.ListIssueCommentOptions{})
+	assert.NilError(t, err)
+	assert.Equal(t, len(comments), 0, "should have zero comments")
+}
+
 // TestGiteaBadYaml we can't check pr status but this shows up in the
 // controller, so let's dig ourself in there....  TargetNS is a random string, so
 // it can only success if it matches it.
@@ -252,7 +266,7 @@ func TestGiteaBadYamlValidation(t *testing.T) {
 	defer f()
 	maxLines := int64(20)
 	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *regexp.MustCompile(
-		"cannot read the PipelineRun: pr-bad-format.yaml, error: line 3: could not find expected ':'"),
+		"cannot read the PipelineRun: pr-bad-format.yaml, error: yaml validation error: line 3: could not find expected ':'"),
 		10, "controller", &maxLines))
 }
 
