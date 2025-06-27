@@ -11,7 +11,6 @@ require (
 	github.com/bradleyfalzon/ghinstallation/v2 v2.15.0
 	github.com/cloudevents/sdk-go/v2 v2.16.0
 	github.com/fvbommel/sortorder v1.1.0
-	github.com/gfleury/go-bitbucket-v1 v0.0.0-20240917142304-df385efaac68
 	github.com/gobwas/glob v0.2.3
 	github.com/google/cel-go v0.25.0
 	github.com/google/go-cmp v0.7.0

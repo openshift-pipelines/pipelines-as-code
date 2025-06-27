@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"path/filepath"
+	"path"
 	"regexp"
 	"strings"
 	"sync"
@@ -497,6 +497,49 @@ func TestRun(t *testing.T) {
 			finalStatusText:              "User fantasio is not allowed to trigger CI by GitOps comment on push commit in this repo.",
 			skipReplyingOrgPublicMembers: true,
 		},
+		{
+			name: "pull request/pipelinerun created in pending state (state changed by other controller)",
+			runevent: info.Event{
+				Event: &github.PullRequestEvent{
+					PullRequest: &github.PullRequest{
+						Number: github.Ptr(666),
+					},
+				},
+				SHA:               "fromwebhook",
+				Organization:      "owner",
+				Sender:            "owner",
+				Repository:        "repo",
+				URL:               "https://service/documentation",
+				HeadBranch:        "press",
+				BaseBranch:        "main",
+				EventType:         "pull_request",
+				TriggerTarget:     "pull_request",
+				PullRequestNumber: 666,
+				InstallationID:    1234,
+			},
+			tektondir: "testdata/pending_pipelinerun",
+		},
+		{
+			name: "pull request/pipelinerun created in pending state without installationID (state changed by other controller)",
+			runevent: info.Event{
+				Event: &github.PullRequestEvent{
+					PullRequest: &github.PullRequest{
+						Number: github.Ptr(666),
+					},
+				},
+				SHA:               "fromwebhook",
+				Organization:      "owner",
+				Sender:            "owner",
+				Repository:        "repo",
+				URL:               "https://service/documentation",
+				HeadBranch:        "press",
+				BaseBranch:        "main",
+				EventType:         "pull_request",
+				TriggerTarget:     "pull_request",
+				PullRequestNumber: 666,
+			},
+			tektondir: "testdata/pending_pipelinerun",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -667,7 +710,7 @@ func TestRun(t *testing.T) {
 					if pr.GetName() == "force-me" {
 						continue
 					}
-					logURL, ok := pr.Annotations[filepath.Join(apipac.GroupName, "log-url")]
+					logURL, ok := pr.Annotations[path.Join(apipac.GroupName, "log-url")]
 					assert.Assert(t, ok, "failed to find log-url label on pipelinerun: %s/%s", pr.GetNamespace(), pr.GetGenerateName())
 					assert.Equal(t, logURL, cs.Clients.ConsoleUI().DetailURL(&pr))
 
@@ -675,10 +718,10 @@ func TestRun(t *testing.T) {
 						secretName, ok := pr.GetAnnotations()[keys.GitAuthSecret]
 						assert.Assert(t, ok, "Cannot find secret %s on annotations", secretName)
 					}
-					if tt.concurrencyLimit > 0 {
-						concurrencyLimit, ok := pr.GetAnnotations()[keys.State]
-						assert.Assert(t, ok, "State hasn't been set on PR", concurrencyLimit)
-						assert.Equal(t, concurrencyLimit, kubeinteraction.StateQueued)
+					if tt.concurrencyLimit > 0 || pr.Spec.Status == pipelinev1.PipelineRunSpecStatusPending {
+						state, ok := pr.GetAnnotations()[keys.State]
+						assert.Assert(t, ok, "State hasn't been set on PR", state)
+						assert.Equal(t, state, kubeinteraction.StateQueued)
 					}
 				}
 			}
@@ -690,15 +733,11 @@ func TestGetLogURLMergePatch(t *testing.T) {
 	con := consoleui.FallBackConsole{}
 	clients := clients.Clients{}
 	clients.SetConsoleUI(con)
-	pr := &pipelinev1.PipelineRun{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-pipeline-run",
-		},
-	}
-	result := getLogURLMergePatch(clients, pr)
+	ann := map[string]string{keys.LogURL: con.URL()}
+	result := getMergePatch(ann, map[string]string{})
 	m, ok := result["metadata"].(map[string]any)
 	assert.Assert(t, ok)
 	a, ok := m["annotations"].(map[string]string)
 	assert.Assert(t, ok)
-	assert.Equal(t, a[filepath.Join(apipac.GroupName, "log-url")], con.URL())
+	assert.Equal(t, a[path.Join(apipac.GroupName, "log-url")], con.URL())
 }

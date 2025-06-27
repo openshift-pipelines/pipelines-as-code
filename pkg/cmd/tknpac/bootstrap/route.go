@@ -59,7 +59,9 @@ func detectSelfSignedCertificate(ctx context.Context, url string) string {
 	} else if err != nil {
 		return fmt.Sprintf("⚠️ could not connect to the route %s, make sure the pipelines-as-code controller is running", url)
 	}
-	resp.Body.Close()
+	if err := resp.Body.Close(); err != nil {
+		return fmt.Sprintf("⚠️ could not close the response body: %v", err)
+	}
 	return ""
 }
 

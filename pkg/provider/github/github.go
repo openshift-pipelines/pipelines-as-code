@@ -301,6 +301,13 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 		return fmt.Errorf("no github client has been initialized")
 	}
 
+	// Added log for security audit purposes to log client access when a token is used
+	integration := "github-webhook"
+	if event.InstallationID != 0 {
+		integration = "github-app"
+	}
+	run.Clients.Log.Infof(integration+": initialized OAuth2 client for providerName=%s providerURL=%s", v.providerName, event.Provider.URL)
+
 	v.APIURL = apiURL
 
 	if event.Provider.WebhookSecretFromRepo {
@@ -324,7 +331,11 @@ func (v *Provider) GetTektonDir(ctx context.Context, runevent *info.Event, path,
 		revision = runevent.DefaultBranch
 		v.Logger.Infof("Using PipelineRun definition from default_branch: %s", runevent.DefaultBranch)
 	} else {
-		v.Logger.Infof("Using PipelineRun definition from source pull request %s/%s#%d SHA on %s", runevent.Organization, runevent.Repository, runevent.PullRequestNumber, runevent.SHA)
+		prInfo := ""
+		if runevent.TriggerTarget == triggertype.PullRequest {
+			prInfo = fmt.Sprintf("%s/%s#%d", runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
+		}
+		v.Logger.Infof("Using PipelineRun definition from source %s %s on commit SHA %s", runevent.TriggerTarget.String(), prInfo, runevent.SHA)
 	}
 
 	rootobjects, _, err := v.Client().Git.GetTree(ctx, runevent.Organization, runevent.Repository, revision, false)

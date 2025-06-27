@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -200,6 +201,7 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.
 	}
 	v.Token = &runevent.Provider.Token
 
+	run.Clients.Log.Infof("gitlab: initialized for client with token for apiURL=%s, org=%s, repo=%s", apiURL, runevent.Organization, runevent.Repository)
 	// In a scenario where the source repository is forked and a merge request (MR) is created on the upstream
 	// repository, runevent.SourceProjectID will not be 0 when SetClient is called from the pac-watcher code.
 	// This is because, in the controller, SourceProjectID is set in the annotation of the pull request,
@@ -212,7 +214,7 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.
 	// if we don't have sourceProjectID (ie: incoming-webhook) then try to set
 	// it ASAP if we can.
 	if v.sourceProjectID == 0 && runevent.Organization != "" && runevent.Repository != "" {
-		projectSlug := filepath.Join(runevent.Organization, runevent.Repository)
+		projectSlug := path.Join(runevent.Organization, runevent.Repository)
 		projectinfo, _, err := v.Client().Projects.GetProject(projectSlug, &gitlab.GetProjectOptions{})
 		if err != nil {
 			return err
@@ -328,7 +330,11 @@ func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path, prov
 		revision = event.DefaultBranch
 		v.Logger.Infof("Using PipelineRun definition from default_branch: %s", event.DefaultBranch)
 	} else {
-		v.Logger.Infof("Using PipelineRun definition from source merge request SHA: %s", event.SHA)
+		trigger := event.TriggerTarget.String()
+		if event.TriggerTarget == triggertype.PullRequest {
+			trigger = "merge request"
+		}
+		v.Logger.Infof("Using PipelineRun definition from source %s on commit SHA: %s", trigger, event.SHA)
 	}
 
 	opt := &gitlab.ListTreeOptions{

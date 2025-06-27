@@ -159,6 +159,10 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.
 	if err != nil {
 		return err
 	}
+
+	// Added log for security audit purposes to log client access when a token is used
+	run.Clients.Log.Infof("gitea: initialized API client with provided credentials user=%s providerURL=%s", runevent.Provider.User, apiURL)
+
 	v.giteaInstanceURL = runevent.Provider.URL
 	v.eventEmitter = emitter
 	v.repo = repo
@@ -254,7 +258,7 @@ func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path, prov
 		revision = event.DefaultBranch
 		v.Logger.Infof("Using PipelineRun definition from default_branch: %s", event.DefaultBranch)
 	} else {
-		v.Logger.Infof("Using PipelineRun definition from source pull request SHA: %s", event.SHA)
+		v.Logger.Infof("Using PipelineRun definition from source %s commit SHA: %s", event.TriggerTarget.String(), event.SHA)
 	}
 
 	tektonDirSha := ""

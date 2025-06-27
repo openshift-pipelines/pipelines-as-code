@@ -9,6 +9,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	bbv1test "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketdatacenter/test"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketdatacenter/types"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
 	"gotest.tools/v3/assert"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
@@ -570,6 +571,7 @@ func TestParsePayload(t *testing.T) {
 		payloadEvent            any
 		expEvent                *info.Event
 		eventType               string
+		wantSHA                 string
 		wantErrSubstr           string
 		rawStr                  string
 		targetPipelinerun       string
@@ -607,31 +609,82 @@ func TestParsePayload(t *testing.T) {
 			eventType:    "pr:opened",
 			payloadEvent: bbv1test.MakePREvent(ev1, ""),
 			expEvent:     ev1,
+			wantSHA:      "abcd",
 		},
 		{
 			name:         "good/push",
 			eventType:    "repo:refs_changed",
-			payloadEvent: bbv1test.MakePushEvent(ev1, []types.PushRequestEventChange{{ToHash: ev1.SHA, RefID: "base"}}),
+			payloadEvent: bbv1test.MakePushEvent(ev1, []types.PushRequestEventChange{{ToHash: ev1.SHA, RefID: "base"}}, []types.Commit{{ID: ev1.SHA}}),
 			expEvent:     ev1,
+			wantSHA:      "abcd",
 		},
 		{
 			name:          "bad/changes are empty in push",
 			eventType:     "repo:refs_changed",
-			payloadEvent:  bbv1test.MakePushEvent(ev1, []types.PushRequestEventChange{}),
+			payloadEvent:  bbv1test.MakePushEvent(ev1, []types.PushRequestEventChange{}, []types.Commit{}),
 			expEvent:      ev1,
 			wantErrSubstr: "push event contains no commits under 'changes'; cannot proceed",
+		},
+		{
+			name:          "bad/commits are empty in push",
+			eventType:     "repo:refs_changed",
+			payloadEvent:  bbv1test.MakePushEvent(ev1, []types.PushRequestEventChange{{ToHash: ev1.SHA, RefID: "base"}}, []types.Commit{}),
+			expEvent:      ev1,
+			wantErrSubstr: "push event contains no commits; cannot proceed",
+		},
+		{
+			name:      "good/changes are empty in push",
+			eventType: "repo:refs_changed",
+			payloadEvent: bbv1test.MakePushEvent(ev1, []types.PushRequestEventChange{
+				{
+					Ref:    types.Ref{ID: "refs/heads/main"},
+					ToHash: "abcd",
+				},
+			}, []types.Commit{
+				{
+					Parents: []struct {
+						ID        string `json:"id"`
+						DisplayID string `json:"displayId"`
+					}{
+						{
+							ID:        "efghabcd",
+							DisplayID: "efgh",
+						},
+						{
+							ID:        "abcdefgh",
+							DisplayID: "abcd",
+						},
+					},
+				},
+				{
+					ID: "abcdefgh",
+					Parents: []struct {
+						ID        string `json:"id"`
+						DisplayID string `json:"displayId"`
+					}{
+						{
+							ID:        "weroiusf",
+							DisplayID: "wero",
+						},
+					},
+				},
+			}),
+			expEvent: ev1,
+			wantSHA:  "abcdefgh",
 		},
 		{
 			name:         "good/comment ok-to-test",
 			eventType:    "pr:comment:added",
 			payloadEvent: bbv1test.MakePREvent(ev1, "/ok-to-test"),
 			expEvent:     ev1,
+			wantSHA:      "abcd",
 		},
 		{
 			name:         "good/comment test",
 			eventType:    "pr:comment:added",
 			payloadEvent: bbv1test.MakePREvent(ev1, "/test"),
 			expEvent:     ev1,
+			wantSHA:      "abcd",
 		},
 		{
 			name:              "good/comment retest a pr",
@@ -639,6 +692,7 @@ func TestParsePayload(t *testing.T) {
 			payloadEvent:      bbv1test.MakePREvent(ev1, "/retest dummy"),
 			expEvent:          ev1,
 			targetPipelinerun: "dummy",
+			wantSHA:           "abcd",
 		},
 		{
 			name:                    "good/comment cancel a pr",
@@ -646,12 +700,14 @@ func TestParsePayload(t *testing.T) {
 			payloadEvent:            bbv1test.MakePREvent(ev1, "/cancel dummy"),
 			expEvent:                ev1,
 			canceltargetPipelinerun: "dummy",
+			wantSHA:                 "abcd",
 		},
 		{
 			name:         "good/comment cancel all",
 			eventType:    "pr:comment:added",
 			payloadEvent: bbv1test.MakePREvent(ev1, "/cancel"),
 			expEvent:     ev1,
+			wantSHA:      "abcd",
 		},
 	}
 	for _, tt := range tests {
@@ -665,6 +721,7 @@ func TestParsePayload(t *testing.T) {
 			run := &params.Run{
 				Info: info.Info{},
 			}
+			run.Clients.Log, _ = logger.GetLogger()
 			_b, err := json.Marshal(tt.payloadEvent)
 			assert.NilError(t, err)
 			payload := string(_b)
@@ -678,6 +735,9 @@ func TestParsePayload(t *testing.T) {
 				return
 			}
 			assert.NilError(t, err)
+
+			// assert SHA ID
+			assert.Equal(t, tt.wantSHA, got.SHA)
 
 			assert.Equal(t, got.AccountID, tt.expEvent.AccountID)
 

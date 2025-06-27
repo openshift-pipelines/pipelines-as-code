@@ -332,16 +332,27 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 		eventType = triggertype.PullRequest
 	}
 
-	if (status.Status == "completed" || (status.Status == "queued" && status.Title == pendingApproval)) &&
-		status.Text != "" && eventType == triggertype.PullRequest {
-		_, _, err = v.Client().Issues.CreateComment(ctx, runevent.Organization, runevent.Repository,
-			runevent.PullRequestNumber,
-			&github.IssueComment{
-				Body: github.Ptr(fmt.Sprintf("%s<br>%s", status.Summary, status.Text)),
-			},
-		)
-		if err != nil {
-			return err
+	var commentStrategy string
+	if v.repo != nil && v.repo.Spec.Settings != nil && v.repo.Spec.Settings.Github != nil {
+		commentStrategy = v.repo.Spec.Settings.Github.CommentStrategy
+	}
+
+	switch commentStrategy {
+	case "disable_all":
+		v.Logger.Warn("github: comments related to PipelineRuns status have been disabled for Github pull requests")
+		return nil
+	default:
+		if (status.Status == "completed" || (status.Status == "queued" && status.Title == pendingApproval)) &&
+			status.Text != "" && eventType == triggertype.PullRequest {
+			_, _, err = v.Client().Issues.CreateComment(ctx, runevent.Organization, runevent.Repository,
+				runevent.PullRequestNumber,
+				&github.IssueComment{
+					Body: github.Ptr(fmt.Sprintf("%s<br>%s", status.Summary, status.Text)),
+				},
+			)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

@@ -5,6 +5,7 @@ package test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -119,12 +120,35 @@ func verifyIncomingWebhook(t *testing.T, randomedString, pipelinerunName string,
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to branch %s", sha, vref.GetURL())
 
-	incomingURL := fmt.Sprintf("%s/incoming?repository=%s&branch=%s&pipelinerun=%s&secret=%s", opts.ControllerURL,
-		randomedString, randomedString, pipelinerunName, incomingSecreteValue)
-	body := `{"params":{"the_best_superhero_is":"Superman"}}`
+	var req *http.Request
+	var incomingURL string
 	client := &http.Client{}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, incomingURL, strings.NewReader(body))
-	req.Header.Add("Content-Type", "application/json")
+
+	if onWebhook {
+		// Legacy URL query parameters method
+		incomingURL = fmt.Sprintf("%s/incoming?repository=%s&branch=%s&pipelinerun=%s&secret=%s",
+			opts.ControllerURL, randomedString, randomedString, pipelinerunName, incomingSecreteValue)
+		req, err = http.NewRequestWithContext(ctx, http.MethodPost, incomingURL, strings.NewReader(`{"params":{"the_best_superhero_is":"Superman"}}`))
+		assert.NilError(t, err)
+		req.Header.Add("Content-Type", "application/json")
+	} else {
+		// JSON body method
+		incomingURL = fmt.Sprintf("%s/incoming", opts.ControllerURL)
+		jsonBody := map[string]interface{}{
+			"repository":  randomedString,
+			"branch":      randomedString,
+			"pipelinerun": pipelinerunName,
+			"secret":      incomingSecreteValue,
+			"params": map[string]string{
+				"the_best_superhero_is": "Superman",
+			},
+		}
+		jsonData, err := json.Marshal(jsonBody)
+		assert.NilError(t, err)
+		req, err = http.NewRequestWithContext(ctx, http.MethodPost, incomingURL, strings.NewReader(string(jsonData)))
+		assert.NilError(t, err)
+		req.Header.Add("Content-Type", "application/json")
+	}
 	if onSecondController {
 		urlParse, _ := url.Parse(*ghprovider.APIURL)
 		req.Header.Add("X-GitHub-Enterprise-Host", urlParse.Host)

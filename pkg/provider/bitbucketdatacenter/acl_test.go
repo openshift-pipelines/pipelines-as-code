@@ -78,6 +78,7 @@ func TestIsAllowed(t *testing.T) {
 				},
 				activities: []*bbv1test.Activity{
 					{
+						Action: "COMMENTED",
 						Comment: types.ActivityComment{
 							Text: "/ok-to-test",
 							Author: types.User{
@@ -100,6 +101,7 @@ func TestIsAllowed(t *testing.T) {
 				defaultBranchLatestCommit: "defaultlatestcommit",
 				activities: []*bbv1test.Activity{
 					{
+						Action: "COMMENTED",
 						Comment: types.ActivityComment{
 							Text: "/ok-to-test",
 							Author: types.User{
@@ -190,6 +192,7 @@ func TestIsAllowed(t *testing.T) {
 				},
 				activities: []*bbv1test.Activity{
 					{
+						Action: "COMMENTED",
 						Comment: types.ActivityComment{
 							Text: "this is a valid\n/ok-to-test",
 							Author: types.User{
@@ -205,7 +208,7 @@ func TestIsAllowed(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			bbclient, scmClient, mux, tearDown, tURL := bbv1test.SetupBBDataCenterClient(ctx)
+			client, mux, tearDown, tURL := bbv1test.SetupBBDataCenterClient()
 			defer tearDown()
 			bbv1test.MuxProjectMemberShip(t, mux, tt.event, tt.fields.projectMembers)
 			bbv1test.MuxRepoMemberShip(t, mux, tt.event, tt.fields.repoMembers)
@@ -215,8 +218,7 @@ func TestIsAllowed(t *testing.T) {
 
 			v := &Provider{
 				baseURL:                   tURL,
-				bbClient:                  bbclient,
-				scmClient:                 scmClient,
+				client:                    client,
 				defaultBranchLatestCommit: tt.fields.defaultBranchLatestCommit,
 				pullRequestNumber:         tt.fields.pullRequestNumber,
 				projectKey:                tt.event.Organization,

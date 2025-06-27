@@ -10,7 +10,10 @@ import (
 	"time"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
@@ -559,6 +562,59 @@ func TestGithubCancelInProgressSettingFromConfigMapOnPush(t *testing.T) {
 
 	err = twait.UntilPipelineRunHasReason(ctx, g.Cnx.Clients, tektonv1.PipelineRunReasonCancelled, waitOpts)
 	assert.NilError(t, err)
+}
+
+func TestGithubPullandPushMatchTriggerOnlyPull(t *testing.T) {
+	ctx := context.Background()
+	g := &tgithub.PRTest{
+		Label:     "Github PullRequest",
+		YamlFiles: []string{"testdata/pipelinerun-match-push-pullr.yaml"},
+	}
+	g.RunPullRequest(ctx, t)
+	defer g.TearDown(ctx, t)
+
+	globalNs, _, err := params.GetInstallLocation(ctx, g.Cnx)
+	assert.NilError(t, err)
+	ctx = info.StoreNS(ctx, globalNs)
+
+	reg := regexp.MustCompile(fmt.Sprintf("commit.*is part of pull request #%d.*skipping push event", g.PRNumber))
+	maxLines := int64(100)
+	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 20, "controller", &maxLines)
+	assert.NilError(t, err)
+}
+
+func TestGithubDisableCommentsOnPR(t *testing.T) {
+	if os.Getenv("TEST_GITHUB_REPO_OWNER_WEBHOOK") == "" {
+		t.Skip("TEST_GITHUB_REPO_OWNER_WEBHOOK is not set")
+		return
+	}
+	ctx := context.Background()
+
+	g := &tgithub.PRTest{
+		Label:     "Github PullRequest onWebhook",
+		YamlFiles: []string{"testdata/pipelinerun.yaml"},
+		Webhook:   true,
+	}
+
+	commentStrategy := v1alpha1.Settings{
+		Github: &v1alpha1.GithubSettings{
+			CommentStrategy: "disable_all",
+		},
+	}
+
+	g.Options.Settings = commentStrategy
+	g.RunPullRequest(ctx, t)
+	defer g.TearDown(ctx, t)
+
+	comments, _, _ := g.Provider.Client().Issues.ListComments(ctx, g.Options.Organization, g.Options.Repo, g.PRNumber, nil)
+	commentRegexp := regexp.MustCompile(`.*Pipelines as Code CI/*`)
+	successCommentsPost := 0
+	for _, n := range comments {
+		if commentRegexp.MatchString(*n.Body) {
+			successCommentsPost++
+		}
+	}
+	assert.Equal(t, 0, successCommentsPost)
 }
 
 // Local Variables:

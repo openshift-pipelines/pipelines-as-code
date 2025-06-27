@@ -54,7 +54,7 @@ your first Pipelines-as-Code repository.
 
 We ❤️ contributions!
 
-If you'd like to help improve Pipelines-as-Code, check out our contribution guide: [Contribute Here](https://pipelinesascode.com/docs/dev/).
+If you'd like to help improve Pipelines-as-Code, check out our contribution guide [here](https://pipelinesascode.com/docs/dev/).
 
 ---
 

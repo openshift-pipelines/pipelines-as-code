@@ -2,6 +2,7 @@ package reconciler
 
 import (
 	"context"
+	"path"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
@@ -88,7 +89,7 @@ func checkStateAndEnqueue(impl *controller.Impl) func(obj any) {
 func ctrlOpts() func(impl *controller.Impl) controller.Options {
 	return func(_ *controller.Impl) controller.Options {
 		return controller.Options{
-			FinalizerName: pipelinesascode.GroupName,
+			FinalizerName: path.Join(pipelinesascode.GroupName, pipelinesascode.FinalizerName),
 			PromoteFilterFunc: func(obj any) bool {
 				_, exist := obj.(*tektonv1.PipelineRun).GetAnnotations()[keys.State]
 				return exist

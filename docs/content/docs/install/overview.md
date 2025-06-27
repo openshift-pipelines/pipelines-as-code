@@ -12,10 +12,6 @@ Application](https://docs.github.com/en/developers/apps/getting-started-with-app
 
 # Install Pipelines-as-Code infrastructure
 
-Pipelines-as-Code support different installation method to Git provider
-platforms (ie: GitHub, Bitbucket and so on) The preferred method to use
-Pipelines-as-Code is configured with a GitHub Application.
-
 To get started with Pipelines-as-Code, you need to
 
 * Install Pipelines-as-Code.

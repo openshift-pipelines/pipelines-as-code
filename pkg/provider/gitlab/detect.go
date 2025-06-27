@@ -38,6 +38,14 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 
 	switch gitEvent := eventInt.(type) {
 	case *gitlab.MergeEvent:
+		// on a MR update, react only if OldRev is empty (no new commits pushed).
+		// If OldRev is empty, it's a metadata-only update (e.g., label changes).
+		if gitEvent.ObjectAttributes.Action == "update" && gitEvent.ObjectAttributes.OldRev == "" {
+			if !hasOnlyLabelsChanged(gitEvent) {
+				return setLoggerAndProceed(false, "this 'Merge Request' update event changes are not supported; cannot proceed", nil)
+			}
+		}
+
 		if provider.Valid(gitEvent.ObjectAttributes.Action, []string{"open", "reopen", "update"}) {
 			return setLoggerAndProceed(true, "", nil)
 		}
@@ -75,4 +83,28 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 	default:
 		return setLoggerAndProceed(false, "", fmt.Errorf("gitlab: event \"%s\" is not supported", event))
 	}
+}
+
+// hasOnlyLabelsChanged checks if the only change in the merge request is to its labels.
+// This function ensures that other fields remain unchanged.
+func hasOnlyLabelsChanged(gitEvent *gitlab.MergeEvent) bool {
+	changes := gitEvent.Changes
+
+	labelsChanged := len(changes.Labels.Previous) > 0 || len(changes.Labels.Current) > 0
+
+	// Only Labels can change — everything else must be zero or nil
+	onlyUpdatedAtOrLabels := labelsChanged &&
+		changes.Assignees.Previous == nil && changes.Assignees.Current == nil &&
+		changes.Reviewers.Previous == nil && changes.Reviewers.Current == nil &&
+		changes.Description.Previous == "" && changes.Description.Current == "" &&
+		changes.MergeStatus.Previous == "" && changes.MergeStatus.Current == "" &&
+		changes.MilestoneID.Previous == 0 && changes.MilestoneID.Current == 0 &&
+		changes.SourceBranch.Previous == "" && changes.SourceBranch.Current == "" &&
+		changes.SourceProjectID.Previous == 0 && changes.SourceProjectID.Current == 0 &&
+		changes.StateID.Previous == 0 && changes.StateID.Current == 0 &&
+		changes.TargetBranch.Previous == "" && changes.TargetBranch.Current == "" &&
+		changes.TargetProjectID.Previous == 0 && changes.TargetProjectID.Current == 0 &&
+		changes.Title.Previous == "" && changes.Title.Current == ""
+
+	return onlyUpdatedAtOrLabels
 }

@@ -67,7 +67,7 @@ Pipeline:
 ```yaml
 […]
 workspaces:
-  - name basic-auth
+  - name: basic-auth
 params:
     - name: repo_url
     - name: revision

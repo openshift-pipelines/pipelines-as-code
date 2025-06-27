@@ -60,6 +60,24 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 		return nil
 	}
 
+	reason := ""
+	if len(pr.Status.GetConditions()) > 0 {
+		reason = pr.Status.GetConditions()[0].GetReason()
+	}
+	// This condition handles cases where the PipelineRun has entered a "Running" state,
+	// but its status in the Git provider remains "queued" (e.g., due to updates made by
+	// another controller outside PaC). To maintain consistency between the PipelineRun
+	// status and the Git provider status, we update both the PipelineRun resource and
+	// the corresponding status on the Git provider here.
+	if reason == string(tektonv1.PipelineRunReasonRunning) && state == kubeinteraction.StateQueued {
+		repoName := pr.GetAnnotations()[keys.Repository]
+		repo, err := r.repoLister.Repositories(pr.Namespace).Get(repoName)
+		if err != nil {
+			return fmt.Errorf("failed to get repository CR: %w", err)
+		}
+		return r.updatePipelineRunToInProgress(ctx, logger, repo, pr)
+	}
+
 	// if its a GitHub App pipelineRun PR then process only if check run id is added otherwise wait
 	if _, ok := pr.Annotations[keys.InstallationID]; ok {
 		if _, ok := pr.Annotations[keys.CheckRunID]; !ok {
@@ -173,6 +191,9 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 		}
 	}
 
+	if r.run.Clients.Log == nil {
+		r.run.Clients.Log = logger
+	}
 	err = provider.SetClient(ctx, r.run, event, repo, r.eventEmitter)
 	if err != nil {
 		return repo, fmt.Errorf("cannot set client: %w", err)

@@ -3,6 +3,7 @@ package adapter
 import (
 	"context"
 	"crypto/subtle"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -50,14 +51,46 @@ func applyIncomingParams(req *http.Request, payloadBody []byte, params []string)
 }
 
 func (l *listener) detectIncoming(ctx context.Context, req *http.Request, payloadBody []byte) (bool, *v1alpha1.Repository, error) {
+	// Support both legacy (URL query) and new (POST body) secret passing
 	repository := req.URL.Query().Get("repository")
-	querySecret := req.URL.Query().Get("secret")
-	pipelineRun := req.URL.Query().Get("pipelinerun")
 	branch := req.URL.Query().Get("branch")
+	pipelineRun := req.URL.Query().Get("pipelinerun")
+	querySecret := req.URL.Query().Get("secret")
+	legacyMode := false
 
 	if req.URL.Path != "/incoming" {
 		return false, nil, nil
 	}
+
+	// If not all required query params are present, try to parse from JSON body
+	if repository == "" || branch == "" || pipelineRun == "" || querySecret == "" {
+		if req.Method == http.MethodPost && req.Header.Get("Content-Type") == "application/json" && len(payloadBody) > 0 {
+			var body struct {
+				Repository  string         `json:"repository"`
+				Branch      string         `json:"branch"`
+				PipelineRun string         `json:"pipelinerun"`
+				Secret      string         `json:"secret"`
+				Params      map[string]any `json:"params"`
+			}
+			if err := json.Unmarshal(payloadBody, &body); err == nil {
+				repository = body.Repository
+				branch = body.Branch
+				pipelineRun = body.PipelineRun
+				querySecret = body.Secret
+			} else {
+				return false, nil, fmt.Errorf("invalid JSON body for incoming webhook: %w", err)
+			}
+		} else {
+			return false, nil, fmt.Errorf("missing query URL argument: pipelinerun, branch, repository, secret: '%s' '%s' '%s' '%s'", pipelineRun, branch, repository, querySecret)
+		}
+	} else {
+		legacyMode = true
+	}
+
+	if legacyMode {
+		l.logger.Warnf("[SECURITY] Incoming webhook used legacy URL-based secret passing. This is insecure and will be deprecated. Please use POST body instead.")
+	}
+
 	l.logger.Infof("incoming request has been requested: %v", req.URL)
 	if pipelineRun == "" || repository == "" || querySecret == "" || branch == "" {
 		err := fmt.Errorf("missing query URL argument: pipelinerun, branch, repository, secret: '%s' '%s' '%s' '%s'", pipelineRun, branch, repository, querySecret)

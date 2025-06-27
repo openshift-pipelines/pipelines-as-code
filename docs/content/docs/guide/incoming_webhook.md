@@ -87,19 +87,28 @@ stringData:
 
 After setting this up, you will be able to start the PipelineRun with a POST
 request sent to the controller URL appended with /incoming. The request
-includes the very-secure-shared-secret, the repository name (repo), the target
-branch (main), and the PipelineRun name.
+can include the very-secure-shared-secret, the repository name (repo), the
+target branch (main), and the PipelineRun name either as URL query parameters
+(legacy, insecure, and deprecated) or in the POST JSON body (recommended).
 
-You can use the `generateName` field as the PipelineRun name but you will need to make sure to specify the hyphen (-) at the end.
+You can use the `generateName` field as the PipelineRun name but you will need
+to make sure to specify the hyphen (-) at the end.
 
-As an example here is a curl snippet starting the PipelineRun:
+#### Legacy (URL query) method (deprecated)
 
 ```shell
 curl -X POST 'https://control.pac.url/incoming?secret=very-secure-shared-secret&repository=repo&branch=main&pipelinerun=target-pipelinerun'
 ```
 
-in this snippet, note two things the `"/incoming"` path to the controller URL
-and the `"POST"` method to the URL rather than a simple `"GET"`.
+**Warning:** Passing secrets in the URL is insecure and will be deprecated. Please use the POST body method below.
+
+#### Recommended (POST JSON body) method
+
+```shell
+curl -H "Content-Type: application/json" -X POST "https://control.pac.url/incoming" -d '{"repository":"repo","branch":"main","pipelinerun":"target-pipelinerun","secret":"very-secure-shared-secret"}'
+```
+
+In both cases, the `"/incoming"` path to the controller URL and the `"POST"` method will remain unchanged.
 
 It is important to note that when the PipelineRun is triggered, Pipelines as
 Code will treat it as a push event and will have the capability to report the
@@ -110,17 +119,17 @@ provides guidance on how to achieve this.
 
 ### Passing dynamic parameter value to incoming webhook
 
-You can define the value of a any Pipelines-as Code Parameters (including
-redefining the [builtin ones](../authoringprs#default-parameters).
+You can define the value of any Pipelines-as-Code Parameters (including
+redefining the [builtin ones](../authoringprs#default-parameters)).
 
 You need to list the overridden or added params in the params section of the
-Repo CR configuration and pass the value in the json body of the incoming webhook
+Repo CR configuration and pass the value in the JSON body of the incoming webhook
 request.
 
-You will need to pass the `content-type` as `application/json` in the header of
+You will need to pass the `Content-Type` as `application/json` in the header of
 your URL request.
 
-Here is a Repository CR letting passing the `pull_request_number` dynamic variable:
+Here is a Repository CR allowing passing the `pull_request_number` dynamic variable:
 
 ```yaml
 ---
@@ -144,10 +153,11 @@ spec:
 and here is a curl snippet passing the `pull_request_number` value:
 
 ```shell
-curl -H "Content-Type: application/json" -X POST "https://control.pac.url/incoming?repository=repo&branch=main&secret=very-secure-shared-secret&pipelinerun=target-pipelinerun" -d '{"params": {"pull_request_number": "12345"}}'
+curl -H "Content-Type: application/json" -X POST "https://control.pac.url/incoming" -d '{"repository":"repo","branch":"main","pipelinerun":"target-pipelinerun","secret":"very-secure-shared-secret","params": {"pull_request_number": "12345"}}'
 ```
 
-The parameter value of `pull_request_number` will be set to `12345` when using the variable `{{pull_request_number}}` in your PipelineRun.
+The parameter value of `pull_request_number` will be set to `12345` when using
+the variable `{{pull_request_number}}` in your PipelineRun.
 
 ### Using incoming webhook with GitHub Enterprise application
 

@@ -40,6 +40,7 @@ func TestSyncConfig(t *testing.T) {
 				ErrorDetectionSimpleRegexp:           "^(?P<filename>[^:]*):(?P<line>[0-9]+):(?P<column>[0-9]+)?([ ]*)?(?P<error>.*)",
 				EnableCancelInProgressOnPullRequests: false,
 				EnableCancelInProgressOnPush:         false,
+				SkipPushEventForPRCommits:            true,
 				CustomConsoleName:                    "",
 				CustomConsoleURL:                     "",
 				CustomConsolePRdetail:                "",
@@ -73,6 +74,7 @@ func TestSyncConfig(t *testing.T) {
 				"custom-console-url-pr-tasklog":          "https://custom-console-pr-tasklog",
 				"custom-console-url-namespace":           "https://custom-console-namespace",
 				"remember-ok-to-test":                    "false",
+				"skip-push-event-for-pr-commits":         "true",
 			},
 			expectedStruct: Settings{
 				ApplicationName:                    "pac-pac",
@@ -98,6 +100,7 @@ func TestSyncConfig(t *testing.T) {
 				CustomConsolePRTaskLog:             "https://custom-console-pr-tasklog",
 				CustomConsoleNamespaceURL:          "https://custom-console-namespace",
 				RememberOKToTest:                   false,
+				SkipPushEventForPRCommits:          true,
 			},
 		},
 		{

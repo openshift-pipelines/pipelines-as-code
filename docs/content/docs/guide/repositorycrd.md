@@ -127,11 +127,28 @@ access to the infrastructure.
 
 ```yaml
 spec:
-  gitlab:
-    comment_strategy: "disable_all"
+  settings:
+    gitlab:
+      comment_strategy: "disable_all"
 ```
 
 When you set the value of `comment_strategy` to `disable_all` it will not add any comment on the merge request for the start and the end of pipelinerun
+
+## Disabling all comments for Pipelineruns in GitHub Pull Requests on GitHub Webhook Setup
+
+`comment_strategy` allows you to disable the comments on GitHub PR for a Repository
+
+```yaml
+spec:
+  settings:
+    github:
+      comment_strategy: "disable_all"
+```
+
+When `comment_strategy` is set to `disable_all` Pipelines as Code will not create any comment on the pull request for PipelineRun Status
+
+Note: The disable_all strategy applies only to comments about a PipelineRun's status (e.g., "started," "succeeded").
+If your PipelineRun YAML definition fails validation, a comment detailing the error will always be posted to the pull request. [see docs](../running/#errors-when-parsing-pipelinerun-yaml)
 
 ## Concurrency
 
@@ -151,6 +168,14 @@ request with a `concurrency_limit` of 1 in the repository configuration, then al
 of the pipelineruns will be executed in alphabetical order, one after the
 other. At any given time, only one pipeline run will be in the running state,
 while the rest will be queued.
+
+### Kueue - Kubernetes-native Job Queueing
+
+Pipelines-as-Code now accommodates [Kueue](https://kueue.sigs.k8s.io/) as an alternative, Kubernetes-native solution for queuing PipelineRun.
+To get started, you can deploy the experimental integration provided by the [konflux-ci/tekton-kueue](https://github.com/konflux-ci/tekton-kueue) project. This allows you to schedule PipelineRuns through Kueue's queuing mechanism.
+
+Note: The [konflux-ci/tekton-kueue](https://github.com/konflux-ci/tekton-kueue) project and the Pipelines-as-Code integration is only intended for testing
+It is only meant for experimentation and should not be used in production environments.
 
 ## Scoping GitHub token to a list of private and public repositories within and outside namespaces
 

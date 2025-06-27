@@ -124,12 +124,11 @@ click on it and follow the pipeline execution directly there.
 
 ## Errors When Parsing PipelineRun YAML
 
-When Pipelines-As-Code encounters an issue with the YAML formatting in the
-repository, it will log the error in the user namespace events log and
-the Pipelines-as-Code controller log.
+If Pipelines-As-Code encounters an issue with the YAML formatting of Tekton resources in the repository, it will create a comment on
+the pull request describing the error. The error will also be logged in the user namespace events log and in the Pipelines-as-Code controller log.
 
-Despite the error, Pipelines-As-Code will continue to run other correctly parsed
-and matched PipelineRuns.
+Despite validation errors, Pipelines-as-Code continues to run other correctly parsed and matched PipelineRuns.
+However, if a PipelineRun has YAML syntax error, it halts the execution of all PipelineRuns, even those that are syntactically correct.
 
 {{< support_matrix github_app="true" github_webhook="true" gitea="true" gitlab="true" bitbucket_cloud="false" bitbucket_server="false" >}}
 

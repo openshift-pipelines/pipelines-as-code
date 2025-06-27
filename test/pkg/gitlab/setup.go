@@ -49,7 +49,7 @@ func Setup(ctx context.Context) (*params.Run, options.E2E, gitlab.Provider, erro
 		Password:      gitlabToken,
 	}
 	glprovider := gitlab.Provider{}
-	err = glprovider.SetClient(ctx, nil, &info.Event{
+	err = glprovider.SetClient(ctx, run, &info.Event{
 		Provider: &info.Provider{
 			Token: gitlabToken,
 			URL:   gitlabURL,

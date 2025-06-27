@@ -158,16 +158,25 @@ type Settings struct {
 	// Gitlab contains GitLab-specific settings for repositories hosted on GitLab.
 	// +optional
 	Gitlab *GitlabSettings `json:"gitlab,omitempty"`
+
+	Github *GithubSettings `json:"github,omitempty"`
 }
 
 type GitlabSettings struct {
 	// CommentStrategy defines how GitLab comments are handled for pipeline results.
 	// Options:
-	// - 'status-comment': Posts a single comment and updates it with pipeline results
-	// - 'pipeline-runs-comment': Creates a new comment for each PipelineRun
 	// - 'disable_all': Disables all comments on merge requests
 	// +optional
-	// +kubebuilder:validation:Enum=status-comment;pipeline-runs-comment;disable_all
+	// +kubebuilder:validation:Enum="";disable_all
+	CommentStrategy string `json:"comment_strategy,omitempty"`
+}
+
+type GithubSettings struct {
+	// CommentStrategy defines how GitLab comments are handled for pipeline results.
+	// Options:
+	// - 'disable_all': Disables all comments on merge requests
+	// +optional
+	// +kubebuilder:validation:Enum="";disable_all
 	CommentStrategy string `json:"comment_strategy,omitempty"`
 }
 

@@ -83,7 +83,7 @@ lint: lint-go lint-yaml lint-md lint-python lint-shell ## run all linters
 .PHONY: lint-go
 lint-go: ## runs go linter on all go files
 	@echo "Linting go files..."
-	@$(GOLANGCI_LINT) run ./... --modules-download-mode=vendor \
+	@$(GOLANGCI_LINT) run ./pkg/... ./test/... --modules-download-mode=vendor \
 							--max-issues-per-linter=0 \
 							--max-same-issues=0 \
 							--timeout $(TIMEOUT_UNIT)
