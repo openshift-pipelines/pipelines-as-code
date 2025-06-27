@@ -1,0 +1,38 @@
+🔍 CEL Expression Evaluator for Pipelines as Code
+🚰 Detected provider: %s
+
+📋 Available variables:
+  🎯 Direct variables (as per PAC documentation):
+    • event              - event type (push, pull_request)
+    • target_branch      - target branch name
+    • source_branch      - source branch name
+    • target_url         - target repository URL
+    • source_url         - source repository URL
+    • event_title        - PR title or commit message
+  📦 Webhook payload (body.*):
+    • body.action            - PR action (opened, synchronize, etc.)
+    • body.number            - PR number
+    • body.pull_request.user.login - PR author
+    • body.pull_request.draft - true if PR is draft
+  📡 HTTP headers (headers.*):
+    • headers['x-github-event']    - GitHub event type
+    • headers['x-github-delivery'] - GitHub delivery ID
+    • headers['content-type']      - Request content type
+    • headers['user-agent']        - User agent (GitHub-Hookshot/...)
+  📁 Files (files.*):
+    ⚠️  Note: File-related variables (e.g., files.all) and functions (e.g., fileChanged) are not supported in the CLI and will be empty or false.
+  🔧 PAC Parameters (pac.* - for backward compatibility):
+    • pac.event, pac.target_branch, pac.source_branch, etc.
+
+� Headers file formats supported:
+  • JSON format: {"X-GitHub-Event": "pull_request", "Content-Type": "application/json"}
+  • HTTP format: X-GitHub-Event: pull_request
+  • Gosmee script: Shell scripts with curl commands and -H flags (automatically detected)
+
+�💡 Example expressions:
+  ✓ event == "pull_request" && target_branch == "main"
+  ✓ event == "pull_request" && source_branch.matches(".*feat/.*")
+  ✓ body.action == "synchronize"
+  ✓ !body.pull_request.draft
+  ✓ headers['x-github-event'] == "pull_request"
+  ✓ event == "pull_request" && target_branch != "experimental"
