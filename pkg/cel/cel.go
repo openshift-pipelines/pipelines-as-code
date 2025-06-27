@@ -55,12 +55,26 @@ func Value(query string, body any, headers, pacParams map[string]string, changed
 			decls.NewVariable("headers", mapStrDyn),
 			decls.NewVariable("pac", mapStrDyn),
 			decls.NewVariable("files", mapStrDyn),
+			// Direct variables as per documentation
+			decls.NewVariable("event", types.StringType),
+			decls.NewVariable("target_branch", types.StringType),
+			decls.NewVariable("source_branch", types.StringType),
+			decls.NewVariable("target_url", types.StringType),
+			decls.NewVariable("source_url", types.StringType),
+			decls.NewVariable("event_title", types.StringType),
 		))
 	val, err := evaluate(query, celDec, map[string]any{
 		"body":    jsonMap,
 		"pac":     pacParams,
 		"headers": headers,
 		"files":   changedFiles,
+		// Direct variables
+		"event":         pacParams["event"],
+		"target_branch": pacParams["target_branch"],
+		"source_branch": pacParams["source_branch"],
+		"target_url":    pacParams["target_url"],
+		"source_url":    pacParams["source_url"],
+		"event_title":   pacParams["event_title"],
 	})
 	if err != nil {
 		return nil, err
