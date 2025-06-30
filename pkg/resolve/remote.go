@@ -21,23 +21,23 @@ func alreadyFetchedResource[T NamedItem](resources map[string]T, resourceName st
 	return false
 }
 
-func createTaskURL(pipelines map[string]*tektonv1.Pipeline, tasks []string) ([]string, error) {
+func createTaskURL(eventPipelines map[string]*tektonv1.Pipeline, pipeline *tektonv1.Pipeline, tasks []string) ([]string, error) {
 	var pURL *url.URL
 	var err error
-	for p := range pipelines {
-		pURL, err = url.Parse(p)
+	for ep := range eventPipelines {
+		// ensure the URL to be parsed matches the
+		// remote pipeline of the current PipelineRun
+		if eventPipelines[ep] != pipeline {
+			continue
+		}
+		pURL, err = url.Parse(ep)
 		if err != nil {
 			return tasks, err
 		}
 		pPath := strings.SplitAfter(pURL.Path, "/")
 		// pop the pipeline target path from the URL
 		pPath = pPath[:len(pPath)-1]
-
-		var newPath string
-		for _, v := range pPath {
-			newPath += v
-		}
-		pURL.Path = newPath
+		pURL.Path = strings.Join(pPath, "")
 	}
 	taskURLS := make([]string, len(tasks))
 	for i, t := range tasks {
@@ -133,7 +133,7 @@ func resolveRemoteResources(ctx context.Context, rt *matcher.RemoteTasks, types 
 					return []*tektonv1.PipelineRun{}, fmt.Errorf("error getting remote task from pipeline annotations: %w", err)
 				}
 				// check for relative task references and assemble FQDNs
-				pipelineTasks, err = createTaskURL(fetchedResourcesForEvent.Pipelines, pipelineTasks)
+				pipelineTasks, err = createTaskURL(fetchedResourcesForEvent.Pipelines, fetchedResourcesForPipelineRun.Pipeline, pipelineTasks)
 				if err != nil {
 					return []*tektonv1.PipelineRun{}, err
 				}
