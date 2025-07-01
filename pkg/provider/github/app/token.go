@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	gt "github.com/google/go-github/v71/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
@@ -20,8 +21,6 @@ type Install struct {
 	repo      *v1alpha1.Repository
 	ghClient  *github.Provider
 	namespace string
-
-	repoList []string
 }
 
 func NewInstallation(req *http.Request, run *params.Run, repo *v1alpha1.Repository, gh *github.Provider, namespace string) *Install {
@@ -38,13 +37,10 @@ func NewInstallation(req *http.Request, run *params.Run, repo *v1alpha1.Reposito
 }
 
 // GetAndUpdateInstallationID retrieves and updates the installation ID for the GitHub App.
-// It generates a JWT token, lists all installations, and matches repositories to their installation IDs.
-// If a matching repository is found, it returns the enterprise host, token, and installation ID.
+// It generates a JWT token, and directly fetches the installation for the
+// repository.
 func (ip *Install) GetAndUpdateInstallationID(ctx context.Context) (string, string, int64, error) {
-	var (
-		enterpriseHost, token string
-		installationID        int64
-	)
+	logger := logging.FromContext(ctx)
 
 	// Generate a JWT token for authentication
 	jwtToken, err := ip.GenerateJWT(ctx)
@@ -52,77 +48,60 @@ func (ip *Install) GetAndUpdateInstallationID(ctx context.Context) (string, stri
 		return "", "", 0, err
 	}
 
-	apiURL := *ip.ghClient.APIURL
-	enterpriseHost = ip.request.Header.Get("X-GitHub-Enterprise-Host")
-	if enterpriseHost != "" {
-		// NOTE: Hopefully this works even when the GHE URL is on another host than the API URL
-		apiURL = "https://" + enterpriseHost + "/api/v3"
-	}
-
-	logger := logging.FromContext(ctx)
-	opt := &gt.ListOptions{PerPage: ip.ghClient.PaginedNumber}
-	client, _, _ := github.MakeClient(ctx, apiURL, jwtToken)
-	installationData := []*gt.Installation{}
-
-	// List all installations
-	for {
-		installationSet, resp, err := client.Apps.ListInstallations(ctx, opt)
-		if err != nil {
-			return "", "", 0, err
-		}
-		installationData = append(installationData, installationSet...)
-		if resp.NextPage == 0 {
-			break
-		}
-		opt.Page = resp.NextPage
-	}
-
-	// Iterate through each installation to find a matching repository
-	for i := range installationData {
-		if installationData[i].ID == nil {
-			return "", "", 0, fmt.Errorf("installation ID is nil")
-		}
-		if *installationData[i].ID != 0 {
-			token, err = ip.ghClient.GetAppToken(ctx, ip.run.Clients.Kube, enterpriseHost, *installationData[i].ID, ip.namespace)
-			// While looping on the list of installations, there could be cases where we can't
-			// obtain a token for installation. In a test I did for GitHub App with ~400
-			// installations, there were 3 failing consistently with:
-			// "could not refresh installation id XXX's token: received non 2xx response status "403 Forbidden".
-			// If there is a matching installation after the failure, we miss it. So instead of
-			// failing, we just log the error and continue. Token is "".
-			if err != nil {
-				logger.Warn(err)
-				continue
-			}
-		}
-		exist, err := ip.matchRepos(ctx)
-		if err != nil {
-			return "", "", 0, err
-		}
-		if exist {
-			installationID = *installationData[i].ID
-			break
-		}
-	}
-	return enterpriseHost, token, installationID, nil
-}
-
-// matchRepos matches GitHub repositories to their installation IDs.
-// It lists all repositories accessible to the app installation and checks if
-// any match the repository URL in the spec.
-func (ip *Install) matchRepos(ctx context.Context) (bool, error) {
-	installationRepoList, err := github.ListRepos(ctx, ip.ghClient)
+	// Get owner and repo from the repository URL
+	repoURL, err := url.Parse(ip.repo.Spec.URL)
 	if err != nil {
-		return false, err
+		return "", "", 0, fmt.Errorf("failed to parse repository URL: %w", err)
 	}
-	ip.repoList = append(ip.repoList, installationRepoList...)
-	for i := range installationRepoList {
-		// If URL matches with repo spec URL then we can break the loop
-		if installationRepoList[i] == ip.repo.Spec.URL {
-			return true, nil
+	pathParts := strings.Split(strings.Trim(repoURL.Path, "/"), "/")
+	if len(pathParts) != 2 {
+		return "", "", 0, fmt.Errorf("invalid repository URL path: %s", repoURL.Path)
+	}
+	owner := pathParts[0]
+	repoName := pathParts[1]
+	if owner == "" || repoName == "" {
+		return "", "", 0, fmt.Errorf("invalid repository URL: owner or repo name is empty")
+	}
+
+	if ip.ghClient.APIURL == nil {
+		return "", "", 0, fmt.Errorf("github client APIURL is nil")
+	}
+	apiURL := *ip.ghClient.APIURL
+	enterpriseHost := ip.request.Header.Get("X-GitHub-Enterprise-Host")
+	if enterpriseHost != "" {
+		apiURL = fmt.Sprintf("https://%s/api/v3", strings.TrimSuffix(enterpriseHost, "/"))
+	}
+
+	client, _, _ := github.MakeClient(ctx, apiURL, jwtToken)
+	// Directly get the installation for the repository
+	installation, _, err := client.Apps.FindRepositoryInstallation(ctx, owner, repoName)
+	if err != nil {
+		// Fallback to finding organization installation if repository installation is not found
+		installation, _, err = client.Apps.FindOrganizationInstallation(ctx, owner)
+		if err != nil {
+			// Fallback to finding user installation if organization installation is not found
+			installation, _, err = client.Apps.FindUserInstallation(ctx, owner)
 		}
 	}
-	return false, nil
+
+	if err != nil {
+		return "", "", 0, fmt.Errorf("could not find repository, organization or user installation for %s/%s: %w", owner, repoName, err)
+	}
+
+	if installation.ID == nil {
+		return "", "", 0, fmt.Errorf("github App installation found but contained no ID. This is likely a bug")
+	}
+
+	installationID := *installation.ID
+	token, err := ip.ghClient.GetAppToken(ctx, ip.run.Clients.Kube, enterpriseHost, installationID, ip.namespace)
+	if err != nil {
+		logger.Warnf("Could not get a token for installation ID %d: %v", installationID, err)
+		// Return with the installation ID even if token generation fails,
+		// as some operations might only need the ID.
+		return enterpriseHost, "", installationID, nil
+	}
+
+	return enterpriseHost, token, installationID, nil
 }
 
 // JWTClaim represents the JWT claims for the GitHub App.
