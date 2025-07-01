@@ -137,7 +137,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	// Get the SHA commit info, we want to get the URL and commit title
 	err = p.vcx.GetCommitInfo(ctx, p.event)
 	if err != nil {
-		return repo, err
+		return repo, fmt.Errorf("could not find commit info: %w", err)
 	}
 
 	// Verify whether the sender of the GitOps command (e.g., /test) has the appropriate permissions to
