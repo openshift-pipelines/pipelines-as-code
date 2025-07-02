@@ -7,7 +7,7 @@ metadata:
     pipelinesascode.tekton.dev/max-keep-runs: "2"
     pipelinesascode.tekton.dev/cancel-in-progress: "true"
     pipelinesascode.tekton.dev/on-event: "pull_request"
-    pipelinesascode.tekton.dev/on-target-branch: "main"
+    pipelinesascode.tekton.dev/on-target-branch: "[*]"
     pipelinesascode.tekton.dev/on-path-change: "[***/*.go]"
 spec:
   params:
