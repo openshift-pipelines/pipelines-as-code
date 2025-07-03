@@ -26,8 +26,8 @@ You can create the Repository CR using the [tkn pac]({{< relref
 "/docs/guide/cli.md" >}}) CLI and its `tkn pac create repository` command or by
 applying a YAML file with kubectl:
 
-```yaml
-cat <<EOF|kubectl create -n project-repository -f-
+```bash
+cat <<EOF | kubectl create -n project-repository -f-
 apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
 kind: Repository
 metadata:
@@ -121,7 +121,7 @@ right to merge commits to the default branch can change the PipelineRun and have
 access to the infrastructure.
 {{< /hint >}}
 
-## Disabling all comments for Pipelineruns on GitLab MR
+## Disabling all comments for PipelineRuns on GitLab MR
 
 `comment_strategy` allows you to disable the comments on GitLab MR for a Repository
 
@@ -134,7 +134,7 @@ spec:
 
 When you set the value of `comment_strategy` to `disable_all` it will not add any comment on the merge request for the start and the end of pipelinerun
 
-## Disabling all comments for Pipelineruns in GitHub Pull Requests on GitHub Webhook Setup
+## Disabling all comments for PipelineRuns in GitHub Pull Requests on GitHub Webhook Setup
 
 `comment_strategy` allows you to disable the comments on GitHub PR for a Repository
 

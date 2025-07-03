@@ -225,7 +225,7 @@ A few settings are available to configure this feature:
   Enable or disable the feature to show a log snippet of the failed task when
   there is an error in a PipelineRun.
 
-  Due of the constraint of the different GIT provider API, It will show the last
+  Due to the constraints of the different GIT provider APIs, it will show the last
   3 lines of the first container from the first task that has exited with an
   error in the PipelineRun.
 
@@ -340,7 +340,7 @@ A few settings are available to configure this feature:
 
   the `{{ custom }}` tag in the URL is expanded as `value`.
 
-  This let operator to add specific information like a `UUID` about a user as
+  This lets operators add specific information such as a `UUID` about a user as
   parameter in their repo CR and let it link to the console.
 
 * `custom-console-url-pr-tasklog`
