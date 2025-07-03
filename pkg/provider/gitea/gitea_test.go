@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"code.gitea.io/sdk/gitea"
 	"github.com/google/go-cmp/cmp"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/changedfiles"
@@ -522,6 +523,82 @@ func TestGetTektonDir(t *testing.T) {
 			}
 			assert.NilError(t, err)
 			assert.Assert(t, strings.Contains(got, tt.expectedString), "expected %s, got %s", tt.expectedString, got)
+		})
+	}
+}
+
+func TestShouldGetNextPage(t *testing.T) {
+	tests := []struct {
+		name        string
+		pageCount   string
+		currentPage int
+		wantNext    bool
+		wantPage    int
+	}{
+		{
+			name:        "first page of multiple pages",
+			pageCount:   "5",
+			currentPage: 1,
+			wantNext:    true,
+			wantPage:    2,
+		},
+		{
+			name:        "middle page of multiple pages", 
+			pageCount:   "5",
+			currentPage: 3,
+			wantNext:    true,
+			wantPage:    4,
+		},
+		{
+			name:        "last page of multiple pages",
+			pageCount:   "5", 
+			currentPage: 5,
+			wantNext:    false,
+			wantPage:    5,
+		},
+		{
+			name:        "single page",
+			pageCount:   "1",
+			currentPage: 1,
+			wantNext:    false,
+			wantPage:    1,
+		},
+		{
+			name:        "no page header",
+			pageCount:   "",
+			currentPage: 1,
+			wantNext:    false,
+			wantPage:    0,
+		},
+		{
+			name:        "invalid page count",
+			pageCount:   "invalid",
+			currentPage: 1,
+			wantNext:    false,
+			wantPage:    0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp := &gitea.Response{
+				Response: &http.Response{
+					Header: make(http.Header),
+				},
+			}
+			
+			if tt.pageCount != "" {
+				resp.Header.Set("X-PageCount", tt.pageCount)
+			}
+			
+			gotNext, gotPage := ShouldGetNextPage(resp, tt.currentPage)
+			
+			if gotNext != tt.wantNext {
+				t.Errorf("ShouldGetNextPage() next = %v, want %v", gotNext, tt.wantNext)
+			}
+			if gotPage != tt.wantPage {
+				t.Errorf("ShouldGetNextPage() page = %v, want %v", gotPage, tt.wantPage)
+			}
 		})
 	}
 }

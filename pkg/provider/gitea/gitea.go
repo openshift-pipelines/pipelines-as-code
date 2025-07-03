@@ -389,7 +389,7 @@ func ShouldGetNextPage(resp *gitea.Response, currentPage int) (bool, int) {
 	if err != nil {
 		return false, 0
 	}
-	if i >= currentPage {
+	if currentPage >= i {
 		return false, i
 	}
 	return true, (currentPage + 1)
