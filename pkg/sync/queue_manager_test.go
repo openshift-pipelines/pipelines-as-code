@@ -220,10 +220,14 @@ func TestQueueManager_InitQueues(t *testing.T) {
 	cw := clockwork.NewFakeClock()
 
 	startedLabel := map[string]string{
-		keys.State: kubeinteraction.StateStarted,
+		keys.State:                     kubeinteraction.StateStarted,
+		"app.kubernetes.io/managed-by": "pipelinesascode.tekton.dev",
+		keys.Repository:                "test",
 	}
 	queuedLabel := map[string]string{
-		keys.State: kubeinteraction.StateQueued,
+		keys.State:                     kubeinteraction.StateQueued,
+		"app.kubernetes.io/managed-by": "pipelinesascode.tekton.dev",
+		keys.Repository:                "test",
 	}
 
 	repo := newTestRepo(1)
@@ -231,10 +235,12 @@ func TestQueueManager_InitQueues(t *testing.T) {
 	queuedAnnotations := map[string]string{
 		keys.ExecutionOrder: "test-ns/first,test-ns/second,test-ns/third",
 		keys.State:          kubeinteraction.StateQueued,
+		keys.Repository:     "test",
 	}
 	startedAnnotations := map[string]string{
 		keys.ExecutionOrder: "test-ns/first,test-ns/second,test-ns/third",
 		keys.State:          kubeinteraction.StateStarted,
+		keys.Repository:     "test",
 	}
 	firstPR := newTestPR("first", cw.Now(), startedLabel, startedAnnotations, tektonv1.PipelineRunSpec{})
 	secondPR := newTestPR("second", cw.Now().Add(5*time.Second), queuedLabel, queuedAnnotations, tektonv1.PipelineRunSpec{

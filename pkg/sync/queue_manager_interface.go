@@ -19,6 +19,8 @@ type QueueManagerInterface interface {
 	AddToPendingQueue(repo *v1alpha1.Repository, list []string) error
 	RemoveFromQueue(repoKey, prKey string) bool
 	RemoveAndTakeItemFromQueue(repo *v1alpha1.Repository, run *tektonv1.PipelineRun) string
+	ValidateQueueConsistency(ctx context.Context, tekton tektonVersionedClient.Interface, pac versioned.Interface) ([]QueueValidationResult, error)
+	RepairQueue(ctx context.Context, tekton tektonVersionedClient.Interface, pac versioned.Interface) error
 }
 
 func RepoKey(repo *v1alpha1.Repository) string {
