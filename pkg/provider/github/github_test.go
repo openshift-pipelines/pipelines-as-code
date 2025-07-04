@@ -952,6 +952,12 @@ func TestGetFiles(t *testing.T) {
 	}
 }
 
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+	return f(r)
+}
+
 func TestProvider_checkWebhookSecretValidity(t *testing.T) {
 	t1 := time.Date(1999, time.February, 3, 4, 5, 6, 7, time.UTC)
 	cw := clockwork.NewFakeClockAt(t1)
@@ -963,7 +969,9 @@ func TestProvider_checkWebhookSecretValidity(t *testing.T) {
 		expHeaderSet   bool
 		apiNotEnabled  bool
 		wantLogSnippet string
-		report500      bool
+		statusCode     int
+		wantNilSCIM    bool
+		wantNilResp    bool
 	}{
 		{
 			name:         "remaining scim calls",
@@ -989,6 +997,22 @@ func TestProvider_checkWebhookSecretValidity(t *testing.T) {
 			remaining: 5,
 		},
 		{
+			name:       "skipping api rate limit is not enabled",
+			remaining:  0,
+			statusCode: http.StatusNotFound,
+		},
+		{
+			name:        "skipping because scim is not available",
+			remaining:   0,
+			wantNilSCIM: true,
+		},
+		{
+			name:        "resp is nil",
+			remaining:   0,
+			wantNilResp: true,
+			wantSubErr:  "error making request to the GitHub API checking rate limit",
+		},
+		{
 			name:       "no header but no remaining scim calls",
 			remaining:  0,
 			wantSubErr: "api rate limit exceeded. Access will be restored at Mon, 01 Jan 0001 00:00:00 UTC",
@@ -996,7 +1020,12 @@ func TestProvider_checkWebhookSecretValidity(t *testing.T) {
 		{
 			name:       "api error",
 			wantSubErr: "error making request to the GitHub API checking rate limit",
-			report500:  true,
+			statusCode: http.StatusInternalServerError,
+		},
+		{
+			name:           "not enabled",
+			apiNotEnabled:  true,
+			wantLogSnippet: "skipping checking",
 		},
 		{
 			name:           "not enabled",
@@ -1012,14 +1041,15 @@ func TestProvider_checkWebhookSecretValidity(t *testing.T) {
 
 			if !tt.apiNotEnabled {
 				mux.HandleFunc("/rate_limit", func(rw http.ResponseWriter, _ *http.Request) {
-					if tt.report500 {
-						rw.WriteHeader(http.StatusInternalServerError)
+					if tt.statusCode != 0 {
+						rw.WriteHeader(tt.statusCode)
 						return
 					}
-					s := &github.RateLimits{
-						SCIM: &github.Rate{
+					s := &github.RateLimits{}
+					if !tt.wantNilSCIM {
+						s.SCIM = &github.Rate{
 							Remaining: tt.remaining,
-						},
+						}
 					}
 					st := new(struct {
 						Resources *github.RateLimits `json:"resources"`
@@ -1034,6 +1064,16 @@ func TestProvider_checkWebhookSecretValidity(t *testing.T) {
 				})
 			}
 			defer teardown()
+
+			// create bad round tripper to make response nil and test that it handles that case.
+			if tt.wantNilResp {
+				errRT := roundTripperFunc(func(*http.Request) (*http.Response, error) {
+					return nil, fmt.Errorf("network down")
+				})
+				httpClient := &http.Client{Transport: errRT}
+				fakeclient = github.NewClient(httpClient)
+			}
+
 			v := &Provider{
 				ghClient: fakeclient,
 				Logger:   logger,
