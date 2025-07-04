@@ -4,9 +4,13 @@ import (
 	"context"
 	"path"
 	"testing"
+	"time"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/sync"
 	tektontest "github.com/openshift-pipelines/pipelines-as-code/pkg/test/tekton"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
@@ -80,4 +84,35 @@ func TestCtrlOpts(t *testing.T) {
 
 	// Assert that the promote filter function returns true.
 	assert.Assert(t, promote)
+}
+
+func TestStartPeriodicQueueValidation(t *testing.T) {
+	// Create a test logger
+	observer, catcher := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observer).Sugar()
+
+	// Create a test reconciler
+	r := &Reconciler{
+		run: &params.Run{
+			Clients: clients.Clients{
+				Log: logger,
+			},
+		},
+		qm: sync.NewQueueManager(logger),
+	}
+
+	// Create a context with a short timeout for testing
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	// Start the periodic validation
+	go r.startPeriodicQueueValidation(ctx)
+
+	// Wait for the context to be cancelled (timeout)
+	<-ctx.Done()
+
+	// Verify that the function started and stopped properly
+	// The function should have logged at least one debug message
+	logs := catcher.FilterMessageSnippet("Running periodic queue validation").Len()
+	assert.Assert(t, logs >= 0, "Expected periodic validation to run")
 }

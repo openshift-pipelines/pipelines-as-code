@@ -3,6 +3,7 @@ package reconciler
 import (
 	"context"
 	"path"
+	"time"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
@@ -44,9 +45,15 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 		go params.StartConfigSync(ctx, run)
 
 		pipelineRunInformer := tektonPipelineRunInformerv1.Get(ctx)
-		metrics, err := metrics.NewRecorder()
+		metricsRecorder, err := metrics.NewRecorder()
 		if err != nil {
 			log.Fatalf("Failed to create pipeline as code metrics recorder %v", err)
+		}
+
+		// Initialize queue metrics recorder
+		queueMetrics, err := metrics.NewQueueMetricsRecorder(run.Clients.Log)
+		if err != nil {
+			log.Fatalf("Failed to create queue metrics recorder %v", err)
 		}
 
 		r := &Reconciler{
@@ -55,7 +62,7 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 			pipelineRunLister: pipelineRunInformer.Lister(),
 			repoLister:        repository.Get(ctx).Lister(),
 			qm:                sync.NewQueueManager(run.Clients.Log),
-			metrics:           metrics,
+			metrics:           metricsRecorder,
 			eventEmitter:      events.NewEventEmitter(run.Clients.Kube, run.Clients.Log),
 		}
 		impl := tektonPipelineRunReconcilerv1.NewImpl(ctx, r, ctrlOpts())
@@ -63,6 +70,9 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 		if err := r.qm.InitQueues(ctx, run.Clients.Tekton, run.Clients.PipelineAsCode); err != nil {
 			log.Fatal("failed to init queues", err)
 		}
+
+		// Start periodic queue validation with metrics
+		go r.startPeriodicQueueValidationWithMetrics(ctx, queueMetrics)
 
 		if _, err := pipelineRunInformer.Informer().AddEventHandler(controller.HandleAll(checkStateAndEnqueue(impl))); err != nil {
 			logging.FromContext(ctx).Panicf("Couldn't register PipelineRun informer event handler: %w", err)
@@ -94,6 +104,159 @@ func ctrlOpts() func(impl *controller.Impl) controller.Options {
 				_, exist := obj.(*tektonv1.PipelineRun).GetAnnotations()[keys.State]
 				return exist
 			},
+		}
+	}
+}
+
+// startPeriodicQueueValidation starts a goroutine that periodically validates queue consistency
+// and optionally repairs issues. This helps detect and fix queue inconsistencies that can
+// occur due to controller restarts or partial failures.
+func (r *Reconciler) startPeriodicQueueValidation(ctx context.Context) {
+	ticker := time.NewTicker(1 * time.Minute) // Run every 5 minutes
+	defer ticker.Stop()
+
+	logger := r.run.Clients.Log
+
+	for {
+		select {
+		case <-ctx.Done():
+			logger.Info("Stopping periodic queue validation")
+			return
+		case <-ticker.C:
+			logger.Debug("Running periodic queue validation")
+
+			// Create a timeout context for the validation operation
+			validationCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+
+			// Validate queue consistency
+			results, err := r.qm.ValidateQueueConsistency(validationCtx, r.run.Clients.Tekton, r.run.Clients.PipelineAsCode)
+			cancel() // Always cancel the timeout context
+
+			if err != nil {
+				logger.Errorf("Failed to validate queue consistency: %v", err)
+				continue
+			}
+
+			// Log validation results
+			hasErrors := false
+			hasWarnings := false
+			for _, result := range results {
+				if !result.IsValid {
+					hasErrors = true
+					logger.Warnf("Queue validation failed for %s: %v", result.RepositoryKey, result.Errors)
+					if len(result.Warnings) > 0 {
+						logger.Warnf("Queue warnings for %s: %v", result.RepositoryKey, result.Warnings)
+						hasWarnings = true
+					}
+				} else if len(result.Warnings) > 0 {
+					logger.Infof("Queue warnings for %s: %v", result.RepositoryKey, result.Warnings)
+					hasWarnings = true
+				}
+			}
+
+			// Auto-repair if there are errors (can be made configurable)
+			switch {
+			case hasErrors:
+				logger.Info("Queue inconsistencies detected, attempting auto-repair")
+
+				// Create a timeout context for the repair operation
+				repairCtx, cancel := context.WithTimeout(ctx, 3*time.Minute)
+				defer cancel()
+
+				if err := r.qm.RepairQueue(repairCtx, r.run.Clients.Tekton, r.run.Clients.PipelineAsCode); err != nil {
+					logger.Errorf("Failed to repair queue: %v", err)
+				} else {
+					logger.Info("Queue auto-repair completed successfully")
+				}
+			case hasWarnings:
+				logger.Info("Queue validation completed with warnings but no errors")
+			default:
+				logger.Debug("Queue validation completed successfully with no issues")
+			}
+		}
+	}
+}
+
+// startPeriodicQueueValidationWithMetrics starts a goroutine that periodically validates queue consistency
+// and optionally repairs issues. This helps detect and fix queue inconsistencies that can
+// occur due to controller restarts or partial failures.
+func (r *Reconciler) startPeriodicQueueValidationWithMetrics(ctx context.Context, queueMetrics *metrics.QueueMetricsRecorder) {
+	ticker := time.NewTicker(5 * time.Minute) // Run every 5 minutes
+	defer ticker.Stop()
+
+	logger := r.run.Clients.Log
+
+	for {
+		select {
+		case <-ctx.Done():
+			logger.Info("Stopping periodic queue validation")
+			return
+		case <-ticker.C:
+			logger.Debug("Running periodic queue validation")
+
+			// Create a timeout context for the validation operation
+			validationCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+
+			// Validate queue consistency
+			results, err := r.qm.ValidateQueueConsistency(validationCtx, r.run.Clients.Tekton, r.run.Clients.PipelineAsCode)
+			cancel() // Always cancel the timeout context
+
+			if err != nil {
+				logger.Errorf("Failed to validate queue consistency: %v", err)
+				continue
+			}
+
+			// Log validation results
+			hasErrors := false
+			hasWarnings := false
+			for _, result := range results {
+				if !result.IsValid {
+					hasErrors = true
+					logger.Warnf("Queue validation failed for %s: %v", result.RepositoryKey, result.Errors)
+					if len(result.Warnings) > 0 {
+						logger.Warnf("Queue warnings for %s: %v", result.RepositoryKey, result.Warnings)
+						hasWarnings = true
+					}
+				} else if len(result.Warnings) > 0 {
+					logger.Infof("Queue warnings for %s: %v", result.RepositoryKey, result.Warnings)
+					hasWarnings = true
+				}
+			}
+
+			// Auto-repair if there are errors (can be made configurable)
+			switch {
+			case hasErrors:
+				logger.Info("Queue inconsistencies detected, attempting auto-repair")
+
+				// Create a timeout context for the repair operation
+				repairCtx, cancel := context.WithTimeout(ctx, 3*time.Minute)
+				defer cancel() // Ensure the context is always cancelled
+
+				if err := r.qm.RepairQueue(repairCtx, r.run.Clients.Tekton, r.run.Clients.PipelineAsCode); err != nil {
+					logger.Errorf("Failed to repair queue: %v", err)
+					// Record repair failure metrics
+					for _, result := range results {
+						if !result.IsValid {
+							queueMetrics.RecordQueueRepair(result.RepositoryKey, "failed")
+						}
+					}
+				} else {
+					logger.Info("Queue auto-repair completed successfully")
+					// Record repair success metrics
+					for _, result := range results {
+						if !result.IsValid {
+							queueMetrics.RecordQueueRepair(result.RepositoryKey, "success")
+						}
+					}
+				}
+			case hasWarnings:
+				logger.Info("Queue validation completed with warnings but no errors")
+			default:
+				logger.Debug("Queue validation completed successfully with no issues")
+			}
+
+			// Update queue metrics
+			queueMetrics.RecordQueueValidation(results)
 		}
 	}
 }

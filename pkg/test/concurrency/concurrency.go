@@ -5,6 +5,7 @@ import (
 
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	pacVersionedClient "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/sync"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	tektonVersionedClient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 )
@@ -47,4 +48,14 @@ func (t TestQMI) RemoveFromQueue(_, _ string) bool {
 func (TestQMI) RemoveAndTakeItemFromQueue(_ *pacv1alpha1.Repository, _ *tektonv1.PipelineRun) string {
 	// TODO implement me
 	panic("implement me")
+}
+
+func (TestQMI) ValidateQueueConsistency(_ context.Context, _ tektonVersionedClient.Interface, _ pacVersionedClient.Interface) ([]sync.QueueValidationResult, error) {
+	// Return empty results for testing
+	return []sync.QueueValidationResult{}, nil
+}
+
+func (TestQMI) RepairQueue(_ context.Context, _ tektonVersionedClient.Interface, _ pacVersionedClient.Interface) error {
+	// Return nil for testing
+	return nil
 }
