@@ -1,0 +1,9 @@
+---
+description: Architecture and Targets
+alwaysApply: false
+---
+# Architecture and Targets
+
+- The project targets both arm64 and amd64 architectures
+- Use `ko` for building container images in development
+- The project uses Tekton pipelines and integrates with multiple Git providers (GitHub, GitLab, Bitbucket, Gitea)

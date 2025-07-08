@@ -1,0 +1,14 @@
+---
+description: Testing and Quality Assurance
+alwaysApply: false
+---
+
+- if you need to run test, run the test with `make test`
+- if you need to run the linter, run the linter with `make lint`
+- every time you write go code, make sure to run `make fumpt` to reformat the code
+- every time you write markdown make sure to do a `make fix-markdownlint` to fix the markdown
+- if you need to add a dependency, use `go get -u dependency` and make sure to run `make vendor` afterwards or it would not work.
+- do not try to run the e2e tests in tests/ there is a bunch of pre-requisites
+that need to be set up. Ask the user to run the e2e tests manually and copy the
+output.
+- When writing unit tests, always use `gotest.tools/v3` and never use other libraries like testify
