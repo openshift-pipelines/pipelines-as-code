@@ -79,7 +79,6 @@ homebrew_casks:
     repository:
       owner: openshift-pipelines
       name: homebrew-pipelines-as-code
-    directory: Formula
     dependencies:
       - formula: tektoncd-cli
       - formula: git
