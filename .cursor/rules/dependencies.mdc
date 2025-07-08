@@ -1,0 +1,10 @@
+---
+description: Dependencies and Modules
+alwaysApply: false
+---
+# Dependencies and Modules
+
+- Always run `make vendor` after adding new dependencies
+- Check for and remove unnecessary `replace` clauses in go.mod
+- Update Go version to match the latest RHEL version when needed
+- Use `go mod tidy -go=1.20` (or appropriate version) to update Go version
