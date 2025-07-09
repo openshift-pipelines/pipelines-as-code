@@ -21,7 +21,7 @@ on:
       - synchronize
     paths:
       - "**.go"
-      - ".github/**"
+      - ".github/workflows/**"
       - "test/testdata/**"
 
 jobs:
