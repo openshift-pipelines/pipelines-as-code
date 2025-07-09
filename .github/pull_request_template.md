@@ -26,7 +26,7 @@ Fixes #
 - [ ] Integration tests
 - [ ] End-to-end tests
 - [ ] Manual testing
-- [ ] Note Applicable
+- [ ] Not Applicable
 
 ## ✅ Submitter Checklist
 

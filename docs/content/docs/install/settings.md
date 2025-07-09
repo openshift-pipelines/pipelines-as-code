@@ -145,12 +145,12 @@ There is a few things you can configure through the config map
   both a push event and a pull request. If a push event comes from a commit that is
   part of an open pull request, the push event will be skipped as it would create
   a duplicate pipeline run.
-  
+
   This feature works by checking if a pushed commit SHA exists in any open pull request,
   and if so, skipping the push event processing.
-  
+
   Default: `true`
-  
+
 {{< support_matrix github_app="true" github_webhook="true" gitea="false" gitlab="false" bitbucket_cloud="false" bitbucket_datacenter="false" >}}
 
 ### Global Cancel In Progress Settings
