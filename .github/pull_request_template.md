@@ -17,6 +17,7 @@ Fixes #
 - [ ] 📚 Documentation update (`docs:`)
 - [ ] ⚙️ Chore (`chore:`)
 - [ ] 💅 Refactor (`refactor:`)
+- [ ] 🔧 Enhancement (`enhance:`)
 
 <!-- (update the title of the Pull Request accordingly) -->
 
