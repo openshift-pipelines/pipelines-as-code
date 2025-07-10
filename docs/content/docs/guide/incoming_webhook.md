@@ -15,7 +15,7 @@ To use incoming webhooks in Pipelines-as-Code, you must configure the
 incoming field in your Repository CRD. This field references a `Secret`, which
 serves as the shared secret, as well as the branches targeted by the incoming
 webhook. Once configured, Pipelines-as-Code will match `PipelineRuns` located in
-your `.tekton` directory if the `on-event` annotation of the targeted pipelinerun is
+your `.tekton` directory if the `on-event` annotation of the targeted PipelineRun is
 targeting a push or incoming event.
 
 {{< hint info >}}

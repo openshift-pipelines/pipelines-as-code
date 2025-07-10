@@ -11,11 +11,11 @@ Pipelines-as-Code provides a powerful CLI designed to work as a plug-in to the [
 * `bootstrap`: quickly bootstrap a Pipelines-as-Code installation.
 * `create`: create a new Pipelines-as-Code Repository definition.
 * `delete`: delete an existing Pipelines-as-Code Repository definition.
-* `generate`: generate a simple pipelinerun to get you started with Pipelines-as-Code.
+* `generate`: generate a simple PipelineRun to get you started with Pipelines-as-Code.
 * `list`: list Pipelines-as-Code Repositories.
 * `logs`: show the logs of a PipelineRun from a Repository CRD.
 * `describe`: describe a Pipelines-as-Code Repository and the runs associated with it.
-* `resolve`: Resolve a pipelinerun as if it were executed by pipelines as code on service.
+* `resolve`: Resolve a PipelineRun as if it were executed by pipelines as code on service.
 * `webhook`: Updates webhook secret.
 * `info`: Show information (currently only about your installation with `info install`).
 
@@ -150,7 +150,7 @@ GitHub application and the secret with all the information needed in the
 ### Repository Creation
 
 `tkn pac create repo` -- Creates a new Pipelines-as-Code `Repository` custom resource definition,
-With a Git repository to execute pipelineruns based on Git events. It
+With a Git repository to execute PipelineRuns based on Git events. It
 will also generate a sample file with a [PipelineRun](/docs/guide/authoringprs)
 in the `.tekton` directory called `pipelinerun.yaml` targeting the `main` branch
 and the `pull_request` and `push` events. You can customize this by editing the
@@ -192,7 +192,7 @@ On modern terminals (ie: OSX Terminal, [iTerm2](https://iterm2.com/), [Windows
 Terminal](https://github.com/microsoft/terminal), GNOME-terminal, kitty, and so
 on...) the links become clickable with control+click or ⌘+click (see the
 documentation of your terminal for more details) and will open the browser
-to the console/dashboard URL to see the details of the Pipelinerun associated
+to the console/dashboard URL to see the details of the PipelineRun associated
 with it.
 
 {{< /details >}}
@@ -218,7 +218,7 @@ On modern terminals (ie: OSX Terminal, [iTerm2](https://iterm2.com/), [Windows
 Terminal](https://github.com/microsoft/terminal), GNOME-terminal, kitty, and so
 on...) the links become clickable with control+click or ⌘+click (see the
 documentation of your terminal for more details) and will open the browser
-to the console/dashboard URL to see the details of the Pipelinerun associated
+to the console/dashboard URL to see the details of the PipelineRun associated
 with it.
 
 {{< /details >}}
@@ -245,24 +245,24 @@ the logs.
 
 ### Generate
 
-`tkn pac generate`: will generate a simple pipelinerun to get you started with
+`tkn pac generate`: will generate a simple PipelineRun to get you started with
 Pipelines-as-Code. It will try to be as smart as possible by detecting the
 current Git information if you run the command from your source code.
 
 It has some basic language detection and adds extra tasks depending on the
 language. For example, if it detects a file named `setup.py` at the repository
 root it will add the [pylint task](https://hub.tekton.dev/tekton/task/pylint) to
-the generated pipelinerun.
+the generated PipelineRun.
 {{< /details >}}
 
 {{< details "tkn pac resolve" >}}
 
 ### Resolve
 
-`tkn-pac resolve`: will run a pipelinerun as if it were executed by pipelines
+`tkn-pac resolve`: will run a PipelineRun as if it were executed by pipelines
 as code on service.
 
-For example, if you have a pipelinerun in the `.tekton/pull-request.yaml` file
+For example, if you have a PipelineRun in the `.tekton/pull-request.yaml` file
 you can run the command `tkn-pac resolve` to see it running:
 
 ```yaml
