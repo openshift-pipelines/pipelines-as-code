@@ -35,10 +35,14 @@ func (s *prioritySemaphore) getName() string {
 }
 
 func (s *prioritySemaphore) getLimit() int {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	return s.limit
 }
 
 func (s *prioritySemaphore) getCurrentPending() []string {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	keys := []string{}
 	for _, item := range s.pending.items {
 		keys = append(keys, item.key)
@@ -47,6 +51,8 @@ func (s *prioritySemaphore) getCurrentPending() []string {
 }
 
 func (s *prioritySemaphore) getCurrentRunning() []string {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	keys := []string{}
 	for k := range s.running {
 		keys = append(keys, k)
@@ -158,16 +164,21 @@ func (s *prioritySemaphore) tryAcquire(key string) (bool, string) {
 	// If it is in front position, it will allow to acquire lock.
 	// If it is not a front key, it needs to wait for its turn.
 	var nextKey string
+	shouldPopFromQueue := false
 	if s.pending.Len() > 0 {
 		item := s.pending.peek()
 		nextKey = fmt.Sprintf("%v", item.key)
 		if key != nextKey {
 			return false, waitingMsg
 		}
+		shouldPopFromQueue = true
 	}
 
-	if s.acquire(nextKey) {
-		s.pending.pop()
+	if s.semaphore.TryAcquire(1) {
+		s.running[key] = true
+		if shouldPopFromQueue {
+			s.pending.pop()
+		}
 		return true, ""
 	}
 
@@ -175,6 +186,9 @@ func (s *prioritySemaphore) tryAcquire(key string) (bool, string) {
 }
 
 func (s *prioritySemaphore) acquire(key string) bool {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	if s.semaphore.TryAcquire(1) {
 		s.running[key] = true
 		return true
