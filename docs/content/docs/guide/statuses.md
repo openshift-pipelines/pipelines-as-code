@@ -121,17 +121,17 @@ well as their metadata.
 
 Notifications are not managed by Pipelines-as-Code.
 
-To add notifications to your pipeline runs, you can use the [finally feature of
+To add notifications to your PipelineRuns, you can use the [finally feature of
 Tekton
 Pipelines](https://github.com/tektoncd/pipeline/blob/main/docs/pipelines.md#adding-finally-to-the-pipeline).
 This allows you to execute a set of tasks at the end of a
-pipeline run, regardless of whether it succeeds or fails.
+PipelineRun, regardless of whether it succeeds or fails.
 
 As an example, you can [refer](https://github.com/openshift-pipelines/pipelines-as-code/blob/16596b478f4bce202f9f69de9a4b5a7ca92962c1/.tekton/generate-coverage-release.yaml#L127) to the coverage generation PipelineRun in the
 `.tekton` directory of the Pipelines-as-Code repository, it uses the [finally
 task with the guard
 feature](https://tekton.dev/docs/pipelines/pipelines/#guard-finally-task-execution-using-when-expressions)
-to send a notification to Slack if there is any failure in the pipelinerun. See
+to send a notification to Slack if there is any failure in the PipelineRun. See
 it in action here:
 
 <https://github.com/openshift-pipelines/pipelines-as-code/blob/16596b478f4bce202f9f69de9a4b5a7ca92962c1/.tekton/generate-coverage-release.yaml#L126>
