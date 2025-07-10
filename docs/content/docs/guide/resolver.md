@@ -43,7 +43,7 @@ The resolver will skip resolving if it sees these type of tasks:
 It just uses them "as is" and will not try to do anything with it.
 
 If Pipelines-as-Code cannot resolve the referenced tasks in the `Pipeline` or
-`PipelineSpec`, the run will fail before applying the pipelinerun onto the
+`PipelineSpec`, the run will fail before applying the PipelineRun onto the
 cluster.
 
 You should be able to see the issue on your Git provider platform interface and

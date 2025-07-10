@@ -11,7 +11,7 @@ There is a few things you can configure through the config map
 * `application-name`
 
   The name of the application for example when showing the results of the
-  pipelinerun. If you're using the GitHub App you will
+  PipelineRun. If you're using the GitHub App you will
   need to customize the label on the github app setting as well. .  Default to
   `Pipelines-as-Code CI`
 
@@ -60,7 +60,7 @@ There is a few things you can configure through the config map
 
 * `remote-tasks`
 
-  This allows fetching remote tasks on pipelinerun annotations. This feature is
+  This allows fetching remote tasks on PipelineRun annotations. This feature is
   enabled by default.
 
 * `bitbucket-cloud-check-source-ip`
@@ -85,14 +85,14 @@ There is a few things you can configure through the config map
 * `max-keep-run-upper-limit`
 
   This let the user define a max limit for the max-keep-run value. When the user
-  has defined a max-keep-run annotation on a pipelineRun then its value should
+  has defined a max-keep-run annotation on a PipelineRun then its value should
   be less than or equal to the upper limit, otherwise upper limit will be used
   for cleanup.
 
 * `default-max-keep-runs`
 
   This let the user define a default limit for the `max-keep-run` value.
-  When defined it will applied to all the pipelineRun without a `max-keep-runs`
+  When defined it will applied to all the PipelineRun without a `max-keep-runs`
   annotation.
 
 * `auto-configure-new-github-repo`
@@ -141,11 +141,11 @@ There is a few things you can configure through the config map
 
 * `skip-push-event-for-pr-commits`
 
-  When enabled, this option prevents duplicate pipeline runs when a commit appears in
+  When enabled, this option prevents duplicate PipelineRuns when a commit appears in
   both a push event and a pull request. If a push event comes from a commit that is
   part of an open pull request, the push event will be skipped as it would create
-  a duplicate pipeline run.
-
+  a duplicate PipelineRun.
+  
   This feature works by checking if a pushed commit SHA exists in any open pull request,
   and if so, skipping the push event processing.
 
@@ -225,7 +225,7 @@ A few settings are available to configure this feature:
   Enable or disable the feature to show a log snippet of the failed task when
   there is an error in a PipelineRun.
 
-  Due of the constraint of the different GIT provider API, It will show the last
+  Due to the constraints of the different GIT provider APIs, it will show the last
   3 lines of the first container from the first task that has exited with an
   error in the PipelineRun.
 
@@ -300,11 +300,11 @@ A few settings are available to configure this feature:
 
   Set this to the URL where to view the details of the `Namespace`.
 
-  The URL supports all the standard variables as exposed on the Pipelinerun (refer to
+  The URL supports all the standard variables as exposed on the PipelineRun (refer to
   the documentation on [Authoring PipelineRuns](../authoringprs)) with the added
   variable:
 
-  * `{{ namespace }}`: The target namespace where the pipelinerun is executed
+  * `{{ namespace }}`: The target namespace where the PipelineRun is executed
 
   example: `https://mycorp.com/ns/{{ namespace }}`
 
@@ -312,13 +312,13 @@ A few settings are available to configure this feature:
 
   Set this to the URL where to view the details of the `PipelineRun`. This is
   shown when the PipelineRun is started so the user can follow execution on your
-  console or when to see more details about the pipelinerun on result.
+  console or when to see more details about the PipelineRun on result.
 
-  The URL supports all the standard variables as exposed on the Pipelinerun (refer to
+  The URL supports all the standard variables as exposed on the PipelineRun (refer to
   the documentation on [Authoring PipelineRuns](../authoringprs)) with the added
   variable:
 
-  * `{{ namespace }}`: The target namespace where the pipelinerun is executed
+  * `{{ namespace }}`: The target namespace where the PipelineRun is executed
   * `{{ pr }}`: The PipelineRun name.
 
   example: `https://mycorp.com/ns/{{ namespace }}/pipelinerun/{{ pr }}`
@@ -340,7 +340,7 @@ A few settings are available to configure this feature:
 
   the `{{ custom }}` tag in the URL is expanded as `value`.
 
-  This let operator to add specific information like a `UUID` about a user as
+  This lets operators add specific information such as a `UUID` about a user as
   parameter in their repo CR and let it link to the console.
 
 * `custom-console-url-pr-tasklog`
@@ -352,7 +352,7 @@ A few settings are available to configure this feature:
   described in the `custom-console-url-pr-details` setting and as well those added
   values:
 
-  * `{{ namespace }}`: The target namespace where the pipelinerun is executed
+  * `{{ namespace }}`: The target namespace where the PipelineRun is executed
   * `{{ pr }}`: The PipelineRun name.
   * `{{ task }}`: The Task name in the PR
   * `{{ pod }}`: The Pod name of the TaskRun

@@ -41,12 +41,12 @@ Please be aware that GitOps commands such as `/test` and others will not functio
 
 If you want to trigger a GitOps command on a pushed commit, you can include the `GitOps` comments within your commit messages. These comments can be used to restart either all pipelines or specific ones. Here's how it works:
 
-For restarting all pipeline runs:
+For restarting all PipelineRuns:
 
 1. Use `/retest` or `/test` within your commit message.
 
-For restarting a specific pipeline run:
-2. Use `/retest <pipelinerun-name>` or `/test <pipelinerun-name>` within your commit message. Replace `<pipelinerun-name>` with the specific name of the pipeline run you want to restart.
+For restarting a specific PipelineRun:
+2. Use `/retest <pipelinerun-name>` or `/test <pipelinerun-name>` within your commit message. Replace `<pipelinerun-name>` with the specific name of the PipelineRun you want to restart.
 
 The GitOps command triggers a PipelineRun only on the latest commit (HEAD) of the branch and does not work on older commits.
 
