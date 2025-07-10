@@ -3,6 +3,8 @@ package resolve
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"path"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
@@ -17,6 +19,38 @@ func alreadyFetchedResource[T NamedItem](resources map[string]T, resourceName st
 		return true
 	}
 	return false
+}
+
+// Tries to assemble task FQDNs based on the base URL
+// of a remote pipeline.
+//
+// If there isn't a remote pipeline reference for the current
+// run, tasks are returned as they are. Any task with an already
+// valid URL is skipped.
+func assembleTaskFQDNs(pipelineURL string, tasks []string) ([]string, error) {
+	if pipelineURL == "" {
+		return tasks, nil // no pipeline URL, return tasks as is
+	}
+
+	pURL, err := url.Parse(pipelineURL)
+	if err != nil {
+		return tasks, err
+	}
+	// pop the pipeline file path from the URL
+	pURL.Path = path.Dir(pURL.Path)
+
+	taskURLS := make([]string, len(tasks))
+	for i, t := range tasks {
+		tURL, err := url.Parse(t)
+		if err == nil && tURL.Scheme != "" && tURL.Host != "" {
+			taskURLS[i] = t
+			continue // it's already an absolute URL
+		}
+		tURL = pURL
+		tURL = tURL.JoinPath(t)
+		taskURLS[i] = tURL.String()
+	}
+	return taskURLS, nil
 }
 
 // resolveRemoteResources will get remote tasks or Pipelines from annotations.
@@ -41,7 +75,8 @@ func resolveRemoteResources(ctx context.Context, rt *matcher.RemoteTasks, types 
 	for _, pipelinerun := range types.PipelineRuns {
 		// contain Resources specific to run
 		fetchedResourcesForPipelineRun := FetchedResourcesForRun{
-			Tasks: map[string]*tektonv1.Task{},
+			Tasks:       map[string]*tektonv1.Task{},
+			PipelineURL: "",
 		}
 		var pipeline *tektonv1.Pipeline
 		var err error
@@ -76,6 +111,8 @@ func resolveRemoteResources(ctx context.Context, rt *matcher.RemoteTasks, types 
 					}
 					// add the pipeline to the Resources fetched for the Event
 					fetchedResourcesForEvent.Pipelines[remotePipeline] = pipeline
+					// add the pipeline URL to the run specific Resources
+					fetchedResourcesForPipelineRun.PipelineURL = remotePipeline
 				}
 			}
 		}
@@ -97,6 +134,11 @@ func resolveRemoteResources(ctx context.Context, rt *matcher.RemoteTasks, types 
 				pipelineTasks, err = matcher.GrabTasksFromAnnotations(pipeline.GetObjectMeta().GetAnnotations())
 				if err != nil {
 					return []*tektonv1.PipelineRun{}, fmt.Errorf("error getting remote task from pipeline annotations: %w", err)
+				}
+				// check for relative task references and assemble FQDNs
+				pipelineTasks, err = assembleTaskFQDNs(fetchedResourcesForPipelineRun.PipelineURL, pipelineTasks)
+				if err != nil {
+					return []*tektonv1.PipelineRun{}, err
 				}
 			}
 		}
