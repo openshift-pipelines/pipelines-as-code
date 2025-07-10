@@ -174,7 +174,7 @@ while the rest will be queued.
 Pipelines-as-Code now accommodates [Kueue](https://kueue.sigs.k8s.io/) as an alternative, Kubernetes-native solution for queuing PipelineRun.
 To get started, you can deploy the experimental integration provided by the [konflux-ci/tekton-kueue](https://github.com/konflux-ci/tekton-kueue) project. This allows you to schedule PipelineRuns through Kueue's queuing mechanism.
 
-Note: The [konflux-ci/tekton-kueue](https://github.com/konflux-ci/tekton-kueue) project and the Pipelines-as-Code integration is only intended for testing
+Note: The [konflux-ci/tekton-kueue](https://github.com/konflux-ci/tekton-kueue) project and the Pipelines-as-Code integration is only intended for testing.
 It is only meant for experimentation and should not be used in production environments.
 
 ## Scoping GitHub token to a list of private and public repositories within and outside namespaces
