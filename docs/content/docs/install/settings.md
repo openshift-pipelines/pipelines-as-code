@@ -254,12 +254,21 @@ A few settings are available to configure this feature:
   Enable or disable the feature to show a log snippet of the failed task when
   there is an error in a PipelineRun.
 
-  Due to the constraints of the different GIT provider APIs, it will show the last
-  3 lines of the first container from the first task that has exited with an
-  error in the PipelineRun.
+  Due to the constraints of the different GIT provider APIs, it will show a
+  configurable number of lines of the first container from the first task that
+  has exited with an error in the PipelineRun. The number of lines is controlled
+  by the `error-log-snippet-number-of-lines` setting (see below).
 
-  If it find any strings matching the values of secrets attached to the
+  If it finds any strings matching the values of secrets attached to the
   PipelineRun it will replace it with the placeholder `******`
+
+* `error-log-snippet-number-of-lines`
+
+  default: `3`
+
+  How many lines to show in the error log snippets when `error-log-snippet` is set to `"true"`.
+  When using GitHub APP the GitHub Check interface [has a limit of 65535 characters](https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#create-a-check-run),
+  so you may want to be conservative with this setting.
 
 * `error-detection-from-container-logs`
 

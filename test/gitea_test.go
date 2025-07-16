@@ -17,6 +17,7 @@ import (
 	"github.com/tektoncd/pipeline/pkg/names"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/env"
+	"gotest.tools/v3/golden"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 
@@ -34,6 +35,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	tknpactest "github.com/openshift-pipelines/pipelines-as-code/test/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
@@ -41,6 +43,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/secret"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
+	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
 // successRegexp will match a success text paac comment,sometime it includes html tags so we need to consider that.
@@ -892,6 +895,50 @@ func TestGiteaErrorSnippet(t *testing.T) {
 
 	topts.Regexp = regexp.MustCompile(`Hey man i just wanna to say i am not such a failure, i am useful in my failure`)
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
+}
+
+func TestGiteaErrorSnippetCustomLines(t *testing.T) {
+	ctx, _ := rtesting.SetupFakeContext(t)
+	topts := &tgitea.TestOpts{
+		TargetEvent: triggertype.PullRequest.String(),
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml": "testdata/pipelinerun-error-snippet.yaml",
+		},
+		CheckForStatus:   "failure",
+		ExpectEvents:     false,
+		SkipEventsCheck:  true,
+		StatusOnlyLatest: true,
+	}
+	topts.TargetRefName = names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
+	topts.TargetNS = topts.TargetRefName
+	topts.ParamsRun, topts.Opts, topts.GiteaCNX, _ = tgitea.Setup(ctx)
+	assert.NilError(t, topts.ParamsRun.Clients.NewClients(ctx, &topts.ParamsRun.Info))
+	ctx, err := cctx.GetControllerCtxInfo(ctx, topts.ParamsRun)
+	assert.NilError(t, err)
+	assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, topts.ParamsRun))
+	cfgMapData := map[string]string{
+		"error-log-snippet-number-of-lines": "5",
+	}
+	defer configmap.ChangeGlobalConfig(ctx, t, topts.ParamsRun, cfgMapData)()
+
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+
+	topts.Regexp = regexp.MustCompile(`Hey man i just wanna to say i am not such a failure, i am useful in my failure`)
+	tgitea.WaitForPullRequestCommentMatch(t, topts)
+
+	comments, _, err := topts.GiteaCNX.Client().ListRepoIssueComments(topts.PullRequest.Base.Repository.Owner.UserName, topts.PullRequest.Base.Repository.Name, gitea.ListIssueCommentOptions{})
+	assert.NilError(t, err)
+	assert.Assert(t, len(comments) > 0)
+	lastComment := comments[len(comments)-1]
+	body := lastComment.Body
+
+	// Keep only the content from `<h4>Failure snippet:</h4>` onwards, if present; otherwise, we cannot perform a comparison due to the random e2e test name.
+	const marker = "<h4>Failure snippet:</h4>"
+	if idx := strings.Index(body, marker); idx != -1 {
+		body = body[idx:]
+	}
+	golden.Assert(t, body, strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"))
 }
 
 func TestGiteaOnPullRequestLabels(t *testing.T) {
