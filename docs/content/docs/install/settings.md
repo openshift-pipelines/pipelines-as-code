@@ -261,6 +261,15 @@ A few settings are available to configure this feature:
   If it find any strings matching the values of secrets attached to the
   PipelineRun it will replace it with the placeholder `******`
 
+* `error-log-snippet-number-of-lines`
+
+  default: `3`
+
+  How many lines to show in the error log snippets. When using GitHub APP the
+  GitHub Check interface [has a limit of 65535
+  characters](https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#create-a-check-run),
+  so you may want to be conservative with this setting.
+
 * `error-detection-from-container-logs`
 
   Enable or disable the inspection of the container logs to detect error message
