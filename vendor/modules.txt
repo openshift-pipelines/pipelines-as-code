@@ -68,6 +68,9 @@ github.com/cert-manager/cert-manager/pkg/apis/meta/v1
 # github.com/cespare/xxhash/v2 v2.3.0
 ## explicit; go 1.11
 github.com/cespare/xxhash/v2
+# github.com/chzyer/readline v1.5.1
+## explicit; go 1.15
+github.com/chzyer/readline
 # github.com/cloudevents/sdk-go/observability/opencensus/v2 v2.15.2
 ## explicit; go 1.18
 github.com/cloudevents/sdk-go/observability/opencensus/v2/client
