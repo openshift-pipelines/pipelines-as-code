@@ -137,7 +137,7 @@ spec:
                 # Check pull request title for conventional commit format
                 pull_request_title="{{ body.pull_request.title }}"
                 pr_title_failed=false
-                if [[ -n "$pull_request_title" ]] && [[ "$pull_request_title" != *MIRRORED* ]] && ! echo "$pull_request_title" | grep -E -q "${conv_regexp}"; then
+                if [[ -n "$pull_request_title" ]] && [[ "$pull_request_title" != *MIRRORED* ]] && ! echo "$pull_request_title" | grep -i -E -q "${conv_regexp}"; then
                   echo "ERROR: Pull request title does not follow conventional commit format:"
                   echo "  Title: $pull_request_title"
                   pr_title_failed=true
