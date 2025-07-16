@@ -33,7 +33,7 @@ spec:
                 resolver: http
                 params:
                   - name: url
-                    value: https://raw.githubusercontent.com/tektoncd/catalog/main/stepaction/git-clone/0.1/git-clone.yaml
+                    value: https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/refs/heads/main/.tekton/stepactions/git-clone.yaml
               params:
                 - name: output-path
                   value: $(workspaces.source.path)
