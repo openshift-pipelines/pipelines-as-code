@@ -262,8 +262,7 @@ Here are the possible event types:
 * `cancel-comment`: The event is a `/cancel <PipelineRun>` that would cancel a specific PipelineRun.
 * `ok-to-test-comment`: The event is a `/ok-to-test` that would allow running the CI for an unauthorized user.
 
-When a repository owner issues the `/ok-to-test` command on a pull request raised by an unauthorized user, and no PipelineRun exists in the .tekton directory for `pull_request` event,
-Pipelines-as-Code will create a neutral check-run status. This status serves to indicate that no PipelineRun has been matched, preventing any workflows from being blocked such as auto-merge, will proceed as expected.
+If a repository owner comments `/ok-to-test` on a pull request from an external contributor but no PipelineRun **matches** the `pull_request` event (or the repository has no `.tekton` directory), Pipelines-as-Code sets a **neutral** commit status. This indicates that no PipelineRun was matched, allowing other workflows—such as auto-merge—to proceed without being blocked.
 
 {{< hint info >}}
 
