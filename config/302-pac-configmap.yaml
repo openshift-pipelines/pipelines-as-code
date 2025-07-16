@@ -82,11 +82,17 @@ data:
   # Enable or disable the feature to show a log snippet of the failed task when there is
   # an error in a Pipeline
   #
-  # It will show the last 3 lines of the first container of the first task
-  # that has error in the pipeline.
+  # It will show a configurable number of lines of the first container of the first task
+  # that has error in the pipeline. The number of lines is controlled by the
+  # error-log-snippet-number-of-lines setting.
   #
   # you may want to disable this if you think your pipeline may leak some value
   error-log-snippet: "true"
+
+  # Number of lines to display in error log snippets.
+  # The GitHub Check interface (via the GitHub App) has a 65,535 character limit,
+  # so consider using a conservative value for this setting.
+  error-log-snippet-number-of-lines: "3"
 
   # Enable or disable the inspection of container logs to detect error message
   # and expose them as annotations on Pull Request. Only Github apps is supported
