@@ -40,7 +40,7 @@ depending on your requirements.
 ## Using the generated token in your PipelineRun
 
 The git-clone task documentation, which is available at
-<https://github.com/tektoncd/catalog/blob/main/task/git-clone/0.4/README.md>,
+<https://github.com/tektoncd-catalog/git-clone/tree/main/task/git-clone>,
 states that the secret needs to be referred to as a workspace named
 "basic-auth" inside your PipelineRun so that it can be passed to
 the `git-clone` task.

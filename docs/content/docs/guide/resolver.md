@@ -84,7 +84,7 @@ pipelinesascode.tekton.dev/task: "git-clone"
 ```
 
 The syntax above installs the
-[git-clone](https://github.com/tektoncd/catalog/tree/main/task/git-clone) task
+[git-clone](https://github.com/tektoncd-catalog/git-clone/tree/main/task/git-clone) task
 from the [tekton hub](https://hub.tekton.dev) repository querying for the latest
 version with the tekton hub API.
 

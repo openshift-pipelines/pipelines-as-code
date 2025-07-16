@@ -22,8 +22,8 @@ weight: 3
 - Inside your pipeline, you need to be able to check out the commit as
   received from the webhook by checking out the repository from that ref. Most of the time
   you want to reuse the
-  [git-clone](https://github.com/tektoncd/catalog/blob/main/task/git-clone/)
-  task from the [tektoncd/catalog](https://github.com/tektoncd/catalog).
+  [git-clone](https://github.com/tektoncd-catalog/git-clone/tree/main/task/git-clone)
+  task from the [tektoncd/catalog](https://github.com/tektoncd-catalog/git-clone/tree/main/task/git-clone).
 
 - To be able to specify parameters of your commit and URL, Pipelines-as-Code
   gives you some “dynamic” variables that are defined according to the execution
