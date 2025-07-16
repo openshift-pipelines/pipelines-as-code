@@ -234,6 +234,19 @@ func TestGetPipelineRunsFromRepo(t *testing.T) {
 			expectedNumberOfPruns: 0,
 			event:                 okToTestEvent,
 		},
+		{
+			name: "no .tekton dir in repository",
+			repositories: &v1alpha1.Repository{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testrepo",
+					Namespace: "test",
+				},
+				Spec: v1alpha1.RepositorySpec{},
+			},
+			tektondir:             "testdata/no_tekton_dir",
+			expectedNumberOfPruns: 0,
+			event:                 okToTestEvent,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
