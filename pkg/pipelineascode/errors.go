@@ -13,11 +13,14 @@ import (
 	"go.uber.org/zap"
 )
 
-const validationErrorTemplate = `> [!CAUTION]
+const (
+	validationErrorTemplate = `> [!CAUTION]
 > There are some errors in your PipelineRun template.
 
 | PipelineRun | Error |
 |------|-------|`
+	tektonDirMissingError = ".tekton/ directory doesn't exist in repository's root directory"
+)
 
 var regexpIgnoreErrors = regexp.MustCompile(`.*no kind.*is registered for version.*in scheme.*`)
 
