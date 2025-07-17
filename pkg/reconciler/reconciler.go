@@ -137,7 +137,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 
 	// Add branch information if available
 	if targetBranch := pr.GetAnnotations()[keys.Branch]; targetBranch != "" {
-		logFields = append(logFields, "branch", targetBranch)
+		logFields = append(logFields, "target-branch", targetBranch)
 		if sourceBranch := pr.GetAnnotations()[keys.SourceBranch]; sourceBranch != "" && sourceBranch != targetBranch {
 			logFields = append(logFields, "source-branch", sourceBranch)
 		}

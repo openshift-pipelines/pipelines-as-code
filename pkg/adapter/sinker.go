@@ -42,7 +42,7 @@ func (s *sinker) processEventPayload(ctx context.Context, request *http.Request)
 
 	// Add branch information if available
 	if s.event.BaseBranch != "" {
-		logFields = append(logFields, "branch", s.event.BaseBranch)
+		logFields = append(logFields, "target-branch", s.event.BaseBranch)
 	}
 	// For PRs, also include source branch if different
 	if s.event.HeadBranch != "" && s.event.HeadBranch != s.event.BaseBranch {
