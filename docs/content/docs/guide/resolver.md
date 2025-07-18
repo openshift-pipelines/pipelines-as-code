@@ -201,6 +201,70 @@ out and not process the pipeline.
 
 If the object fetched cannot be parsed as a Tekton `Task` it will error out.
 
+### Relative Tasks
+
+`Pipeline-as-Code` also supports fetching relative
+to a remote pipeline tasks (see Section [Remote Pipeline Annotations](#remote-pipeline-annotations)).
+
+Consider the following scenario:
+
+* Repository A (where the event is originating from) contains:
+
+```yaml
+# .tekton/pipelinerun.yaml
+
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: hello-world
+  annotations:
+    pipelinesascode.tekton.dev/on-target-branch: "[main]"
+    pipelinesascode.tekton.dev/on-event: "[push]"
+    pipelinesascode.tekton.dev/pipeline: "https://github.com/user/repositoryb/blob/main/pipeline.yaml"
+spec:
+  pipelineRef:
+    name: hello-world
+```
+
+* Repository B contains:
+
+```yaml
+# pipeline.yaml
+
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: hello-world
+  annotations:
+    pipelinesascode.tekton.dev/task: "./task.yaml"
+spec:
+  tasks:
+    - name: say-hello
+      taskRef:
+        name: hello
+```
+
+```yaml
+# task.yaml
+
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: hello
+spec:
+  steps:
+    - name: echo
+      image: alpine
+      script: |
+        #!/bin/sh
+        echo "Hello, World!"
+```
+
+The Resolver will fetch the remote pipeline and then attempt to retrieve each task.
+The task paths are relative to the path where the remote pipeline, referencing them
+resides (if the pipeline is at `/foo/bar/pipeline.yaml`, and the specified task path is `../task.yaml`, the
+assembled target URL for fetching the task is `/foo/task.yaml`).
+
 ## Remote Pipeline annotations
 
 Remote Pipeline can be referenced by annotation, allowing you to share a Pipeline across multiple repositories.
