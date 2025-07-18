@@ -6,17 +6,19 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/gobwas/glob"
-	"github.com/google/cel-go/common/types"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	pacerrors "github.com/openshift-pipelines/pipelines-as-code/pkg/errors"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+
+	"github.com/gobwas/glob"
+	"github.com/google/cel-go/common/types"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 )
@@ -205,6 +207,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 	}
 	logger.Info(infomsg)
 
+	celValidationErrors := []*pacerrors.PacYamlValidations{}
 	for _, prun := range pruns {
 		prMatch := Match{
 			PipelineRun: prun,
@@ -277,6 +280,12 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 			out, err := celEvaluate(ctx, celExpr, event, vcx)
 			if err != nil {
 				logger.Errorf("there was an error evaluating the CEL expression, skipping: %v", err)
+				if checkIfCELEvaluateError(err) {
+					celValidationErrors = append(celValidationErrors, &pacerrors.PacYamlValidations{
+						Name: prName,
+						Err:  fmt.Errorf("CEL expression evaluation error: %s", sanitizeErrorAsMarkdown(err)),
+					})
+				}
 				continue
 			}
 			if out != types.True {
@@ -350,6 +359,10 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 
 		logger.Infof("matched pipelinerun with name: %s, annotation Config: %q", prName, prMatch.Config)
 		matchedPRs = append(matchedPRs, prMatch)
+	}
+
+	if len(celValidationErrors) > 0 {
+		reportCELValidationErrors(ctx, repo, celValidationErrors, eventEmitter, vcx, event)
 	}
 
 	if len(matchedPRs) > 0 {
