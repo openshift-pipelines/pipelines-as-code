@@ -11,6 +11,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	pacerrors "github.com/openshift-pipelines/pipelines-as-code/pkg/errors"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -205,6 +206,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 	}
 	logger.Info(infomsg)
 
+	celValidationErrors := []*pacerrors.PacYamlValidations{}
 	for _, prun := range pruns {
 		prMatch := Match{
 			PipelineRun: prun,
@@ -277,6 +279,12 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 			out, err := celEvaluate(ctx, celExpr, event, vcx)
 			if err != nil {
 				logger.Errorf("there was an error evaluating the CEL expression, skipping: %v", err)
+				if checkIfCELEvaluateError(err) {
+					celValidationErrors = append(celValidationErrors, &pacerrors.PacYamlValidations{
+						Name: prName,
+						Err:  fmt.Errorf("CEL expression evaluation error: %s", sanitizeError(err)),
+					})
+				}
 				continue
 			}
 			if out != types.True {
@@ -350,6 +358,10 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 
 		logger.Infof("matched pipelinerun with name: %s, annotation Config: %q", prName, prMatch.Config)
 		matchedPRs = append(matchedPRs, prMatch)
+	}
+
+	if len(celValidationErrors) > 0 {
+		reportCELValidationErrors(ctx, repo, celValidationErrors, eventEmitter, vcx, event)
 	}
 
 	if len(matchedPRs) > 0 {
@@ -426,4 +438,52 @@ func MatchRunningPipelineRunForIncomingWebhook(eventType, incomingPipelineRun st
 		}
 	}
 	return nil
+}
+
+// checkCELEvaluateError checks if error is from CEL evaluation stages.
+func checkIfCELEvaluateError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	errMsg := err.Error()
+
+	patterns := []string{
+		`failed to parse expression`,
+		`check failed`,
+		`failed to create a Program`,
+		`failed to evaluate`,
+	}
+
+	for _, pattern := range patterns {
+		if matched, _ := regexp.MatchString(pattern, errMsg); matched {
+			return true
+		}
+	}
+
+	return false
+}
+
+func reportCELValidationErrors(ctx context.Context, repo *apipac.Repository, validationErrors []*pacerrors.PacYamlValidations, eventEmitter *events.EventEmitter, vcx provider.Interface, event *info.Event) {
+	errorRows := make([]string, 0, len(validationErrors))
+	for _, err := range validationErrors {
+		errorRows = append(errorRows, fmt.Sprintf("| %s | `%s` |", err.Name, err.Err.Error()))
+	}
+	if len(errorRows) == 0 {
+		return
+	}
+	markdownErrMessage := fmt.Sprintf(`%s
+%s`, provider.ValidationErrorTemplate, strings.Join(errorRows, "\n"))
+	if err := vcx.CreateComment(ctx, event, markdownErrMessage, provider.ValidationErrorTemplate); err != nil {
+		eventEmitter.EmitMessage(repo, zap.ErrorLevel, "PipelineRunCommentCreationError",
+			fmt.Sprintf("failed to create comment: %s", err.Error()))
+	}
+}
+
+func sanitizeError(err error) string {
+	errStr := err.Error()
+	errStr = strings.ReplaceAll(errStr, "|", "\\|")
+	errStr = strings.ReplaceAll(errStr, "\n", " ")
+	errStr = strings.ReplaceAll(errStr, "\r", " ")
+	return errStr
 }

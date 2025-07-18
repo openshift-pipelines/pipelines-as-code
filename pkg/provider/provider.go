@@ -11,6 +11,12 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+const ValidationErrorTemplate = `> [!CAUTION]
+> There are some errors in your PipelineRun template.
+
+| PipelineRun | Error |
+|------|-------|`
+
 var (
 	testRetestAllRegex    = regexp.MustCompile(`(?m)^(/retest|/test)\s*$`)
 	testRetestSingleRegex = regexp.MustCompile(`(?m)^(/test|/retest)[ \t]+\S+`)
