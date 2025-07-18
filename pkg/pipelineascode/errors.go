@@ -13,12 +13,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const validationErrorTemplate = `> [!CAUTION]
-> There are some errors in your PipelineRun template.
-
-| PipelineRun | Error |
-|------|-------|`
-
 var regexpIgnoreErrors = regexp.MustCompile(`.*no kind.*is registered for version.*in scheme.*`)
 
 func (p *PacRun) checkAccessOrErrror(ctx context.Context, repo *v1alpha1.Repository, status provider.StatusOpts, viamsg string) (bool, error) {
@@ -61,8 +55,8 @@ func (p *PacRun) reportValidationErrors(ctx context.Context, repo *v1alpha1.Repo
 		return
 	}
 	markdownErrMessage := fmt.Sprintf(`%s
-%s`, validationErrorTemplate, strings.Join(errorRows, "\n"))
-	if err := p.vcx.CreateComment(ctx, p.event, markdownErrMessage, validationErrorTemplate); err != nil {
+%s`, provider.ValidationErrorTemplate, strings.Join(errorRows, "\n"))
+	if err := p.vcx.CreateComment(ctx, p.event, markdownErrMessage, provider.ValidationErrorTemplate); err != nil {
 		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "PipelineRunCommentCreationError",
 			fmt.Sprintf("failed to create comment: %s", err.Error()))
 	}

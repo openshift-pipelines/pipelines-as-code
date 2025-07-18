@@ -193,6 +193,39 @@ func TestGithubSecondPullRequestBadYaml(t *testing.T) {
 	t.Fatal("No comments with the pipelinerun error found on the pull request")
 }
 
+func TestGithubInvalidCELExpressionReportingOnPR(t *testing.T) {
+	ctx := context.Background()
+	g := &tgithub.PRTest{
+		Label:         "Github PullRequest Invalid CEL expression",
+		YamlFiles:     []string{"testdata/failures/pipelinerun-invalid-cel.yaml"},
+		NoStatusCheck: true,
+	}
+	g.RunPullRequest(ctx, t)
+	defer g.TearDown(ctx, t)
+
+	maxLoop := 10
+	for i := 0; i < maxLoop; i++ {
+		comments, _, err := g.Provider.Client().Issues.ListComments(
+			ctx, g.Options.Organization, g.Options.Repo, g.PRNumber,
+			&github.IssueListCommentsOptions{})
+		assert.NilError(t, err)
+
+		if len(comments) > 0 {
+			assert.Assert(t, len(comments) == 1, "Should have only one comment created we got way too many: %+v", comments)
+			commentBody := comments[0].GetBody()
+			commentRegexp := regexp.MustCompile(`CEL expression evaluation error: failed to parse expression "event == \"pull request\" |": ERROR: <input>:1:25: Syntax error: token recognition error at: '|'  | event == "pull request" |  | ........................^`)
+			assert.Check(t, commentRegexp.MatchString(commentBody), commentBody, t)
+			g.Logger.Info("CEL expression validation comment has been matched")
+			return
+		}
+
+		g.Cnx.Clients.Log.Infof("Looping %d/%d waiting for a comment to appear", i, maxLoop)
+		time.Sleep(6 * time.Second)
+	}
+
+	t.Fatal("No comments with the pipelinerun error found on the pull request")
+}
+
 // TestGithubPullRequestInvalidSpecValues tests invalid field values of a PipelinRun and
 // ensures that these validation errors are reported on UI.
 func TestGithubPullRequestInvalidSpecValues(t *testing.T) {
