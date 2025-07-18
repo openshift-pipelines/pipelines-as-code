@@ -95,7 +95,7 @@ func TestCheckAccessOrErrror(t *testing.T) {
 			// Call the function
 			repo := &v1alpha1.Repository{}
 			status := provider.StatusOpts{}
-			allowed, err := p.checkAccessOrErrror(context.Background(), repo, status, "via test")
+			allowed, err := p.checkAccessOrError(context.Background(), repo, status, "via test")
 
 			// Verify results
 			if tt.expectedErr {

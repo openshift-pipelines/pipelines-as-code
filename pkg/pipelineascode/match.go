@@ -144,7 +144,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 			DetailsURL:   p.event.URL,
 			AccessDenied: true,
 		}
-		if allowed, err := p.checkAccessOrErrror(ctx, repo, status, "by GitOps comment on push commit"); !allowed {
+		if allowed, err := p.checkAccessOrError(ctx, repo, status, "by GitOps comment on push commit"); !allowed {
 			return nil, err
 		}
 	}
@@ -160,7 +160,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 			DetailsURL:   p.event.URL,
 			AccessDenied: true,
 		}
-		if allowed, err := p.checkAccessOrErrror(ctx, repo, status, "via "+p.event.TriggerTarget.String()); !allowed {
+		if allowed, err := p.checkAccessOrError(ctx, repo, status, "via "+p.event.TriggerTarget.String()); !allowed {
 			return nil, err
 		}
 	}
@@ -307,7 +307,7 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 			DetailsURL:   p.event.URL,
 			AccessDenied: true,
 		}
-		if allowed, err := p.checkAccessOrErrror(ctx, repo, status, "by GitOps comment on push commit"); !allowed {
+		if allowed, err := p.checkAccessOrError(ctx, repo, status, "by GitOps comment on push commit"); !allowed {
 			return nil, err
 		}
 	}

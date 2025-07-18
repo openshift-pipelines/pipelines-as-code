@@ -1645,6 +1645,35 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 			},
 		},
 		{
+			name: "invalid-cel-expression-error",
+			args: args{
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "pipeline-on-cel-test",
+							Annotations: map[string]string{
+								keys.OnEvent:         "[pull_request]",
+								keys.OnTargetBranch:  "[main]",
+								keys.OnCelExpression: `event == "pull_request" &`,
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:               "https://hello/moto",
+					TriggerTarget:     "pull_request",
+					EventType:         "pull_request",
+					BaseBranch:        "main",
+					HeadBranch:        "warn-for-cel",
+					PullRequestNumber: 10,
+					Request: &info.Request{
+						Header: http.Header{},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name: "no-match-on-label",
 			args: args{
 				pruns: []*tektonv1.PipelineRun{
