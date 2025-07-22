@@ -9,8 +9,8 @@ OpenShift Pipelines 1.15 presents several new enhancements to Pipelines-as-Code.
 These commands allow you to make quick comments on a pull request to restart a
 PipelineRun through Pipelines-as-Code.
 
-Commonly used commands include `/test` pipelinerun to rerun a specific
-pipelinerun, or `/retest` to rerun all PipelineRuns.
+Commonly used commands include `/test pipelinerun` to rerun a specific
+PipelineRun, or `/retest` to rerun all PipelineRuns.
 
 ### Trigger PipelineRuns Irrespective of Annotations
 
@@ -18,7 +18,7 @@ Previously, to re-trigger PipelineRuns, they had to match specific annotations
 such as `pipelinesascode.tekton.dev/on-event` set to pull_request. Now, this
 constraint is removed, allowing you to trigger any PipelineRuns with `/test`
 regardless of their annotation status. This is particularly useful if you need
-to run a pipelinerun selectively before merging a PR, without it automatically
+to run a PipelineRun selectively before merging a PR, without it automatically
 consuming resources with each update.
 
 ### Modify Parameters Dynamically via GitOps Commands
