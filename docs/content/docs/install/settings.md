@@ -98,7 +98,7 @@ There is a few things you can configure through the config map
 * `auto-configure-new-github-repo`
 
   This setting let you autoconfigure newly created GitHub repositories. When
-  Pipelines-as-Code sees a new repository URL from a payload, It Code will set
+  Pipelines-as-Code sees a new repository URL from a payload, It will set
   up a namespace for your repository and create a Repository CR.
 
   This feature is disabled by default and is only supported with GitHub App.
