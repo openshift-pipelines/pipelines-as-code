@@ -45,7 +45,7 @@ func startWebServer(ctx context.Context, opts *bootstrapOpts, run *params.Run, j
 		url := fmt.Sprintf("http://localhost:%d", opts.webserverPort)
 		fmt.Fprintf(opts.ioStreams.Out, "🌍 Starting a web browser on %s, click on the button to create your GitHub APP\n", url)
 		//nolint:errcheck
-		go browser.OpenWebBrowser(url)
+		go browser.OpenWebBrowser(ctx, url)
 		if err := s.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatal(err)
 		}
