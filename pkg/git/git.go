@@ -2,6 +2,7 @@ package git
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -24,7 +25,7 @@ func RunGit(dir string, args ...string) (string, error) {
 	// insert in args "-c", "gitcommit.gpgsign=false" at the beginning gpg sign when set in user
 	args = append([]string{"-c", "commit.gpgsign=false"}, args...)
 
-	c := exec.Command(gitPath, args...)
+	c := exec.CommandContext(context.Background(), gitPath, args...)
 	c.Env = []string{
 		"PATH=" + os.Getenv("PATH"),
 		"HOME=" + os.Getenv("HOME"),
