@@ -37,7 +37,7 @@ tracking using a Git workflow.
 
 - Pull-request "*GitOps*" actions through comments with  `/retest`, `/test <pipeline-name>` and so on.
 
-- Automatic Task resolution in Pipelines (local Tasks, Tekton Hub, and remote URLs)
+- Automatic Task resolution in Pipelines (local Tasks, Artifact Hub, and remote URLs)
 
 - Efficient use of GitHub blobs and objects API for retrieving configurations
 

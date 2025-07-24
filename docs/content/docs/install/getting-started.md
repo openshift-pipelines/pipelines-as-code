@@ -223,7 +223,7 @@ your cluster and create a directory called `.tekton` with a file named
 Note that the `tkn pac create repository` command detected that the repository
 is using the Go programming language and created a basic template for you to be
 customized tailored for the Go programming language (ie: it will add the
-[golangci-lint](https://hub.tekton.dev/tekton/task/golangci-lint) linter as a
+[golangci-lint](https://artifacthub.io/packages/tekton-task/tekton-catalog-tasks/golangci-lint) linter as a
 task to your PipelineRun).
 
 Feel free to open the file `.tekton/pipelinerun.yaml` and inspect what it
