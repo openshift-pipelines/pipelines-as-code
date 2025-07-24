@@ -369,7 +369,7 @@ A few settings are available to configure this feature:
 
 * `version`
 
-  The version of Pipelines As Code currently installed.
+  The version of Pipelines-as-Code currently installed.
 
 * `controller-url`
 

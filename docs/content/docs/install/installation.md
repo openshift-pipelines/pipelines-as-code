@@ -6,13 +6,13 @@ weight: 2
 
 ## Operator Install
 
-Follow [Operator Installation](./operator_installation.md) to install Pipelines As Code on OpenShift.
+Follow [Operator Installation](./operator_installation.md) to install Pipelines-as-Code on OpenShift.
 
 ## Manual Install
 
 ### Prerequisite
 
-Before installing Pipelines As Code, please verify
+Before installing Pipelines-as-Code, please verify
 [tektoncd/pipeline](https://github.com/tektoncd/pipeline) is installed. You can
 install the latest released version using the following command
 
@@ -110,7 +110,7 @@ documentation.
 
 ## Controller TLS Setup
 
-Pipelines As Code Controller now support both `HTTP` and `HTTPS`. Usually, you configure the TLS directly on the
+Pipelines-as-Code Controller now support both `HTTP` and `HTTPS`. Usually, you configure the TLS directly on the
 ingress/Route pointing to the controller. If you want to configure the TLS directly on the controller you can do so
 by following this guide.
 

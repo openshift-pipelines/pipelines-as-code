@@ -42,6 +42,10 @@ occurs, Pipelines-as-Code will know it needs to be handled and begin checking
 out the contents of linda/project to match with the PipelineRun in the .tekton/
 directory.
 
+{{< hint info >}}
+You can find additional Repository CR examples in the [samples directory](https://github.com/openshift-pipelines/pipelines-as-code/tree/main/samples) of the Pipelines-as-Code repository.
+{{< /hint >}}
+
 If the `PipelineRun` matches via its annotations the event, for example on a
 specific branch and event like a `push` or `pull_request`, it will start the
 `PipelineRun` where the `Repository` CR has been created. You can only start the
