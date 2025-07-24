@@ -1,6 +1,7 @@
 package matcher
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	hubtype "github.com/openshift-pipelines/pipelines-as-code/pkg/hub/vars"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -29,6 +31,18 @@ const (
 	testHubURL         = "https://mybelovedhub"
 	testCatalogHubName = "tekton"
 )
+
+func createArtifactHubResponse(t *testing.T, manifestContent string) string {
+	t.Helper()
+	response := map[string]interface{}{
+		"data": map[string]interface{}{
+			"manifestRaw": manifestContent,
+		},
+	}
+	jsonBytes, err := json.Marshal(response)
+	assert.NilError(t, err)
+	return string(jsonBytes)
+}
 
 func TestMain(m *testing.M) {
 	s := k8scheme.Scheme
@@ -196,12 +210,28 @@ func TestGetTaskFromAnnotationName(t *testing.T) {
 			Index: "default",
 			URL:   testHubURL,
 			Name:  testCatalogHubName,
+			Type:  hubtype.TektonHubType,
 		})
 	hubCatalogs.Store(
 		"anotherHub", settings.HubCatalog{
 			Index: "1",
 			URL:   testHubURL,
 			Name:  testCatalogHubName,
+			Type:  hubtype.TektonHubType,
+		})
+	hubCatalogs.Store(
+		"artifactHub", settings.HubCatalog{
+			Index: "2",
+			URL:   testHubURL,
+			Name:  testCatalogHubName,
+			Type:  hubtype.ArtifactHubType,
+		})
+	hubCatalogs.Store(
+		"artifactHubDefault", settings.HubCatalog{
+			Index: "3",
+			URL:   testHubURL,
+			Name:  "default",
+			Type:  hubtype.ArtifactHubType,
 		})
 	tests := []struct {
 		task                   string
@@ -361,6 +391,39 @@ func TestGetTaskFromAnnotationName(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:        "test-get-from-artifacthub-custom-hub",
+			gotTaskName: "task",
+			task:        "artifactHub://chmouzie",
+			remoteURLS: map[string]map[string]string{
+				fmt.Sprintf("%s/api/v1/packages/tekton-task/%s/chmouzie", testHubURL, testCatalogHubName): {
+					"body": createArtifactHubResponse(t, readTDfile(t, "task-good")),
+					"code": "200",
+				},
+			},
+		},
+		{
+			name:        "test-get-from-artifacthub-latest",
+			gotTaskName: "task",
+			task:        "artifactHubDefault://chmouzie",
+			remoteURLS: map[string]map[string]string{
+				fmt.Sprintf("%s/api/v1/packages/tekton-task/tekton-catalog-tasks/chmouzie", testHubURL): {
+					"body": createArtifactHubResponse(t, readTDfile(t, "task-good")),
+					"code": "200",
+				},
+			},
+		},
+		{
+			name:        "test-get-from-artifacthub-specific-version",
+			gotTaskName: "task",
+			task:        "artifactHubDefault://chmouzie:0.2",
+			remoteURLS: map[string]map[string]string{
+				fmt.Sprintf("%s/api/v1/packages/tekton-task/tekton-catalog-tasks/chmouzie/0.2", testHubURL): {
+					"body": createArtifactHubResponse(t, readTDfile(t, "task-good")),
+					"code": "200",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -416,12 +479,28 @@ func TestGetPipelineFromAnnotationName(t *testing.T) {
 			Index: "default",
 			URL:   testHubURL,
 			Name:  testCatalogHubName,
+			Type:  hubtype.TektonHubType,
 		})
 	hubCatalogs.Store(
 		"anotherHub", settings.HubCatalog{
 			Index: "1",
 			URL:   testHubURL,
 			Name:  testCatalogHubName,
+			Type:  hubtype.TektonHubType,
+		})
+	hubCatalogs.Store(
+		"artifactHub", settings.HubCatalog{
+			Index: "2",
+			URL:   testHubURL,
+			Name:  testCatalogHubName,
+			Type:  hubtype.ArtifactHubType,
+		})
+	hubCatalogs.Store(
+		"artifactHubDefault", settings.HubCatalog{
+			Index: "3",
+			URL:   testHubURL,
+			Name:  "default",
+			Type:  hubtype.ArtifactHubType,
 		})
 	tests := []struct {
 		pipeline        string
@@ -567,6 +646,39 @@ func TestGetPipelineFromAnnotationName(t *testing.T) {
 				},
 				fmt.Sprintf("%s/resource/%s/pipeline/chmouzie/0.2/raw", testHubURL, testCatalogHubName): {
 					"body": readTDfile(t, "pipeline-good"),
+					"code": "200",
+				},
+			},
+		},
+		{
+			name:            "test-get-from-artifacthub-custom-hub",
+			gotPipelineName: "pipeline",
+			pipeline:        "artifactHub://chmouzie",
+			remoteURLS: map[string]map[string]string{
+				fmt.Sprintf("%s/api/v1/packages/tekton-pipeline/%s/chmouzie", testHubURL, testCatalogHubName): {
+					"body": createArtifactHubResponse(t, readTDfile(t, "pipeline-good")),
+					"code": "200",
+				},
+			},
+		},
+		{
+			name:            "test-get-from-artifacthub-latest",
+			gotPipelineName: "pipeline",
+			pipeline:        "artifactHubDefault://chmouzie",
+			remoteURLS: map[string]map[string]string{
+				fmt.Sprintf("%s/api/v1/packages/tekton-pipeline/tekton-catalog-pipelines/chmouzie", testHubURL): {
+					"body": createArtifactHubResponse(t, readTDfile(t, "pipeline-good")),
+					"code": "200",
+				},
+			},
+		},
+		{
+			name:            "test-get-from-artifacthub-specific-version",
+			gotPipelineName: "pipeline",
+			pipeline:        "artifactHubDefault://chmouzie:0.2",
+			remoteURLS: map[string]map[string]string{
+				fmt.Sprintf("%s/api/v1/packages/tekton-pipeline/tekton-catalog-pipelines/chmouzie/0.2", testHubURL): {
+					"body": createArtifactHubResponse(t, readTDfile(t, "pipeline-good")),
 					"code": "200",
 				},
 			},

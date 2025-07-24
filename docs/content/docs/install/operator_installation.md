@@ -10,11 +10,17 @@ On the OpenShift Pipelines Operator, the default namespace is `openshift-pipelin
 
 **Note:**
 
-When Pipelines-as-Code is installed through the [Tekton Operator](https://github.com/tektoncd/operator) the configurations of Pipelines-as-Code is
+When Pipelines-as-Code is installed through the [Tekton Operator](https://github.com/tektoncd/operator) the configuration of Pipelines-as-Code is
 controlled by [TektonConfig Custom Resource](https://github.com/tektoncd/operator/blob/main/docs/TektonConfig.md#openshiftpipelinesascode).
-That means Tekton Operator will revert the configurations changes done directly on `pipeline-as-code` configmap or `OpenShiftPipelinesAsCode` custom resource.
+That means Tekton Operator will revert the configuration changes done directly
+on `pipeline-as-code` configmap or `OpenShiftPipelinesAsCode` custom resource.
 
-The default configurations for Pipelines-as-Code in `TektonConfig` looks like below
+The default configurations for Pipelines-as-Code in `TektonConfig` looks like
+below.
+Note that since version v0.37.0, Pipelines-as-Code defaults to using Artifact
+Hub rather than Tekton Hub. Tekton Hub is deprecated and will be removed in a
+future version. You can still use the public tekton hub instance  by explicitly
+prefixing your task with `tektonhub://`
 
 ```yaml
 apiVersion: operator.tekton.dev/v1alpha1
@@ -36,8 +42,8 @@ spec:
           enable-cancel-in-progress-on-pull-requests: 'false'
           enable-cancel-in-progress-on-push: 'false'
           skip-push-event-for-pr-commits: 'true'
-          hub-url: 'https://api.hub.tekton.dev/v1'
-          hub-catalog-name: tekton
+          hub-url: 'https://artifacthub.io'
+          hub-catalog-type: 'artifacthub'
           error-detection-max-number-of-lines: '50'
           error-detection-simple-regexp: >-
             ^(?P<filename>[^:]*):(?P<line>[0-9]+):(?P<column>[0-9]+):([

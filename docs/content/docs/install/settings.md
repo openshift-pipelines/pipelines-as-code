@@ -179,31 +179,47 @@ There is a few things you can configure through the config map
 
   This is disabled by default.
 
-### Tekton Hub support
+### Remote Hub Catalogs
 
-Pipelines-as-Code supports fetching task with its remote annotations feature, by default it will fetch it from the [public tekton hub](https://hub.tekton.dev/) but you can configure it to point to your own with these settings:
+Pipelines-as-Code supports fetching tasks and pipelines with its remote annotations feature. By default, it will fetch from [Artifact Hub](https://artifacthub.io/), but you can also implicitly use the [Tekton Hub](https://hub.tekton.dev/) by using the `tektonhub://` prefix (as documented below) or point to your own custom hub with these settings:
 
 * `hub-url`
 
-  The base URL for the [tekton hub](https://github.com/tektoncd/hub/)
-  API. This default to the [public hub](https://hub.tekton.dev/): <https://api.hub.tekton.dev/v1>
+  The base URL for the hub API. For Artifact Hub (default), this is set to <https://artifacthub.io>. For Tekton Hub, it would be <https://api.hub.tekton.dev/v1>.
 
 * `hub-catalog-name`
 
-  The [tekton hub](https://github.com/tektoncd/hub/) catalog name. default to `tekton`
+  The catalog name in the hub. For Artifact Hub, the defaults are `tekton-catalog-tasks` for tasks and `tekton-catalog-pipelines` for pipelines. For Tekton Hub, this defaults to `tekton`.
 
-* Additionally you can have multiple hub configured by using the following format:
+* `hub-catalog-type`
+
+  The type of hub catalog. Supported values are:
+  
+  * `artifacthub` - For Artifact Hub (default if not specified)
+  * `tektonhub` - For Tekton Hub
+
+* By default, both Artifact Hub and Tekton Hub are configured:
+  
+  * Artifact Hub is the default catalog (no prefix needed, but `artifact://` can be used explicitly)
+  * Tekton Hub is available using the `tektonhub://` prefix
+
+* Additionally you can have multiple hubs configured by using the following format:
 
   ```yaml
   catalog-1-id: "custom"
   catalog-1-name: "tekton"
   catalog-1-url: "https://api.custom.hub/v1"
+  catalog-1-type: "tektonhub"
+  
+  catalog-2-id: "artifact"
+  catalog-2-name: "tekton-catalog-tasks"
+  catalog-2-url: "https://artifacthub.io"
+  catalog-2-type: "artifacthub"
   ```
 
-  Users are able to reference the custom hub by adding a `custom://` prefix to
-  their task they want to fetch from the `custom` catalog.
+  Users are able to reference the custom hub by adding a prefix matching the catalog ID, such as `custom://` for a task they want to fetch from the `custom` catalog.
 
-  You can add as many custom hub as you want by incrementing the `catalog-NUMBER` number.
+  You can add as many custom hubs as you want by incrementing the `catalog-NUMBER` number.
 
   Pipelines-as-Code will not try to fallback to the default or another custom hub
   if the task referenced is not found (the Pull Request will be set as failed)

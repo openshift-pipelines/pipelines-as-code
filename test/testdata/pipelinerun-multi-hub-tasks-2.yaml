@@ -1,0 +1,37 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+    name: multi-hub-tasks-2
+    annotations:
+        pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
+        pipelinesascode.tekton.dev/on-target-branch: "[\\ .TargetBranch //]"
+        pipelinesascode.tekton.dev/on-event: "[\\ .TargetEvent //]"
+        pipelinesascode.tekton.dev/task: "git-clone"
+        pipelinesascode.tekton.dev/task-1: "[tektonhub://pylint, pylint]"
+spec:
+    pipelineSpec:
+        params:
+            - name: new-image-sha
+              description: example of a value to use
+              default: "123"
+        workspaces:
+            - name: source
+        tasks:
+            - name: fetch-repository
+              taskRef:
+                  name: git-clone
+              workspaces:
+                  - name: output
+                    workspace: source
+              params:
+                  - name: url
+                    value: https://github.com/GijsvanDulmen/yq-task-test
+                  - name: revision
+                    value: "main"
+                  - name: subdirectory
+                    value: ""
+                  - name: deleteExisting
+                    value: "true"
+    workspaces:
+        - name: source
+          emptyDir: {}
