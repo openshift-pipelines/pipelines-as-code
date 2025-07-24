@@ -251,7 +251,7 @@ current Git information if you run the command from your source code.
 
 It has some basic language detection and adds extra tasks depending on the
 language. For example, if it detects a file named `setup.py` at the repository
-root it will add the [pylint task](https://hub.tekton.dev/tekton/task/pylint) to
+root it will add the [pylint task](https://artifacthub.io/packages/tekton-task/tekton-catalog-tasks/pylint) to
 the generated PipelineRun.
 {{< /details >}}
 

@@ -17,5 +17,5 @@ func TestNewInfo(t *testing.T) {
 	catalog, ok := value.(settings.HubCatalog)
 	assert.Equal(t, true, ok)
 	assert.Equal(t, catalog.Index, "default")
-	assert.Equal(t, catalog.Name, settings.HubCatalogNameDefaultValue)
+	assert.Equal(t, catalog.Name, settings.TektonHubCatalogNameDefaultValue)
 }
