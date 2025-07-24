@@ -170,6 +170,7 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 	badToken := "BADTOKEN"
 	badID := 666
 	missingID := 111
+	orgName := "org"
 
 	fakeghclient, mux, serverURL, teardown := ghtesthelper.SetupGH()
 	defer teardown()
@@ -214,7 +215,7 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 			Name: "repo",
 		},
 		Spec: v1alpha1.RepositorySpec{
-			URL: "https://matched/by/incoming",
+			URL: fmt.Sprintf("https://matched/%s/incoming", orgName),
 			Incomings: &[]v1alpha1.Incoming{
 				{
 					Targets: []string{"main"},
@@ -235,6 +236,10 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 		_, _ = fmt.Fprintf(w, `{"token": "%s"}`, wantToken)
 	})
 
+	mux.HandleFunc(fmt.Sprintf("/orgs/%s/installation", orgName), func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = fmt.Fprintf(w, `{"id": %d}`, wantID)
+	})
+
 	mux.HandleFunc(fmt.Sprintf("/app/installations/%d/access_tokens", badID), func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "POST")
 		w.Header().Set("Authorization", "Bearer "+jwtToken)
@@ -247,7 +252,9 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 	mux.HandleFunc("/installation/repositories", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Authorization", "Bearer 12345")
 		w.Header().Set("Accept", "application/vnd.github+json")
-		_, _ = fmt.Fprint(w, `{"total_count": 2,"repositories": [{"id":1,"html_url": "https://matched/by/incoming"},{"id":2,"html_url": "https://anotherrepo/that/would/failit"}]}`)
+		_, _ = fmt.Fprintf(w,
+			`{"total_count": 2,"repositories": [{"id":1,"html_url": "https://matched/%s/incoming"},{"id":2,"html_url": "https://anotherrepo/that/would/failit"}]}`,
+			orgName)
 	})
 	ip = NewInstallation(req, run, repo, gprovider, testNamespace.GetName())
 	_, token, installationID, err := ip.GetAndUpdateInstallationID(ctx)
