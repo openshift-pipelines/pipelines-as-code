@@ -44,7 +44,7 @@ Here is a list of all the dynamic variables available in Pipelines-as-Code. The
 one that would be the most important to you would probably be the `revision` and `repo_url`
 variables, they will give you the commit SHA and the repository URL that is
 getting tested. You usually use this with the
-[git-clone](https://hub.tekton.dev/tekton/task/git-clone) task to be able to
+[git-clone](https://artifacthub.io/packages/tekton-task/tekton-catalog-tasks/git-clone) task to be able to
 check out the code that is being tested.
 
 | Variable            | Description                                                                                                                                                                     | Example                             | Example Output                                                                                                                                                |
@@ -196,12 +196,16 @@ The token value is stored in the temporary git-auth secret as generated for [pri
 repositories](../privaterepo/) in the key `git-provider-token`.
 
 As an example, if you want to add a comment to your pull request, you can use the
-[github-add-comment](https://hub.tekton.dev/tekton/task/github-add-comment)
-task from the [Tekton Hub](https://hub.tekton.dev)
-using a [pipelines as code annotation](../resolver/#remote-http-url):
+[github-add-comment](https://artifacthub.io/packages/tekton-task/tekton-catalog-tasks/github-add-comment)
+task from [Artifact Hub](https://artifacthub.io) or the same task from
+[Tekton Hub](https://hub.tekton.dev/) using a [pipelines as code annotation](../resolver/#hub-support-for-tasks):
 
 ```yaml
+# Using Artifact Hub (default)
 pipelinesascode.tekton.dev/task: "github-add-comment"
+
+# Or explicitly using Tekton Hub
+pipelinesascode.tekton.dev/task: "tektonhub://github-add-comment"
 ```
 
 you can then add the task to your [tasks section](https://tekton.dev/docs/pipelines/pipelines/#adding-tasks-to-the-pipeline) (or [finally](https://tekton.dev/docs/pipelines/pipelines/#adding-finally-to-the-pipeline) tasks) of your PipelineRun :

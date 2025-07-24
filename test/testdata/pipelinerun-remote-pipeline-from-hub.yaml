@@ -1,0 +1,12 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: pipeline-from-hub
+  annotations:
+    pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
+    pipelinesascode.tekton.dev/on-target-branch: "[\\ .TargetBranch //]"
+    pipelinesascode.tekton.dev/on-event: "[\\ .TargetEvent //]"
+    pipelinesascode.tekton.dev/pipeline: "pachub://test"
+spec:
+  pipelineRef:
+    name: test

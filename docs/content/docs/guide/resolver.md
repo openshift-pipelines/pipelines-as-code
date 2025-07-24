@@ -77,16 +77,27 @@ or multiple tasks with an array :
 pipelinesascode.tekton.dev/task: "[git-clone, pylint]"
 ```
 
-### [Tekton Hub](https://hub.tekton.dev) Support for Tasks
+### Hub Support for Tasks
 
 ```yaml
 pipelinesascode.tekton.dev/task: "git-clone"
 ```
 
-The syntax above installs the
-[git-clone](https://github.com/tektoncd-catalog/git-clone/tree/main/task/git-clone) task
-from the [tekton hub](https://hub.tekton.dev) repository querying for the latest
-version with the tekton hub API.
+By default, this syntax will install the task from Artifact Hub.
+
+Examples:
+
+```yaml
+# Using Artifact Hub (default)
+pipelinesascode.tekton.dev/task: "git-clone"
+
+# Using Tekton Hub
+pipelinesascode.tekton.dev/task: "tektonhub://git-clone"
+```
+
+{{< hint danger >}}
+The public Tekton Hub service <https://hub.tekton.dev/> is scheduled to be deprecated in the future, so we recommend using Artifact Hub for task resolution.
+{{< /hint >}}
 
 You can have multiple tasks in there if you separate them by a comma `,` around
 an array syntax with bracket:
@@ -104,29 +115,26 @@ example :
   pipelinesascode.tekton.dev/task-2: "tkn"
 ```
 
-By default, `Pipelines-as-Code` will interpret the string as the `latest` task to
-grab
-from [tekton hub](https://hub.tekton.dev).
-
 If you want to have a specific version of the task, you can add a colon `:` to
-the string and a version number, like in
-this example :
+the string and a version number, like in this example:
 
 ```yaml
-pipelinesascode.tekton.dev/task: "[git-clone:0.1]" # this will install git-clone 0.1 from tekton.hub
+# Using specific version from Artifact Hub
+pipelinesascode.tekton.dev/task: "git-clone:0.9.0"
+
+# Using specific version from Tekton Hub
+pipelinesascode.tekton.dev/task: "tektonhub://git-clone:0.1"
 ```
 
-#### Custom [Tekton Hub](https://github.com/tektoncd/hub/) Support for Tasks
+#### Custom Hub Support for Tasks
 
-Additionally if the cluster administrator has [set-up](/docs/install/settings#tekton-hub-support) a custom Tekton Hub you
-are able to reference it from your template like this example:
+Additionally if the cluster administrator has [set-up](/docs/install/settings#remote-hub-catalogs) custom Hub catalogs beyond the default Artifact Hub and Tekton Hub, you are able to reference them from your template:
 
 ```yaml
-pipelinesascode.tekton.dev/task: "[anothercatalog://curl]" # this will install curl from the custom catalog configured by the cluster administrator as anothercatalog
+pipelinesascode.tekton.dev/task: "[customcatalog://curl]" # this will install curl from the custom catalog configured by the cluster administrator as customcatalog
 ```
 
-There is no fallback to the default Tekton Hub if the custom Tekton Hub does not
-have the task referenced it will fail.
+There is no fallback between different hubs. If a task is not found in the specified hub, the Pull Request will fail.
 
 There is no support for custom hub from the CLI on the `tkn pac resolve` command.
 
@@ -284,32 +292,44 @@ or from a relative path inside the repository:
 pipelinesascode.tekton.dev/pipeline: "./tasks/pipeline.yaml
 ```
 
-### [Tekton Hub](https://hub.tekton.dev) Support for Pipelines
+### Hub Support for Pipelines
 
 ```yaml
-pipelinesascode.tekton.dev/pipeline: "[buildpacks]"
+pipelinesascode.tekton.dev/pipeline: "buildpacks"
 ```
 
-The syntax above installs the
-[buildpacks](https://github.com/tektoncd/catalog/tree/main/pipeline/buildpacks) pipeline
-from the [tekton hub](https://hub.tekton.dev) repository querying for the latest
-version with the tekton hub API.
+By default, this syntax will install the pipeline from Artifact Hub.
+
+Examples:
+
+```yaml
+# Using Artifact Hub (default)
+pipelinesascode.tekton.dev/pipeline: "buildpacks"
+
+# Using Tekton Hub
+pipelinesascode.tekton.dev/pipeline: "tektonhub://buildpacks"
+```
 
 If you want to have a specific version of the pipeline, you can add a colon `:` to
-the string and a version number, like in this example :
+the string and a version number, like in this example:
 
 ```yaml
-pipelinesascode.tekton.dev/pipeline: "[buildpacks:0.1]" # this will install buildpacks 0.1 from tekton hub
+# Using specific version from Artifact Hub
+pipelinesascode.tekton.dev/pipeline: "buildpacks:0.1"
+
+# Using specific version from Tekton Hub
+pipelinesascode.tekton.dev/pipeline: "tektonhub://buildpacks:0.1"
 ```
 
-#### Custom [Tekton Hub](https://github.com/tektoncd/hub/) Support for Pipelines
+#### Custom Hub Support for Pipelines
 
-Additionally if the cluster administrator has [set-up](/docs/install/settings#tekton-hub-support) a custom Tekton Hub you
-are able to reference it from your template like this example:
+Additionally if the cluster administrator has [set-up](/docs/install/settings#remote-hub-catalogs) custom Hub catalogs beyond the default Artifact Hub and Tekton Hub, you are able to reference them from your template:
 
 ```yaml
-pipelinesascode.tekton.dev/pipeline: "[anothercatalog://buildpacks:0.1]" # this will install buildpacks from the custom catalog configured by the cluster administrator as anothercatalog
+pipelinesascode.tekton.dev/pipeline: "[customcatalog://buildpacks:0.1]" # this will install buildpacks from the custom catalog configured by the cluster administrator as customcatalog
 ```
+
+There is no fallback between different hubs. If a pipeline is not found in the specified hub, the Pull Request will fail.
 
 ### Overriding tasks from a remote pipeline on a PipelineRun
 
