@@ -8,7 +8,7 @@ type (
 func IsPullRequestType(s string) Trigger {
 	eventType := s
 	switch s {
-	case PullRequest.String(), OkToTest.String(), Retest.String(), Cancel.String(), LabelUpdate.String():
+	case PullRequest.String(), OkToTest.String(), Retest.String(), Cancel.String(), PullRequestLabeled.String():
 		eventType = PullRequest.String()
 	}
 	return Trigger(eventType)
@@ -38,6 +38,8 @@ func StringToType(s string) Trigger {
 		return Incoming
 	case Comment.String():
 		return Comment
+	case PullRequestLabeled.String():
+		return PullRequestLabeled
 	}
 	return ""
 }
@@ -48,7 +50,7 @@ const (
 	CheckSuiteRerequested Trigger = "check-suite-rerequested"
 	Comment               Trigger = "comment"
 	Incoming              Trigger = "incoming"
-	LabelUpdate           Trigger = "label_update"
+	PullRequestLabeled    Trigger = "pull_request_labeled"
 	OkToTest              Trigger = "ok-to-test"
 	PullRequestClosed     Trigger = "pull_request_closed"
 	PullRequest           Trigger = "pull_request" // it's should be "pull_request_opened_updated" but let's keep it simple.

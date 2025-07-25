@@ -99,7 +99,7 @@ func TestGithubPullRequestOnLabel(t *testing.T) {
 
 	sopt := twait.SuccessOpt{
 		Title:           g.CommitTitle,
-		OnEvent:         triggertype.LabelUpdate.String(),
+		OnEvent:         triggertype.PullRequestLabeled.String(),
 		TargetNS:        g.TargetNamespace,
 		NumberofPRMatch: len(g.YamlFiles),
 		SHA:             g.SHA,
