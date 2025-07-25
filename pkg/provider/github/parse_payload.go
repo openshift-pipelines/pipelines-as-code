@@ -393,7 +393,7 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		v.userType = gitEvent.GetPullRequest().GetUser().GetType()
 
 		if gitEvent.Action != nil && provider.Valid(*gitEvent.Action, pullRequestLabelEvent) {
-			processedEvent.EventType = string(triggertype.LabelUpdate)
+			processedEvent.EventType = string(triggertype.PullRequestLabeled)
 		}
 
 		if gitEvent.GetAction() == "closed" {

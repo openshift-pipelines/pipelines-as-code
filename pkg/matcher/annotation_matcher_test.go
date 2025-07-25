@@ -1693,7 +1693,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 				runevent: info.Event{
 					URL:               "https://hello/moto",
 					TriggerTarget:     triggertype.PullRequest,
-					EventType:         string(triggertype.LabelUpdate),
+					EventType:         string(triggertype.PullRequestLabeled),
 					HeadBranch:        "source",
 					BaseBranch:        "main",
 					PullRequestNumber: 10,
