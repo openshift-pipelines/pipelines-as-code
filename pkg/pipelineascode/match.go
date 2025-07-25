@@ -196,6 +196,13 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 		return nil, err
 	}
 
+	if rawTemplates == "" && p.event.EventType == opscomments.OkToTestCommentEventType.String() {
+		err = p.createNeutralStatus(ctx, ".tekton directory not found", tektonDirMissingError)
+		if err != nil {
+			p.eventEmitter.EmitMessage(nil, zap.ErrorLevel, "RepositoryCreateStatus", err.Error())
+		}
+	}
+
 	// This is for push event error logging because we can't create comment for yaml validation errors on push
 	if err != nil || rawTemplates == "" {
 		msg := ""
@@ -279,10 +286,12 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 			// GitOps command `/ok-to-test` to trigger CI, but no matching pull request is found,
 			// a neutral check-run will be created on the pull request to indicate that no PipelineRun was triggered
 			if p.event.EventType == opscomments.OkToTestCommentEventType.String() && len(matchedPRs) == 0 {
-				err = p.createNeutralStatus(ctx)
+				text := fmt.Sprintf("No matching PipelineRun found for the '%s' event in .tekton/ directory. Please ensure that PipelineRun is configured for '%s' event.", p.event.TriggerTarget.String(), p.event.TriggerTarget.String())
+				err = p.createNeutralStatus(ctx, "No PipelineRun matched", text)
 				if err != nil {
 					p.eventEmitter.EmitMessage(nil, zap.WarnLevel, "RepositoryCreateStatus", err.Error())
 				}
+				p.eventEmitter.EmitMessage(nil, zap.InfoLevel, "RepositoryNoMatch", text)
 			}
 			return nil, nil
 		}
@@ -426,11 +435,11 @@ func (p *PacRun) checkNeedUpdate(_ string) (string, bool) {
 	return "", false
 }
 
-func (p *PacRun) createNeutralStatus(ctx context.Context) error {
+func (p *PacRun) createNeutralStatus(ctx context.Context, title, text string) error {
 	status := provider.StatusOpts{
 		Status:     CompletedStatus,
-		Title:      "No PipelineRun matched",
-		Text:       fmt.Sprintf("No matching PipelineRun found for the '%s' event in Pipelines as Code. Please ensure that PipelineRun is configured for '%s' event.", p.event.TriggerTarget.String(), p.event.TriggerTarget.String()),
+		Title:      title,
+		Text:       text,
 		Conclusion: neutralConclusion,
 		DetailsURL: p.event.URL,
 	}
