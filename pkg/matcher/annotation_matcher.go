@@ -177,11 +177,11 @@ func checkPipelineRunAnnotation(prun *tektonv1.PipelineRun, eventEmitter *events
 	if len(annotations) > 0 {
 		ignoredAnnotations := strings.Join(annotations, ", ")
 		msg := fmt.Sprintf(
-			"Warning: The Pipelinerun '%s' has 'on-cel-expression' defined along with [%s] annotation(s). The 'on-cel-expression' will take precedence and these annotations will be ignored",
+			"Warning: The PipelineRun '%s' has 'on-cel-expression' defined along with [%s] annotation(s). The 'on-cel-expression' will take precedence and these annotations will be ignored",
 			prName,
 			ignoredAnnotations,
 		)
-		eventEmitter.EmitMessage(repo, zap.WarnLevel, "RespositoryTakesOnCelExpressionPrecedence", msg)
+		eventEmitter.EmitMessage(repo, zap.WarnLevel, "RepositoryTakesOnCelExpressionPrecedence", msg)
 	}
 }
 

@@ -1641,7 +1641,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 			},
 			wantErr: false,
 			wantLog: []string{
-				`Warning: The Pipelinerun 'pipeline-on-cel-test' has 'on-cel-expression' defined along with [on-event, on-target-branch] annotation(s). The 'on-cel-expression' will take precedence and these annotations will be ignored`,
+				`Warning: The PipelineRun 'pipeline-on-cel-test' has 'on-cel-expression' defined along with [on-event, on-target-branch] annotation(s). The 'on-cel-expression' will take precedence and these annotations will be ignored`,
 			},
 		},
 		{
