@@ -95,7 +95,7 @@ func (v *Provider) CreateComment(_ context.Context, event *info.Event, commit, u
 
 	// List comments of the merge request
 	if updateMarker != "" {
-		comments, _, err := v.Client().Notes.ListMergeRequestNotes(v.sourceProjectID, event.PullRequestNumber, &gitlab.ListMergeRequestNotesOptions{
+		comments, _, err := v.Client().Notes.ListMergeRequestNotes(event.TargetProjectID, event.PullRequestNumber, &gitlab.ListMergeRequestNotesOptions{
 			ListOptions: gitlab.ListOptions{
 				Page:    1,
 				PerPage: 100,
@@ -108,7 +108,7 @@ func (v *Provider) CreateComment(_ context.Context, event *info.Event, commit, u
 		re := regexp.MustCompile(updateMarker)
 		for _, comment := range comments {
 			if re.MatchString(comment.Body) {
-				_, _, err := v.Client().Notes.UpdateMergeRequestNote(v.sourceProjectID, event.PullRequestNumber, comment.ID, &gitlab.UpdateMergeRequestNoteOptions{
+				_, _, err := v.Client().Notes.UpdateMergeRequestNote(event.TargetProjectID, event.PullRequestNumber, comment.ID, &gitlab.UpdateMergeRequestNoteOptions{
 					Body: &commit,
 				})
 				return err
@@ -116,7 +116,7 @@ func (v *Provider) CreateComment(_ context.Context, event *info.Event, commit, u
 		}
 	}
 
-	_, _, err := v.Client().Notes.CreateMergeRequestNote(v.sourceProjectID, event.PullRequestNumber, &gitlab.CreateMergeRequestNoteOptions{
+	_, _, err := v.Client().Notes.CreateMergeRequestNote(event.TargetProjectID, event.PullRequestNumber, &gitlab.CreateMergeRequestNoteOptions{
 		Body: &commit,
 	})
 
