@@ -612,6 +612,20 @@ func TestParsePayload(t *testing.T) {
 			wantSHA:      "abcd",
 		},
 		{
+			name:         "good/pull_request merged",
+			eventType:    "pr:merged",
+			payloadEvent: bbv1test.MakePREvent(ev1, ""),
+			expEvent:     ev1,
+			wantSHA:      "abcd",
+		},
+		{
+			name:         "good/pull_request declined",
+			eventType:    "pr:declined",
+			payloadEvent: bbv1test.MakePREvent(ev1, ""),
+			expEvent:     ev1,
+			wantSHA:      "abcd",
+		},
+		{
 			name:         "good/push",
 			eventType:    "repo:refs_changed",
 			payloadEvent: bbv1test.MakePushEvent(ev1, []types.PushRequestEventChange{{ToHash: ev1.SHA, RefID: "base"}}, []types.Commit{{ID: ev1.SHA}}),

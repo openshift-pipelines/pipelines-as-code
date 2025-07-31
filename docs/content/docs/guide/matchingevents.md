@@ -490,3 +490,14 @@ pipelinesascode.tekton.dev/on-cel-expression: |
 
 This expression checks if the state of the merge request's object attributes is
 `merged`.
+
+### Bitbucket Data Center
+
+For Bitbucket Data Center, you can trigger a `PipelineRun` when a pull request is merged with this expression:
+
+```yaml
+pipelinesascode.tekton.dev/on-cel-expression: |
+  event == "pull_request" && body.pullRequest.state == "MERGED"
+```
+
+This expression checks if the event is a `pull_request` and the state of the pull request is `MERGED`.

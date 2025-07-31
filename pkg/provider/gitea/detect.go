@@ -14,7 +14,6 @@ import (
 var (
 	pullRequestOpenSyncEvent = []string{"opened", "synchronize", "synchronized", "reopened", "closed"}
 	pullRequestLabelUpdated  = "label_updated"
-	pullRequestClosedEvent   = "closed"
 )
 
 // Detect processes event and detect if it is a gitea event, whether to process or reject it
