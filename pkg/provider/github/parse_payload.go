@@ -396,10 +396,6 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 			processedEvent.EventType = string(triggertype.PullRequestLabeled)
 		}
 
-		if gitEvent.GetAction() == "closed" {
-			processedEvent.TriggerTarget = triggertype.PullRequestClosed
-		}
-
 		processedEvent.PullRequestNumber = gitEvent.GetPullRequest().GetNumber()
 		processedEvent.PullRequestTitle = gitEvent.GetPullRequest().GetTitle()
 		// getting the repository ids of the base and head of the pull request

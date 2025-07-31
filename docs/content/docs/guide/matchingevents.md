@@ -67,7 +67,7 @@ and post the results to the provider as soon as the PipelineRun finishes.
 {{< hint info >}}
 
 * Payload matching happens only for events supported by `Pipelines-as-Code`,
-such as when a `Pull Request` is opened, updated, or when a branch receives a
+such as when a `Pull Request` is opened, updated, closed, or when a branch receives a
 `Push`.
 
 * Typically, you need both `on-target-branch` and `on-event` annotations to
@@ -222,14 +222,13 @@ the [documentation]({{< relref
 "/docs/guide/gitops_commands.md#accessing-the-comment-triggering-the-pipelinerun"
 >}}).
 
-Note that the on-comment annotation adheres to the pull_request [Policy]({{<
-relref "/docs/guide/policy" >}}) rule. Only users specified in the pull_request
+Note that the on-comment annotation adheres to the pull_request [Policy]({{< relref "/docs/guide/policy" >}})
+rule. Only users specified in the pull_request
 policy will be able to trigger the PipelineRun.
 
 {{< hint info >}}
 The on-comment annotation is supported for pull_request events. For push events,
-it is only supported [when targeting the main branch without arguments]({{<
-relref "/docs/guide/gitops_commands.md#gitops-commands-on-pushed-commits" >}}).
+it is only supported [when targeting the main branch without arguments]({{< relref "/docs/guide/gitops_commands.md#gitops-commands-on-pushed-commits" >}}).
 {{< /hint >}}
 
 ## Matching PipelineRun to a Pull Request labels
@@ -457,3 +456,37 @@ main and the branch called `release,nightly` you can do this:
 ```yaml
 pipelinesascode.tekton.dev/on-target-branch: [main, release&#44;nightly]
 ```
+
+## Matching a closed Pull Request
+
+You can trigger a `PipelineRun` when a pull request is closed (or merged).
+
+This is useful for scenarios like performing cleanup tasks or sending
+notifications after a pull request has been merged.
+
+Here are some examples for different Git providers:
+
+### GitHub and Gitea
+
+To trigger a `PipelineRun` when a pull request is merged on GitHub or Gitea, you
+can use the following CEL expression:
+
+```yaml
+pipelinesascode.tekton.dev/on-cel-expression: |
+  event == "pull_request" && body.action == "closed" && body.pull_request.merged == true
+```
+
+This expression checks if the event is a `pull_request`, the action is `closed`,
+and the `merged` attribute of the pull request is `true`.
+
+### GitLab
+
+For GitLab, you can trigger a `PipelineRun` when a merge request is merged with this expression:
+
+```yaml
+pipelinesascode.tekton.dev/on-cel-expression: |
+  body.object_attributes.state == "merged"
+```
+
+This expression checks if the state of the merge request's object attributes is
+`merged`.

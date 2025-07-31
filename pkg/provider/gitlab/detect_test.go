@@ -59,11 +59,11 @@ func TestProvider_Detect(t *testing.T) {
 			processReq: true,
 		},
 		{
-			name:       "bad/mergeRequest closed Event",
-			event:      sample.MREventAsJSON("closed", ""),
+			name:       "good/mergeRequest closed Event",
+			event:      sample.MREventAsJSON("close", ""),
 			eventType:  gitlab.EventTypeMergeRequest,
 			isGL:       true,
-			processReq: false,
+			processReq: true,
 		},
 		{
 			name:       "good/mergeRequest update Event with commit",
