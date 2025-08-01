@@ -177,11 +177,11 @@ func checkPipelineRunAnnotation(prun *tektonv1.PipelineRun, eventEmitter *events
 	if len(annotations) > 0 {
 		ignoredAnnotations := strings.Join(annotations, ", ")
 		msg := fmt.Sprintf(
-			"Warning: The Pipelinerun '%s' has 'on-cel-expression' defined along with [%s] annotation(s). The 'on-cel-expression' will take precedence and these annotations will be ignored",
+			"Warning: The PipelineRun '%s' has 'on-cel-expression' defined along with [%s] annotation(s). The 'on-cel-expression' will take precedence and these annotations will be ignored",
 			prName,
 			ignoredAnnotations,
 		)
-		eventEmitter.EmitMessage(repo, zap.WarnLevel, "RespositoryTakesOnCelExpressionPrecedence", msg)
+		eventEmitter.EmitMessage(repo, zap.WarnLevel, "RepositoryTakesOnCelExpressionPrecedence", msg)
 	}
 }
 
@@ -266,7 +266,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 		// If the event is a pull_request and the event type is label_update, but the PipelineRun
 		// does not contain an 'on-label' annotation, do not match this PipelineRun, as it is not intended for this event.
 		_, ok := prun.GetObjectMeta().GetAnnotations()[keys.OnLabel]
-		if event.TriggerTarget == triggertype.PullRequest && event.EventType == string(triggertype.LabelUpdate) && !ok {
+		if event.TriggerTarget == triggertype.PullRequest && event.EventType == string(triggertype.PullRequestLabeled) && !ok {
 			logger.Infof("label update event, PipelineRun %s does not have a on-label for any of those labels: %s", prName, strings.Join(event.PullRequestLabel, "|"))
 			continue
 		}

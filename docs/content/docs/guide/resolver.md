@@ -37,13 +37,13 @@ The resolver will skip resolving if it sees these type of tasks:
 
 * a reference to a [`ClusterTask`](https://github.com/tektoncd/pipeline/blob/main/docs/tasks.md#task-vs-clustertask)
 * a `Task` or `Pipeline` [`Bundle`](https://github.com/tektoncd/pipeline/blob/main/docs/pipelines.md#tekton-bundles)
-* a reference to a Tekton [`Resolver`](https://github.com/tektoncd/pipeline/blob/main/docs/pipelines.md#specifying-remote-tasks)  
+* a reference to a Tekton [`Resolver`](https://github.com/tektoncd/pipeline/blob/main/docs/pipelines.md#specifying-remote-tasks)
 * a [Custom Task](https://github.com/tektoncd/pipeline/blob/main/docs/pipelines.md#using-custom-tasks) with an apiVersion that doesn't have a `tekton.dev/` prefix.
 
 It just uses them "as is" and will not try to do anything with it.
 
 If Pipelines-as-Code cannot resolve the referenced tasks in the `Pipeline` or
-`PipelineSpec`, the run will fail before applying the pipelinerun onto the
+`PipelineSpec`, the run will fail before applying the PipelineRun onto the
 cluster.
 
 You should be able to see the issue on your Git provider platform interface and
@@ -84,7 +84,7 @@ pipelinesascode.tekton.dev/task: "git-clone"
 ```
 
 The syntax above installs the
-[git-clone](https://github.com/tektoncd/catalog/tree/main/task/git-clone) task
+[git-clone](https://github.com/tektoncd-catalog/git-clone/tree/main/task/git-clone) task
 from the [tekton hub](https://hub.tekton.dev) repository querying for the latest
 version with the tekton hub API.
 
@@ -200,6 +200,70 @@ If there is any error fetching those resources, `Pipelines-as-Code` will error
 out and not process the pipeline.
 
 If the object fetched cannot be parsed as a Tekton `Task` it will error out.
+
+### Relative Tasks
+
+`Pipeline-as-Code` also supports fetching relative
+to a remote pipeline tasks (see Section [Remote Pipeline Annotations](#remote-pipeline-annotations)).
+
+Consider the following scenario:
+
+* Repository A (where the event is originating from) contains:
+
+```yaml
+# .tekton/pipelinerun.yaml
+
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: hello-world
+  annotations:
+    pipelinesascode.tekton.dev/on-target-branch: "[main]"
+    pipelinesascode.tekton.dev/on-event: "[push]"
+    pipelinesascode.tekton.dev/pipeline: "https://github.com/user/repositoryb/blob/main/pipeline.yaml"
+spec:
+  pipelineRef:
+    name: hello-world
+```
+
+* Repository B contains:
+
+```yaml
+# pipeline.yaml
+
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: hello-world
+  annotations:
+    pipelinesascode.tekton.dev/task: "./task.yaml"
+spec:
+  tasks:
+    - name: say-hello
+      taskRef:
+        name: hello
+```
+
+```yaml
+# task.yaml
+
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: hello
+spec:
+  steps:
+    - name: echo
+      image: alpine
+      script: |
+        #!/bin/sh
+        echo "Hello, World!"
+```
+
+The Resolver will fetch the remote pipeline and then attempt to retrieve each task.
+The task paths are relative to the path where the remote pipeline, referencing them
+resides (if the pipeline is at `/foo/bar/pipeline.yaml`, and the specified task path is `../task.yaml`, the
+assembled target URL for fetching the task is `/foo/task.yaml`).
 
 ## Remote Pipeline annotations
 

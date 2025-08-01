@@ -199,7 +199,7 @@ func TestGitlabOnLabel(t *testing.T) {
 	repo, err := twait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
 	assert.NilError(t, err)
 	assert.Assert(t, len(repo.Status) > 0)
-	assert.Equal(t, *repo.Status[0].EventType, triggertype.LabelUpdate.String())
+	assert.Equal(t, *repo.Status[0].EventType, triggertype.PullRequestLabeled.String())
 }
 
 func TestGitlabOnComment(t *testing.T) {

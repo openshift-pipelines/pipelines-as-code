@@ -70,7 +70,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 
 		// This is a label update, like adding or removing a label from a MR.
 		if gitEvent.Changes.Labels.Current != nil {
-			processedEvent.EventType = triggertype.LabelUpdate.String()
+			processedEvent.EventType = triggertype.PullRequestLabeled.String()
 		}
 		for _, label := range gitEvent.Labels {
 			processedEvent.PullRequestLabel = append(processedEvent.PullRequestLabel, label.Title)

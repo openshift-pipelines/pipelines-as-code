@@ -125,10 +125,30 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 
 	ctx = info.StoreCurrentControllerName(ctx, r.run.Info.Controller.Name)
 
-	logger = logger.With(
+	logFields := []interface{}{
 		"pipeline-run", pr.GetName(),
 		"event-sha", pr.GetAnnotations()[keys.SHA],
-	)
+	}
+
+	// Add source repository URL if available
+	if repoURL := pr.GetAnnotations()[keys.RepoURL]; repoURL != "" {
+		logFields = append(logFields, "source-repo-url", repoURL)
+	}
+
+	// Add branch information if available
+	if targetBranch := pr.GetAnnotations()[keys.Branch]; targetBranch != "" {
+		logFields = append(logFields, "target-branch", targetBranch)
+		if sourceBranch := pr.GetAnnotations()[keys.SourceBranch]; sourceBranch != "" && sourceBranch != targetBranch {
+			logFields = append(logFields, "source-branch", sourceBranch)
+		}
+	}
+
+	// Add event type information if available
+	if eventType := pr.GetAnnotations()[keys.EventType]; eventType != "" {
+		logFields = append(logFields, "event-type", eventType)
+	}
+
+	logger = logger.With(logFields...)
 	logger.Infof("pipelineRun %v/%v is done, reconciling to report status!  ", pr.GetNamespace(), pr.GetName())
 	r.eventEmitter.SetLogger(logger)
 

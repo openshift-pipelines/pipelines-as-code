@@ -258,7 +258,7 @@ func parseTS(headerTS string) (time.Time, error) {
 // the issue was.
 func (v *Provider) checkWebhookSecretValidity(ctx context.Context, cw clockwork.Clock) error {
 	rl, resp, err := v.Client().RateLimit.Get(ctx)
-	if resp.StatusCode == http.StatusNotFound {
+	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		v.Logger.Info("skipping checking if token has expired, rate_limit api is not enabled on token")
 		return nil
 	}
@@ -266,16 +266,23 @@ func (v *Provider) checkWebhookSecretValidity(ctx context.Context, cw clockwork.
 	if err != nil {
 		return fmt.Errorf("error making request to the GitHub API checking rate limit: %w", err)
 	}
-	if resp.Header.Get("GitHub-Authentication-Token-Expiration") != "" {
+
+	if resp != nil && resp.Header.Get("GitHub-Authentication-Token-Expiration") != "" {
 		ts, err := parseTS(resp.Header.Get("GitHub-Authentication-Token-Expiration"))
 		if err != nil {
 			return fmt.Errorf("error parsing token expiration date: %w", err)
 		}
 
 		if cw.Now().After(ts) {
-			errm := fmt.Sprintf("token has expired at %s", resp.TokenExpiration.Format(time.RFC1123))
-			return fmt.Errorf("%s", errm)
+			errMsg := fmt.Sprintf("token has expired at %s", resp.TokenExpiration.Format(time.RFC1123))
+			return fmt.Errorf("%s", errMsg)
 		}
+	}
+
+	// Guard against nil rl or rl.SCIM which could lead to a panic.
+	if rl == nil || rl.SCIM == nil {
+		v.Logger.Info("skipping token expiration check, SCIM rate limit API is not available for this token")
+		return nil
 	}
 
 	if rl.SCIM.Remaining == 0 {

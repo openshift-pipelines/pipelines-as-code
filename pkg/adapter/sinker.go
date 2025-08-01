@@ -33,8 +33,23 @@ func (s *sinker) processEventPayload(ctx context.Context, request *http.Request)
 		return err
 	}
 
-	// set logger with sha and event type
-	s.logger = s.logger.With("event-sha", s.event.SHA, "event-type", s.event.EventType)
+	// Enhanced structured logging with source repository context for operators
+	logFields := []interface{}{
+		"event-sha", s.event.SHA,
+		"event-type", s.event.EventType,
+		"source-repo-url", s.event.URL,
+	}
+
+	// Add branch information if available
+	if s.event.BaseBranch != "" {
+		logFields = append(logFields, "target-branch", s.event.BaseBranch)
+	}
+	// For PRs, also include source branch if different
+	if s.event.HeadBranch != "" && s.event.HeadBranch != s.event.BaseBranch {
+		logFields = append(logFields, "source-branch", s.event.HeadBranch)
+	}
+
+	s.logger = s.logger.With(logFields...)
 	s.vcx.SetLogger(s.logger)
 
 	s.event.Request = &info.Request{

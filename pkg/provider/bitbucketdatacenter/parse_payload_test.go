@@ -709,6 +709,20 @@ func TestParsePayload(t *testing.T) {
 			expEvent:     ev1,
 			wantSHA:      "abcd",
 		},
+		{
+			name:      "branch/deleted with zero hash",
+			eventType: "repo:refs_changed",
+			payloadEvent: bbv1test.MakePushEvent(ev1, []types.PushRequestEventChange{
+				{
+					ToHash: "0000000000000000000000000000000000000000",
+					RefID:  "refs/heads/feature-branch",
+					Type:   "DELETE",
+				},
+			}, []types.Commit{},
+			),
+			expEvent:      ev1,
+			wantErrSubstr: "branch delete event is not supported; cannot proceed",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -735,10 +749,15 @@ func TestParsePayload(t *testing.T) {
 				return
 			}
 			assert.NilError(t, err)
-
+			// Handle case where expEvent is nil (e.g., branch deletion)
+			if tt.expEvent == nil {
+				if got != nil {
+					t.Fatalf("expected event to be nil, got: %+v", got)
+				}
+				return
+			}
 			// assert SHA ID
 			assert.Equal(t, tt.wantSHA, got.SHA)
-
 			assert.Equal(t, got.AccountID, tt.expEvent.AccountID)
 
 			// test that we got slashed

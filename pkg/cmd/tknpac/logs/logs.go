@@ -238,12 +238,12 @@ func log(ctx context.Context, lo *logOption) error {
 	replyName := strings.Fields(replyString)[0]
 
 	if lo.webBrowser {
-		return showLogsWithWebConsole(lo, replyName)
+		return showLogsWithWebConsole(ctx, lo, replyName)
 	}
 	return showlogswithtkn(lo.tknPath, replyName, lo.cs.Info.Kube.Namespace)
 }
 
-func showLogsWithWebConsole(lo *logOption, pr string) error {
+func showLogsWithWebConsole(ctx context.Context, lo *logOption, pr string) error {
 	if os.Getenv("PAC_TEKTON_DASHBOARD_URL") != "" {
 		lo.cs.Clients.SetConsoleUI(&consoleui.TektonDashboard{BaseURL: os.Getenv("PAC_TEKTON_DASHBOARD_URL")})
 	}
@@ -254,7 +254,7 @@ func showLogsWithWebConsole(lo *logOption, pr string) error {
 			Namespace: lo.cs.Info.Kube.Namespace,
 		},
 	}
-	return browser.OpenWebBrowser(lo.cs.Clients.ConsoleUI().DetailURL(prObj))
+	return browser.OpenWebBrowser(ctx, lo.cs.Clients.ConsoleUI().DetailURL(prObj))
 }
 
 func showlogswithtkn(tknPath, pr, ns string) error {

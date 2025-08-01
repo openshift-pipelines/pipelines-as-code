@@ -1,0 +1,153 @@
+---
+description: Git commit message formatting rules, for use when generating commit messages
+alwaysApply: false
+---
+# Commit Message Formatting Rules
+
+**When to apply**: When generating commit messages or discussing commit practices
+
+**Description**: Rules for formatting commit messages with conventional commits and Jira issue integration
+
+## Commit Message Format
+
+Use conventional commits format:
+
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+Signed-off-by: <name> <email>
+Assisted-by: <model-name> (via Cursor)
+```
+
+## Line Length Requirements
+
+Follow conventional commit line length standards:
+
+- **Subject line**: Maximum 50 characters (hard limit: 72 characters)
+- **Body**: Wrap at 72 characters per line
+- **Blank line**: Always include blank line between subject and body
+- **Footer**: Each footer on separate line
+
+## Scope Rules
+
+1. **For branches with Jira issues** (pattern: `SRVKP-XXX-description` or `OCP-XXX-description`):
+   - Extract Jira issue number using regex: `[A-Z]{2,}-[0-9]+`
+   - Use as scope: `feat(SRVKP-123): description`
+
+2. **For main/master branches or non-Jira branches**:
+   - Ask user for Jira issue number
+   - Look up issue on issues.redhat.com using web search
+   - Use component name as fallback: `feat(webhook)`, `fix(controller)`, `docs(README)`
+
+## Commit Types
+
+- **feat**: New features
+- **fix**: Bug fixes  
+- **docs**: Documentation changes
+- **style**: Code style changes
+- **refactor**: Code refactoring
+- **test**: Adding/updating tests
+- **chore**: Maintenance tasks
+- **build**: Build system or dependencies
+- **ci**: CI/CD changes
+- **perf**: Performance improvements
+- **revert**: Revert previous commit
+
+## Required Footers
+
+### Signed-off-by
+
+- Always include: `Signed-off-by: <name> <email>`
+- Get name and email using this priority order:
+  1. Environment variables: `$GIT_AUTHOR_NAME` and `$GIT_AUTHOR_EMAIL`
+  2. Git config: `git config user.name` and `git config user.email`
+  3. If neither configured, ask user to provide details
+- Common in dev containers: environment variables are preferred method
+
+### Assisted-by
+
+- Always include: `Assisted-by: <model-name> (via Cursor)`
+- Format examples:
+  - `Assisted-by: Claude-3.5-Sonnet (via Cursor)`
+  - `Assisted-by: Gemini (via Cursor)`
+- Use the actual model name being used for the commit message generation
+
+## Examples
+
+```bash
+feat(SRVKP-123): Add webhook controller for GitHub integration
+
+Signed-off-by: Developer Name <developer@redhat.com>
+Assisted-by: Claude-3.5-Sonnet (via Cursor)
+```
+
+```bash
+fix(controller): Update pipeline reconciliation logic
+
+Resolves issue with concurrent pipeline runs
+
+Signed-off-by: Developer Name <developer@redhat.com>
+Assisted-by: Claude-3.5-Sonnet (via Cursor)
+```
+
+## Auto-Detection Rules
+
+When generating commit messages:
+
+1. Check current branch name for Jira issue pattern
+2. If no Jira issue in branch, ask user for issue number
+3. Look up issue details on issues.redhat.com if provided
+4. Analyze staged files to determine commit type
+5. Generate appropriate scope and description
+6. Detect author info from environment variables ($GIT_AUTHOR_NAME, $GIT_AUTHOR_EMAIL) or git config
+7. Ensure subject line is ≤50 characters (max 72 characters)
+8. Wrap body text at 72 characters per line
+9. Add required footers (Signed-off-by and Assisted-by)
+10. Format according to conventional commits standard
+
+## Commit Process
+
+**IMPORTANT**: Always ask for user confirmation before executing `git commit`:
+
+1. **Generate** the commit message following the rules above
+2. **Display** the generated commit message to the user
+3. **Ask for confirmation**: "Should I commit with this message? (y/n)"
+4. **Wait for user response** before running `git commit`
+5. **Only commit** if user confirms with "yes", "y", or similar affirmative response
+
+**Example interaction:**
+
+```
+Generated commit message:
+---
+feat(SRVKP-456): ensure webhook logs output to stdout
+
+Configure webhook controller to direct all logs to stdout for container compatibility
+
+Signed-off-by: Developer Name <developer@redhat.com>
+Assisted-by: Claude-3.5-Sonnet (via Cursor)
+---
+
+Should I commit with this message? (y/n)
+```
+
+## Jira Issue Lookup Process
+
+When no Jira issue is found in branch name:
+
+1. Ask user: "What Jira issue number should I use for this commit?"
+2. If provided, search issues.redhat.com for issue details
+3. Use issue summary and description to enhance commit message
+4. Suggest creating a new branch if desired
+
+## Gitlint Integration
+
+- The project uses gitlint to enforce commit message format
+- Ensure all commit messages pass gitlint validation
+- Common gitlint rules to follow:
+  - Conventional commit format
+  - Proper line length limits
+  - Required footers
+  - No trailing whitespace

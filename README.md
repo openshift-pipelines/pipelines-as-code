@@ -9,7 +9,7 @@ Pipelines-as-Code is an opinionated CI/CD solution built on OpenShift Pipelines
 and Tekton. It enables you to define, manage, and execute pipelines directly
 from your source code repository.
 
-📖 **Full documentation:** [pipelinesascode.com](https://pipelinesascode.com)  
+📖 **Full documentation:** [pipelinesascode.com](https://pipelinesascode.com)
 🛠️ **Development branch docs:** [here](https://nightly.pipelines-as-code.pages.dev/)
 
 ---
@@ -69,7 +69,7 @@ If you'd like to help improve Pipelines-as-Code, check out our contribution guid
 
 ## 🎥 Videos & Blogs
 
-- 📺 [OpenShift Developer Experience: Pipelines-as-Code](https://www.youtube.com/watch?v=PhqzGsJnFEI)  
+- 📺 [OpenShift Developer Experience: Pipelines-as-Code](https://www.youtube.com/watch?v=PhqzGsJnFEI)
 - 📘 [How to make a release pipeline with Pipelines-as-Code](https://blog.chmouel.com/2021/07/01/how-to-make-a-release-pipeline-with-pipelines-as-code)
 
 - 📝 **Latest Developer Documentation:** [Main branch docs](https://main.pipelines-as-code.pages.dev/)
