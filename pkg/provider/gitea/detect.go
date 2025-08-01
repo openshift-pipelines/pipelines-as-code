@@ -12,9 +12,8 @@ import (
 )
 
 var (
-	pullRequestOpenSyncEvent = []string{"opened", "synchronize", "synchronized", "reopened"}
+	pullRequestOpenSyncEvent = []string{"opened", "synchronize", "synchronized", "reopened", "closed"}
 	pullRequestLabelUpdated  = "label_updated"
-	pullRequestLabelClosed   = "closed"
 )
 
 // Detect processes event and detect if it is a gitea event, whether to process or reject it
@@ -57,7 +56,7 @@ func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (triggertype
 		}
 		return "", "invalid payload: no pusher in event"
 	case *giteaStructs.PullRequestPayload:
-		if provider.Valid(string(event.Action), append(pullRequestOpenSyncEvent, pullRequestLabelUpdated, pullRequestLabelClosed)) {
+		if provider.Valid(string(event.Action), pullRequestOpenSyncEvent) || string(event.Action) == pullRequestLabelUpdated {
 			return triggertype.PullRequest, ""
 		}
 		return "", fmt.Sprintf("pull_request: unsupported action \"%s\"", event.Action)

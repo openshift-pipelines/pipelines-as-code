@@ -100,6 +100,19 @@ func TestProviderDetect(t *testing.T) {
 			processEvent: true,
 		},
 		{
+			name: "good/pull request closed",
+			args: args{
+				req: &http.Request{
+					Header: http.Header{
+						"X-Gitea-Event-Type": []string{"pull_request"},
+					},
+				},
+				payload: `{"action": "closed"}`,
+			},
+			isGitea:      true,
+			processEvent: true,
+		},
+		{
 			name: "good/push",
 			args: args{
 				req: &http.Request{

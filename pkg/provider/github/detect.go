@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	pullRequestOpenSyncEvent = []string{"opened", "synchronize", "synchronized", "reopened", "ready_for_review"}
+	pullRequestOpenSyncEvent = []string{"opened", "synchronize", "synchronized", "reopened", "ready_for_review", "closed"}
 	pullRequestLabelEvent    = []string{"labeled"}
 )
 
@@ -64,10 +64,6 @@ func (v *Provider) detectTriggerTypeFromPayload(ghEventType string, eventInt any
 		}
 		return "", "no pusher in payload"
 	case *github.PullRequestEvent:
-		if event.GetAction() == "closed" {
-			return triggertype.PullRequestClosed, ""
-		}
-
 		if provider.Valid(event.GetAction(), pullRequestOpenSyncEvent) || provider.Valid(event.GetAction(), pullRequestLabelEvent) {
 			return triggertype.PullRequest, ""
 		}

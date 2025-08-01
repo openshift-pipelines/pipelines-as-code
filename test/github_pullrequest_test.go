@@ -617,6 +617,30 @@ func TestGithubDisableCommentsOnPR(t *testing.T) {
 	assert.Equal(t, 0, successCommentsPost)
 }
 
+func TestGithubPullRequestClosed(t *testing.T) {
+	ctx := context.Background()
+	g := &tgithub.PRTest{
+		Label:         "Github PullRequest Closed",
+		YamlFiles:     []string{"testdata/pipelinerun-on-pull-request-closed-github.yaml"},
+		NoStatusCheck: true,
+	}
+	g.RunPullRequest(ctx, t)
+	defer g.TearDown(ctx, t)
+
+	g.Cnx.Clients.Log.Infof("Merging PR %d", g.PRNumber)
+	_, _, err := g.Provider.Client().PullRequests.Merge(ctx, g.Options.Organization, g.Options.Repo, g.PRNumber, "merged", nil)
+	assert.NilError(t, err)
+
+	sopt := twait.SuccessOpt{
+		Title:           g.CommitTitle,
+		OnEvent:         "pull_request",
+		TargetNS:        g.TargetNamespace,
+		NumberofPRMatch: 1,
+		SHA:             g.SHA,
+	}
+	twait.Succeeded(ctx, t, g.Cnx, g.Options, sopt)
+}
+
 // Local Variables:
 // compile-command: "go test -tags=e2e -v -info TestGithubPullRequest$ ."
 // End:

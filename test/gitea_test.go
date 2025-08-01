@@ -1193,6 +1193,36 @@ func TestGiteaPushToTagGreedy(t *testing.T) {
 	assert.NilError(t, err)
 }
 
+func TestGiteaPullRequestClosed(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		TargetEvent: "pull_request",
+		YAMLFiles: map[string]string{
+			".tekton/pr-closed.yaml": "testdata/pipelinerun-on-pull-request-closed-github.yaml",
+		},
+		ExpectEvents: false,
+	}
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+
+	merged, resp, err := topts.GiteaCNX.Client().MergePullRequest(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index,
+		gitea.MergePullRequestOption{
+			Title: "Merged with Panache",
+			Style: "merge",
+		},
+	)
+	assert.NilError(t, err)
+	assert.Assert(t, resp.StatusCode < 400, resp)
+	assert.Assert(t, merged)
+
+	sopt := twait.SuccessOpt{
+		Title:           "Committing files from test on " + topts.TargetRefName,
+		OnEvent:         "pull_request",
+		TargetNS:        topts.TargetNS,
+		NumberofPRMatch: 1,
+	}
+	twait.Succeeded(context.Background(), t, topts.ParamsRun, topts.Opts, sopt)
+}
+
 // Local Variables:
 // compile-command: "go test -tags=e2e -v -run TestGiteaPush ."
 // End:

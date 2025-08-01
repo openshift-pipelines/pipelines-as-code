@@ -565,7 +565,7 @@ func TestParsePayLoad(t *testing.T) {
 		{
 			name:               "good/pull request closed",
 			eventType:          "pull_request",
-			triggerTarget:      triggertype.PullRequestClosed.String(),
+			triggerTarget:      triggertype.PullRequest.String(),
 			payloadEventStruct: samplePrEventClosed,
 			shaRet:             "sampleHeadsha",
 		},
