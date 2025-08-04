@@ -43,11 +43,13 @@ const taskStatusTemplate = `
 func (v *Provider) getExistingCheckRunID(ctx context.Context, runevent *info.Event, status provider.StatusOpts) (*int64, error) {
 	opt := github.ListOptions{PerPage: v.PaginedNumber}
 	for {
-		res, resp, err := v.Client().Checks.ListCheckRunsForRef(ctx, runevent.Organization, runevent.Repository,
-			runevent.SHA, &github.ListCheckRunsOptions{
-				AppID:       v.ApplicationID,
-				ListOptions: opt,
-			})
+		res, resp, err := wrapAPI(v, "list_check_runs_for_ref", func() (*github.ListCheckRunsResults, *github.Response, error) {
+			return v.Client().Checks.ListCheckRunsForRef(ctx, runevent.Organization, runevent.Repository,
+				runevent.SHA, &github.ListCheckRunsOptions{
+					AppID:       v.ApplicationID,
+					ListOptions: opt,
+				})
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -118,7 +120,9 @@ func (v *Provider) createCheckRunStatus(ctx context.Context, runevent *info.Even
 		StartedAt:  &now,
 	}
 
-	checkRun, _, err := v.Client().Checks.CreateCheckRun(ctx, runevent.Organization, runevent.Repository, checkrunoption)
+	checkRun, _, err := wrapAPI(v, "create_check_run", func() (*github.CheckRun, *github.Response, error) {
+		return v.Client().Checks.CreateCheckRun(ctx, runevent.Organization, runevent.Repository, checkrunoption)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +274,9 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, runevent *info
 		opts.Conclusion = github.Ptr("cancelled")
 	}
 
-	_, _, err = v.Client().Checks.UpdateCheckRun(ctx, runevent.Organization, runevent.Repository, *checkRunID, opts)
+	_, _, err = wrapAPI(v, "update_check_run", func() (*github.CheckRun, *github.Response, error) {
+		return v.Client().Checks.UpdateCheckRun(ctx, runevent.Organization, runevent.Repository, *checkRunID, opts)
+	})
 	return err
 }
 
@@ -323,8 +329,10 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 		CreatedAt:   &github.Timestamp{Time: now},
 	}
 
-	if _, _, err := v.Client().Repositories.CreateStatus(ctx,
-		runevent.Organization, runevent.Repository, runevent.SHA, ghstatus); err != nil {
+	if _, _, err := wrapAPI(v, "create_status", func() (*github.RepoStatus, *github.Response, error) {
+		return v.Client().Repositories.CreateStatus(ctx,
+			runevent.Organization, runevent.Repository, runevent.SHA, ghstatus)
+	}); err != nil {
 		return err
 	}
 	eventType := triggertype.IsPullRequestType(runevent.EventType)
@@ -344,12 +352,14 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 	default:
 		if (status.Status == "completed" || (status.Status == "queued" && status.Title == pendingApproval)) &&
 			status.Text != "" && eventType == triggertype.PullRequest {
-			_, _, err = v.Client().Issues.CreateComment(ctx, runevent.Organization, runevent.Repository,
-				runevent.PullRequestNumber,
-				&github.IssueComment{
-					Body: github.Ptr(fmt.Sprintf("%s<br>%s", status.Summary, status.Text)),
-				},
-			)
+			_, _, err = wrapAPI(v, "create_issue_comment", func() (*github.IssueComment, *github.Response, error) {
+				return v.Client().Issues.CreateComment(ctx, runevent.Organization, runevent.Repository,
+					runevent.PullRequestNumber,
+					&github.IssueComment{
+						Body: github.Ptr(fmt.Sprintf("%s<br>%s", status.Summary, status.Text)),
+					},
+				)
+			})
 			if err != nil {
 				return err
 			}

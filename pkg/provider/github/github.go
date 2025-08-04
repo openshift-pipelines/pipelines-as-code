@@ -21,7 +21,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
-	providerMetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/metrics"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 	"k8s.io/client-go/kubernetes"
@@ -75,12 +74,6 @@ func New() *Provider {
 }
 
 func (v *Provider) Client() *github.Client {
-	providerMetrics.RecordAPIUsage(
-		v.Logger,
-		v.providerName,
-		v.triggerEvent,
-		v.repo,
-	)
 	return v.ghClient
 }
 
@@ -257,7 +250,9 @@ func parseTS(headerTS string) (time.Time, error) {
 // but this gives a nice hint to the user into their namespace event of where
 // the issue was.
 func (v *Provider) checkWebhookSecretValidity(ctx context.Context, cw clockwork.Clock) error {
-	rl, resp, err := v.Client().RateLimit.Get(ctx)
+	rl, resp, err := wrapAPI(v, "check_rate_limit", func() (*github.RateLimits, *github.Response, error) {
+		return v.Client().RateLimit.Get(ctx)
+	})
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		v.Logger.Info("skipping checking if token has expired, rate_limit api is not enabled on token")
 		return nil
@@ -345,7 +340,9 @@ func (v *Provider) GetTektonDir(ctx context.Context, runevent *info.Event, path,
 		v.Logger.Infof("Using PipelineRun definition from source %s %s on commit SHA %s", runevent.TriggerTarget.String(), prInfo, runevent.SHA)
 	}
 
-	rootobjects, _, err := v.Client().Git.GetTree(ctx, runevent.Organization, runevent.Repository, revision, false)
+	rootobjects, _, err := wrapAPI(v, "get_root_tree", func() (*github.Tree, *github.Response, error) {
+		return v.Client().Git.GetTree(ctx, runevent.Organization, runevent.Repository, revision, false)
+	})
 	if err != nil {
 		return "", err
 	}
@@ -367,8 +364,10 @@ func (v *Provider) GetTektonDir(ctx context.Context, runevent *info.Event, path,
 	// there is a limit on this recursive calls to 500 entries, as documented here:
 	// https://docs.github.com/en/rest/reference/git#get-a-tree
 	// so we may need to address it in the future.
-	tektonDirObjects, _, err := v.Client().Git.GetTree(ctx, runevent.Organization, runevent.Repository, tektonDirSha,
-		true)
+	tektonDirObjects, _, err := wrapAPI(v, "get_tekton_tree", func() (*github.Tree, *github.Response, error) {
+		return v.Client().Git.GetTree(ctx, runevent.Organization, runevent.Repository, tektonDirSha,
+			true)
+	})
 	if err != nil {
 		return "", err
 	}
@@ -388,14 +387,18 @@ func (v *Provider) GetCommitInfo(ctx context.Context, runevent *info.Event) erro
 	var commit *github.Commit
 	sha := runevent.SHA
 	if runevent.SHA == "" && runevent.HeadBranch != "" {
-		branchinfo, _, err := v.Client().Repositories.GetBranch(ctx, runevent.Organization, runevent.Repository, runevent.HeadBranch, 1)
+		branchinfo, _, err := wrapAPI(v, "get_branch_info", func() (*github.Branch, *github.Response, error) {
+			return v.Client().Repositories.GetBranch(ctx, runevent.Organization, runevent.Repository, runevent.HeadBranch, 1)
+		})
 		if err != nil {
 			return err
 		}
 		sha = branchinfo.Commit.GetSHA()
 	}
 	var err error
-	commit, _, err = v.Client().Git.GetCommit(ctx, runevent.Organization, runevent.Repository, sha)
+	commit, _, err = wrapAPI(v, "get_commit", func() (*github.Commit, *github.Response, error) {
+		return v.Client().Git.GetCommit(ctx, runevent.Organization, runevent.Repository, sha)
+	})
 	if err != nil {
 		return err
 	}
@@ -418,8 +421,10 @@ func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, 
 		ref = runevent.DefaultBranch
 	}
 
-	fp, objects, _, err := v.Client().Repositories.GetContents(ctx, runevent.Organization,
-		runevent.Repository, path, &github.RepositoryContentGetOptions{Ref: ref})
+	fp, objects, _, err := wrapAPIGetContents(v, "get_file_contents", func() (*github.RepositoryContent, []*github.RepositoryContent, *github.Response, error) {
+		return v.Client().Repositories.GetContents(ctx, runevent.Organization,
+			runevent.Repository, path, &github.RepositoryContentGetOptions{Ref: ref})
+	})
 	if err != nil {
 		return "", err
 	}
@@ -460,7 +465,9 @@ func (v *Provider) concatAllYamlFiles(ctx context.Context, objects []*github.Tre
 
 // getPullRequest get a pull request details.
 func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event) (*info.Event, error) {
-	pr, _, err := v.Client().PullRequests.Get(ctx, runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
+	pr, _, err := wrapAPI(v, "get_pull_request", func() (*github.PullRequest, *github.Response, error) {
+		return v.Client().PullRequests.Get(ctx, runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
+	})
 	if err != nil {
 		return runevent, err
 	}
@@ -499,7 +506,9 @@ func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) (changedf
 		opt := &github.ListOptions{PerPage: v.PaginedNumber}
 		changedFiles := changedfiles.ChangedFiles{}
 		for {
-			repoCommit, resp, err := v.Client().PullRequests.ListFiles(ctx, runevent.Organization, runevent.Repository, runevent.PullRequestNumber, opt)
+			repoCommit, resp, err := wrapAPI(v, "list_pull_request_files", func() ([]*github.CommitFile, *github.Response, error) {
+				return v.Client().PullRequests.ListFiles(ctx, runevent.Organization, runevent.Repository, runevent.PullRequestNumber, opt)
+			})
 			if err != nil {
 				return changedfiles.ChangedFiles{}, err
 			}
@@ -528,7 +537,9 @@ func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) (changedf
 
 	if runevent.TriggerTarget == "push" {
 		changedFiles := changedfiles.ChangedFiles{}
-		rC, _, err := v.Client().Repositories.GetCommit(ctx, runevent.Organization, runevent.Repository, runevent.SHA, &github.ListOptions{})
+		rC, _, err := wrapAPI(v, "get_commit_files", func() (*github.RepositoryCommit, *github.Response, error) {
+			return v.Client().Repositories.GetCommit(ctx, runevent.Organization, runevent.Repository, runevent.SHA, &github.ListOptions{})
+		})
 		if err != nil {
 			return changedfiles.ChangedFiles{}, err
 		}
@@ -554,7 +565,9 @@ func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) (changedf
 
 // getObject Get an object from a repository.
 func (v *Provider) getObject(ctx context.Context, sha string, runevent *info.Event) ([]byte, error) {
-	blob, _, err := v.Client().Git.GetBlob(ctx, runevent.Organization, runevent.Repository, sha)
+	blob, _, err := wrapAPI(v, "get_blob", func() (*github.Blob, *github.Response, error) {
+		return v.Client().Git.GetBlob(ctx, runevent.Organization, runevent.Repository, sha)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -576,7 +589,9 @@ func ListRepos(ctx context.Context, v *Provider) ([]string, error) {
 	opt := &github.ListOptions{PerPage: v.PaginedNumber}
 	repoURLs := []string{}
 	for {
-		repoList, resp, err := v.Client().Apps.ListRepos(ctx, opt)
+		repoList, resp, err := wrapAPI(v, "list_app_repos", func() (*github.ListRepositories, *github.Response, error) {
+			return v.Client().Apps.ListRepos(ctx, opt)
+		})
 		if err != nil {
 			return []string{}, err
 		}
@@ -594,7 +609,9 @@ func ListRepos(ctx context.Context, v *Provider) ([]string, error) {
 func (v *Provider) CreateToken(ctx context.Context, repository []string, event *info.Event) (string, error) {
 	for _, r := range repository {
 		split := strings.Split(r, "/")
-		infoData, _, err := v.Client().Repositories.Get(ctx, split[0], split[1])
+		infoData, _, err := wrapAPI(v, "get_repository", func() (*github.Repository, *github.Response, error) {
+			return v.Client().Repositories.Get(ctx, split[0], split[1])
+		})
 		if err != nil {
 			v.Logger.Warn("we have an invalid repository: `%s` or no access to it: %v", r, err)
 			continue
@@ -630,7 +647,9 @@ func (v *Provider) isHeadCommitOfBranch(ctx context.Context, runevent *info.Even
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 
-	branchInfo, _, err := v.Client().Repositories.GetBranch(ctx, runevent.Organization, runevent.Repository, branchName, 1)
+	branchInfo, _, err := wrapAPI(v, "get_branch", func() (*github.Branch, *github.Response, error) {
+		return v.Client().Repositories.GetBranch(ctx, runevent.Organization, runevent.Repository, branchName, 1)
+	})
 	if err != nil {
 		return err
 	}
@@ -656,11 +675,13 @@ func (v *Provider) CreateComment(ctx context.Context, event *info.Event, commit,
 
 	// List last page of the comments of the PR
 	if updateMarker != "" {
-		comments, _, err := v.Client().Issues.ListComments(ctx, event.Organization, event.Repository, event.PullRequestNumber, &github.IssueListCommentsOptions{
-			ListOptions: github.ListOptions{
-				Page:    1,
-				PerPage: 100,
-			},
+		comments, _, err := wrapAPI(v, "list_comments", func() ([]*github.IssueComment, *github.Response, error) {
+			return v.Client().Issues.ListComments(ctx, event.Organization, event.Repository, event.PullRequestNumber, &github.IssueListCommentsOptions{
+				ListOptions: github.ListOptions{
+					Page:    1,
+					PerPage: 100,
+				},
+			})
 		})
 		if err != nil {
 			return err
@@ -669,16 +690,22 @@ func (v *Provider) CreateComment(ctx context.Context, event *info.Event, commit,
 		re := regexp.MustCompile(regexp.QuoteMeta(updateMarker))
 		for _, comment := range comments {
 			if re.MatchString(comment.GetBody()) {
-				_, _, err := v.Client().Issues.EditComment(ctx, event.Organization, event.Repository, comment.GetID(), &github.IssueComment{
-					Body: &commit,
-				})
-				return err
+				if _, _, err := wrapAPI(v, "edit_comment", func() (*github.IssueComment, *github.Response, error) {
+					return v.Client().Issues.EditComment(ctx, event.Organization, event.Repository, comment.GetID(), &github.IssueComment{
+						Body: &commit,
+					})
+				}); err != nil {
+					return err
+				}
+				return nil
 			}
 		}
 	}
 
-	_, _, err := v.Client().Issues.CreateComment(ctx, event.Organization, event.Repository, event.PullRequestNumber, &github.IssueComment{
-		Body: &commit,
+	_, _, err := wrapAPI(v, "create_comment", func() (*github.IssueComment, *github.Response, error) {
+		return v.Client().Issues.CreateComment(ctx, event.Organization, event.Repository, event.PullRequestNumber, &github.IssueComment{
+			Body: &commit,
+		})
 	})
 	return err
 }

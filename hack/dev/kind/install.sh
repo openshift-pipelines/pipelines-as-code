@@ -197,6 +197,7 @@ function configure_pac() {
     kubectl patch configmap -n pipelines-as-code -p \
       '{"data":{"catalog-1-type": "artifacthub", "catalog-1-id": "pachub", "catalog-1-name": "pipelines-as-code", "catalog-1-url": "https://artifacthub.io"}}' \
       --type merge pipelines-as-code
+  kubectl patch configmap pac-config-logging -n pipelines-as-code --type json -p '[{"op": "replace", "path": "/data/loglevel.pipelinesascode", "value":"debug"}]'
   set +x
   if [[ -n ${PAC_PASS_SECRET_FOLDER} ]]; then
     echo "Installing PAC secrets"
