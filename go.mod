@@ -17,7 +17,7 @@ require (
 	github.com/google/go-github/scrape v0.0.0-20250430122735-c9e1ad0d3b65
 	github.com/google/go-github/v71 v71.0.0
 	github.com/hako/durafmt v0.0.0-20210608085754-5c1018a4e16b
-	github.com/jenkins-x/go-scm v1.14.59
+	github.com/jenkins-x/go-scm v1.15.10
 	github.com/jonboulle/clockwork v0.5.0
 	github.com/juju/ansiterm v1.0.0
 	github.com/ktrysmt/go-bitbucket v0.9.85
@@ -39,7 +39,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools/v3 v3.5.2
 	k8s.io/api v0.32.4
-	k8s.io/apimachinery v0.33.0
+	k8s.io/apimachinery v0.33.3
 	k8s.io/client-go v0.32.4
 	k8s.io/utils v0.0.0-20250502105355-0f33e8f1c979
 	knative.dev/eventing v0.45.0
