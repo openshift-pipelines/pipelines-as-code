@@ -99,7 +99,7 @@ spec:
                 fi
 
                 # Define conventional commit regex
-                conv_regexp='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9-]+\))?: .+'
+                conv_regexp='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert|deps)(\([a-z0-9-]+\))?: .+'
 
                 # Validate commits
                 gitlint_failed=()
@@ -156,7 +156,7 @@ spec:
                   echo ""
                   echo "ERROR: Conventional commit format failed for commits: ${conventional_failed[*]}"
                   echo "Expected format: type(scope): description"
-                  echo "Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
+                  echo "Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert, deps"
                   echo "See: https://www.conventionalcommits.org/en/v1.0.0/#summary"
                   exit_code=1
                 fi
@@ -165,7 +165,7 @@ spec:
                   echo ""
                   echo "ERROR: Pull request title validation failed"
                   echo "Expected format: type(scope): description"
-                  echo "Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
+                  echo "Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert, deps"
                   exit_code=1
                 fi
 
