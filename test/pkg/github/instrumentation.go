@@ -39,6 +39,15 @@ type TestResult struct {
 	OAuth2MarkerLine int                      `json:"oauth2_marker_line"`
 }
 
+// collectGitHubAPICalls collects GitHub API calls from the controller logs.
+// It retrieves logs from the controller pod, searches for the last OAuth2 initialization marker,
+// the Oauth2 marker shows even if the controller is not using github app, so
+// we can use it to find the start of the API calls.
+// TODO(chmouel): Fix Oauth2 marker to be more specific to GitHub App usage and
+// not github webhook. use another marker for github webhook.
+// TODO(chmouel): Add support for Gitlab.
+// TODO(chmouel): Add support for Bitbucket.
+// TODO(chmouel): Add support for Gitea.
 func (g *PRTest) collectGitHubAPICalls(ctx context.Context, _ *testing.T) {
 	numLines := int64(100)
 	controllerName := "controller"
