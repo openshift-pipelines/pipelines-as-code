@@ -71,8 +71,8 @@ recreate it.
     url: "https://bitbucket.com/workspace/repo"
     git_provider:
       # make sure you have the right bitbucket data center api url without the
-      # /api/v1.0 usually the # default install will have a /rest suffix
-      url: "https://bitbucket.datacenter.api.url/rest"
+      # The base URL of your Bitbucket Data Center instance. Do not include the /rest suffix.
+      url: "https://bitbucket.datacenter.api.url"
       user: "your-bitbucket-username"
       secret:
         name: "bitbucket-datacenter-webhook-config"
