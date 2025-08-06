@@ -32,6 +32,9 @@ import (
 	"knative.dev/pkg/apis"
 )
 
+// gitlabSuccessRegexp will match a success text paac comment, sometime it includes html tags so we need to consider that.
+var gitlabSuccessRegexp = regexp.MustCompile(`.*Pipelines as Code CI.*has.*successfully.*validated your commit.*`)
+
 func TestGitlabMergeRequest(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
@@ -104,17 +107,24 @@ func TestGitlabMergeRequest(t *testing.T) {
 		assert.Equal(t, "Merge Request", prsNew.Items[i].Annotations[keys.EventType])
 	}
 
-	runcnx.Clients.Log.Infof("Sending /retest comment on MergeRequest %s/-/merge_requests/%d", projectinfo.WebURL, mrID)
+	// Wait a moment to ensure all PipelineRuns are fully created
+	time.Sleep(5 * time.Second)
+
+	// Query for an existing PipelineRun to retest specifically
+	pipelineRunName, err := twait.GetOriginalPipelineRunName(ctx, runcnx.Clients, targetNS, "")
+	assert.NilError(t, err)
+
+	runcnx.Clients.Log.Infof("Sending /retest %s comment on MergeRequest %s/-/merge_requests/%d", pipelineRunName, projectinfo.WebURL, mrID)
 	_, _, err = glprovider.Client().Notes.CreateMergeRequestNote(opts.ProjectID, mrID, &clientGitlab.CreateMergeRequestNoteOptions{
-		Body: clientGitlab.Ptr("/retest"),
+		Body: clientGitlab.Ptr("/retest " + pipelineRunName),
 	})
 	assert.NilError(t, err)
 
 	sopt = twait.SuccessOpt{
 		Title:           commitTitle,
-		OnEvent:         opscomments.RetestAllCommentEventType.String(),
+		OnEvent:         opscomments.RetestSingleCommentEventType.String(),
 		TargetNS:        targetNS,
-		NumberofPRMatch: 5, // this is the max we get in repos status
+		NumberofPRMatch: 5, // 2 initial + 2 from push update + 1 from /retest specific PipelineRun
 		SHA:             "",
 	}
 	runcnx.Clients.Log.Info("Checking that PAC has posted successful comments for all PR that has been tested")
@@ -124,12 +134,12 @@ func TestGitlabMergeRequest(t *testing.T) {
 	assert.NilError(t, err)
 	successCommentsPost := 0
 	for _, n := range notes {
-		if successRegexp.MatchString(n.Body) {
+		if gitlabSuccessRegexp.MatchString(n.Body) {
 			successCommentsPost++
 		}
 	}
-	// we get 2 PRS initially, 2 prs from the push update and 2 prs from the /retest == 6
-	assert.Equal(t, 6, successCommentsPost)
+	// we get 2 PRS initially, 2 prs from the push update and 1 pr from the /retest specific PipelineRun == 5
+	assert.Equal(t, 5, successCommentsPost)
 }
 
 func TestGitlabOnLabel(t *testing.T) {
@@ -589,17 +599,21 @@ func TestGitlabDisableCommentsOnMR(t *testing.T) {
 	err = repository.UpdateRepo(ctx, waitOpts.Namespace, waitOpts.RepoName, runcnx.Clients)
 	assert.NilError(t, err)
 
-	runcnx.Clients.Log.Infof("Sending /retest comment on MergeRequest %s/-/merge_requests/%d", projectinfo.WebURL, mrID)
+	// Get the PipelineRun name to retest specifically (since plain /retest won't rerun successful PRs)
+	pipelineRunName, err := twait.GetOriginalPipelineRunName(ctx, runcnx.Clients, targetNS, "")
+	assert.NilError(t, err)
+
+	runcnx.Clients.Log.Infof("Sending /retest %s comment on MergeRequest %s/-/merge_requests/%d", pipelineRunName, projectinfo.WebURL, mrID)
 	_, _, err = glprovider.Client().Notes.CreateMergeRequestNote(opts.ProjectID, mrID, &clientGitlab.CreateMergeRequestNoteOptions{
-		Body: clientGitlab.Ptr("/retest"),
+		Body: clientGitlab.Ptr("/retest " + pipelineRunName),
 	})
 	assert.NilError(t, err)
 
 	sopt = twait.SuccessOpt{
 		Title:           commitTitle,
-		OnEvent:         opscomments.RetestAllCommentEventType.String(),
+		OnEvent:         opscomments.RetestSingleCommentEventType.String(),
 		TargetNS:        targetNS,
-		NumberofPRMatch: 2, // this is the max we get in repos status
+		NumberofPRMatch: 2, // 1 initial + 1 retest specific PipelineRun
 		SHA:             "",
 	}
 	runcnx.Clients.Log.Info("Checking that PAC has posted successful comments for all PR that has been tested")

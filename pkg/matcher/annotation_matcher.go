@@ -11,6 +11,7 @@ import (
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	pacerrors "github.com/openshift-pipelines/pipelines-as-code/pkg/errors"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -21,6 +22,8 @@ import (
 	"github.com/google/cel-go/common/types"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
 )
 
 const (
@@ -366,10 +369,49 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 	}
 
 	if len(matchedPRs) > 0 {
+		if existingPR := checkForExistingSuccessfulPipelineRun(ctx, logger, cs, event, repo); existingPR != nil {
+			return []Match{{PipelineRun: existingPR, Repo: repo}}, nil
+		}
 		return matchedPRs, nil
 	}
 
 	return nil, fmt.Errorf("%s", buildAvailableMatchingAnnotationErr(event, pruns))
+}
+
+// checkForExistingSuccessfulPipelineRun checks if there's an existing successful PipelineRun for the same SHA
+// when executing /ok-to-test or /retest gitops commands.
+func checkForExistingSuccessfulPipelineRun(ctx context.Context, logger *zap.SugaredLogger, cs *params.Run, event *info.Event, repo *apipac.Repository) *tektonv1.PipelineRun {
+	// Only apply this logic to /retest (without specific PR name) and /ok-to-test commands
+	// /retest <pipelinerun-name> should always create a new run since user explicitly requested it
+	if (event.EventType == opscomments.RetestAllCommentEventType.String() ||
+		event.EventType == opscomments.OkToTestCommentEventType.String()) &&
+		event.SHA != "" {
+		labelSelector := fmt.Sprintf("%s=%s", keys.SHA, formatting.CleanValueKubernetes(event.SHA))
+		existingPRs, err := cs.Clients.Tekton.TektonV1().PipelineRuns(repo.GetNamespace()).List(ctx, metav1.ListOptions{
+			LabelSelector: labelSelector,
+		})
+		if err != nil {
+			logger.Errorf("failed to list existing PipelineRuns for SHA %s: %v", event.SHA, err)
+			return nil
+		}
+		if len(existingPRs.Items) > 0 {
+			var lastRun tektonv1.PipelineRun
+			lastRun = existingPRs.Items[0]
+
+			for _, pr := range existingPRs.Items {
+				if pr.CreationTimestamp.After(lastRun.CreationTimestamp.Time) {
+					lastRun = pr
+				}
+			}
+
+			if lastRun.Status.GetCondition(apis.ConditionSucceeded).IsTrue() {
+				logger.Infof("skipping creation of new pipelinerun for sha %s as the last pipelinerun '%s' has already succeeded",
+					event.SHA, lastRun.Name)
+				return &lastRun
+			}
+		}
+	}
+	return nil
 }
 
 func buildAvailableMatchingAnnotationErr(event *info.Event, pruns []*tektonv1.PipelineRun) string {

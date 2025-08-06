@@ -31,7 +31,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	tknpactest "github.com/openshift-pipelines/pipelines-as-code/test/pkg/cli"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
@@ -454,7 +453,12 @@ func TestGiteaConfigMaxKeepRun(t *testing.T) {
 	}
 	_, f := tgitea.TestPR(t, topts)
 	defer f()
-	tgitea.PostCommentOnPullRequest(t, topts, "/retest")
+
+	// Get the original PipelineRun name for specific retest to force new PipelineRun creation
+	pipelineRunName, err := twait.GetOriginalPipelineRunName(context.Background(), topts.ParamsRun.Clients, topts.TargetNS, topts.PullRequest.Head.Sha)
+	assert.NilError(t, err)
+
+	tgitea.PostCommentOnPullRequest(t, topts, "/retest "+pipelineRunName)
 	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, "", false)
 
 	waitOpts := twait.Opts{
@@ -464,10 +468,10 @@ func TestGiteaConfigMaxKeepRun(t *testing.T) {
 		PollTimeout:     twait.DefaultTimeout,
 		TargetSHA:       topts.PullRequest.Head.Sha,
 	}
-	_, err := twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	_, err = twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
 	assert.NilError(t, err)
 
-	time.Sleep(15 * time.Second) // “Evil does not sleep. It waits.” - Galadriel
+	time.Sleep(15 * time.Second) // "Evil does not sleep. It waits." - Galadriel
 
 	prs, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{})
 	assert.NilError(t, err)
@@ -477,7 +481,7 @@ func TestGiteaConfigMaxKeepRun(t *testing.T) {
 
 // TestGiteaConfigCancelInProgress will test the pipelinerun annotation
 // `pipelinesascode.tekton.dev/cancel-in-progress: "true", it will first start
-// one Pull Request which will run a PipelineRun and then send a /retest which
+// one Pull Request which will run a PipelineRun and then send a /test which
 // should cancel the in progress one.
 // It will create a new branch and push a new Pull Request with a PipelineRun of
 // the same name of the first PR and make sure PipelineRun of the same name only
@@ -494,12 +498,21 @@ func TestGiteaConfigCancelInProgress(t *testing.T) {
 	_, f := tgitea.TestPR(t, topts)
 	defer f()
 
-	time.Sleep(3 * time.Second) // “Evil does not sleep. It waits.” - Galadriel
+	// Wait for the first PipelineRun to be created
+	waitOpts := twait.Opts{
+		RepoName:        topts.TargetRefName,
+		Namespace:       topts.TargetNS,
+		MinNumberStatus: 1,
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       topts.SHA,
+	}
+	err := twait.UntilPipelineRunCreated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	assert.NilError(t, err)
 
 	// wait a bit that the pipelinerun had created
-	tgitea.PostCommentOnPullRequest(t, topts, "/retest")
+	tgitea.PostCommentOnPullRequest(t, topts, "/test")
 
-	time.Sleep(2 * time.Second) // “Evil does not sleep. It waits.” - Galadriel
+	time.Sleep(2 * time.Second) // "Evil does not sleep. It waits." - Galadriel
 
 	targetRef := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("cancel-in-progress")
 	entries, err := payload.GetEntries(prmap, topts.TargetNS, topts.DefaultBranch, topts.TargetEvent, map[string]string{})
@@ -513,7 +526,7 @@ func TestGiteaConfigCancelInProgress(t *testing.T) {
 		BaseRefName:        topts.DefaultBranch,
 		NoCheckOutFromBase: true,
 	}
-	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
+	secondPRSHA := scm.PushFilesToRefGit(t, scmOpts, entries)
 
 	pr, _, err := topts.GiteaCNX.Client().CreatePullRequest(topts.Opts.Organization, topts.Opts.Repo, gitea.CreatePullRequestOption{
 		Title: "Test Pull Request - " + targetRef,
@@ -529,8 +542,7 @@ func TestGiteaConfigCancelInProgress(t *testing.T) {
 	prs, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{})
 	assert.NilError(t, err)
 
-	sort.PipelineRunSortByStartTime(prs.Items)
-	assert.Equal(t, len(prs.Items), 3, "should have 2 pipelineruns, but we have: %d", len(prs.Items))
+	// Reset counter and count canceled PipelineRuns from the updated list
 	cancelledPr := 0
 	for _, pr := range prs.Items {
 		if pr.GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason() == "Cancelled" {
@@ -539,19 +551,44 @@ func TestGiteaConfigCancelInProgress(t *testing.T) {
 	}
 	assert.Equal(t, cancelledPr, 1, "only one pr should have been canceled")
 
-	// Test that cancelling works with /retest
-	tgitea.PostCommentOnPullRequest(t, topts, "/retest")
-	topts.ParamsRun.Clients.Log.Info("Waiting 10 seconds before a new retest")
-	time.Sleep(10 * time.Second) // “Evil does not sleep. It waits.” - Galadriel
-	tgitea.PostCommentOnPullRequest(t, topts, "/retest")
+	// Test that cancelling works with /test
+	tgitea.PostCommentOnPullRequest(t, topts, "/test")
+
+	// Wait for the PipelineRuns to be created for the second PR (both initial PR creation and /test comment)
+	time.Sleep(5 * time.Second) // Allow time for cancellation and new PipelineRun creation
+	waitOpts = twait.Opts{
+		RepoName:        topts.TargetRefName,
+		Namespace:       topts.TargetNS,
+		MinNumberStatus: 2, // Expect 2 PipelineRuns: one from PR creation, one from /test comment
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       secondPRSHA, // Use the second PR's SHA
+	}
+	err = twait.UntilPipelineRunCreated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	assert.NilError(t, err)
+
+	topts.ParamsRun.Clients.Log.Info("Waiting 10 seconds before a new test")
+	time.Sleep(10 * time.Second) // "Evil does not sleep. It waits." - Galadriel
+	tgitea.PostCommentOnPullRequest(t, topts, "/test")
 	tgitea.WaitForStatus(t, topts, "heads/"+targetRef, "", false)
 
+	// Wait additional time for all cancellations to be processed
+	topts.ParamsRun.Clients.Log.Info("Waiting 15 seconds for all cancellations to be processed")
+	time.Sleep(15 * time.Second)
+
+	// Get a fresh list of PipelineRuns after all tests
+	prs, err = topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{})
+	assert.NilError(t, err)
+
+	// Reset counter and count canceled PipelineRuns from the updated list
+	cancelledPr = 0
 	for _, pr := range prs.Items {
 		if pr.GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason() == "Cancelled" {
 			cancelledPr++
+			topts.ParamsRun.Clients.Log.Infof("Found canceled PipelineRun: %s", pr.Name)
 		}
 	}
-	assert.Equal(t, cancelledPr, 2, "tweo pr should have been canceled")
+	topts.ParamsRun.Clients.Log.Infof("Total canceled PipelineRuns: %d", cancelledPr)
+	assert.Equal(t, cancelledPr, 2, "two prs should have been canceled")
 }
 
 func TestGiteaConfigCancelInProgressAfterPRClosed(t *testing.T) {

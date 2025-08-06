@@ -192,16 +192,22 @@ func TestGiteaRetestAll(t *testing.T) {
 	assert.NilError(t, secret.Create(ctx, topts.ParamsRun, map[string]string{"secret": "SHHHHHHH"}, topts.TargetNS, "pac-secret"))
 	topts.TargetEvent = triggertype.PullRequest.String()
 	topts.YAMLFiles = map[string]string{
-		".tekton/pr.yaml":      "testdata/pipelinerun.yaml",
-		".tekton/nomatch.yaml": "testdata/pipelinerun-nomatch.yaml",
+		".tekton/pr.yaml":        "testdata/pipelinerun.yaml",
+		".tekton/pr-second.yaml": "testdata/pipelinerun-clone.yaml", // Use a matching PipelineRun instead of nomatch
 	}
 	_, f := tgitea.TestPR(t, topts)
 	defer f()
-	tgitea.PostCommentOnPullRequest(t, topts, "/retest")
+
+	// Wait for initial PipelineRuns to complete, then get one to retest specifically
+	time.Sleep(5 * time.Second)
+	pipelineRunName, err := twait.GetOriginalPipelineRunName(context.Background(), topts.ParamsRun.Clients, topts.TargetNS, topts.PullRequest.Head.Sha)
+	assert.NilError(t, err)
+
+	tgitea.PostCommentOnPullRequest(t, topts, "/retest "+pipelineRunName)
 	waitOpts := twait.Opts{
 		RepoName:        topts.TargetNS,
 		Namespace:       topts.TargetNS,
-		MinNumberStatus: 2,
+		MinNumberStatus: 3, // 2 initial + 1 retest
 		PollTimeout:     twait.DefaultTimeout,
 	}
 
@@ -214,6 +220,6 @@ func TestGiteaRetestAll(t *testing.T) {
 			rt = true
 		}
 	}
-	assert.Assert(t, rt, "should have a retest all comment event in status")
-	assert.Equal(t, len(repo.Status), 2, "should have only 2 status")
+	assert.Assert(t, rt, "should have a retest comment event in status")
+	assert.Equal(t, len(repo.Status), 3, "should have 3 statuses: 2 initial + 1 retest")
 }

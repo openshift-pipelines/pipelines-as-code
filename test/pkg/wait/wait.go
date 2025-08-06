@@ -114,3 +114,41 @@ func UntilPipelineRunHasReason(ctx context.Context, clients clients.Clients, des
 		return len(prsWithReason) >= opts.MinNumberStatus, nil
 	})
 }
+
+// GetOriginalPipelineRunName retrieves the original PipelineRun name from the keys.OriginalPRName annotation.
+// This is useful for /retest commands that need to target a specific PipelineRun.
+func GetOriginalPipelineRunName(ctx context.Context, clients clients.Clients, namespace, sha string) (string, error) {
+	var prs *v1.PipelineRunList
+	var err error
+
+	if sha != "" {
+		prs, err = clients.Tekton.TektonV1().PipelineRuns(namespace).List(ctx, metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, sha),
+		})
+	} else {
+		// If no SHA provided, get all PipelineRuns in the namespace
+		prs, err = clients.Tekton.TektonV1().PipelineRuns(namespace).List(ctx, metav1.ListOptions{})
+	}
+
+	if err != nil {
+		return "", fmt.Errorf("failed to list PipelineRuns: %w", err)
+	}
+
+	if len(prs.Items) == 0 {
+		if sha != "" {
+			return "", fmt.Errorf("no PipelineRuns found for SHA %s", sha)
+		}
+		return "", fmt.Errorf("no PipelineRuns found in namespace %s", namespace)
+	}
+
+	for _, pr := range prs.Items {
+		if originalName, ok := pr.GetAnnotations()[keys.OriginalPRName]; ok {
+			return originalName, nil
+		}
+	}
+
+	if sha != "" {
+		return "", fmt.Errorf("could not find the original PipelineRun name in any PipelineRun for SHA %s", sha)
+	}
+	return "", fmt.Errorf("could not find the original PipelineRun name in any PipelineRun in namespace %s", namespace)
+}
