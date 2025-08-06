@@ -105,7 +105,13 @@ func TestBitbucketDataCenterOnPathChangeAnnotationOnPRMerge(t *testing.T) {
 	defer tbbdc.TearDownNs(ctx, t, runcnx, targetNS)
 
 	branch, resp, err := client.Git.CreateRef(ctx, bitbucketWSOwner, tempBaseBranch, repo.Branch)
-	assert.NilError(t, err, "error creating branch: http status code: %d : %v", resp.Status, err)
+	msg := "error creating branch"
+	if resp != nil {
+		msg = fmt.Sprintf("error creating branch: http status code: %d : %v", resp.Status, err)
+	} else if err != nil {
+		msg = fmt.Sprintf("error creating branch: %v", err)
+	}
+	assert.NilError(t, err, msg)
 	runcnx.Clients.Log.Infof("Base branch %s has been created", branch.Name)
 
 	opts.BaseBranch = branch.Name

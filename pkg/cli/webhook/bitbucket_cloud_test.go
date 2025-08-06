@@ -78,7 +78,10 @@ func TestAskBBWebhookConfig(t *testing.T) {
 			bb := bitbucketCloudConfig{IOStream: io}
 			err := bb.askBBWebhookConfig(tt.repoURL, tt.controllerURL, "", tt.personalaccesstoken)
 			if tt.wantErrStr != "" {
-				assert.Equal(t, err.Error(), tt.wantErrStr)
+				assert.Assert(t, err != nil, "expected an error but got nil")
+				if err != nil {
+					assert.Equal(t, err.Error(), tt.wantErrStr)
+				}
 				return
 			}
 			assert.NilError(t, err)

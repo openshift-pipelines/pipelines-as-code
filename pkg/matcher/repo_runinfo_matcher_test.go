@@ -13,7 +13,6 @@ import (
 	testnewrepo "github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
-	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
@@ -181,18 +180,25 @@ func Test_getRepoByCR(t *testing.T) {
 			}
 			got, err := MatchEventURLRepo(ctx, client, &tt.args.runevent, "")
 
-			if err == nil && tt.wantErr {
-				assert.NilError(t, err, "GetRepoByCR() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			if tt.wantTargetNS == "" && got != nil {
-				t.Errorf("GetRepoByCR() got = '%v', want '%v'", got.GetNamespace(), tt.wantTargetNS)
-			}
-			if tt.wantTargetNS != "" && got == nil {
-				t.Errorf("GetRepoByCR() want nil got '%v'", tt.wantTargetNS)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("MatchEventURLRepo() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
 
-			if tt.wantTargetNS != "" && tt.wantTargetNS != got.GetNamespace() {
-				t.Errorf("GetRepoByCR() got = '%v', want '%v'", got.GetNamespace(), tt.wantTargetNS)
+			if tt.wantErr {
+				return
+			}
+
+			if tt.wantTargetNS == "" {
+				if got != nil {
+					t.Errorf("GetRepoByCR() got = '%v', want nil", got.GetNamespace())
+				}
+			} else {
+				if got == nil {
+					t.Errorf("GetRepoByCR() want non-nil got nil")
+				} else if tt.wantTargetNS != got.GetNamespace() {
+					t.Errorf("GetRepoByCR() got = '%v', want '%v'", got.GetNamespace(), tt.wantTargetNS)
+				}
 			}
 		})
 	}

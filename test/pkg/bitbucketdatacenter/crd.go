@@ -2,6 +2,7 @@ package bitbucketdatacenter
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -18,7 +19,13 @@ import (
 
 func CreateCRD(ctx context.Context, t *testing.T, client *scm.Client, run *params.Run, orgAndRepo, targetNS string) *scm.Repository {
 	repo, resp, err := client.Repositories.Find(ctx, orgAndRepo)
-	assert.NilError(t, err, "error getting repository: http status code: %d: %v", resp.Status, err)
+	msg := "error getting repository"
+	if resp != nil {
+		msg = fmt.Sprintf("error getting repository: http status code: %d: %v", resp.Status, err)
+	} else if err != nil {
+		msg = fmt.Sprintf("error getting repository: %v", err)
+	}
+	assert.NilError(t, err, msg)
 
 	url := strings.ReplaceAll(repo.Link, "/browse", "")
 	repository := &v1alpha1.Repository{

@@ -258,6 +258,11 @@ func TestProvider_GetFiles(t *testing.T) {
 				t.Errorf("Provider.GetFiles() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+
+			if tt.wantErr {
+				return
+			}
+
 			sort.Strings(got.All)
 			sort.Strings(tt.want.All)
 

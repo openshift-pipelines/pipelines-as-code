@@ -37,7 +37,13 @@ func TestBitbucketDataCenterCELPathChangeOnPush(t *testing.T) {
 
 	mainBranchRef := "refs/heads/main"
 	branch, resp, err := client.Git.CreateRef(ctx, bitbucketWSOwner, targetNS, mainBranchRef)
-	assert.NilError(t, err, "error creating branch: http status code: %d : %v", resp.Status, err)
+	msg := "error creating branch"
+	if resp != nil {
+		msg = fmt.Sprintf("error creating branch: http status code: %d : %v", resp.Status, err)
+	} else if err != nil {
+		msg = fmt.Sprintf("error creating branch: %v", err)
+	}
+	assert.NilError(t, err, msg)
 	runcnx.Clients.Log.Infof("Branch %s has been created", branch.Name)
 	defer tbbs.TearDown(ctx, t, runcnx, client, nil, bitbucketWSOwner, branch.Name)
 

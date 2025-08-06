@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/acl"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -19,8 +20,12 @@ func (v *Provider) IsAllowedOwnersFile(_ context.Context, event *info.Event) (bo
 	}
 	// OWNERS_ALIASES file existence is not required, if we get "not found" continue
 	ownerAliasesContent, resp, err := v.getObject("OWNERS_ALIASES", event.DefaultBranch, v.targetProjectID)
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNotFound {
-		return false, err
+	if err != nil {
+		if !strings.Contains(err.Error(), "not found") {
+			return false, err
+		}
+	} else if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNotFound {
+		return false, fmt.Errorf("unexpected status code %d from getObject for OWNERS_ALIASES", resp.StatusCode)
 	}
 	allowed, _ := acl.UserInOwnerFile(string(ownerContent), string(ownerAliasesContent), event.Sender)
 	return allowed, nil

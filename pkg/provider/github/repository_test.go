@@ -154,7 +154,10 @@ func TestConfigureRepository(t *testing.T) {
 			assert.Equal(t, configuring, tt.configuring)
 
 			if tt.wantErr != "" {
-				assert.Equal(t, tt.wantErr, err.Error())
+				assert.Assert(t, err != nil, "expected an error but got nil")
+				if err != nil {
+					assert.Equal(t, tt.wantErr, err.Error())
+				}
 			} else {
 				assert.NilError(t, err)
 			}

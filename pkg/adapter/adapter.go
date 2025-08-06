@@ -182,8 +182,12 @@ func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 		}
 
 		// figure out which provider request coming from
-		if err != nil || gitProvider == nil {
+		if err != nil {
 			l.writeResponse(response, http.StatusOK, err.Error())
+			return
+		}
+		if gitProvider == nil {
+			l.writeResponse(response, http.StatusOK, "gitProvider is nil")
 			return
 		}
 		gitProvider.SetPacInfo(&pacInfo)

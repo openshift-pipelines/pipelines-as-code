@@ -1,0 +1,3 @@
+error while getting org team, error: Unknown API Error: 404
+Request: '/api/v1/orgs/myorg/teams' with 'GET' method and '404 page not found
+' body

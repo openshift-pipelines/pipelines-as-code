@@ -44,20 +44,23 @@ func Setup(ctx context.Context, onSecondController, viaDirectWebhook bool) (cont
 		}
 	}
 
-	var split []string
+	var repoOwner string
 	if !viaDirectWebhook {
-		split = strings.Split(githubRepoOwnerGithubApp, "/")
+		repoOwner = githubRepoOwnerGithubApp
+	} else {
+		repoOwner = githubRepoOwnerDirectWebhook
 	}
-	if viaDirectWebhook {
-		githubToken = os.Getenv("TEST_GITHUB_TOKEN")
-		split = strings.Split(githubRepoOwnerDirectWebhook, "/")
-	}
+
 	if onSecondController {
 		githubURL = os.Getenv("TEST_GITHUB_SECOND_API_URL")
-		githubRepoOwnerGithubApp = os.Getenv("TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP")
+		repoOwner = os.Getenv("TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP")
 		githubToken = os.Getenv("TEST_GITHUB_SECOND_TOKEN")
 		controllerURL = os.Getenv("TEST_GITHUB_SECOND_EL_URL")
-		split = strings.Split(githubRepoOwnerGithubApp, "/")
+	}
+
+	split := strings.Split(repoOwner, "/")
+	if len(split) != 2 {
+		return ctx, nil, options.E2E{}, github.New(), fmt.Errorf("repository owner/repo env var is not in the format owner/repo: %s", repoOwner)
 	}
 
 	run := params.New()

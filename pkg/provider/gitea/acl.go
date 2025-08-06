@@ -19,13 +19,13 @@ func (v *Provider) CheckPolicyAllowing(_ context.Context, event *info.Event, all
 	}
 	// TODO: caching
 	orgTeams, resp, err := v.Client().ListOrgTeams(event.Organization, gitea.ListTeamsOptions{})
-	if resp.StatusCode == http.StatusNotFound {
-		// we explicitly disallow the policy when there is no team on org
-		return false, fmt.Sprintf("no teams on org %s", event.Organization)
-	}
 	if err != nil {
 		// probably a 500 or another api error, no need to try again and again with other teams
 		return false, fmt.Sprintf("error while getting org team, error: %s", err.Error())
+	}
+	if resp.StatusCode == http.StatusNotFound {
+		// we explicitly disallow the policy when there is no team on org
+		return false, fmt.Sprintf("no teams on org %s", event.Organization)
 	}
 	for _, allowedTeam := range allowedTeams {
 		for _, orgTeam := range orgTeams {

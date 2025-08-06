@@ -273,7 +273,10 @@ func TestGetFileInsideRepo(t *testing.T) {
 			bbtest.MuxFiles(t, mux, tt.event, tt.targetbranch, filepath.Dir(tt.path), tt.filescontents, tt.wantErr != "")
 			fc, err := v.GetFileInsideRepo(ctx, tt.event, tt.path, tt.targetbranch)
 			if tt.wantErr != "" {
-				assert.Equal(t, err.Error(), tt.wantErr)
+				assert.Assert(t, err != nil, "expected an error but got nil")
+				if err != nil {
+					assert.Equal(t, err.Error(), tt.wantErr)
+				}
 				return
 			}
 			assert.NilError(t, err)
@@ -721,7 +724,10 @@ func TestGetFiles(t *testing.T) {
 			v := &Provider{client: client, baseURL: tURL}
 			changedFiles, err := v.GetFiles(ctx, tt.event)
 			if tt.wantError {
-				assert.Equal(t, err.Error(), tt.errMsg)
+				assert.Assert(t, err != nil, "expected an error but got nil")
+				if err != nil {
+					assert.Equal(t, err.Error(), tt.errMsg)
+				}
 				return
 			}
 			assert.NilError(t, err, nil)

@@ -330,6 +330,9 @@ func (v *Provider) GetStringPullRequestComment(ctx context.Context, runevent *in
 		if err != nil {
 			return nil, err
 		}
+		if resp == nil {
+			return nil, fmt.Errorf("unexpected nil response from ListComments")
+		}
 		for _, v := range comments {
 			if acl.MatchRegexp(reg, v.GetBody()) {
 				ret = append(ret, v)

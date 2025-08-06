@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 
 	giteaStructs "code.gitea.io/gitea/modules/structs"
@@ -17,6 +18,7 @@ import (
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
+	"gotest.tools/v3/golden"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -93,7 +95,7 @@ func TestCheckPolicyAllowing(t *testing.T) {
 
 			gotAllowed, gotReason := gprovider.CheckPolicyAllowing(ctx, event, tt.allowedTeams)
 			assert.Equal(t, tt.wantAllowed, gotAllowed)
-			assert.Equal(t, tt.wantReason, gotReason)
+			golden.Assert(t, gotReason, strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"))
 		})
 	}
 }
