@@ -44,5 +44,7 @@ func TestRepositoryCreation(t *testing.T) {
 	assert.NilError(t, err)
 	err = repository.CreateRepo(ctx, targetNsNew, runcnx, repo)
 	assert.Assert(t, err != nil)
-	assert.Equal(t, err.Error(), "admission webhook \"validation.pipelinesascode.tekton.dev\" denied the request: repository already exists with URL: https://pac.test/pac/app")
+	if err != nil {
+		assert.Equal(t, err.Error(), "admission webhook \"validation.pipelinesascode.tekton.dev\" denied the request: repository already exists with URL: https://pac.test/pac/app")
+	}
 }

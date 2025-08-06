@@ -20,7 +20,13 @@ func CreatePR(ctx context.Context, t *testing.T, client *goscm.Client, runcnx *p
 	}
 
 	branch, resp, err := client.Git.CreateRef(ctx, orgAndRepo, targetNS, baseBranchRef)
-	assert.NilError(t, err, "error creating branch: http status code: %d : %v", resp.Status, err)
+	msg := "error creating branch"
+	if resp != nil {
+		msg = fmt.Sprintf("error creating branch: http status code: %d : %v", resp.Status, err)
+	} else if err != nil {
+		msg = fmt.Sprintf("error creating branch: %v", err)
+	}
+	assert.NilError(t, err, msg)
 	runcnx.Clients.Log.Infof("Branch %s has been created", branch.Name)
 
 	gitCloneURL, err := scm.MakeGitCloneURL(repo.Clone, opts.UserName, opts.Password)
@@ -45,7 +51,13 @@ func CreatePR(ctx context.Context, t *testing.T, client *goscm.Client, runcnx *p
 		Base:  baseBranchRef,
 	}
 	pr, resp, err := client.PullRequests.Create(ctx, orgAndRepo, prOpts)
-	assert.NilError(t, err, "error creating pull request: http status code: %d : %v", resp.Status, err)
+	msg = "error creating pull request"
+	if resp != nil {
+		msg = fmt.Sprintf("error creating pull request: http status code: %d : %v", resp.Status, err)
+	} else if err != nil {
+		msg = fmt.Sprintf("error creating pull request: %v", err)
+	}
+	assert.NilError(t, err, msg)
 	runcnx.Clients.Log.Infof("Created Pull Request with Title '%s'. Head branch '%s' ⮕ Base Branch '%s'", pr.Title, pr.Head.Ref, pr.Base.Ref)
 	return pr
 }

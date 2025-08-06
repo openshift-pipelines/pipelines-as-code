@@ -101,7 +101,9 @@ func TestCheckAccessOrErrror(t *testing.T) {
 			if tt.expectedErr {
 				assert.Assert(t, err != nil, "Expected error but got nil")
 				if tt.expectedErrMsg != "" {
-					assert.Assert(t, err.Error() != "", "Expected error message but got empty string")
+					if err != nil { // Add this check
+						assert.Assert(t, err.Error() != "", "Expected error message but got empty string")
+					}
 					assert.ErrorContains(t, err, tt.expectedErrMsg)
 				}
 			} else {

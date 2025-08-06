@@ -476,7 +476,10 @@ func TestGetFileInsideRepo(t *testing.T) {
 			got, err := gvcs.GetFileInsideRepo(ctx, event, tt.filepath, "")
 			if tt.wantErrStr != "" {
 				assert.Assert(t, err != nil, "we should have get an error here")
-				assert.Assert(t, strings.Contains(err.Error(), tt.wantErrStr), err.Error(), tt.wantErrStr)
+				assert.Assert(t, err != nil, "we should have get an error here")
+				if err != nil {
+					assert.Assert(t, strings.Contains(err.Error(), tt.wantErrStr), err.Error(), tt.wantErrStr)
+				}
 				return
 			}
 			assert.NilError(t, err)
