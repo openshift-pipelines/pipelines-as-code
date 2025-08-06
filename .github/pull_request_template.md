@@ -18,6 +18,7 @@ Fixes #
 - [ ] ⚙️ Chore (`chore:`)
 - [ ] 💅 Refactor (`refactor:`)
 - [ ] 🔧 Enhancement (`enhance:`)
+- [ ] 📦 Dependency update (`deps:`)
 
 <!-- (update the title of the Pull Request accordingly) -->
 
