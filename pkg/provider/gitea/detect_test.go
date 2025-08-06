@@ -198,7 +198,9 @@ func TestProviderDetect(t *testing.T) {
 			assert.Assert(t, gotReason == tt.wantReason, gotReason, tt.wantReason)
 			if tt.wantErrSubstr != "" {
 				assert.Assert(t, err != nil)
-				assert.Assert(t, strings.Contains(err.Error(), tt.wantErrSubstr), err.Error(), "doesn't have", tt.wantErrSubstr)
+				if err != nil {
+					assert.Assert(t, strings.Contains(err.Error(), tt.wantErrSubstr), err.Error(), "doesn't have", tt.wantErrSubstr)
+				}
 				return
 			}
 			assert.NilError(t, err)

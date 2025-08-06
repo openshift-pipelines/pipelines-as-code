@@ -2546,7 +2546,7 @@ func TestGetTargetBranch(t *testing.T) {
 			matched, targetEvent, targetBranch, err := getTargetBranch(tt.prun, tt.event)
 			if tt.expectedError != "" {
 				assert.Assert(t, err != nil)
-				assert.Error(t, err, tt.expectedError, err.Error())
+				assert.Error(t, err, tt.expectedError)
 				return
 			}
 			assert.NilError(t, err)
