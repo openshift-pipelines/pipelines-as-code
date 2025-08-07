@@ -176,14 +176,10 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 		p.logger.Errorf("Error adding labels/annotations to PipelineRun '%s' in namespace '%s': %v", match.PipelineRun.GetName(), match.Repo.GetNamespace(), err)
 	}
 
-	// if concurrency is defined then start the pipelineRun in pending state and
-	// state as queued
+	// if concurrency is defined then start the pipelineRun in pending state
 	if match.Repo.Spec.ConcurrencyLimit != nil && *match.Repo.Spec.ConcurrencyLimit != 0 {
 		// pending status
 		match.PipelineRun.Spec.Status = tektonv1.PipelineRunSpecStatusPending
-		// pac state as queued
-		match.PipelineRun.Labels[keys.State] = kubeinteraction.StateQueued
-		match.PipelineRun.Annotations[keys.State] = kubeinteraction.StateQueued
 	}
 
 	// Create the actual pipelineRun
@@ -240,23 +236,31 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 		OriginalPipelineRunName: pr.GetAnnotations()[keys.OriginalPRName],
 	}
 
+	// Patch the pipelineRun with the appropriate annotations and labels.
+	// Set the state so the watcher will continue with reconciling the pipelineRun
+	// The watcher reconciles only pipelineRuns that has the state annotation.
 	patchAnnotations := map[string]string{}
 	patchLabels := map[string]string{}
 	whatPatching := ""
 	// if pipelineRun is in pending state then report status as queued
+	// The pipelineRun can be pending because of PAC's concurrency limit or because of an external mutatingwebhook
 	if pr.Spec.Status == tektonv1.PipelineRunSpecStatusPending {
 		status.Status = queuedStatus
 		if status.Text, err = mt.MakeTemplate(p.vcx.GetTemplate(provider.QueueingPipelineType)); err != nil {
 			return nil, fmt.Errorf("cannot create message template: %w", err)
 		}
-		// If the PipelineRun is in the "queued" state, add the appropriate label and annotation.
-		// These are later used by the watcher to determine whether the PipelineRun status
-		// should be reported back to the Git provider. We do add the `state` annotations and label when
-		// concurrency is enabled but this would happen when PipelineRun's status has been changed by
-		// the other controller and PaC is not aware of that change.
 		whatPatching = "annotations.state and labels.state"
 		patchAnnotations[keys.State] = kubeinteraction.StateQueued
 		patchLabels[keys.State] = kubeinteraction.StateQueued
+	} else {
+		// Mark that the start will be reported to the Git provider
+		patchAnnotations[keys.SCMReportingPLRStarted] = "true"
+		patchAnnotations[keys.State] = kubeinteraction.StateStarted
+		patchLabels[keys.State] = kubeinteraction.StateStarted
+		whatPatching = fmt.Sprintf(
+			"annotation.%s and annotations.state and labels.state",
+			keys.SCMReportingPLRStarted,
+		)
 	}
 
 	if err := p.vcx.CreateStatus(ctx, p.event, status); err != nil {
@@ -278,6 +282,20 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 			// unneeded SIGSEGV's
 			return pr, fmt.Errorf("cannot patch pipelinerun %s: %w", pr.GetGenerateName(), err)
 		}
+		currentReason := ""
+		if len(pr.Status.GetConditions()) > 0 {
+			currentReason = pr.Status.GetConditions()[0].GetReason()
+		}
+
+		p.logger.Infof("PipelineRun %s/%s patched successfully - Spec.Status: %s, State annotation: '%s', SCMReportingPLRStarted annotation: '%s', Status reason: '%s', Git provider status: '%s', Patched: %s",
+			pr.GetNamespace(),
+			pr.GetName(),
+			pr.Spec.Status,
+			pr.GetAnnotations()[keys.State],
+			pr.GetAnnotations()[keys.SCMReportingPLRStarted],
+			currentReason,
+			status.Status,
+			whatPatching)
 	}
 
 	return pr, nil
