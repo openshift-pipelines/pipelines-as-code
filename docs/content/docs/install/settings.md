@@ -124,6 +124,19 @@ There is a few things you can configure through the config map
 
   `https://github.com/owner/repo` will be `owner-repo-ci`
 
+* `auto-configure-repo-repository-template`
+
+  If `auto-configure-new-github-repo` is enabled then you can provide a template
+  for generating the name for your new repository custom resource. By default, the repository custom resource name will be generated using this format `{{repo_name}}-repo-cr`.
+
+  You can override the default using the following variables
+
+  * `{{repo_owner}}`: The repository owner.
+  * `{{repo_name}}`: The repository name.
+  For example, if the template is defined as `{{repo_owner}}-{{repo_name}}-repo-cr`,
+  then the Repository CR name generated for the repository
+  `https://github.com/owner/test` will be `owner-test-repo-cr`
+
 * `remember-ok-to-test`
 
   If `remember-ok-to-test` is true then if `ok-to-test` is done on pull request then in

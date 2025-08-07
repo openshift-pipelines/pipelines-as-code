@@ -139,11 +139,17 @@ data:
   # namespace and repository CR, supported only with GitHub App
   auto-configure-new-github-repo: "false"
 
-  # add a template to generate name for namespace for your auto configured
-  # github repo supported fields are repo_owner, repo_name eg. if defined as
-  # `{{repo_owner}}-{{repo_name}}-ci`, then namespace generated for repository
-  # https://github.com/owner/repo will be `owner-repo-ci`
+  # Add a template to generate the name for a Repository CR for an auto-configured
+  # GitHub repository. Supported fields are `repo_owner` and `repo_name`. e.g.,
+  # if defined as `{{repo_owner}}-{{repo_name}}-repo-cr`, the generated CR name for
+  # https://github.com/owner/test will be `owner-test-repo-cr`
   auto-configure-repo-namespace-template: ""
+
+  # add a template to generate name for repository for your auto configured
+  # github repo. supported fields are repo_owner, repo_name eg. if defined as
+  # `{{repo_owner}}-{{repo_name}}-repo-cr`, then repository CR generated for  git repository
+  # https://github.com/owner/test will be `owner-test-repo-cr`
+  auto-configure-repo-repository-template: ""
 
   # Enable or disable the feature to rerun the CI if push event happens on
   # a pull request

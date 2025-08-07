@@ -19,7 +19,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const defaultNsTemplate = "%v-pipelines"
+const (
+	defaultNsTemplate   = "%v-pipelines"
+	defaultRepoTemplate = "%v-repo-cr"
+)
 
 func ConfigureRepository(ctx context.Context, run *params.Run, req *http.Request, payload string, pacInfo *info.PacOpts, logger *zap.SugaredLogger) (bool, bool, error) {
 	// check if repo auto configuration is enabled
@@ -48,7 +51,9 @@ func ConfigureRepository(ctx context.Context, run *params.Run, req *http.Request
 	}
 
 	logger.Infof("github: configuring repository cr for repo: %v", repoEvent.Repo.GetHTMLURL())
-	if err := createRepository(ctx, pacInfo.AutoConfigureRepoNamespaceTemplate, run.Clients, repoEvent, logger); err != nil {
+	nsTemplate := pacInfo.AutoConfigureRepoNamespaceTemplate
+	repoTemplate := pacInfo.AutoConfigureRepoRepositoryTemplate
+	if err := createRepository(ctx, nsTemplate, repoTemplate, run.Clients, repoEvent, logger); err != nil {
 		logger.Errorf("failed repository creation: %v", err)
 		return true, true, err
 	}
@@ -56,8 +61,8 @@ func ConfigureRepository(ctx context.Context, run *params.Run, req *http.Request
 	return true, true, nil
 }
 
-func createRepository(ctx context.Context, nsTemplate string, clients clients.Clients, gitEvent *github.RepositoryEvent, logger *zap.SugaredLogger) error {
-	repoNsName, err := generateNamespaceName(nsTemplate, gitEvent)
+func createRepository(ctx context.Context, nsTemplate, repoTemplate string, clients clients.Clients, gitEvent *github.RepositoryEvent, logger *zap.SugaredLogger) error {
+	repoNsName, repoCRName, err := generateNamespaceAndRepositoryName(nsTemplate, repoTemplate, gitEvent)
 	if err != nil {
 		return fmt.Errorf("failed to generate namespace for repo: %w", err)
 	}
@@ -84,7 +89,7 @@ func createRepository(ctx context.Context, nsTemplate string, clients clients.Cl
 	// create repository
 	repo := &v1alpha1.Repository{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      repoNsName,
+			Name:      repoCRName,
 			Namespace: repoNsName,
 		},
 		Spec: v1alpha1.RepositorySpec{
@@ -100,19 +105,29 @@ func createRepository(ctx context.Context, nsTemplate string, clients clients.Cl
 	return nil
 }
 
-func generateNamespaceName(nsTemplate string, gitEvent *github.RepositoryEvent) (string, error) {
+func generateNamespaceAndRepositoryName(nsTemplate, repoTemplate string, gitEvent *github.RepositoryEvent) (string, string, error) {
 	repoOwner, repoName, err := formatting.GetRepoOwnerSplitted(gitEvent.Repo.GetHTMLURL())
 	if err != nil {
-		return "", fmt.Errorf("failed to parse git repo url: %w", err)
+		return "", "", fmt.Errorf("failed to parse git repo url: %w", err)
 	}
 
-	if nsTemplate == "" {
-		return fmt.Sprintf(defaultNsTemplate, repoName), nil
-	}
-
-	maptemplate := map[string]string{
+	nsName := ""
+	repoCRName := ""
+	placeholders := map[string]string{
 		"repo_owner": repoOwner,
 		"repo_name":  repoName,
 	}
-	return templates.ReplacePlaceHoldersVariables(nsTemplate, maptemplate, nil, http.Header{}, map[string]any{}), nil
+
+	if nsTemplate == "" {
+		nsName = fmt.Sprintf(defaultNsTemplate, repoName)
+	} else {
+		nsName = templates.ReplacePlaceHoldersVariables(nsTemplate, placeholders, nil, http.Header{}, map[string]any{})
+	}
+
+	if repoTemplate == "" {
+		repoCRName = fmt.Sprintf(defaultRepoTemplate, repoName)
+	} else {
+		repoCRName = templates.ReplacePlaceHoldersVariables(repoTemplate, placeholders, nil, http.Header{}, map[string]any{})
+	}
+	return nsName, repoCRName, nil
 }
