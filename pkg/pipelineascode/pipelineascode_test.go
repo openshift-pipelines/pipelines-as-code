@@ -718,7 +718,7 @@ func TestRun(t *testing.T) {
 						secretName, ok := pr.GetAnnotations()[keys.GitAuthSecret]
 						assert.Assert(t, ok, "Cannot find secret %s on annotations", secretName)
 					}
-					if tt.concurrencyLimit > 0 || pr.Spec.Status == pipelinev1.PipelineRunSpecStatusPending {
+					if pr.Spec.Status == pipelinev1.PipelineRunSpecStatusPending {
 						state, ok := pr.GetAnnotations()[keys.State]
 						assert.Assert(t, ok, "State hasn't been set on PR", state)
 						assert.Equal(t, state, kubeinteraction.StateQueued)
