@@ -57,16 +57,15 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 
 	logger.Debugf("reconciling pipelineRun %s/%s", pr.GetNamespace(), pr.GetName())
 
-	// Get fresh PipelineRun from API server to avoid informer cache staleness
-	freshPR, err := r.run.Clients.Tekton.TektonV1().PipelineRuns(pr.GetNamespace()).Get(ctx, pr.GetName(), metav1.GetOptions{})
+	// make sure we have the latest pipelinerun to reconcile, since there is something updating at the same time
+	lpr, err := r.run.Clients.Tekton.TektonV1().PipelineRuns(pr.GetNamespace()).Get(ctx, pr.GetName(), metav1.GetOptions{})
 	if err != nil {
-		logger.Errorf("failed to get fresh pipelineRun %s/%s: %v", pr.GetNamespace(), pr.GetName(), err)
-		return fmt.Errorf("cannot get fresh PipelineRun: %w", err)
+		return fmt.Errorf("cannot get pipelineRun: %w", err)
 	}
 
-	if freshPR.GetResourceVersion() != pr.GetResourceVersion() {
-		logger.Debugf("using fresh pipelineRun data (cached version %s vs fresh version %s)", pr.GetResourceVersion(), freshPR.GetResourceVersion())
-		pr = freshPR
+	if lpr.GetResourceVersion() != pr.GetResourceVersion() {
+		logger.Debugf("Skipping reconciliation, pipelineRun was updated (cached version %s vs fresh version %s)", pr.GetResourceVersion(), lpr.GetResourceVersion())
+		return nil
 	}
 
 	// if pipelineRun is in completed or failed state then return
@@ -113,16 +112,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 	}
 
 	if !pr.IsDone() && !pr.IsCancelled() {
-		return nil
-	}
-
-	// make sure we have the latest pipelinerun to reconcile, since there is something updating at the same time
-	lpr, err := r.run.Clients.Tekton.TektonV1().PipelineRuns(pr.GetNamespace()).Get(ctx, pr.GetName(), metav1.GetOptions{})
-	if err != nil {
-		return fmt.Errorf("cannot get pipelineRun: %w", err)
-	}
-
-	if lpr.GetResourceVersion() != pr.GetResourceVersion() {
 		return nil
 	}
 
