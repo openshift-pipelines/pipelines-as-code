@@ -299,6 +299,189 @@ func TestUpdatePipelineRunState(t *testing.T) {
 
 			assert.Equal(t, updatedPR.Annotations[keys.State], tt.state)
 			assert.Equal(t, updatedPR.Spec.Status, tektonv1.PipelineRunSpecStatus(""))
+
+			// Test SCMReportingPLRStarted annotation for started state
+			if tt.state == kubeinteraction.StateStarted {
+				scmStarted, exists := updatedPR.GetAnnotations()[keys.SCMReportingPLRStarted]
+				assert.Assert(t, exists, "SCMReportingPLRStarted annotation should exist when state is started")
+				assert.Equal(t, scmStarted, "true", "SCMReportingPLRStarted should be 'true'")
+			} else {
+				_, exists := updatedPR.GetAnnotations()[keys.SCMReportingPLRStarted]
+				assert.Assert(t, !exists, "SCMReportingPLRStarted annotation should not exist for non-started states")
+			}
+		})
+	}
+}
+
+func TestReconcileKind_SCMReportingLogic(t *testing.T) {
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	_ = zap.New(observer).Sugar()
+
+	tests := []struct {
+		name                         string
+		pipelineRun                  *tektonv1.PipelineRun
+		shouldCallUpdateToInProgress bool
+		description                  string
+	}{
+		{
+			name: "Running reason without SCMReportingPLRStarted - should call updatePipelineRunToInProgress",
+			pipelineRun: &tektonv1.PipelineRun{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test",
+					Name:      "test-pr",
+					Annotations: map[string]string{
+						keys.State:      kubeinteraction.StateQueued,
+						keys.Repository: "test-repo",
+					},
+				},
+				Spec: tektonv1.PipelineRunSpec{},
+				Status: tektonv1.PipelineRunStatus{
+					Status: knativeduckv1.Status{
+						Conditions: knativeduckv1.Conditions{
+							{
+								Type:   knativeapi.ConditionSucceeded,
+								Status: corev1.ConditionUnknown,
+								Reason: string(tektonv1.PipelineRunReasonRunning),
+							},
+						},
+					},
+				},
+			},
+			shouldCallUpdateToInProgress: true,
+			description:                  "PipelineRun is Running but no SCM reporting done yet",
+		},
+		{
+			name: "Running reason with SCMReportingPLRStarted=true - should NOT call updatePipelineRunToInProgress",
+			pipelineRun: &tektonv1.PipelineRun{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test",
+					Name:      "test-pr",
+					Annotations: map[string]string{
+						keys.State:                  kubeinteraction.StateStarted,
+						keys.Repository:             "test-repo",
+						keys.SCMReportingPLRStarted: "true",
+					},
+				},
+				Spec: tektonv1.PipelineRunSpec{},
+				Status: tektonv1.PipelineRunStatus{
+					Status: knativeduckv1.Status{
+						Conditions: knativeduckv1.Conditions{
+							{
+								Type:   knativeapi.ConditionSucceeded,
+								Status: corev1.ConditionUnknown,
+								Reason: string(tektonv1.PipelineRunReasonRunning),
+							},
+						},
+					},
+				},
+			},
+			shouldCallUpdateToInProgress: false,
+			description:                  "PipelineRun is Running and SCM reporting already done",
+		},
+		{
+			name: "Non-Running reason - should NOT call updatePipelineRunToInProgress",
+			pipelineRun: &tektonv1.PipelineRun{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test",
+					Name:      "test-pr",
+					Annotations: map[string]string{
+						keys.State:      kubeinteraction.StateQueued,
+						keys.Repository: "test-repo",
+					},
+				},
+				Spec: tektonv1.PipelineRunSpec{
+					Status: tektonv1.PipelineRunSpecStatusPending,
+				},
+				Status: tektonv1.PipelineRunStatus{
+					Status: knativeduckv1.Status{
+						Conditions: knativeduckv1.Conditions{
+							{
+								Type:   knativeapi.ConditionSucceeded,
+								Status: corev1.ConditionUnknown,
+								Reason: string(tektonv1.PipelineRunReasonPending),
+							},
+						},
+					},
+				},
+			},
+			shouldCallUpdateToInProgress: false,
+			description:                  "PipelineRun is not in Running state",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := rtesting.SetupFakeContext(t)
+
+			testRepo := &v1alpha1.Repository{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-repo",
+					Namespace: tt.pipelineRun.GetNamespace(),
+				},
+				Spec: v1alpha1.RepositorySpec{
+					URL: randomURL,
+				},
+			}
+
+			testData := testclient.Data{
+				Repositories: []*v1alpha1.Repository{testRepo},
+				PipelineRuns: []*tektonv1.PipelineRun{tt.pipelineRun},
+			}
+			stdata, informers := testclient.SeedTestData(t, ctx, testData)
+
+			// Track if updatePipelineRunToInProgress was called by checking state changes
+			originalState := tt.pipelineRun.GetAnnotations()[keys.State]
+
+			r := &Reconciler{
+				repoLister: informers.Repository.Lister(),
+				run: &params.Run{
+					Clients: clients.Clients{
+						Tekton: stdata.Pipeline,
+					},
+					Info: info.Info{
+						Pac: &info.PacOpts{
+							Settings: settings.Settings{},
+						},
+					},
+				},
+			}
+
+			err := r.ReconcileKind(ctx, tt.pipelineRun)
+
+			// For test cases that should call updatePipelineRunToInProgress,
+			// we expect no error and the state should be updated
+			if tt.shouldCallUpdateToInProgress {
+				assert.NilError(t, err, tt.description)
+
+				// Get the updated PipelineRun to check if state was changed
+				updatedPR, getErr := stdata.Pipeline.TektonV1().PipelineRuns(tt.pipelineRun.GetNamespace()).Get(ctx, tt.pipelineRun.GetName(), metav1.GetOptions{})
+				assert.NilError(t, getErr)
+
+				// Should have been updated to started state with SCMReportingPLRStarted annotation
+				assert.Equal(t, updatedPR.GetAnnotations()[keys.State], kubeinteraction.StateStarted)
+				scmStarted, exists := updatedPR.GetAnnotations()[keys.SCMReportingPLRStarted]
+				assert.Assert(t, exists, "SCMReportingPLRStarted should be set")
+				assert.Equal(t, scmStarted, "true")
+			} else {
+				// For cases that should NOT call updatePipelineRunToInProgress,
+				// the state should remain unchanged
+				updatedPR, getErr := stdata.Pipeline.TektonV1().PipelineRuns(tt.pipelineRun.GetNamespace()).Get(ctx, tt.pipelineRun.GetName(), metav1.GetOptions{})
+				assert.NilError(t, getErr)
+
+				// State should be unchanged
+				assert.Equal(t, updatedPR.GetAnnotations()[keys.State], originalState, tt.description)
+
+				// Check SCMReportingPLRStarted annotation based on original state
+				scmStarted, exists := updatedPR.GetAnnotations()[keys.SCMReportingPLRStarted]
+				if originalState == kubeinteraction.StateStarted {
+					// If original state was already 'started', SCMReportingPLRStarted should exist and be "true"
+					assert.Assert(t, exists, "SCMReportingPLRStarted should exist when original state is started")
+					assert.Equal(t, scmStarted, "true", "SCMReportingPLRStarted should be 'true'")
+				} else {
+					// If original state was not 'started', SCMReportingPLRStarted should not exist
+					assert.Assert(t, !exists, "SCMReportingPLRStarted should not exist when original state is not started")
+				}
+			}
 		})
 	}
 }
