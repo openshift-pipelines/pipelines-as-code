@@ -218,15 +218,21 @@ spec:
 
             - name: ruff-lint
               displayName: "Python Linter (ruff)"
-              image: ghcr.io/astral-sh/ruff
+              image: registry.access.redhat.com/ubi9/python-312
               workingDir: $(workspaces.source.path)
-              args: ["check", "$(workspaces.source.path)"]
+              script: |
+                set -euxo pipefail
+                pip3 install ruff
+                ruff check .
 
             - name: ruff-format
               displayName: "Python Formatter (ruff)"
-              image: ghcr.io/astral-sh/ruff
+              image: registry.access.redhat.com/ubi9/python-312
               workingDir: $(workspaces.source.path)
-              args: ["format", "$(workspaces.source.path)", "--check"]
+              script: |
+                set -euxo pipefail
+                pip3 install ruff
+                ruff format . --check
 
             - name: markdownlint
               displayName: "Markdown Linter"
