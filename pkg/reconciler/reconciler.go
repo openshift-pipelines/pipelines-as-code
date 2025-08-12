@@ -54,6 +54,20 @@ var (
 func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun) pkgreconciler.Event {
 	ctx = info.StoreNS(ctx, system.Namespace())
 	logger := logging.FromContext(ctx).With("namespace", pr.GetNamespace())
+
+	logger.Debugf("reconciling pipelineRun %s/%s", pr.GetNamespace(), pr.GetName())
+
+	// make sure we have the latest pipelinerun to reconcile, since there is something updating at the same time
+	lpr, err := r.run.Clients.Tekton.TektonV1().PipelineRuns(pr.GetNamespace()).Get(ctx, pr.GetName(), metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("cannot get pipelineRun: %w", err)
+	}
+
+	if lpr.GetResourceVersion() != pr.GetResourceVersion() {
+		logger.Debugf("Skipping reconciliation, pipelineRun was updated (cached version %s vs fresh version %s)", pr.GetResourceVersion(), lpr.GetResourceVersion())
+		return nil
+	}
+
 	// if pipelineRun is in completed or failed state then return
 	state, exist := pr.GetAnnotations()[keys.State]
 	if exist && (state == kubeinteraction.StateCompleted || state == kubeinteraction.StateFailed) {
@@ -69,7 +83,12 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 	// another controller outside PaC). To maintain consistency between the PipelineRun
 	// status and the Git provider status, we update both the PipelineRun resource and
 	// the corresponding status on the Git provider here.
-	if reason == string(tektonv1.PipelineRunReasonRunning) && state == kubeinteraction.StateQueued {
+	scmReportingPLRStarted, exist := pr.GetAnnotations()[keys.SCMReportingPLRStarted]
+	startReported := exist && scmReportingPLRStarted == "true"
+	logger.Debugf("pipelineRun %s/%s scmReportingPLRStarted=%v, exist=%v", pr.GetNamespace(), pr.GetName(), startReported, exist)
+
+	if reason == string(tektonv1.PipelineRunReasonRunning) && !startReported {
+		logger.Infof("pipelineRun %s/%s is running but not yet reported to provider, updating status", pr.GetNamespace(), pr.GetName())
 		repoName := pr.GetAnnotations()[keys.Repository]
 		repo, err := r.repoLister.Repositories(pr.Namespace).Get(repoName)
 		if err != nil {
@@ -77,6 +96,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 		}
 		return r.updatePipelineRunToInProgress(ctx, logger, repo, pr)
 	}
+	logger.Debugf("pipelineRun %s/%s condition not met: reason='%s', startReported=%v", pr.GetNamespace(), pr.GetName(), reason, startReported)
 
 	// if its a GitHub App pipelineRun PR then process only if check run id is added otherwise wait
 	if _, ok := pr.Annotations[keys.InstallationID]; ok {
@@ -92,16 +112,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 	}
 
 	if !pr.IsDone() && !pr.IsCancelled() {
-		return nil
-	}
-
-	// make sure we have the latest pipelinerun to reconcile, since there is something updating at the same time
-	lpr, err := r.run.Clients.Tekton.TektonV1().PipelineRuns(pr.GetNamespace()).Get(ctx, pr.GetName(), metav1.GetOptions{})
-	if err != nil {
-		return fmt.Errorf("cannot get pipelineRun: %w", err)
-	}
-
-	if lpr.GetResourceVersion() != pr.GetResourceVersion() {
 		return nil
 	}
 
@@ -343,16 +353,24 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 }
 
 func (r *Reconciler) updatePipelineRunState(ctx context.Context, logger *zap.SugaredLogger, pr *tektonv1.PipelineRun, state string) (*tektonv1.PipelineRun, error) {
+	currentState := pr.GetAnnotations()[keys.State]
+	logger.Infof("updating pipelineRun %v/%v state from %s to %s", pr.GetNamespace(), pr.GetName(), currentState, state)
+	annotations := map[string]string{
+		keys.State: state,
+	}
+	if state == kubeinteraction.StateStarted {
+		annotations[keys.SCMReportingPLRStarted] = "true"
+	}
+
 	mergePatch := map[string]any{
 		"metadata": map[string]any{
 			"labels": map[string]string{
 				keys.State: state,
 			},
-			"annotations": map[string]string{
-				keys.State: state,
-			},
+			"annotations": annotations,
 		},
 	}
+
 	// if state is started then remove pipelineRun pending status
 	if state == kubeinteraction.StateStarted {
 		mergePatch["spec"] = map[string]any{

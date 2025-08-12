@@ -233,7 +233,9 @@ func (v *Provider) getPullRequestsWithCommit(ctx context.Context, sha, org, repo
 
 	for {
 		// Use the "List pull requests associated with a commit" API to check if the commit is part of any open PR
-		prs, resp, err := v.Client().PullRequests.ListPullRequestsWithCommit(ctx, org, repo, sha, opts)
+		prs, resp, err := wrapAPI(v, "list_pull_requests_with_commit", func() ([]*github.PullRequest, *github.Response, error) {
+			return v.Client().PullRequests.ListPullRequestsWithCommit(ctx, org, repo, sha, opts)
+		})
 		if err != nil {
 			// Log the error for debugging purposes
 			v.Logger.Debugf("Failed to list pull requests for commit %s in %s/%s: %v", sha, org, repo, err)

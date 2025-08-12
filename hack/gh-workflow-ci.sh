@@ -3,6 +3,8 @@
 # Helper script for GitHub Actions CI, used from e2e tests.
 set -exufo pipefail
 
+export PAC_API_INSTRUMENTATION_DIR=/tmp/api-instrumentation
+
 create_pac_github_app_secret() {
   # Read from environment variables instead of arguments
   local app_private_key="${PAC_GITHUB_PRIVATE_KEY}"
@@ -93,7 +95,7 @@ run_e2e_tests() {
 
 output_logs() {
   if command -v "snazy" >/dev/null 2>&1; then
-    snazy --skip-line-regexp="^(Reconcile (succeeded|error)|Updating webhook)" /tmp/logs/pac-pods.log
+    snazy --extra-fields --skip-line-regexp="^(Reconcile (succeeded|error)|Updating webhook)" /tmp/logs/pac-pods.log
   else
     # snazy for the poors
     python -c "import sys,json,datetime; [print(f'• { (lambda t: datetime.datetime.fromisoformat(t.rstrip(\"Z\")).strftime(\"%H:%M:%S\") if isinstance(t,str) else datetime.datetime.fromtimestamp(t).strftime(\"%H:%M:%S\"))(json.loads(l.strip())[\"ts\"] )} {json.loads(l.strip()).get(\"msg\",\"\")}') if l.strip().startswith('{') else print(l.strip()) for l in sys.stdin]" \
@@ -126,6 +128,11 @@ collect_logs() {
     done
     kubectl -n ${ns} get events >/tmp/logs/ns/${ns}/events
   done
+
+  if [[ -d ${PAC_API_INSTRUMENTATION_DIR} && -n "$(ls -A ${PAC_API_INSTRUMENTATION_DIR})" ]]; then
+    echo "Copying API instrumentation logs from ${PAC_API_INSTRUMENTATION_DIR}"
+    cp -a ${PAC_API_INSTRUMENTATION_DIR} /tmp/logs/$(basename ${PAC_API_INSTRUMENTATION_DIR})
+  fi
 
   for url in "${test_gitea_smee_url}" "${github_ghe_smee_url}"; do
     find /tmp/logs -type f -exec grep -l "${url}" {} \; | xargs -r sed -i "s|${url}|SMEE_URL|g"
