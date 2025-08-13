@@ -48,12 +48,12 @@ func getLatestRelease(ctx context.Context, k8release string) (string, string, er
 }
 
 // kubectlApply get kubectl binary and apply a yaml file.
-func kubectlApply(uri string) error {
+func kubectlApply(ctx context.Context, uri string) error {
 	path, err := exec.LookPath("kubectl")
 	if err != nil {
 		return err
 	}
-	cmd := exec.Command(path, "apply", "-f", uri)
+	cmd := exec.CommandContext(ctx, path, "apply", "-f", uri)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%w\n%s", err, out)
@@ -112,7 +112,7 @@ func getDashboardURL(ctx context.Context, opts *bootstrapOpts, run *params.Run) 
 }
 
 // installGosmeeForwarder Install a gosmee forwarded to hook.pipelinesascode.com.
-func installGosmeeForwarder(opts *bootstrapOpts) error {
+func installGosmeeForwarder(ctx context.Context, opts *bootstrapOpts) error {
 	gosmeInstall, err := askYN(true, fmt.Sprintf(gosmeeInstallHelpText, opts.forwarderURL), "Do you want me to install the gosmee forwarder?", opts.ioStreams.Out)
 	if err != nil {
 		return err
@@ -132,7 +132,7 @@ func installGosmeeForwarder(opts *bootstrapOpts) error {
 	if _, err = f.WriteString(tmpl); err != nil {
 		return err
 	}
-	if err := kubectlApply(f.Name()); err != nil {
+	if err := kubectlApply(ctx, f.Name()); err != nil {
 		return err
 	}
 	fmt.Fprintf(opts.ioStreams.Out, "💡 Your gosmee forward URL has been generated: %s\n", opts.RouteName)
@@ -175,14 +175,14 @@ func installPac(ctx context.Context, run *params.Run, opts *bootstrapOpts) error
 		}
 	}
 
-	if err := kubectlApply(latestReleaseYaml); err != nil {
+	if err := kubectlApply(ctx, latestReleaseYaml); err != nil {
 		return err
 	}
 
 	fmt.Fprintf(opts.ioStreams.Out, "✓ Pipelines-as-Code %s has been installed\n", latestVersion)
 
 	if (!isOpenShift && opts.RouteName == "") || opts.forceInstallGosmee {
-		if err := installGosmeeForwarder(opts); err != nil {
+		if err := installGosmeeForwarder(ctx, opts); err != nil {
 			return err
 		}
 	}

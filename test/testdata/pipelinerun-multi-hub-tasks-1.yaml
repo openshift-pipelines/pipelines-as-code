@@ -1,13 +1,13 @@
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  name: yq-pipeline-run-3
+  name: multi-hub-tasks-1
   annotations:
     pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
     pipelinesascode.tekton.dev/on-target-branch: "[\\ .TargetBranch //]"
     pipelinesascode.tekton.dev/on-event: "[\\ .TargetEvent //]"
     pipelinesascode.tekton.dev/task: "git-clone"
-    pipelinesascode.tekton.dev/task-1: "[yq:0.3]"
+    pipelinesascode.tekton.dev/task-1: "[tektonhub://git-clone]"
 spec:
   pipelineSpec:
     params:
@@ -32,27 +32,6 @@ spec:
             value: ""
           - name: deleteExisting
             value: "true"
-      - name: yq-replace
-        taskRef:
-          name: yq
-        runAfter:
-          - fetch-repository
-        workspaces:
-          - name: source
-            workspace: source
-        params:
-          - name: files
-            value:
-              - "./helm/values.yaml"
-              - "./helm/values-development.yaml"
-          - name: expression
-            value: .image="$(params.new-image-sha)"
   workspaces:
     - name: source
-      volumeClaimTemplate:
-        spec:
-          accessModes:
-            - ReadWriteOnce
-          resources:
-            requests:
-              storage: 100Mi
+      emptyDir: {}

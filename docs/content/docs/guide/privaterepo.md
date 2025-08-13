@@ -6,7 +6,7 @@ weight: 7
 
 Pipelines-as-Code allows the use of private repositories by creating or
 updating a secret in the target namespace. This secret contains the user token
-required for the [git-clone](https://hub.tekton.dev/tekton/task/git-clone) task
+required for the [git-clone](https://artifacthub.io/packages/tekton-task/tekton-catalog-tasks/git-clone) task
 to clone private repositories.
 
 Whenever Pipelines-as-Code creates a new PipelineRun in the target namespace,
@@ -40,7 +40,7 @@ depending on your requirements.
 ## Using the generated token in your PipelineRun
 
 The git-clone task documentation, which is available at
-<https://github.com/tektoncd/catalog/blob/main/task/git-clone/0.4/README.md>,
+<https://github.com/tektoncd-catalog/git-clone/tree/main/task/git-clone>,
 states that the secret needs to be referred to as a workspace named
 "basic-auth" inside your PipelineRun so that it can be passed to
 the `git-clone` task.

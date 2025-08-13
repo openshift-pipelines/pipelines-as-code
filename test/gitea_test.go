@@ -65,15 +65,29 @@ func TestGiteaPullRequestTaskAnnotations(t *testing.T) {
 	defer f()
 }
 
-func TestGiteaPullRequestTaskAnnotationsSameTaskDifferentVersion(t *testing.T) {
+func TestGiteaTaskResolutionFromMultipleHubs(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		Regexp:      successRegexp,
 		TargetEvent: triggertype.PullRequest.String(),
 		YAMLFiles: map[string]string{
-			".tekton/pr1.yaml": "testdata/pipelinerun-with-yq-3.yaml",
-			".tekton/pr2.yaml": "testdata/pipelinerun-with-yq-4.yaml",
+			".tekton/pr1.yaml": "testdata/pipelinerun-multi-hub-tasks-1.yaml",
+			".tekton/pr2.yaml": "testdata/pipelinerun-multi-hub-tasks-2.yaml",
 		},
 		CheckForNumberStatus: 2,
+		CheckForStatus:       "success",
+	}
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+}
+
+func TestGiteaPipelineResolutionFromHub(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		Regexp:      successRegexp,
+		TargetEvent: triggertype.PullRequest.String(),
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml": "testdata/pipelinerun-remote-pipeline-from-hub.yaml",
+		},
+		CheckForNumberStatus: 1,
 		CheckForStatus:       "success",
 	}
 	_, f := tgitea.TestPR(t, topts)
@@ -1191,6 +1205,41 @@ func TestGiteaPushToTagGreedy(t *testing.T) {
 	}
 	_, err = twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
 	assert.NilError(t, err)
+}
+
+// TestGiteaHubTaskNotFound tests that we fail gracefully when a task is not
+// found in the hub, or a specific version of a task is not found.
+func TestGiteaHubTaskNotFound(t *testing.T) {
+	tests := []struct {
+		name     string
+		yamlFile string
+		errMsg   string
+	}{
+		{
+			name:     "task not found",
+			yamlFile: "testdata/pipelinerun-hub-task-not-found.yaml",
+			errMsg:   ".*could not fetch remote task.*i-am-a-task-that-does-not-exist-i-hope.*",
+		},
+		{
+			name:     "task version not found",
+			yamlFile: "testdata/pipelinerun-hub-task-version-not-found.yaml",
+			errMsg:   ".*could not fetch remote task.*git-clone:99.99.99.*",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			topts := &tgitea.TestOpts{
+				TargetEvent:  triggertype.PullRequest.String(),
+				YAMLFiles:    map[string]string{".tekton/pr.yaml": tt.yamlFile},
+				ExpectEvents: true,
+			}
+			_, f := tgitea.TestPR(t, topts)
+			defer f()
+			topts.Regexp = regexp.MustCompile(tt.errMsg)
+			tgitea.WaitForPullRequestCommentMatch(t, topts)
+		})
+	}
 }
 
 // Local Variables:

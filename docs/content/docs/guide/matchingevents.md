@@ -283,7 +283,7 @@ If you need to do some advanced matching, `Pipelines-as-Code` supports CEL
 expressions to do advanced filtering on the specific event you need to be matched.
 
 {{< hint danger >}}
-If you use the `on-cel-expression` annotation in the same pipeline run as an `on-event`, `on-target-branch`, `on-label`, `on-path-change`, or `on-path-change-ignore`
+If you use the `on-cel-expression` annotation in the same PipelineRun as an `on-event`, `on-target-branch`, `on-label`, `on-path-change`, or `on-path-change-ignore`
 annotation, the `on-cel-expression` annotation takes priority and Pipelines-as-Code ignores the other annotations.
 {{< /hint >}}
 

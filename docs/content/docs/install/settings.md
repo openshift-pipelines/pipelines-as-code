@@ -11,7 +11,7 @@ There is a few things you can configure through the config map
 * `application-name`
 
   The name of the application for example when showing the results of the
-  pipelinerun. If you're using the GitHub App you will
+  PipelineRun. If you're using the GitHub App you will
   need to customize the label on the github app setting as well. .  Default to
   `Pipelines-as-Code CI`
 
@@ -60,7 +60,7 @@ There is a few things you can configure through the config map
 
 * `remote-tasks`
 
-  This allows fetching remote tasks on pipelinerun annotations. This feature is
+  This allows fetching remote tasks on PipelineRun annotations. This feature is
   enabled by default.
 
 * `bitbucket-cloud-check-source-ip`
@@ -85,20 +85,20 @@ There is a few things you can configure through the config map
 * `max-keep-run-upper-limit`
 
   This let the user define a max limit for the max-keep-run value. When the user
-  has defined a max-keep-run annotation on a pipelineRun then its value should
+  has defined a max-keep-run annotation on a PipelineRun then its value should
   be less than or equal to the upper limit, otherwise upper limit will be used
   for cleanup.
 
 * `default-max-keep-runs`
 
   This let the user define a default limit for the `max-keep-run` value.
-  When defined it will applied to all the pipelineRun without a `max-keep-runs`
+  When defined it will applied to all the PipelineRun without a `max-keep-runs`
   annotation.
 
 * `auto-configure-new-github-repo`
 
   This setting let you autoconfigure newly created GitHub repositories. When
-  Pipelines-as-Code sees a new repository URL from a payload, It Code will set
+  Pipelines-as-Code sees a new repository URL from a payload, It will set
   up a namespace for your repository and create a Repository CR.
 
   This feature is disabled by default and is only supported with GitHub App.
@@ -124,6 +124,19 @@ There is a few things you can configure through the config map
 
   `https://github.com/owner/repo` will be `owner-repo-ci`
 
+* `auto-configure-repo-repository-template`
+
+  If `auto-configure-new-github-repo` is enabled then you can provide a template
+  for generating the name for your new repository custom resource. By default, the repository custom resource name will be generated using this format `{{repo_name}}-repo-cr`.
+
+  You can override the default using the following variables
+
+  * `{{repo_owner}}`: The repository owner.
+  * `{{repo_name}}`: The repository name.
+  For example, if the template is defined as `{{repo_owner}}-{{repo_name}}-repo-cr`,
+  then the Repository CR name generated for the repository
+  `https://github.com/owner/test` will be `owner-test-repo-cr`
+
 * `remember-ok-to-test`
 
   If `remember-ok-to-test` is true then if `ok-to-test` is done on pull request then in
@@ -141,16 +154,16 @@ There is a few things you can configure through the config map
 
 * `skip-push-event-for-pr-commits`
 
-  When enabled, this option prevents duplicate pipeline runs when a commit appears in
+  When enabled, this option prevents duplicate PipelineRuns when a commit appears in
   both a push event and a pull request. If a push event comes from a commit that is
   part of an open pull request, the push event will be skipped as it would create
-  a duplicate pipeline run.
+  a duplicate PipelineRun.
   
   This feature works by checking if a pushed commit SHA exists in any open pull request,
   and if so, skipping the push event processing.
-  
+
   Default: `true`
-  
+
 {{< support_matrix github_app="true" github_webhook="true" gitea="false" gitlab="false" bitbucket_cloud="false" bitbucket_datacenter="false" >}}
 
 ### Global Cancel In Progress Settings
@@ -179,31 +192,47 @@ There is a few things you can configure through the config map
 
   This is disabled by default.
 
-### Tekton Hub support
+### Remote Hub Catalogs
 
-Pipelines-as-Code supports fetching task with its remote annotations feature, by default it will fetch it from the [public tekton hub](https://hub.tekton.dev/) but you can configure it to point to your own with these settings:
+Pipelines-as-Code supports fetching tasks and pipelines with its remote annotations feature. By default, it will fetch from [Artifact Hub](https://artifacthub.io/), but you can also implicitly use the [Tekton Hub](https://hub.tekton.dev/) by using the `tektonhub://` prefix (as documented below) or point to your own custom hub with these settings:
 
 * `hub-url`
 
-  The base URL for the [tekton hub](https://github.com/tektoncd/hub/)
-  API. This default to the [public hub](https://hub.tekton.dev/): <https://api.hub.tekton.dev/v1>
+  The base URL for the hub API. For Artifact Hub (default), this is set to <https://artifacthub.io>. For Tekton Hub, it would be <https://api.hub.tekton.dev/v1>.
 
 * `hub-catalog-name`
 
-  The [tekton hub](https://github.com/tektoncd/hub/) catalog name. default to `tekton`
+  The catalog name in the hub. For Artifact Hub, the defaults are `tekton-catalog-tasks` for tasks and `tekton-catalog-pipelines` for pipelines. For Tekton Hub, this defaults to `tekton`.
 
-* Additionally you can have multiple hub configured by using the following format:
+* `hub-catalog-type`
+
+  The type of hub catalog. Supported values are:
+  
+  * `artifacthub` - For Artifact Hub (default if not specified)
+  * `tektonhub` - For Tekton Hub
+
+* By default, both Artifact Hub and Tekton Hub are configured:
+  
+  * Artifact Hub is the default catalog (no prefix needed, but `artifact://` can be used explicitly)
+  * Tekton Hub is available using the `tektonhub://` prefix
+
+* Additionally you can have multiple hubs configured by using the following format:
 
   ```yaml
   catalog-1-id: "custom"
   catalog-1-name: "tekton"
   catalog-1-url: "https://api.custom.hub/v1"
+  catalog-1-type: "tektonhub"
+  
+  catalog-2-id: "artifact"
+  catalog-2-name: "tekton-catalog-tasks"
+  catalog-2-url: "https://artifacthub.io"
+  catalog-2-type: "artifacthub"
   ```
 
-  Users are able to reference the custom hub by adding a `custom://` prefix to
-  their task they want to fetch from the `custom` catalog.
+  Users are able to reference the custom hub by adding a prefix matching the catalog ID, such as `custom://` for a task they want to fetch from the `custom` catalog.
 
-  You can add as many custom hub as you want by incrementing the `catalog-NUMBER` number.
+  You can add as many custom hubs as you want by incrementing the `catalog-NUMBER` number.
 
   Pipelines-as-Code will not try to fallback to the default or another custom hub
   if the task referenced is not found (the Pull Request will be set as failed)
@@ -225,7 +254,7 @@ A few settings are available to configure this feature:
   Enable or disable the feature to show a log snippet of the failed task when
   there is an error in a PipelineRun.
 
-  Due of the constraint of the different GIT provider API, It will show the last
+  Due to the constraints of the different GIT provider APIs, it will show the last
   3 lines of the first container from the first task that has exited with an
   error in the PipelineRun.
 
@@ -300,11 +329,11 @@ A few settings are available to configure this feature:
 
   Set this to the URL where to view the details of the `Namespace`.
 
-  The URL supports all the standard variables as exposed on the Pipelinerun (refer to
+  The URL supports all the standard variables as exposed on the PipelineRun (refer to
   the documentation on [Authoring PipelineRuns](../authoringprs)) with the added
   variable:
 
-  * `{{ namespace }}`: The target namespace where the pipelinerun is executed
+  * `{{ namespace }}`: The target namespace where the PipelineRun is executed
 
   example: `https://mycorp.com/ns/{{ namespace }}`
 
@@ -312,13 +341,13 @@ A few settings are available to configure this feature:
 
   Set this to the URL where to view the details of the `PipelineRun`. This is
   shown when the PipelineRun is started so the user can follow execution on your
-  console or when to see more details about the pipelinerun on result.
+  console or when to see more details about the PipelineRun on result.
 
-  The URL supports all the standard variables as exposed on the Pipelinerun (refer to
+  The URL supports all the standard variables as exposed on the PipelineRun (refer to
   the documentation on [Authoring PipelineRuns](../authoringprs)) with the added
   variable:
 
-  * `{{ namespace }}`: The target namespace where the pipelinerun is executed
+  * `{{ namespace }}`: The target namespace where the PipelineRun is executed
   * `{{ pr }}`: The PipelineRun name.
 
   example: `https://mycorp.com/ns/{{ namespace }}/pipelinerun/{{ pr }}`
@@ -340,7 +369,7 @@ A few settings are available to configure this feature:
 
   the `{{ custom }}` tag in the URL is expanded as `value`.
 
-  This let operator to add specific information like a `UUID` about a user as
+  This lets operators add specific information such as a `UUID` about a user as
   parameter in their repo CR and let it link to the console.
 
 * `custom-console-url-pr-tasklog`
@@ -352,7 +381,7 @@ A few settings are available to configure this feature:
   described in the `custom-console-url-pr-details` setting and as well those added
   values:
 
-  * `{{ namespace }}`: The target namespace where the pipelinerun is executed
+  * `{{ namespace }}`: The target namespace where the PipelineRun is executed
   * `{{ pr }}`: The PipelineRun name.
   * `{{ task }}`: The Task name in the PR
   * `{{ pod }}`: The Pod name of the TaskRun
@@ -387,91 +416,3 @@ A few settings are available to configure this feature:
   The provider set to `GitHub App` by tkn pac bootstrap, used to detect if a
   GitHub App is already configured when a user runs the bootstrap command a
   second time or the `webhook add` command.
-
-## Logging Configuration
-
-  Pipelines-as-Code uses the ConfigMap named `pac-config-logging` in the same namespace (`pipelines-as-code` by default) as the controllers. To get the ConfigMap use the following command:
-
-  ```bash
-  $ kubectl get configmap pac-config-logging -n pipelines-as-code
-
-  NAME                 DATA   AGE
-  pac-config-logging   4      9m44s
-  ```
-
-  To retrieve the content of the ConfigMap:
-
-  ```bash
-  $ kubectl get configmap pac-config-logging -n pipelines-as-code -o yaml
-
-  apiVersion: v1
-  kind: ConfigMap
-  metadata:
-    labels:
-      app.kubernetes.io/instance: default
-      app.kubernetes.io/part-of: pipelines-as-code
-    name: pac-config-logging
-    namespace: pipelines-as-code
-  data:
-    loglevel.pac-watcher: info
-    loglevel.pipelines-as-code-webhook: info
-    loglevel.pipelinesascode: info
-    zap-logger-config: |
-      {
-        "level": "info",
-        "development": false,
-        "sampling": {
-          "initial": 100,
-          "thereafter": 100
-        },
-        "outputPaths": ["stdout"],
-        "errorOutputPaths": ["stderr"],
-        "encoding": "json",
-        "encoderConfig": {
-          "timeKey": "ts",
-          "levelKey": "level",
-          "nameKey": "logger",
-          "callerKey": "caller",
-          "messageKey": "msg",
-          "stacktraceKey": "stacktrace",
-          "lineEnding": "",
-          "levelEncoder": "",
-          "timeEncoder": "iso8601",
-          "durationEncoder": "",
-          "callerEncoder": ""
-        }
-      }
-  ```
-
-The `loglevel.*` fields define the log level for the controllers:
-
-* loglevel.pipelinesascode - the log level for the pipelines-as-code-controller component
-* loglevel.pipelines-as-code-webhook - the log level for the pipelines-as-code-webhook component
-* loglevel.pac-watcher - the log level for the pipelines-as-code-watcher component
-
-You can change the log level from `info` to `debug` or any other supported values. For example, select the `debug` log level for the pipelines-as-code-watcher component:
-
-```bash
-kubectl patch configmap pac-config-logging -n pipelines-as-code --type json -p '[{"op": "replace", "path": "/data/loglevel.pac-watcher", "value":"debug"}]'
-```
-
-After this command, the controller gets a new log level value.
-If you want to use the same log level for all Pipelines-as-Code components, delete `level.*` values from configmap:
-
-```bash
-kubectl patch configmap pac-config-logging -n pipelines-as-code --type json -p '[  {"op": "remove", "path": "/data/loglevel.pac-watcher"},  {"op": "remove", "path": "/data/loglevel.pipelines-as-code-webhook"},  {"op": "remove", "path": "/data/loglevel.pipelinesascode"}]'
-```
-
-In this case, all Pipelines-as-Code components get a common log level from `zap-logger-config` - `level` field from the json.
-
-`zap-logger-config` supports the following log levels:
-
-* debug - fine-grained debugging
-* info - normal logging
-* warn - unexpected but non-critical errors
-* error - critical errors; unexpected during normal operation
-* dpanic - in debug mode, trigger a panic (crash)
-* panic - trigger a panic (crash)
-* fatal - immediately exit with exit status 1 (failure)
-
-See more: <https://knative.dev/docs/serving/observability/logging/config-logging>

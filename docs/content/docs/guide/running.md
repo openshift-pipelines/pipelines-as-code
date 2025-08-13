@@ -109,7 +109,7 @@ pac](../cli/#install) CLI :
 tkn pac logs -n my-pipeline-ci -L
 ```
 
-If you need to show another pipelinerun than the last one you can use the `tkn
+If you need to show another PipelineRun than the last one you can use the `tkn
 pac` logs command and it will ask you to select a PipelineRun attached to the
 repository :
 

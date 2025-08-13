@@ -1,0 +1,16 @@
+---
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+    name: "\\ .PipelineName //"
+    annotations:
+        pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
+        pipelinesascode.tekton.dev/on-target-branch: "[\\ .TargetBranch //]"
+        pipelinesascode.tekton.dev/on-event: "[\\ .TargetEvent //]"
+        pipelinesascode.tekton.dev/task: "i-am-a-task-that-does-not-exist-i-hope"
+spec:
+    pipelineSpec:
+        tasks:
+            - name: task
+              taskRef:
+                  name: i-am-a-task-that-does-not-exist-i-hope

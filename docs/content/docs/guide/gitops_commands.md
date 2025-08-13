@@ -41,12 +41,12 @@ Please be aware that GitOps commands such as `/test` and others will not functio
 
 If you want to trigger a GitOps command on a pushed commit, you can include the `GitOps` comments within your commit messages. These comments can be used to restart either all pipelines or specific ones. Here's how it works:
 
-For restarting all pipeline runs:
+For restarting all PipelineRuns:
 
 1. Use `/retest` or `/test` within your commit message.
 
-For restarting a specific pipeline run:
-2. Use `/retest <pipelinerun-name>` or `/test <pipelinerun-name>` within your commit message. Replace `<pipelinerun-name>` with the specific name of the pipeline run you want to restart.
+For restarting a specific PipelineRun:
+2. Use `/retest <pipelinerun-name>` or `/test <pipelinerun-name>` within your commit message. Replace `<pipelinerun-name>` with the specific name of the PipelineRun you want to restart.
 
 The GitOps command triggers a PipelineRun only on the latest commit (HEAD) of the branch and does not work on older commits.
 
@@ -262,8 +262,7 @@ Here are the possible event types:
 * `cancel-comment`: The event is a `/cancel <PipelineRun>` that would cancel a specific PipelineRun.
 * `ok-to-test-comment`: The event is a `/ok-to-test` that would allow running the CI for an unauthorized user.
 
-When a repository owner issues the `/ok-to-test` command on a pull request raised by an unauthorized user, and no PipelineRun exists in the .tekton directory for `pull_request` event,
-Pipelines-as-Code will create a neutral check-run status. This status serves to indicate that no PipelineRun has been matched, preventing any workflows from being blocked such as auto-merge, will proceed as expected.
+If a repository owner comments `/ok-to-test` on a pull request from an external contributor but no PipelineRun **matches** the `pull_request` event (or the repository has no `.tekton` directory), Pipelines-as-Code sets a **neutral** commit status. This indicates that no PipelineRun was matched, allowing other workflows—such as auto-merge—to proceed without being blocked.
 
 {{< hint info >}}
 

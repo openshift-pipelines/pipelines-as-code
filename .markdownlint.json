@@ -1,8 +1,10 @@
 {
-    "line-length": false,
-    "first-header-h1": false,
-    "no-inline-html": false,
-    "MD013": false,
-    "MD025": false,
-    "descriptive-link-text": false
+  "line-length": false,
+  "first-header-h1": false,
+  "first-header-heading": false,
+  "no-inline-html": false,
+  "MD013": false,
+  "MD025": false,
+  "MD041": false,
+  "descriptive-link-text": false
 }

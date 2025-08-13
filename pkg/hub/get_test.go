@@ -5,6 +5,7 @@ import (
 	"sync"
 	"testing"
 
+	hubType "github.com/openshift-pipelines/pipelines-as-code/pkg/hub/vars"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -13,22 +14,35 @@ import (
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
-func TestGetTask(t *testing.T) {
-	const testHubURL = "https://myprecioushub"
-	const testCatalogHubName = "tekton"
+const (
+	sampleArtifactHubManifest = `{"data": {"manifestRaw": "%s"}}`
+	testHubURL                = "https://myprecioushub"
+	testCatalogHubName        = "tekton"
+	testHubCatalogName        = "tekton-catalog-tasks"
+)
 
+func TestGetTask(t *testing.T) {
 	var hubCatalogs sync.Map
 	hubCatalogs.Store(
 		"default", settings.HubCatalog{
 			Index: "default",
 			URL:   testHubURL,
-			Name:  testCatalogHubName,
+			Name:  "default",
+			Type:  hubType.ArtifactHubType,
 		})
 	hubCatalogs.Store(
 		"anotherHub", settings.HubCatalog{
 			Index: "1",
 			URL:   testHubURL,
 			Name:  testCatalogHubName,
+			Type:  hubType.ArtifactHubType,
+		})
+	hubCatalogs.Store(
+		hubType.ArtifactHubType, settings.HubCatalog{
+			Index: "2",
+			URL:   testHubURL,
+			Name:  "tekton-catalog-tasks",
+			Type:  hubType.ArtifactHubType,
 		})
 	tests := []struct {
 		name        string
@@ -41,18 +55,14 @@ func TestGetTask(t *testing.T) {
 	}{
 		{
 			name:        "get-task-latest",
-			resource:    "task1",
-			want:        "This is Task1",
+			resource:    "git-clone",
+			want:        "sometask",
 			wantErr:     false,
 			catalogName: "default",
 			kind:        "task",
 			config: map[string]map[string]string{
-				fmt.Sprintf("%s/resource/%s/task/task1", testHubURL, testCatalogHubName): {
-					"body": `{"data":{"latestVersion": {"version": "0.2"}}}`,
-					"code": "200",
-				},
-				fmt.Sprintf("%s/resource/%s/task/task1/0.2/raw", testHubURL, testCatalogHubName): {
-					"body": "This is Task1",
+				fmt.Sprintf("%s/api/v1/packages/tekton-task/tekton-catalog-tasks/git-clone", testHubURL): {
+					"body": fmt.Sprintf(sampleArtifactHubManifest, "sometask"),
 					"code": "200",
 				},
 			},
@@ -65,12 +75,8 @@ func TestGetTask(t *testing.T) {
 			catalogName: "anotherHub",
 			kind:        "task",
 			config: map[string]map[string]string{
-				fmt.Sprintf("%s/resource/%s/task/task1", testHubURL, testCatalogHubName): {
-					"body": `{"data":{"latestVersion": {"version": "0.2"}}}`,
-					"code": "200",
-				},
-				fmt.Sprintf("%s/resource/%s/task/task1/0.2/raw", testHubURL, testCatalogHubName): {
-					"body": "This is Task1",
+				fmt.Sprintf("%s/api/v1/packages/tekton-task/tekton/task1", testHubURL): {
+					"body": fmt.Sprintf(sampleArtifactHubManifest, "This is Task1"),
 					"code": "200",
 				},
 			},
@@ -121,30 +127,22 @@ func TestGetTask(t *testing.T) {
 			catalogName: "default",
 			kind:        "task",
 			config: map[string]map[string]string{
-				fmt.Sprintf("%s/resource/%s/task/task2/1.1", testHubURL, testCatalogHubName): {
-					"body": `{}`,
-					"code": "200",
-				},
-				fmt.Sprintf("%s/resource/%s/task/task2/1.1/raw", testHubURL, testCatalogHubName): {
-					"body": "This is Task2",
+				fmt.Sprintf("%s/api/v1/packages/tekton-task/tekton-catalog-tasks/task2/1.1", testHubURL): {
+					"body": fmt.Sprintf(sampleArtifactHubManifest, "This is Task2"),
 					"code": "200",
 				},
 			},
 		},
 		{
 			name:        "get-pipeline-latest",
-			resource:    "pipeline1",
-			want:        "This is Pipeline1",
+			resource:    "git-clone",
+			want:        "sometask",
 			wantErr:     false,
 			catalogName: "default",
 			kind:        "pipeline",
 			config: map[string]map[string]string{
-				fmt.Sprintf("%s/resource/%s/pipeline/pipeline1", testHubURL, testCatalogHubName): {
-					"body": `{"data":{"latestVersion": {"version": "0.2"}}}`,
-					"code": "200",
-				},
-				fmt.Sprintf("%s/resource/%s/pipeline/pipeline1/0.2/raw", testHubURL, testCatalogHubName): {
-					"body": "This is Pipeline1",
+				fmt.Sprintf("%s/api/v1/packages/tekton-pipeline/tekton-catalog-pipelines/git-clone", testHubURL): {
+					"body": fmt.Sprintf(sampleArtifactHubManifest, "sometask"),
 					"code": "200",
 				},
 			},
@@ -157,12 +155,8 @@ func TestGetTask(t *testing.T) {
 			catalogName: "anotherHub",
 			kind:        "pipeline",
 			config: map[string]map[string]string{
-				fmt.Sprintf("%s/resource/%s/pipeline/pipeline1", testHubURL, testCatalogHubName): {
-					"body": `{"data":{"latestVersion": {"version": "0.2"}}}`,
-					"code": "200",
-				},
-				fmt.Sprintf("%s/resource/%s/pipeline/pipeline1/0.2/raw", testHubURL, testCatalogHubName): {
-					"body": "This is Pipeline1",
+				fmt.Sprintf("%s/api/v1/packages/tekton-pipeline/tekton/pipeline1", testHubURL): {
+					"body": fmt.Sprintf(sampleArtifactHubManifest, "This is Pipeline1"),
 					"code": "200",
 				},
 			},
@@ -199,12 +193,36 @@ func TestGetTask(t *testing.T) {
 			catalogName: "default",
 			kind:        "pipeline",
 			config: map[string]map[string]string{
-				fmt.Sprintf("%s/resource/%s/pipeline/pipeline2/1.1", testHubURL, testCatalogHubName): {
-					"body": `{}`,
+				fmt.Sprintf("%s/api/v1/packages/tekton-pipeline/tekton-catalog-pipelines/pipeline2/1.1", testHubURL): {
+					"body": fmt.Sprintf(sampleArtifactHubManifest, "This is Pipeline2"),
 					"code": "200",
 				},
-				fmt.Sprintf("%s/resource/%s/pipeline/pipeline2/1.1/raw", testHubURL, testCatalogHubName): {
-					"body": "This is Pipeline2",
+			},
+		},
+		{
+			name:        "get-task-latest-artifacthub",
+			resource:    "git-clone",
+			want:        "sometask",
+			wantErr:     false,
+			catalogName: hubType.ArtifactHubType,
+			kind:        "task",
+			config: map[string]map[string]string{
+				fmt.Sprintf("%s/api/v1/packages/tekton-task/tekton-catalog-tasks/git-clone", testHubURL): {
+					"body": fmt.Sprintf(sampleArtifactHubManifest, "sometask"),
+					"code": "200",
+				},
+			},
+		},
+		{
+			name:        "get-task-specific-version-artifacthub",
+			resource:    "git-clone:0.9.0",
+			want:        "aspecifictask",
+			wantErr:     false,
+			catalogName: hubType.ArtifactHubType,
+			kind:        "task",
+			config: map[string]map[string]string{
+				fmt.Sprintf("%s/api/v1/packages/tekton-task/tekton-catalog-tasks/git-clone/0.9.0", testHubURL): {
+					"body": fmt.Sprintf(sampleArtifactHubManifest, "aspecifictask"),
 					"code": "200",
 				},
 			},

@@ -58,6 +58,8 @@ this repo should differ from the one which is configured as part of `TEST_GITHUB
 - `TEST_BITBUCKET_SERVER_API_URL` - URL where your Bitbucket Data Center instance is running.
 - `TEST_BITBUCKET_SERVER_WEBHOOK_SECRET` - Webhook secret
 
+- `PAC_API_INSTRUMENTATION_DIR` - Optional. When set, E2E tests write per-test JSON reports of GitHub API calls parsed from controller logs to this directory. Useful for analyzing API usage and rate limits. Example: `export PAC_API_INSTRUMENTATION_DIR=/tmp/api-instrumentation`.
+
 You don't need to configure all of those if you restrict running your e2e tests to a subset.
 
 ## Running
@@ -155,6 +157,57 @@ The `hack/gh-workflow-ci.sh` script contains several functions that assist in th
 
 The script filters tests by category using pattern matching on test function names.
 
+> [!NOTE]
+> For details on how API call metrics are generated and archived as artifacts, see [API Instrumentation (optional)](#api-instrumentation-optional).
+
+### API Instrumentation (optional)
+
+To help debug and analyze GitHub API usage during E2E runs, tests can emit
+structured JSON reports of API calls when the environment variable
+`PAC_API_INSTRUMENTATION_DIR` is set.
+
+> [!NOTE]
+> Currently supported only for GitHub (both GitHub App and GitHub webhook flows). Support for other providers is planned.
+
+- Set `PAC_API_INSTRUMENTATION_DIR` to a writable path before running tests,
+for example:
+  - `export PAC_API_INSTRUMENTATION_DIR=/tmp/api-instrumentation`
+- Each test produces a file named like `YYYY-MM-DDTHH-MM-SS_<test_name>.json` containing summary fields and an array of API calls (operation, duration_ms, url_path, status_code, rate_limit_remaining, provider, repo).
+- In CI, this variable defaults to `/tmp/api-instrumentation` and `hack/gh-workflow-ci.sh collect_logs` copies the directory into the uploaded artifacts.
+
+Log source details:
+
+- Parses controller pod logs from the `pac-controller` container.
+- Uses label selector `app.kubernetes.io/name=controller` (or `ghe-controller` when testing against GHE).
+- Considers only log lines after the last occurrence of `github-app: initialized OAuth2 client`.
+- Matches lines containing `GitHub API call completed` and extracts the embedded JSON payload.
+
+Sample output:
+
+```json
+{
+  "test_name": "TestGithubAppSimple",
+  "timestamp": "2025-08-05T16:12:20Z",
+  "controller": "controller",
+  "pr_number": 123,
+  "sha": "abcdef1",
+  "target_namespace": "pac-e2e-ns-xyz12",
+  "total_calls": 2,
+  "oauth2_marker_line": 42,
+  "github_api_calls": [
+    {
+      "operation": "get_commit",
+      "duration_ms": 156,
+      "url_path": "/api/v3/repos/org/repo/git/commits/62a0...",
+      "rate_limit_remaining": "",
+      "status_code": 200,
+      "provider": "github",
+      "repo": "org/repo"
+    }
+  ]
+}
+```
+
 ### Test Execution Flow
 
 1. **Setup**:
@@ -176,6 +229,7 @@ The script filters tests by category using pattern matching on test function nam
    - Collect logs regardless of test outcome
    - Detect any panic in the controller logs
    - Upload artifacts to GitHub Actions
+   - If `PAC_API_INSTRUMENTATION_DIR` is set, include API instrumentation reports (see [API Instrumentation (optional)](#api-instrumentation-optional))
 
 ### Debugging CI
 

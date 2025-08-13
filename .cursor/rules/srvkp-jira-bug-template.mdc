@@ -1,0 +1,23 @@
+---
+description: SRVKP Jira Bug Report Template
+alwaysApply: false
+---
+
+# SRVKP Jira Bug Report Template
+
+h3. *Description of problem:*
+
+Workaround
+h3. *Prerequisites (if any, like setup, operators/versions):*
+h3. *Steps to Reproduce*
+
+ # <steps>
+
+h3. *Actual results:*
+h3. *Expected results:*
+h3. *Reproducibility (Always/Intermittent/Only Once):*
+h3. *Acceptance criteria:*
+
+*Definition of Done:*
+h3. *Build Details:*
+h3. *Additional info (Such as Logs, Screenshots, etc):*

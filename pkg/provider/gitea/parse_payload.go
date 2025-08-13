@@ -52,7 +52,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.TriggerTarget = triggertype.PullRequest
 		processedEvent.EventType = triggertype.PullRequest.String()
 		if provider.Valid(string(gitEvent.Action), []string{pullRequestLabelUpdated}) {
-			processedEvent.EventType = string(triggertype.LabelUpdate)
+			processedEvent.EventType = string(triggertype.PullRequestLabeled)
 		}
 		for _, label := range gitEvent.PullRequest.Labels {
 			processedEvent.PullRequestLabel = append(processedEvent.PullRequestLabel, label.Name)

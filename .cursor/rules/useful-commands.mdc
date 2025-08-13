@@ -1,0 +1,18 @@
+---
+description: Useful commands for building and testing the project.
+alwaysApply: false
+---
+
+- `make help` - Show all available make targets
+- `make all` - Build all binaries, run tests and lint
+- `make html-coverage` - Generate HTML test coverage report
+- `make test-no-cache` - Run tests without caching
+- `make clean` - Clean build artifacts
+
+# Useful Commands
+
+- `make help` - Show all available make targets
+- `make all` - Build all binaries, run tests and lint
+- `make html-coverage` - Generate HTML test coverage report
+- `make test-no-cache` - Run tests without caching
+- `make clean` - Clean build artifacts

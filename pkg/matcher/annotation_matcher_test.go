@@ -1641,8 +1641,37 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 			},
 			wantErr: false,
 			wantLog: []string{
-				`Warning: The Pipelinerun 'pipeline-on-cel-test' has 'on-cel-expression' defined along with [on-event, on-target-branch] annotation(s). The 'on-cel-expression' will take precedence and these annotations will be ignored`,
+				`Warning: The PipelineRun 'pipeline-on-cel-test' has 'on-cel-expression' defined along with [on-event, on-target-branch] annotation(s). The 'on-cel-expression' will take precedence and these annotations will be ignored`,
 			},
+		},
+		{
+			name: "invalid-cel-expression-error",
+			args: args{
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "pipeline-on-cel-test",
+							Annotations: map[string]string{
+								keys.OnEvent:         "[pull_request]",
+								keys.OnTargetBranch:  "[main]",
+								keys.OnCelExpression: `event == "pull_request" &`,
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:               "https://hello/moto",
+					TriggerTarget:     "pull_request",
+					EventType:         "pull_request",
+					BaseBranch:        "main",
+					HeadBranch:        "warn-for-cel",
+					PullRequestNumber: 10,
+					Request: &info.Request{
+						Header: http.Header{},
+					},
+				},
+			},
+			wantErr: true,
 		},
 		{
 			name: "no-match-on-label",
@@ -1693,7 +1722,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 				runevent: info.Event{
 					URL:               "https://hello/moto",
 					TriggerTarget:     triggertype.PullRequest,
-					EventType:         string(triggertype.LabelUpdate),
+					EventType:         string(triggertype.PullRequestLabeled),
 					HeadBranch:        "source",
 					BaseBranch:        "main",
 					PullRequestNumber: 10,

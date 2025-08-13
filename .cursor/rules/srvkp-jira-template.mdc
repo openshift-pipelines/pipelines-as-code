@@ -1,0 +1,66 @@
+---
+description: SRVKP Jira Ticket Template
+alwaysApply: false
+---
+
+# SRVKP Jira Ticket Template
+
+h1. Story (Required)
+
+As a <PERSONA> trying to <ACTION> I want <THIS OUTCOME>
+
+_<Describes high level purpose and goal for this story. Answers the questions: Who is impacted, what is it and why do we need it? How does it improve the customer’s experience?>_
+
+h2. *Background (Required)*
+
+_<Describes the context or background related to this story>_
+
+h2. *Out of scope*
+
+_<Defines what is not included in this story>_
+
+h2. *Approach (Required)*
+
+_<Description of the general technical path on how to achieve the goal of the story. Include details like json schema, class definitions>_
+
+h2. *Dependencies*
+
+_<Describes what this story depends on. Dependent Stories and EPICs should be linked to the story.>_
+
+h2. *Acceptance Criteria (Mandatory)*
+
+_<Describe edge cases to consider when implementing the story and defining tests>_
+
+_<Provides a required and minimum list of acceptance tests for this story. More is expected as the engineer implements this story>_
+
+h1. *INVEST Checklist*
+
+Dependencies identified
+
+Blockers noted and expected delivery timelines set
+
+Design is implementable
+
+Acceptance criteria agreed upon
+
+Story estimated
+
+h4. *Legend*
+
+Unknown
+
+Verified
+
+Unsatisfied
+
+h2. *Done Checklist*
+
+* Code is completed, reviewed, documented and checked in
+
+* Unit and integration test automation have been delivered and running cleanly in continuous integration/staging/canary environment
+
+* Continuous Delivery pipeline(s) is able to proceed with new code included
+
+* Customer facing documentation, API docs etc. are produced/updated, reviewed and published
+
+* Acceptance criteria are met

@@ -37,13 +37,13 @@ The resolver will skip resolving if it sees these type of tasks:
 
 * a reference to a [`ClusterTask`](https://github.com/tektoncd/pipeline/blob/main/docs/tasks.md#task-vs-clustertask)
 * a `Task` or `Pipeline` [`Bundle`](https://github.com/tektoncd/pipeline/blob/main/docs/pipelines.md#tekton-bundles)
-* a reference to a Tekton [`Resolver`](https://github.com/tektoncd/pipeline/blob/main/docs/pipelines.md#specifying-remote-tasks)  
+* a reference to a Tekton [`Resolver`](https://github.com/tektoncd/pipeline/blob/main/docs/pipelines.md#specifying-remote-tasks)
 * a [Custom Task](https://github.com/tektoncd/pipeline/blob/main/docs/pipelines.md#using-custom-tasks) with an apiVersion that doesn't have a `tekton.dev/` prefix.
 
 It just uses them "as is" and will not try to do anything with it.
 
 If Pipelines-as-Code cannot resolve the referenced tasks in the `Pipeline` or
-`PipelineSpec`, the run will fail before applying the pipelinerun onto the
+`PipelineSpec`, the run will fail before applying the PipelineRun onto the
 cluster.
 
 You should be able to see the issue on your Git provider platform interface and
@@ -77,16 +77,27 @@ or multiple tasks with an array :
 pipelinesascode.tekton.dev/task: "[git-clone, pylint]"
 ```
 
-### [Tekton Hub](https://hub.tekton.dev) Support for Tasks
+### Hub Support for Tasks
 
 ```yaml
 pipelinesascode.tekton.dev/task: "git-clone"
 ```
 
-The syntax above installs the
-[git-clone](https://github.com/tektoncd/catalog/tree/main/task/git-clone) task
-from the [tekton hub](https://hub.tekton.dev) repository querying for the latest
-version with the tekton hub API.
+By default, this syntax will install the task from Artifact Hub.
+
+Examples:
+
+```yaml
+# Using Artifact Hub (default)
+pipelinesascode.tekton.dev/task: "git-clone"
+
+# Using Tekton Hub
+pipelinesascode.tekton.dev/task: "tektonhub://git-clone"
+```
+
+{{< hint danger >}}
+The public Tekton Hub service <https://hub.tekton.dev/> is scheduled to be deprecated in the future, so we recommend using Artifact Hub for task resolution.
+{{< /hint >}}
 
 You can have multiple tasks in there if you separate them by a comma `,` around
 an array syntax with bracket:
@@ -104,29 +115,26 @@ example :
   pipelinesascode.tekton.dev/task-2: "tkn"
 ```
 
-By default, `Pipelines-as-Code` will interpret the string as the `latest` task to
-grab
-from [tekton hub](https://hub.tekton.dev).
-
 If you want to have a specific version of the task, you can add a colon `:` to
-the string and a version number, like in
-this example :
+the string and a version number, like in this example:
 
 ```yaml
-pipelinesascode.tekton.dev/task: "[git-clone:0.1]" # this will install git-clone 0.1 from tekton.hub
+# Using specific version from Artifact Hub
+pipelinesascode.tekton.dev/task: "git-clone:0.9.0"
+
+# Using specific version from Tekton Hub
+pipelinesascode.tekton.dev/task: "tektonhub://git-clone:0.1"
 ```
 
-#### Custom [Tekton Hub](https://github.com/tektoncd/hub/) Support for Tasks
+#### Custom Hub Support for Tasks
 
-Additionally if the cluster administrator has [set-up](/docs/install/settings#tekton-hub-support) a custom Tekton Hub you
-are able to reference it from your template like this example:
+Additionally if the cluster administrator has [set-up](/docs/install/settings#remote-hub-catalogs) custom Hub catalogs beyond the default Artifact Hub and Tekton Hub, you are able to reference them from your template:
 
 ```yaml
-pipelinesascode.tekton.dev/task: "[anothercatalog://curl]" # this will install curl from the custom catalog configured by the cluster administrator as anothercatalog
+pipelinesascode.tekton.dev/task: "[customcatalog://curl]" # this will install curl from the custom catalog configured by the cluster administrator as customcatalog
 ```
 
-There is no fallback to the default Tekton Hub if the custom Tekton Hub does not
-have the task referenced it will fail.
+There is no fallback between different hubs. If a task is not found in the specified hub, the Pull Request will fail.
 
 There is no support for custom hub from the CLI on the `tkn pac resolve` command.
 
@@ -201,6 +209,70 @@ out and not process the pipeline.
 
 If the object fetched cannot be parsed as a Tekton `Task` it will error out.
 
+### Relative Tasks
+
+`Pipeline-as-Code` also supports fetching relative
+to a remote pipeline tasks (see Section [Remote Pipeline Annotations](#remote-pipeline-annotations)).
+
+Consider the following scenario:
+
+* Repository A (where the event is originating from) contains:
+
+```yaml
+# .tekton/pipelinerun.yaml
+
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: hello-world
+  annotations:
+    pipelinesascode.tekton.dev/on-target-branch: "[main]"
+    pipelinesascode.tekton.dev/on-event: "[push]"
+    pipelinesascode.tekton.dev/pipeline: "https://github.com/user/repositoryb/blob/main/pipeline.yaml"
+spec:
+  pipelineRef:
+    name: hello-world
+```
+
+* Repository B contains:
+
+```yaml
+# pipeline.yaml
+
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: hello-world
+  annotations:
+    pipelinesascode.tekton.dev/task: "./task.yaml"
+spec:
+  tasks:
+    - name: say-hello
+      taskRef:
+        name: hello
+```
+
+```yaml
+# task.yaml
+
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: hello
+spec:
+  steps:
+    - name: echo
+      image: alpine
+      script: |
+        #!/bin/sh
+        echo "Hello, World!"
+```
+
+The Resolver will fetch the remote pipeline and then attempt to retrieve each task.
+The task paths are relative to the path where the remote pipeline, referencing them
+resides (if the pipeline is at `/foo/bar/pipeline.yaml`, and the specified task path is `../task.yaml`, the
+assembled target URL for fetching the task is `/foo/task.yaml`).
+
 ## Remote Pipeline annotations
 
 Remote Pipeline can be referenced by annotation, allowing you to share a Pipeline across multiple repositories.
@@ -220,32 +292,44 @@ or from a relative path inside the repository:
 pipelinesascode.tekton.dev/pipeline: "./tasks/pipeline.yaml
 ```
 
-### [Tekton Hub](https://hub.tekton.dev) Support for Pipelines
+### Hub Support for Pipelines
 
 ```yaml
-pipelinesascode.tekton.dev/pipeline: "[buildpacks]"
+pipelinesascode.tekton.dev/pipeline: "buildpacks"
 ```
 
-The syntax above installs the
-[buildpacks](https://github.com/tektoncd/catalog/tree/main/pipeline/buildpacks) pipeline
-from the [tekton hub](https://hub.tekton.dev) repository querying for the latest
-version with the tekton hub API.
+By default, this syntax will install the pipeline from Artifact Hub.
+
+Examples:
+
+```yaml
+# Using Artifact Hub (default)
+pipelinesascode.tekton.dev/pipeline: "buildpacks"
+
+# Using Tekton Hub
+pipelinesascode.tekton.dev/pipeline: "tektonhub://buildpacks"
+```
 
 If you want to have a specific version of the pipeline, you can add a colon `:` to
-the string and a version number, like in this example :
+the string and a version number, like in this example:
 
 ```yaml
-pipelinesascode.tekton.dev/pipeline: "[buildpacks:0.1]" # this will install buildpacks 0.1 from tekton hub
+# Using specific version from Artifact Hub
+pipelinesascode.tekton.dev/pipeline: "buildpacks:0.1"
+
+# Using specific version from Tekton Hub
+pipelinesascode.tekton.dev/pipeline: "tektonhub://buildpacks:0.1"
 ```
 
-#### Custom [Tekton Hub](https://github.com/tektoncd/hub/) Support for Pipelines
+#### Custom Hub Support for Pipelines
 
-Additionally if the cluster administrator has [set-up](/docs/install/settings#tekton-hub-support) a custom Tekton Hub you
-are able to reference it from your template like this example:
+Additionally if the cluster administrator has [set-up](/docs/install/settings#remote-hub-catalogs) custom Hub catalogs beyond the default Artifact Hub and Tekton Hub, you are able to reference them from your template:
 
 ```yaml
-pipelinesascode.tekton.dev/pipeline: "[anothercatalog://buildpacks:0.1]" # this will install buildpacks from the custom catalog configured by the cluster administrator as anothercatalog
+pipelinesascode.tekton.dev/pipeline: "[customcatalog://buildpacks:0.1]" # this will install buildpacks from the custom catalog configured by the cluster administrator as customcatalog
 ```
+
+There is no fallback between different hubs. If a pipeline is not found in the specified hub, the Pull Request will fail.
 
 ### Overriding tasks from a remote pipeline on a PipelineRun
 

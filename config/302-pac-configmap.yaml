@@ -43,23 +43,34 @@ data:
   # i.e: "owner/private-repo1, org/repo2"
   secret-github-app-scope-extra-repos: ""
 
-  # Tekton HUB API urls
-  hub-url: "https://api.hub.tekton.dev/v1"
+  # The default hub url to use, by default it is artifacthub.
+  hub-url: "https://artifacthub.io"
 
-  # Tekton HUB catalog name
-  hub-catalog-name: "tekton"
+  # The default hub catalog type, by default it is artifacthub.
+  # Other supported values: tektonhub
+  hub-catalog-type: "artifacthub"
 
-  # Additional Hub Catalogs is supported, for example:
+  # Pipelines-as-code uses Artifact Hub by default. For backward
+  # compatibility, until https://hub.tekton.dev/ is discontinued the public
+  # Tekton Hub can also be accessed with the `tektonhub://` prefix (e.g.,
+  # `tektonhub://git-clone`).
   #
-  # catalog-1-id: anotherhub
+  # Additional Hub Catalogs are supported, for example:
+  #
+  # catalog-1-id: custom
   # catalog-1-name: tekton
-  # catalog-1-url: https://api.other.com/v1
+  # catalog-1-url: https://api.custom.hub/v1
+  # catalog-1-type: tektonhub
   #
-  # this configuration will have a new catalog named anotherhub on  https://api.other.com/v1 endpoint and catalog name tekton
-  # to be used by a user in their templates like this:
-  # pipelinesascode.tekton.dev/task: "anotherhub://task"
+  # With this configuration, a catalog of type "tektonhub" (or alternatively,
+  # of type "artifacthub") named "custom" will be available at
+  # https://api.custom.hub/v1, using the catalog named "tekton" . Users can
+  # reference these catalogs in their templates like this:
   #
-  # Increase the number of the catalog to add more of them
+  # pipelinesascode.tekton.dev/task: "custom://task"
+  #
+  # Increase the number of the catalogs to add more of them. catalog-2-*,
+  # catalog-3-*, etc.
 
   # Allow fetching remote tasks
   remote-tasks: "true"
@@ -128,11 +139,17 @@ data:
   # namespace and repository CR, supported only with GitHub App
   auto-configure-new-github-repo: "false"
 
-  # add a template to generate name for namespace for your auto configured
-  # github repo supported fields are repo_owner, repo_name eg. if defined as
-  # `{{repo_owner}}-{{repo_name}}-ci`, then namespace generated for repository
-  # https://github.com/owner/repo will be `owner-repo-ci`
+  # Add a template to generate the name for a Repository CR for an auto-configured
+  # GitHub repository. Supported fields are `repo_owner` and `repo_name`. e.g.,
+  # if defined as `{{repo_owner}}-{{repo_name}}-repo-cr`, the generated CR name for
+  # https://github.com/owner/test will be `owner-test-repo-cr`
   auto-configure-repo-namespace-template: ""
+
+  # add a template to generate name for repository for your auto configured
+  # github repo. supported fields are repo_owner, repo_name eg. if defined as
+  # `{{repo_owner}}-{{repo_name}}-repo-cr`, then repository CR generated for  git repository
+  # https://github.com/owner/test will be `owner-test-repo-cr`
+  auto-configure-repo-repository-template: ""
 
   # Enable or disable the feature to rerun the CI if push event happens on
   # a pull request
