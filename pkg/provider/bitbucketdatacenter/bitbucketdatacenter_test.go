@@ -110,7 +110,6 @@ func TestCreateStatus(t *testing.T) {
 	tests := []struct {
 		name                  string
 		status                provider.StatusOpts
-		expectedDescSubstr    string
 		expectedCommentSubstr string
 		pacOpts               info.PacOpts
 		nilClient             bool
@@ -125,26 +124,28 @@ func TestCreateStatus(t *testing.T) {
 			name: "good/skipped",
 			status: provider.StatusOpts{
 				Conclusion: "skipped",
+				Text:       "Skipping",
 			},
-			expectedDescSubstr: "Skipping",
-			pacOpts:            pacopts,
+
+			pacOpts: pacopts,
 		},
 		{
 			name: "good/neutral",
 			status: provider.StatusOpts{
 				Conclusion: "neutral",
+				Text:       "stopped",
 			},
-			expectedDescSubstr: "stopped",
-			pacOpts:            pacopts,
+
+			pacOpts: pacopts,
 		},
 		{
 			name: "good/completed with comment",
 			status: provider.StatusOpts{
 				Conclusion: "success",
 				Status:     "completed",
-				Text:       "Happy as a bunny",
+				Text:       "validated",
 			},
-			expectedDescSubstr:    "validated",
+
 			expectedCommentSubstr: "Happy as a bunny",
 			pacOpts:               pacopts,
 		},
@@ -152,42 +153,57 @@ func TestCreateStatus(t *testing.T) {
 			name: "good/failed",
 			status: provider.StatusOpts{
 				Conclusion: "failure",
+				Text:       "Failed",
 			},
-			expectedDescSubstr: "Failed",
-			pacOpts:            pacopts,
+
+			pacOpts: pacopts,
 		},
 		{
 			name: "good/details url",
 			status: provider.StatusOpts{
 				Conclusion: "failure",
 				DetailsURL: "http://fail.com",
+				Text:       "Failed",
 			},
-			expectedDescSubstr: "Failed",
-			pacOpts:            pacopts,
+
+			pacOpts: pacopts,
 		},
 		{
 			name: "good/pending",
 			status: provider.StatusOpts{
 				Conclusion: "pending",
+				Text:       "started",
 			},
-			expectedDescSubstr: "started",
-			pacOpts:            pacopts,
+
+			pacOpts: pacopts,
 		},
 		{
 			name: "good/success",
 			status: provider.StatusOpts{
 				Conclusion: "success",
+				Text:       "validated",
 			},
-			expectedDescSubstr: "validated",
-			pacOpts:            pacopts,
+
+			pacOpts: pacopts,
 		},
 		{
 			name: "good/completed",
 			status: provider.StatusOpts{
 				Conclusion: "completed",
+				Text:       "Completed",
 			},
-			expectedDescSubstr: "Completed",
-			pacOpts:            pacopts,
+
+			pacOpts: pacopts,
+		},
+		{
+			name: "good/pending",
+			status: provider.StatusOpts{
+				Conclusion: "pending",
+				Status:     "queued",
+				Text:       "Pending approval, waiting for an /ok-to-test",
+			},
+
+			pacOpts: pacopts,
 		},
 	}
 	for _, tt := range tests {
@@ -209,7 +225,7 @@ func TestCreateStatus(t *testing.T) {
 				run:               &params.Run{},
 				pacInfo:           &tt.pacOpts,
 			}
-			bbtest.MuxCreateAndTestCommitStatus(t, mux, event, tt.expectedDescSubstr, tt.status)
+			bbtest.MuxCreateAndTestCommitStatus(t, mux, event, tt.status.Text, tt.status)
 			bbtest.MuxCreateComment(t, mux, event, tt.expectedCommentSubstr, pullRequestNumber)
 			err := v.CreateStatus(ctx, event, tt.status)
 			if tt.wantErrSubstr != "" {
