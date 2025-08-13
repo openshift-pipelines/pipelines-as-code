@@ -280,7 +280,11 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 		if err != nil {
 			// we still return the created PR with error, and allow caller to decide what to do with the PR, and avoid
 			// unneeded SIGSEGV's
-			return pr, fmt.Errorf("cannot patch pipelinerun %s: %w", pr.GetGenerateName(), err)
+			prName := "unknown"
+			if pr != nil {
+				prName = pr.GetGenerateName()
+			}
+			return pr, fmt.Errorf("cannot patch pipelinerun %s: %w", prName, err)
 		}
 		currentReason := ""
 		if len(pr.Status.GetConditions()) > 0 {
