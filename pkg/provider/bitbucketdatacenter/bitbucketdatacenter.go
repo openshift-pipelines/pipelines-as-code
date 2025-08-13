@@ -101,8 +101,12 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOp
 		statusOpts.Conclusion = "FAILED"
 		statusOpts.Title = "❌ Failed"
 	case "pending":
-		statusOpts.Conclusion = "INPROGRESS"
-		statusOpts.Title = "⚡ CI has started"
+		if statusOpts.Status == "queued" {
+			statusOpts.Conclusion = "UNKNOWN"
+		} else {
+			statusOpts.Conclusion = "INPROGRESS"
+			statusOpts.Title = "⚡ CI has started"
+		}
 	case "success":
 		statusOpts.Conclusion = "SUCCESSFUL"
 		statusOpts.Title = "Commit has been validated"
@@ -119,18 +123,18 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOp
 
 	key := statusOpts.PipelineRunName
 	if key == "" {
-		key = statusOpts.Conclusion
+		key = statusOpts.Title
 	}
 
 	if v.pacInfo.ApplicationName != "" {
-		key = fmt.Sprintf("%s/%s", v.pacInfo.ApplicationName, key)
+		key = fmt.Sprintf("%s / %s", v.pacInfo.ApplicationName, key)
 	}
 
 	OrgAndRepo := fmt.Sprintf("%s/%s", event.Organization, event.Repository)
 	opts := &scm.StatusInput{
 		State: convertState(statusOpts.Conclusion),
 		Label: key,
-		Desc:  statusOpts.Title,
+		Desc:  statusOpts.Text,
 		Link:  detailsURL,
 	}
 	_, _, err := v.Client().Repositories.CreateStatus(ctx, OrgAndRepo, event.SHA, opts)
@@ -167,6 +171,8 @@ func convertState(from string) scm.State {
 		return scm.StatePending
 	case "SUCCESSFUL":
 		return scm.StateSuccess
+	case "UNKNOWN":
+		return scm.StateUnknown
 	default:
 		return scm.StateUnknown
 	}
