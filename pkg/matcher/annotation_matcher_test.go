@@ -30,7 +30,10 @@ import (
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/golden"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
+	knativeduckv1 "knative.dev/pkg/apis/duck/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -2596,6 +2599,141 @@ func TestGetName(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			name := getName(tt.prun)
 			assert.Equal(t, tt.expected, name)
+		})
+	}
+}
+
+func TestCheckForExistingSuccessfulPipelineRun(t *testing.T) {
+	ctx, _ := rtesting.SetupFakeContext(t)
+	logger := zap.NewExample().Sugar()
+
+	repo := &v1alpha1.Repository{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-repo",
+			Namespace: "test-ns",
+		},
+	}
+
+	// Create a successful PipelineRun
+	pr := &tektonv1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pr",
+			Namespace: "test-ns",
+			Labels: map[string]string{
+				keys.SHA:            "test-sha",
+				keys.OriginalPRName: "test-pr",
+			},
+			Annotations: map[string]string{
+				keys.OriginalPRName: "test-pr",
+			},
+			CreationTimestamp: metav1.Now(),
+		},
+		Status: tektonv1.PipelineRunStatus{
+			Status: knativeduckv1.Status{
+				Conditions: knativeduckv1.Conditions{
+					apis.Condition{
+						Type:   apis.ConditionSucceeded,
+						Status: corev1.ConditionTrue,
+					},
+				},
+			},
+		},
+	}
+
+	// Create a failed PipelineRun with the same SHA but older
+	earlierTime := metav1.NewTime(time.Now().Add(-1 * time.Hour))
+	failedPR := &tektonv1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "failed-pr",
+			Namespace: "test-ns",
+			Labels: map[string]string{
+				keys.SHA:            "test-sha",
+				keys.OriginalPRName: "failed-pr",
+			},
+			Annotations: map[string]string{
+				keys.OriginalPRName: "failed-pr",
+			},
+			CreationTimestamp: earlierTime,
+		},
+		Status: tektonv1.PipelineRunStatus{
+			Status: knativeduckv1.Status{
+				Conditions: knativeduckv1.Conditions{
+					apis.Condition{
+						Type:   apis.ConditionSucceeded,
+						Status: corev1.ConditionFalse,
+					},
+				},
+			},
+		},
+	}
+
+	// Setup test clients
+	tdata := testclient.Data{
+		PipelineRuns: []*tektonv1.PipelineRun{pr, failedPR},
+		Repositories: []*v1alpha1.Repository{repo},
+	}
+	stdata, _ := testclient.SeedTestData(t, ctx, tdata)
+
+	cs := &params.Run{
+		Clients: clients.Clients{
+			Log:    logger,
+			Tekton: stdata.Pipeline,
+			Kube:   stdata.Kube,
+		},
+	}
+
+	tests := []struct {
+		name      string
+		eventType string
+		sha       string
+		wantPR    bool
+	}{
+		{
+			name:      "Retest command with matching SHA should find successful PR",
+			eventType: opscomments.RetestAllCommentEventType.String(),
+			sha:       "test-sha",
+			wantPR:    true,
+		},
+		{
+			name:      "Ok-to-test command with matching SHA should find successful PR",
+			eventType: opscomments.OkToTestCommentEventType.String(),
+			sha:       "test-sha",
+			wantPR:    true,
+		},
+		{
+			name:      "Retest command with non-matching SHA should not find PR",
+			eventType: opscomments.RetestAllCommentEventType.String(),
+			sha:       "other-sha",
+			wantPR:    false,
+		},
+		{
+			name:      "Different event type should not find PR",
+			eventType: opscomments.TestAllCommentEventType.String(),
+			sha:       "test-sha",
+			wantPR:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			event := &info.Event{
+				EventType: tt.eventType,
+				SHA:       tt.sha,
+			}
+
+			foundPR := checkForExistingSuccessfulPipelineRun(ctx, logger, cs, event, repo)
+
+			if tt.wantPR && foundPR == nil {
+				t.Errorf("Expected to find a successful PipelineRun, but got nil")
+			}
+
+			if !tt.wantPR && foundPR != nil {
+				t.Errorf("Expected not to find a PipelineRun, but found %s", foundPR.Name)
+			}
+
+			if tt.wantPR && foundPR != nil {
+				assert.Equal(t, "test-pr", foundPR.Name)
+			}
 		})
 	}
 }
