@@ -454,7 +454,7 @@ func TestGiteaConfigMaxKeepRun(t *testing.T) {
 	}
 	_, f := tgitea.TestPR(t, topts)
 	defer f()
-	tgitea.PostCommentOnPullRequest(t, topts, "/retest")
+	tgitea.PostCommentOnPullRequest(t, topts, "/test")
 	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, "", false)
 
 	waitOpts := twait.Opts{
@@ -496,8 +496,8 @@ func TestGiteaConfigCancelInProgress(t *testing.T) {
 
 	time.Sleep(3 * time.Second) // “Evil does not sleep. It waits.” - Galadriel
 
-	// wait a bit that the pipelinerun had created
-	tgitea.PostCommentOnPullRequest(t, topts, "/retest")
+	// wait a bit that the pipelinerun had created, then trigger a new run to test cancel-in-progress
+	tgitea.PostCommentOnPullRequest(t, topts, "/test")
 
 	time.Sleep(2 * time.Second) // “Evil does not sleep. It waits.” - Galadriel
 
@@ -539,11 +539,11 @@ func TestGiteaConfigCancelInProgress(t *testing.T) {
 	}
 	assert.Equal(t, cancelledPr, 1, "only one pr should have been canceled")
 
-	// Test that cancelling works with /retest
-	tgitea.PostCommentOnPullRequest(t, topts, "/retest")
+	// Test that cancelling works with /retest - use specific PipelineRun name to bypass success check
+	tgitea.PostCommentOnPullRequest(t, topts, "/retest pr-cancel-in-progress")
 	topts.ParamsRun.Clients.Log.Info("Waiting 10 seconds before a new retest")
-	time.Sleep(10 * time.Second) // “Evil does not sleep. It waits.” - Galadriel
-	tgitea.PostCommentOnPullRequest(t, topts, "/retest")
+	time.Sleep(10 * time.Second) // "Evil does not sleep. It waits." - Galadriel
+	tgitea.PostCommentOnPullRequest(t, topts, "/retest pr-cancel-in-progress")
 	tgitea.WaitForStatus(t, topts, "heads/"+targetRef, "", false)
 
 	for _, pr := range prs.Items {

@@ -35,7 +35,7 @@ tracking using a Git workflow.
 
 <--->
 
-- Pull-request "*GitOps*" actions through comments with  `/retest`, `/test <pipeline-name>` and so on.
+- Pull-request "*GitOps*" actions through comments with `/retest` (reruns failed pipelines), `/test <pipeline-name>` (force rerun specific pipeline) and so on.
 
 - Automatic Task resolution in Pipelines (local Tasks, Artifact Hub, and remote URLs)
 

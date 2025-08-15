@@ -24,6 +24,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	incomingSecretName   = "pac-incoming-secret"
+	incomingSecreteValue = "shhhh-secrete"
+)
+
 // TestGithubAppIncoming tests that a Pipelinerun with the incoming event
 // gets created despite the presence of multiple Pipelineruns in the .tekton directory with
 // eventType as incoming.
@@ -52,10 +57,25 @@ func TestGithubSecondIncoming(t *testing.T) {
 func TestGithubWebhookIncoming(t *testing.T) {
 	randomedString := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 
-	entries, err := payload.GetEntries(map[string]string{
-		".tekton/pipelinerun-incoming.yaml": "testdata/pipelinerun-incoming.yaml", ".tekton/pr.yaml": "testdata/pipelinerun.yaml",
+	// Create entries with different event types to test that only incoming PipelineRun gets triggered
+	incomingEntries, err := payload.GetEntries(map[string]string{
+		".tekton/pipelinerun-incoming.yaml": "testdata/pipelinerun-incoming.yaml",
 	}, randomedString, randomedString, triggertype.Incoming.String(), map[string]string{})
 	assert.NilError(t, err)
+
+	prEntries, err := payload.GetEntries(map[string]string{
+		".tekton/pr.yaml": "testdata/pipelinerun.yaml",
+	}, randomedString, randomedString, triggertype.PullRequest.String(), map[string]string{})
+	assert.NilError(t, err)
+
+	// Merge the entries - incoming PipelineRun triggers on "incoming", PR PipelineRun triggers on "pull_request"
+	entries := make(map[string]string)
+	for k, v := range incomingEntries {
+		entries[k] = v
+	}
+	for k, v := range prEntries {
+		entries[k] = v
+	}
 
 	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, true, false)
 }

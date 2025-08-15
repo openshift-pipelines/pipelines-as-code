@@ -11,7 +11,7 @@ The advantage of using a `GitOps command` is that it provides a journal of all t
 
 ## GitOps Commands on Pull Requests
 
-For example, when you are on a Pull Request, you may want to restart all your PipelineRuns. To do so, you can add a comment on your Pull Request starting with `/retest`, and all PipelineRuns attached to that Pull Request will be restarted.
+For example, when you are on a Pull Request, you may want to restart failed PipelineRuns. To do so, you can add a comment on your Pull Request starting with `/retest`, and all **failed** PipelineRuns attached to that Pull Request will be restarted. If all previous PipelineRuns for the same commit were successful, no new PipelineRuns will be created to avoid unnecessary duplication.
 
 Example:
 
@@ -21,6 +21,23 @@ failure is not with your PR but seems to be an infrastructure issue.
 
 /retest
 ```
+
+The `/retest` command will only create new PipelineRuns if:
+
+- Previously **failed** PipelineRuns for the same commit, OR
+- No PipelineRun has been run for the same commit yet
+
+If a successful PipelineRun already exists for the same commit, `/retest` will **skip** triggering a new PipelineRun to avoid unnecessary duplication.
+
+**To force a rerun regardless of previous status**, use:
+
+```text
+/retest <pipelinerun-name>
+```
+
+This will always trigger a new PipelineRun, even if previous runs were successful.
+
+Similar to `/retest`, the `/ok-to-test` command will only trigger new PipelineRuns if no successful PipelineRun already exists for the same commit. This prevents duplicate runs when repository owners repeatedly test the same commit by `/test` and `/retest` command.
 
 If you have multiple `PipelineRun` and you want to target a specific `PipelineRun`, you can use the `/test` command followed by the specific PipelineRun name to restart it. Example:
 
@@ -335,12 +352,12 @@ Here are the possible event types:
 
 - `test-all-comment`: The event is a single `/test` that would test every matched PipelineRun.
 - `test-comment`: The event is a `/test <PipelineRun>` comment that would test a specific PipelineRun.
-- `retest-all-comment`: The event is a single `/retest` that would retest every matched PipelineRun.
+- `retest-all-comment`: The event is a single `/retest` that would retest every matched **failed** PipelineRun. If a successful PipelineRun already exists for the same commit, no new PipelineRun will be created.
 - `retest-comment`: The event is a `/retest <PipelineRun>` that would retest a specific PipelineRun.
 - `on-comment`: The event is coming from a custom comment that would trigger a PipelineRun.
 - `cancel-all-comment`: The event is a single `/cancel` that would cancel every matched PipelineRun.
 - `cancel-comment`: The event is a `/cancel <PipelineRun>` that would cancel a specific PipelineRun.
-- `ok-to-test-comment`: The event is a `/ok-to-test` that would allow running the CI for an unauthorized user.
+- `ok-to-test-comment`: The event is a `/ok-to-test` that would allow running the CI for an unauthorized user. If a successful PipelineRun already exists for the same commit, no new PipelineRun will be created.
 
 If a repository owner comments `/ok-to-test` on a pull request from an external contributor but no PipelineRun **matches** the `pull_request` event (or the repository has no `.tekton` directory), Pipelines-as-Code sets a **neutral** commit status. This indicates that no PipelineRun was matched, allowing other workflows—such as auto-merge—to proceed without being blocked.
 
