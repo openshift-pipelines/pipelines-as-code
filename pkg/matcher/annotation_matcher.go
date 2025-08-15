@@ -454,7 +454,8 @@ func filterSuccessfulTemplates(ctx context.Context, logger *zap.SugaredLogger, c
 func checkForExistingSuccessfulPipelineRun(ctx context.Context, logger *zap.SugaredLogger, cs *params.Run, event *info.Event, repo *apipac.Repository) *tektonv1.PipelineRun {
 	// Only check for /retest and /ok-to-test commands
 	if event.EventType != opscomments.RetestAllCommentEventType.String() &&
-		event.EventType != opscomments.OkToTestCommentEventType.String() ||
+	if (event.EventType != opscomments.RetestAllCommentEventType.String() &&
+		event.EventType != opscomments.OkToTestCommentEventType.String()) ||
 		event.SHA == "" {
 		return nil
 	}
