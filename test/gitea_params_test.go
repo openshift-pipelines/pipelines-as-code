@@ -314,7 +314,15 @@ func TestGiteaParamsOnRepoCR(t *testing.T) {
 	_, f := tgitea.TestPR(t, topts)
 	defer f()
 
-	repo, err := topts.ParamsRun.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(topts.TargetNS).Get(context.Background(), topts.TargetNS, metav1.GetOptions{})
+	// Wait for Repository status to be updated
+	waitOpts := twait.Opts{
+		RepoName:        topts.TargetNS,
+		Namespace:       topts.TargetNS,
+		MinNumberStatus: 1,
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       "",
+	}
+	repo, err := twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
 	assert.NilError(t, err)
 	assert.Assert(t, len(repo.Status) != 0)
 	assert.NilError(t,

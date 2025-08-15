@@ -75,7 +75,7 @@ get_tests() {
   ghglabre="Github|Gitlab|Bitbucket"
   if [[ ${target} == "providers" ]]; then
     grep -hioP "^func Test.*(${ghglabre})(\w+)\(" "${testfiles[@]}" | sed -e 's/func[ ]*//' -e 's/($//'
-  elif [[ ${target} == "gitea_others" ]]; then
+    elif [[ ${target} == "gitea_others" ]]; then
     grep -hioP '^func Test(\w+)\(' "${testfiles[@]}" | grep -iPv "(${ghglabre})" | sed -e 's/func[ ]*//' -e 's/($//'
   else
     echo "Invalid target: ${target}"

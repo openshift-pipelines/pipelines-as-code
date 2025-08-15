@@ -11,6 +11,7 @@ import (
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	pacerrors "github.com/openshift-pipelines/pipelines-as-code/pkg/errors"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -21,6 +22,8 @@ import (
 	"github.com/google/cel-go/common/types"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
 )
 
 const (
@@ -366,10 +369,75 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 	}
 
 	if len(matchedPRs) > 0 {
+		// Filter out templates that already have successful PipelineRuns for /retest and /ok-to-test
+		if event.EventType == opscomments.RetestAllCommentEventType.String() ||
+			event.EventType == opscomments.OkToTestCommentEventType.String() {
+			return filterSuccessfulTemplates(ctx, logger, cs, event, repo, matchedPRs), nil
+		}
 		return matchedPRs, nil
 	}
 
 	return nil, fmt.Errorf("%s", buildAvailableMatchingAnnotationErr(event, pruns))
+}
+
+// filterSuccessfulTemplates filters out templates that already have successful PipelineRuns
+// when executing /ok-to-test or /retest gitops commands, implementing per-template checking.
+func filterSuccessfulTemplates(ctx context.Context, logger *zap.SugaredLogger, cs *params.Run, event *info.Event, repo *apipac.Repository, matchedPRs []Match) []Match {
+	if event.SHA == "" {
+		return matchedPRs
+	}
+
+	// Get all existing PipelineRuns for this SHA
+	labelSelector := fmt.Sprintf("%s=%s", keys.SHA, formatting.CleanValueKubernetes(event.SHA))
+	existingPRs, err := cs.Clients.Tekton.TektonV1().PipelineRuns(repo.GetNamespace()).List(ctx, metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		logger.Errorf("failed to list existing PipelineRuns for SHA %s: %v", event.SHA, err)
+		return matchedPRs // Return all templates if we can't check
+	}
+
+	// Create a map of template names to their most recent successful run
+	successfulTemplates := make(map[string]*tektonv1.PipelineRun)
+
+	for i := range existingPRs.Items {
+		pr := &existingPRs.Items[i]
+
+		// Get the original template name this PipelineRun came from
+		originalPRName, ok := pr.GetAnnotations()[keys.OriginalPRName]
+		if !ok {
+			originalPRName, ok = pr.GetLabels()[keys.OriginalPRName]
+		}
+		if !ok {
+			continue // Skip PipelineRuns without template identification
+		}
+
+		// Check if this PipelineRun succeeded
+		if pr.Status.GetCondition(apis.ConditionSucceeded).IsTrue() {
+			// Keep the most recent successful run for each template
+			if existing, exists := successfulTemplates[originalPRName]; !exists ||
+				pr.CreationTimestamp.After(existing.CreationTimestamp.Time) {
+				successfulTemplates[originalPRName] = pr
+			}
+		}
+	}
+
+	// Filter out templates that have successful runs
+	var filteredPRs []Match
+
+	for _, match := range matchedPRs {
+		templateName := getName(match.PipelineRun)
+
+		if successfulPR, hasSuccessfulRun := successfulTemplates[templateName]; hasSuccessfulRun {
+			logger.Infof("skipping template '%s' for sha %s as it already has a successful pipelinerun '%s'",
+				templateName, event.SHA, successfulPR.Name)
+		} else {
+			filteredPRs = append(filteredPRs, match)
+		}
+	}
+
+	// Return the filtered list (which may be empty if all templates were skipped)
+	return filteredPRs
 }
 
 func buildAvailableMatchingAnnotationErr(event *info.Event, pruns []*tektonv1.PipelineRun) string {

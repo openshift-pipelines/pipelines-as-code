@@ -23,7 +23,7 @@ or other supported Git providers (currently GitHub and Gitea).
   to trigger the CI for a pull request by commenting `/ok-to-test`. This enables
   CI to run on pull requests submitted by contributors who are not collaborators
   of the repository or organization. It also applies to `/test` and `/retest`
-  commands. This action takes precedence over the `pull_request` action.
+  commands. Note that `/retest` will only trigger failed PipelineRuns. This action takes precedence over the `pull_request` action.
 
 ## Configuring Policies in the Repository CR
 

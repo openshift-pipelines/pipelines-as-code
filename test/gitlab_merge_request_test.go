@@ -104,15 +104,15 @@ func TestGitlabMergeRequest(t *testing.T) {
 		assert.Equal(t, "Merge Request", prsNew.Items[i].Annotations[keys.EventType])
 	}
 
-	runcnx.Clients.Log.Infof("Sending /retest comment on MergeRequest %s/-/merge_requests/%d", projectinfo.WebURL, mrID)
+	runcnx.Clients.Log.Infof("Sending /test comment on MergeRequest %s/-/merge_requests/%d", projectinfo.WebURL, mrID)
 	_, _, err = glprovider.Client().Notes.CreateMergeRequestNote(opts.ProjectID, mrID, &clientGitlab.CreateMergeRequestNoteOptions{
-		Body: clientGitlab.Ptr("/retest"),
+		Body: clientGitlab.Ptr("/test"),
 	})
 	assert.NilError(t, err)
 
 	sopt = twait.SuccessOpt{
 		Title:           commitTitle,
-		OnEvent:         opscomments.RetestAllCommentEventType.String(),
+		OnEvent:         opscomments.TestAllCommentEventType.String(),
 		TargetNS:        targetNS,
 		NumberofPRMatch: 5, // this is the max we get in repos status
 		SHA:             "",
@@ -128,7 +128,7 @@ func TestGitlabMergeRequest(t *testing.T) {
 			successCommentsPost++
 		}
 	}
-	// we get 2 PRS initially, 2 prs from the push update and 2 prs from the /retest == 6
+	// we get 2 PRS initially, 2 prs from the push update and 2 prs from the /test == 6
 	assert.Equal(t, 6, successCommentsPost)
 }
 
@@ -577,7 +577,7 @@ func TestGitlabDisableCommentsOnMR(t *testing.T) {
 	// no comments will be posted related to pipelineruns
 	assert.Equal(t, 0, successCommentsPost)
 
-	// Update the repo setting to nil, and comment /retest to restart the pipelinerun
+	// Update the repo setting to nil, and comment /test to restart the pipelinerun
 	// and now comments will be added on the MR
 	waitOpts := twait.Opts{
 		RepoName:  targetNS,
@@ -589,15 +589,15 @@ func TestGitlabDisableCommentsOnMR(t *testing.T) {
 	err = repository.UpdateRepo(ctx, waitOpts.Namespace, waitOpts.RepoName, runcnx.Clients)
 	assert.NilError(t, err)
 
-	runcnx.Clients.Log.Infof("Sending /retest comment on MergeRequest %s/-/merge_requests/%d", projectinfo.WebURL, mrID)
+	runcnx.Clients.Log.Infof("Sending /test comment on MergeRequest %s/-/merge_requests/%d", projectinfo.WebURL, mrID)
 	_, _, err = glprovider.Client().Notes.CreateMergeRequestNote(opts.ProjectID, mrID, &clientGitlab.CreateMergeRequestNoteOptions{
-		Body: clientGitlab.Ptr("/retest"),
+		Body: clientGitlab.Ptr("/test"),
 	})
 	assert.NilError(t, err)
 
 	sopt = twait.SuccessOpt{
 		Title:           commitTitle,
-		OnEvent:         opscomments.RetestAllCommentEventType.String(),
+		OnEvent:         opscomments.TestAllCommentEventType.String(),
 		TargetNS:        targetNS,
 		NumberofPRMatch: 2, // this is the max we get in repos status
 		SHA:             "",

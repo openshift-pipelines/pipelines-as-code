@@ -323,9 +323,9 @@ func TestGithubSecondCancelInProgress(t *testing.T) {
 	assert.NilError(t, err)
 	time.Sleep(10 * time.Second)
 
-	g.Cnx.Clients.Log.Infof("Creating /retest on PullRequest")
+	g.Cnx.Clients.Log.Infof("Creating /test on PullRequest to create a second run")
 	_, _, err = g.Provider.Client().Issues.CreateComment(ctx, g.Options.Organization, g.Options.Repo, g.PRNumber,
-		&github.IssueComment{Body: github.Ptr("/retest")})
+		&github.IssueComment{Body: github.Ptr("/test")})
 	assert.NilError(t, err)
 
 	g.Cnx.Clients.Log.Infof("Waiting for the two pipelinerun to be created")
@@ -529,7 +529,7 @@ func TestGithubCancelInProgressSettingFromConfigMapOnPR(t *testing.T) {
 	_, _, err = g.Provider.Client().Issues.CreateComment(ctx,
 		g.Options.Organization,
 		g.Options.Repo, g.PRNumber,
-		&github.IssueComment{Body: github.Ptr("/retest")})
+		&github.IssueComment{Body: github.Ptr("/test")})
 	assert.NilError(t, err)
 
 	g.Cnx.Clients.Log.Infof("Waiting for the two pipelinerun to be created")
