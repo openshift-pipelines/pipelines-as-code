@@ -74,8 +74,10 @@ get_tests() {
   mapfile -t testfiles < <(find test/ -maxdepth 1 -name '*.go')
   ghglabre="Github|Gitlab|Bitbucket"
   if [[ ${target} == "providers" ]]; then
+    # echo "TestGithubMaxKeepRuns"
     grep -hioP "^func Test.*(${ghglabre})(\w+)\(" "${testfiles[@]}" | sed -e 's/func[ ]*//' -e 's/($//'
-  elif [[ ${target} == "gitea_others" ]]; then
+    elif [[ ${target} == "gitea_others" ]]; then
+    # echo "TestGiteaParamsOnRepoCR"
     grep -hioP '^func Test(\w+)\(' "${testfiles[@]}" | grep -iPv "(${ghglabre})" | sed -e 's/func[ ]*//' -e 's/($//'
   else
     echo "Invalid target: ${target}"
