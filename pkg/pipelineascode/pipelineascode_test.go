@@ -777,13 +777,14 @@ func TestGetExecutionOrderPatch(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := getExecutionOrderPatch(tt.order)
-			m, ok := result["metadata"].(map[string]any)
-			assert.Assert(t, ok, "metadata should be present in result")
-
-			anns, ok := m["annotations"].(map[string]string)
-			assert.Assert(t, ok, "annotations should be present in metadata")
-
-			assert.Equal(t, anns[keys.ExecutionOrder], tt.want, "execution order should match")
+			expected := map[string]any{
+				"metadata": map[string]any{
+					"annotations": map[string]string{
+						keys.ExecutionOrder: tt.want,
+					},
+				},
+			}
+			assert.DeepEqual(t, expected, result)
 		})
 	}
 }
