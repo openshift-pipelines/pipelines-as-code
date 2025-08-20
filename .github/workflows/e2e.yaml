@@ -31,7 +31,7 @@ jobs:
     if: >
       github.event_name == 'schedule' ||
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'pull_request_target' && contains(fromJSON('["zakisk", "infernus01", "savitaashture", "chmouel", "vdemeester", "enarha", "aThorp96", "waveywaves", "dependabot[bot]"]'), github.event.pull_request.user.login))
+      (github.event_name == 'pull_request_target' && contains(fromJSON('["zakisk", "infernus01", "savitaashture", "chmouel", "vdemeester", "enarha", "aThorp96", "waveywaves", "mathur07", "dependabot[bot]"]'), github.event.pull_request.user.login))
     concurrency:
       group: ${{ github.workflow }}-${{ matrix.provider }}-${{ github.event.pull_request.number || github.ref_name }}
       cancel-in-progress: true
