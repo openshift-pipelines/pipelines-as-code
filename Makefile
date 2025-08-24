@@ -74,7 +74,7 @@ test-e2e:  test-e2e-cleanup ## run e2e tests
 .PHONY: html-coverage
 html-coverage: ## generate html coverage
 	@mkdir -p tmp
-	@go test -coverprofile=tmp/c.out ./.../ && go tool cover -html=tmp/c.out
+	@go test -coverprofile=tmp/c.out ./pkg/... ./cmd/... && go tool cover -html=tmp/c.out
 
 ##@ Linting
 .PHONY: lint
