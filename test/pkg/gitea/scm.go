@@ -63,8 +63,8 @@ func PushFilesToRefAPI(t *testing.T, topts *TestOpts, entries map[string]string)
 			},
 		}
 		fr, _, err := topts.GiteaCNX.Client().CreateFile(topts.Opts.Organization, topts.Opts.Repo, filename, fOpts)
-		sha = fr.Commit.SHA
 		assert.NilError(t, err)
+		sha = fr.Commit.SHA
 	}
 	return sha, nil
 }
@@ -173,7 +173,12 @@ func CreateTeam(topts *TestOpts, orgName, teamName string) (*gitea.Team, error) 
 		},
 		Name: teamName,
 	})
-	topts.ParamsRun.Clients.Log.Infof("Team %s has been created on Org %s", team.Name, orgName)
+	if err != nil {
+		return nil, err
+	}
+	if team != nil {
+		topts.ParamsRun.Clients.Log.Infof("Team %s has been created on Org %s", team.Name, orgName)
+	}
 	return team, err
 }
 

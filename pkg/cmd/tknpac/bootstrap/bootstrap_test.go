@@ -320,7 +320,9 @@ func TestGetDashboardURL(t *testing.T) {
 			err := getDashboardURL(ctx, opts, run)
 			if tt.wantError {
 				assert.Assert(t, err != nil)
-				assert.Assert(t, strings.Contains(err.Error(), tt.errorMsg))
+				if err != nil {
+					assert.Assert(t, strings.Contains(err.Error(), tt.errorMsg))
+				}
 			} else {
 				assert.NilError(t, err)
 				assert.Equal(t, tt.wantURL, opts.dashboardURL)
