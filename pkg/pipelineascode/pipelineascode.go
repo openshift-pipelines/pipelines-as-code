@@ -21,6 +21,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/secrets"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -166,7 +167,17 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 		}
 
 		if err = p.k8int.CreateSecret(ctx, match.Repo.GetNamespace(), authSecret); err != nil {
-			return nil, fmt.Errorf("creating basic auth secret: %s has failed: %w ", authSecret.GetName(), err)
+			// NOTE: Handle AlreadyExists errors due to etcd/API server timing issues.
+			// Investigation found: slow etcd response causes API server retry, resulting in
+			// duplicate secret creation attempts for the same PR. This is a workaround, not
+			// designed behavior - reuse existing secret to prevent PipelineRun failure.
+			if errors.IsAlreadyExists(err) {
+				msg := fmt.Sprintf("Secret %s already exists in namespace %s, reusing existing secret",
+					authSecret.GetName(), match.Repo.GetNamespace())
+				p.eventEmitter.EmitMessage(match.Repo, zap.WarnLevel, "RepositorySecretReused", msg)
+			} else {
+				return nil, fmt.Errorf("creating basic auth secret: %s has failed: %w ", authSecret.GetName(), err)
+			}
 		}
 	}
 
