@@ -369,6 +369,7 @@ func TestParsePayLoad(t *testing.T) {
 		targetPipelinerun          string
 		targetCancelPipelinerun    string
 		wantedBranchName           string
+		wantedTagName              string
 		isCancelPipelineRunEnabled bool
 	}{
 		{
@@ -661,7 +662,7 @@ func TestParsePayLoad(t *testing.T) {
 		},
 		{
 			name:          "bad/commit comment for /test command does not contain branch keyword",
-			wantErrString: "the GitOps comment dummy rbanch does not contain a branch word",
+			wantErrString: "the GitOps comment `/test dummy rbanch:test` does not contain a branch or tag word",
 			eventType:     "commit_comment",
 			triggerTarget: "push",
 			githubClient:  true,
@@ -712,6 +713,57 @@ func TestParsePayLoad(t *testing.T) {
 			muxReplies:       map[string]any{"/repos/owner/reponame/pulls/777": samplePR},
 			shaRet:           "samplePRsha",
 			wantedBranchName: "main",
+		},
+		{
+			name:          "good/commit comment for test with tag",
+			eventType:     "commit_comment",
+			triggerTarget: "push",
+			githubClient:  true,
+			payloadEventStruct: github.CommitCommentEvent{
+				Repo: sampleRepo,
+				Comment: &github.RepositoryComment{
+					CommitID: github.Ptr("samplePRsha"),
+					HTMLURL:  github.Ptr("/777"),
+					Body:     github.Ptr("/test tag:v1.0.0"),
+				},
+			},
+			shaRet:           "samplePRsha",
+			wantedBranchName: "refs/tags/v1.0.0",
+		},
+		{
+			name:          "good/commit comment for test with pipelinerun name and tag",
+			eventType:     "commit_comment",
+			triggerTarget: "push",
+			githubClient:  true,
+			payloadEventStruct: github.CommitCommentEvent{
+				Repo: sampleRepo,
+				Comment: &github.RepositoryComment{
+					CommitID: github.Ptr("samplePRsha"),
+					HTMLURL:  github.Ptr("/777"),
+					Body:     github.Ptr("/test dummy tag:v1.0.0"),
+				},
+			},
+			shaRet:            "samplePRsha",
+			targetPipelinerun: "dummy",
+			wantedBranchName:  "refs/tags/v1.0.0",
+		},
+		{
+			name:          "bad/commit comment for test with pipelinerun name and wrong tag keyword",
+			eventType:     "commit_comment",
+			triggerTarget: "push",
+			githubClient:  true,
+			payloadEventStruct: github.CommitCommentEvent{
+				Repo: sampleRepo,
+				Comment: &github.RepositoryComment{
+					CommitID: github.Ptr("samplePRsha"),
+					HTMLURL:  github.Ptr("/777"),
+					Body:     github.Ptr("/test dummy taig:v1.0.0"),
+				},
+			},
+			shaRet:            "samplePRsha",
+			targetPipelinerun: "dummy",
+			wantedBranchName:  "refs/tags/v1.0.0",
+			wantErrString:     "the GitOps comment `/test dummy taig:v1.0.0` does not contain a branch or tag word",
 		},
 		{
 			name:          "good/commit comment for cancel all",
@@ -891,7 +943,27 @@ func TestParsePayLoad(t *testing.T) {
 		}`)
 					assert.NilError(t, err)
 				})
+
+				mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/git/ref/tags/v1.0.0", "owner", "reponame"), func(rw http.ResponseWriter, _ *http.Request) {
+					ref := &github.Reference{
+						Object: &github.GitObject{
+							SHA: github.Ptr("samplePRsha"),
+						},
+					}
+					bjeez, _ := json.Marshal(ref)
+					fmt.Fprint(rw, string(bjeez))
+				})
+				mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/git/tags/samplePRsha", "owner", "reponame"), func(rw http.ResponseWriter, _ *http.Request) {
+					tag := &github.Tag{
+						Object: &github.GitObject{
+							SHA: github.Ptr("samplePRsha"),
+						},
+					}
+					bjeez, _ := json.Marshal(tag)
+					fmt.Fprint(rw, string(bjeez))
+				})
 			}
+
 			logger, _ := logger.GetLogger()
 			gprovider := Provider{
 				ghClient: ghClient,
