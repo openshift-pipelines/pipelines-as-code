@@ -543,12 +543,13 @@ func (v *Provider) handleCommitCommentEvent(ctx context.Context, event *github.C
 	var (
 		branchName string
 		prName     string
+		tagName    string
 		err        error
 	)
 
 	// If it is a /test or /retest comment with pipelinerun name figure out the pipelinerun name
 	if provider.IsTestRetestComment(event.GetComment().GetBody()) {
-		prName, branchName, err = provider.GetPipelineRunAndBranchNameFromTestComment(event.GetComment().GetBody())
+		prName, branchName, tagName, err = provider.GetPipelineRunAndBranchOrTagNameFromTestComment(event.GetComment().GetBody())
 		if err != nil {
 			return runevent, err
 		}
@@ -557,12 +558,37 @@ func (v *Provider) handleCommitCommentEvent(ctx context.Context, event *github.C
 	// Check for /cancel comment
 	if provider.IsCancelComment(event.GetComment().GetBody()) {
 		action = "cancellation"
-		prName, branchName, err = provider.GetPipelineRunAndBranchNameFromCancelComment(event.GetComment().GetBody())
+		prName, branchName, tagName, err = provider.GetPipelineRunAndBranchOrTagNameFromCancelComment(event.GetComment().GetBody())
 		if err != nil {
 			return runevent, err
 		}
 		runevent.CancelPipelineRuns = true
 		runevent.TargetCancelPipelineRun = prName
+	}
+
+	if tagName != "" {
+		tagPath := fmt.Sprintf("refs/tags/%s", tagName)
+		// here in GitHub TAG_SHA and the commit which is tagged for a tag are different
+		// so we need to get the ref for the tag and then get the tag object to get the tag SHA
+		ref, _, err := wrapAPI(v, "get_ref", func() (*github.Reference, *github.Response, error) {
+			return v.Client().Git.GetRef(ctx, runevent.Organization, runevent.Repository, tagPath)
+		})
+		if err != nil {
+			return runevent, fmt.Errorf("error getting ref for tag %s: %w", tagName, err)
+		}
+		// get the tag object to get the SHA
+		tag, _, err := wrapAPI(v, "get_tag", func() (*github.Tag, *github.Response, error) {
+			return v.Client().Git.GetTag(ctx, runevent.Organization, runevent.Repository, ref.GetObject().GetSHA())
+		})
+		if err != nil {
+			return runevent, fmt.Errorf("error getting tag %s: %w", tagName, err)
+		}
+		if tag.GetObject().GetSHA() != runevent.SHA {
+			return runevent, fmt.Errorf("provided SHA %s is not the tagged commit for the tag %s", runevent.SHA, tagName)
+		}
+		runevent.HeadBranch = tagPath
+		runevent.BaseBranch = tagPath
+		return runevent, nil
 	}
 
 	// If no branch is specified in GitOps comments, use runevent.HeadBranch
