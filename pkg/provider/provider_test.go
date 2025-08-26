@@ -377,7 +377,7 @@ func TestGetPipelineRunAndBranchNameFromTestComment(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			prName, branchName, err := GetPipelineRunAndBranchNameFromTestComment(tt.comment)
+			prName, branchName, _, err := GetPipelineRunAndBranchOrTagNameFromTestComment(tt.comment)
 			assert.Equal(t, tt.wantError, err != nil)
 			assert.Equal(t, tt.branchName, branchName)
 			assert.Equal(t, tt.prName, prName)
@@ -465,7 +465,7 @@ func TestGetPipelineRunAndBranchNameFromCancelComment(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			prName, branchName, err := GetPipelineRunAndBranchNameFromCancelComment(tt.comment)
+			prName, branchName, _, err := GetPipelineRunAndBranchOrTagNameFromCancelComment(tt.comment)
 			assert.Equal(t, tt.wantError, err != nil)
 			assert.Equal(t, tt.branchName, branchName)
 			assert.Equal(t, tt.prName, prName)

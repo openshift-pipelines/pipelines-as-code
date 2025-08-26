@@ -192,8 +192,8 @@ func (g *PRTest) TearDown(ctx context.Context, t *testing.T) {
 	// Collect GitHub API call information from controller logs
 	g.collectGitHubAPICalls(ctx, t)
 
-	g.Logger.Infof("Closing PR %d", g.PRNumber)
 	if g.PRNumber != -1 {
+		g.Logger.Infof("Closing PR %d", g.PRNumber)
 		state := "closed"
 		_, _, err := g.Provider.Client().PullRequests.Edit(ctx,
 			g.Options.Organization, g.Options.Repo, g.PRNumber,
@@ -205,7 +205,7 @@ func (g *PRTest) TearDown(ctx context.Context, t *testing.T) {
 	if g.TargetNamespace != "" {
 		repository.NSTearDown(ctx, t, g.Cnx, g.TargetNamespace)
 	}
-	if g.TargetRefName != options.MainBranch {
+	if g.TargetRefName != "" && g.TargetRefName != options.MainBranch {
 		branch := fmt.Sprintf("heads/%s", filepath.Base(g.TargetRefName))
 		g.Logger.Infof("Deleting Ref %s", branch)
 		_, err := g.Provider.Client().Git.DeleteRef(ctx, g.Options.Organization, g.Options.Repo, branch)
