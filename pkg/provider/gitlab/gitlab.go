@@ -290,6 +290,10 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	if _, _, err := v.Client().Commits.SetCommitStatus(event.SourceProjectID, event.SHA, opt); err != nil {
 		v.eventEmitter.EmitMessage(v.repo, zap.ErrorLevel, "FailedToSetCommitStatus",
 			"cannot set status with the GitLab token because of: "+err.Error())
+	} else {
+		v.eventEmitter.EmitMessage(v.repo, zap.InfoLevel, "SetCommitStatus",
+			"successfully set status with the GitLab token")
+		return nil
 	}
 
 	eventType := triggertype.IsPullRequestType(event.EventType)

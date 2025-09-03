@@ -2,6 +2,7 @@
 title: Repository CR
 weight: 1
 ---
+
 # Repository CR
 
 The Repository CR serves the following purposes:
@@ -137,6 +138,8 @@ spec:
 ```
 
 When you set the value of `comment_strategy` to `disable_all` it will not add any comment on the merge request for the start and the end of PipelineRun
+
+Note: For GitLab, Pipelines-as-Code only adds a PipelineRun status comment if updating the commit status via the API fails (e.g., due to insufficient token permissions). If the commit status is updated successfully, no comment is posted, and the `comment_strategy` setting is ignored.
 
 ## Disabling all comments for PipelineRuns in GitHub Pull Requests on GitHub Webhook Setup
 
