@@ -192,11 +192,21 @@ function configure_pac() {
 
   sed -e "s,%DOMAIN_NAME%,${DOMAIN_NAME}," -e "s,%SERVICE_NAME%,${service_name}," ingress-pac.yaml | kubectl apply -f-
 
-  kubectl patch configmap -n pipelines-as-code -p "{\"data\":{\"bitbucket-cloud-check-source-ip\": \"false\"}}" pipelines-as-code &&
-    kubectl patch configmap -n pipelines-as-code -p "{\"data\":{\"tekton-dashboard-url\": \"http://dashboard.${DOMAIN_NAME}\"}}" --type merge pipelines-as-code &&
-    kubectl patch configmap -n pipelines-as-code -p \
-      '{"data":{"catalog-1-type": "artifacthub", "catalog-1-id": "pachub", "catalog-1-name": "pipelines-as-code", "catalog-1-url": "https://artifacthub.io"}}' \
-      --type merge pipelines-as-code
+  patch_data=$(
+    cat <<EOF
+{
+  "data": {
+    "bitbucket-cloud-check-source-ip": "false",
+    "tekton-dashboard-url": "http://dashboard.${DOMAIN_NAME}",
+    "catalog-1-type": "artifacthub",
+    "catalog-1-id": "pacpipelines",
+    "catalog-1-name": "pac-pipelines",
+    "catalog-1-url": "https://artifacthub.io"
+  }
+}
+EOF
+  )
+  kubectl patch configmap -n pipelines-as-code pipelines-as-code --type merge --patch "${patch_data}"
   kubectl patch configmap pac-config-logging -n pipelines-as-code --type json -p '[{"op": "replace", "path": "/data/loglevel.pipelinesascode", "value":"debug"}]'
   set +x
   if [[ -n ${PAC_PASS_SECRET_FOLDER} ]]; then
