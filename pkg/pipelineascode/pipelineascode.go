@@ -247,9 +247,9 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 		OriginalPipelineRunName: pr.GetAnnotations()[keys.OriginalPRName],
 	}
 
-	// Patch the pipelineRun with the appropriate annotations and labels.
-	// Set the state so the watcher will continue with reconciling the pipelineRun
-	// The watcher reconciles only pipelineRuns that has the state annotation.
+	// Patch the PipelineRun with the annotations and labels required by the watcher.
+	// The watcher reconciles only PipelineRuns that contain the state annotation,
+	// so we set it here to ensure reconciliation continues.
 	patchAnnotations := map[string]string{}
 	patchLabels := map[string]string{}
 	whatPatching := ""
