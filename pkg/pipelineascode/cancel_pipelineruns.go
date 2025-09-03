@@ -42,6 +42,7 @@ func (p *PacRun) cancelAllInProgressBelongingToClosedPullRequest(ctx context.Con
 	// First, build the label selector based on the URLRepository and PullRequest fields,
 	// followed by applying filtering logic for the 'cancel-in-progress' annotation.
 	labelSelector := getLabelSelector(labelsMap, operator)
+	labelSelector += fmt.Sprintf(",%s in (pull_request, Merge_Request, %s)", keys.EventType, opscomments.AnyOpsKubeLabelInSelector())
 
 	if cancelInProgress == "true" {
 		// When the 'cancel-in-progress' setting is enabled globally via the Pipelines-as-Code ConfigMap,
