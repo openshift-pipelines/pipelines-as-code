@@ -1,1 +1,12 @@
-@file .cursor/rules/*
+@.cursor/rules/architecture.mdc
+@.cursor/rules/code-formatting.mdc
+@.cursor/rules/dependencies.mdc
+@.cursor/rules/documentation.mdc
+@.cursor/rules/e2e-testing.mdc
+@.cursor/rules/git-commit-format.mdc
+@.cursor/rules/jira-formatting.mdc
+@.cursor/rules/pre-commit.mdc
+@.cursor/rules/srvkp-jira-bug-template.mdc
+@.cursor/rules/srvkp-jira-template.mdc
+@.cursor/rules/testing-quality.mdc
+@.cursor/rules/useful-commands.mdc
