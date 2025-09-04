@@ -43,8 +43,10 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 	return matchedPRs, repo, nil
 }
 
-// verifyRepoAndUser verifies if the Repo CR exists for the Git Repository,
-// if the user has permission to run CI  and also initialise provider client.
+// verifyRepoAndUser performs the following tasks:
+// 1. Checks if a corresponding Repo Custom Resource (CR) exists for the specified Git repository.
+// 2. Verifies that the user has the necessary permissions to trigger CI processes.
+// 3. Initializes the appropriate provider client for further operations.
 func (p *PacRun) verifyRepoAndUser(ctx context.Context) (*v1alpha1.Repository, error) {
 	// Match the Event URL to a Repository URL,
 	repo, err := matcher.MatchEventURLRepo(ctx, p.run, p.event, "")
