@@ -709,32 +709,22 @@ func TestGitlabMergeRequestValidationErrorsFromFork(t *testing.T) {
 	err = tgitlab.CreateCRD(ctx, originalProject, runcnx, opts, targetNS, nil)
 	assert.NilError(t, err)
 
-	// Create a fork of the original project
-	forkName := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-fork-test")
-	forkProject, _, err := glprovider.Client().Projects.ForkProject(opts.ProjectID, &clientGitlab.ForkProjectOptions{
-		Name: &forkName,
-		Path: &forkName,
-	})
+	// Get an existing fork of the original project
+	projectForks, _, err := glprovider.Client().Projects.ListProjectForks(opts.ProjectID, &clientGitlab.ListProjectsOptions{})
 	assert.NilError(t, err)
-	runcnx.Clients.Log.Infof("Created fork project: %s (ID: %d) from original: %s (ID: %d)",
+
+	if len(projectForks) == 0 {
+		t.Fatal("No forks available for testing fork scenario. This test requires at least one fork of the project.")
+	}
+
+	forkProject := projectForks[0] // Use the first available fork
+	runcnx.Clients.Log.Infof("Using existing fork project: %s (ID: %d) from original: %s (ID: %d)",
 		forkProject.PathWithNamespace, forkProject.ID, originalProject.PathWithNamespace, originalProject.ID)
-
-	// Cleanup fork when test finishes
-	defer func() {
-		runcnx.Clients.Log.Infof("Cleaning up fork project: %d", forkProject.ID)
-		_, err := glprovider.Client().Projects.DeleteProject(forkProject.ID, nil)
-		if err != nil {
-			runcnx.Clients.Log.Warnf("Failed to delete fork project: %v", err)
-		}
-	}()
-
-	// Wait sometime for fork to be fully ready
-	time.Sleep(3 * time.Second)
 
 	// Commit invalid .tekton files to the fork
 	entries, err := payload.GetEntries(map[string]string{
 		".tekton/bad-yaml.yaml": "testdata/failures/bad-yaml.yaml",
-	}, targetNS, forkProject.DefaultBranch,
+	}, targetNS, originalProject.DefaultBranch,
 		triggertype.PullRequest.String(), map[string]string{})
 	assert.NilError(t, err)
 
@@ -770,18 +760,13 @@ func TestGitlabMergeRequestValidationErrorsFromFork(t *testing.T) {
 		originalProject.WebURL, mr.IID)
 
 	defer func() {
-		// Close the MR and clean up branch
-		runcnx.Clients.Log.Infof("Closing MR %d", mr.IID)
-		_, _, err := glprovider.Client().MergeRequests.UpdateMergeRequest(originalProject.ID, mr.IID,
-			&clientGitlab.UpdateMergeRequestOptions{StateEvent: clientGitlab.Ptr("close")})
-		if err != nil {
-			runcnx.Clients.Log.Warnf("Failed to close MR: %v", err)
-		}
+		// Clean up MR and namespace using TearDown
+		tgitlab.TearDown(ctx, t, runcnx, glprovider, mr.IID, "", targetNS, originalProject.ID)
 
-		runcnx.Clients.Log.Infof("Deleting branch %s from fork", targetRefName)
-		_, err = glprovider.Client().Branches.DeleteBranch(forkProject.ID, targetRefName)
+		runcnx.Clients.Log.Infof("Deleting branch %s from fork project", targetRefName)
+		_, err := glprovider.Client().Branches.DeleteBranch(forkProject.ID, targetRefName)
 		if err != nil {
-			runcnx.Clients.Log.Warnf("Failed to delete branch: %v", err)
+			runcnx.Clients.Log.Warnf("Failed to delete branch from fork: %v", err)
 		}
 	}()
 
