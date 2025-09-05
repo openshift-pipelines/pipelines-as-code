@@ -991,7 +991,7 @@ func TestGitLabCreateComment(t *testing.T) {
 		},
 		{
 			name:         "create new comment",
-			event:        &info.Event{PullRequestNumber: 123},
+			event:        &info.Event{PullRequestNumber: 123, TargetProjectID: 666},
 			commit:       "New Comment",
 			updateMarker: "",
 			mockResponses: map[string]func(rw http.ResponseWriter, _ *http.Request){
@@ -1004,7 +1004,7 @@ func TestGitLabCreateComment(t *testing.T) {
 		},
 		{
 			name:         "update existing comment",
-			event:        &info.Event{PullRequestNumber: 123},
+			event:        &info.Event{PullRequestNumber: 123, TargetProjectID: 666},
 			commit:       "Updated Comment",
 			updateMarker: "MARKER",
 			mockResponses: map[string]func(rw http.ResponseWriter, _ *http.Request){
@@ -1023,7 +1023,7 @@ func TestGitLabCreateComment(t *testing.T) {
 		},
 		{
 			name:         "no matching comment creates new",
-			event:        &info.Event{PullRequestNumber: 123},
+			event:        &info.Event{PullRequestNumber: 123, TargetProjectID: 666},
 			commit:       "New Comment",
 			updateMarker: "MARKER",
 			mockResponses: map[string]func(rw http.ResponseWriter, _ *http.Request){
