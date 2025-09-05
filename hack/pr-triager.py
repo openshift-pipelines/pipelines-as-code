@@ -8,6 +8,7 @@
 # ///
 import json
 import os
+from collections import Counter
 
 # pylint: disable=no-name-in-module
 import google.generativeai as genai
@@ -219,6 +220,82 @@ def add_labels_to_pr(labels):
             print(f"Response: {e.response.text}")
 
 
+def add_reviewers_to_pr(reviewers):
+    """Add reviewers to the current pull request"""
+    if not reviewers:
+        print("No reviewers to add")
+        return
+
+    url = f"https://api.github.com/repos/{os.environ['REPO_OWNER']}/{os.environ['REPO_NAME']}/pulls/{os.environ['PR_NUMBER']}/requested_reviewers"
+    headers = {
+        "Authorization": f"token {os.environ['GITHUB_TOKEN']}",
+        "Accept": "application/vnd.github.v3+json",
+    }
+    data = {"reviewers": reviewers}
+
+    try:
+        response = requests.post(url, headers=headers, json=data, timeout=300)
+        response.raise_for_status()
+        print(f"Successfully added reviewers: {reviewers}")
+    except requests.exceptions.RequestException as e:
+        print(f"Error adding reviewers: {e}")
+        if hasattr(e, "response") and e.response:
+            print(f"Response: {e.response.text}")
+
+
+def handle_reviewer_suggestions(pr_info, files_changed):
+    """Suggests and adds reviewers based on file change history if none are assigned"""
+    if pr_info.get("requested_reviewers"):
+        assigned_reviewers = [r["login"] for r in pr_info["requested_reviewers"]]
+        print(f"PR already has reviewers assigned: {assigned_reviewers}")
+        return
+
+    print("No reviewers assigned, attempting to suggest one...")
+    pr_author = pr_info.get("user", {}).get("login")
+    headers = {
+        "Authorization": f"token {os.environ['GITHUB_TOKEN']}",
+        "Accept": "application/vnd.github.v3+json",
+    }
+
+    # Filter out vendor files
+    non_vendor_files = [
+        f for f in files_changed if not f.split("\t")[1].startswith("vendor/")
+    ]
+
+    # Limit to the first 50 files
+    files_to_process = non_vendor_files
+    if len(non_vendor_files) > 50:
+        print(
+            "PR has more than 50 non-vendor files, analyzing the first 50 for reviewer suggestion."
+        )
+        files_to_process = non_vendor_files[:50]
+
+    contributor_counts = Counter()
+    for file_info in files_to_process:
+        filename = file_info.split("\t")[1]
+        # Limit to 20 commits per file
+        commits_url = f"https://api.github.com/repos/{os.environ['REPO_OWNER']}/{os.environ['REPO_NAME']}/commits?path={filename}&per_page=20"
+        try:
+            # Use a direct request instead of pagination for only the first page
+            response = requests.get(commits_url, headers=headers, timeout=300)
+            response.raise_for_status()
+            commits_data = response.json()
+            for commit in commits_data:
+                if commit.get("author") and commit["author"].get("login"):
+                    author = commit["author"]["login"]
+                    if author != pr_author:
+                        contributor_counts[author] += 1
+        except requests.exceptions.RequestException as e:
+            print(f"Could not fetch commits for {filename}: {e}")
+            continue
+    if not contributor_counts:
+        print("Could not identify any potential reviewers from file history.")
+    else:
+        top_reviewer = contributor_counts.most_common(1)[0][0]
+        print(f"Suggested reviewer based on file history: {top_reviewer}")
+        add_reviewers_to_pr([top_reviewer])
+
+
 def validate_environment():
     """Validate all required environment variables are set"""
     required_vars = [
@@ -256,6 +333,10 @@ def main():
 
     print(f"Analyzing PR #{os.environ['PR_NUMBER']}: {pr_title}")
 
+    # --- Suggest and add reviewers ---
+    handle_reviewer_suggestions(pr_info, files_changed)
+
+    # --- ORIGINAL LABELING LOGIC (UNCHANGED) ---
     # Show which Gemini model is being used
     model_name = os.environ.get("GEMINI_MODEL", DEFAULT_MODEL)
     print(f"Using Gemini model: {model_name}")
