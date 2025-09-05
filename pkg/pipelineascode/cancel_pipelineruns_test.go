@@ -1316,6 +1316,34 @@ func TestCancelAllInProgressBelongingToClosedPullRequest(t *testing.T) {
 			},
 			cancelledPipelineRuns: map[string]bool{},
 		},
+		// this can happen when a pull request is merged and a new push is made to the branch
+		// so PaC assign the merged pull request number to the push PipelineRun
+		{
+			name: "do not cancel push-triggered PipelineRuns on PR close",
+			event: &info.Event{
+				Repository:        "foo",
+				PullRequestNumber: pullReqNumber,
+				TriggerTarget:     "push",
+			},
+			repo: fooRepo,
+			pipelineRuns: []*pipelinev1.PipelineRun{
+				{
+					Spec: pipelinev1.PipelineRunSpec{},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-foo-1",
+						Namespace: "foo",
+						Labels: map[string]string{
+							keys.OriginalPRName: "pr-foo",
+							keys.URLRepository:  formatting.CleanValueKubernetes("foo"),
+							keys.PullRequest:    strconv.Itoa(pullReqNumber),
+							keys.EventType:      string(triggertype.Push),
+							keys.SHA:            formatting.CleanValueKubernetes("foosha"),
+						},
+					},
+				},
+			},
+			cancelledPipelineRuns: map[string]bool{},
+		},
 		{
 			name: "exclude PipelineRun having cancel-in-progress set to false when global setting is true",
 			event: &info.Event{

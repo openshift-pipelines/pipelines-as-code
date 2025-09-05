@@ -690,6 +690,119 @@ func TestGitlabMergeRequestOnUpdateAtAndLabelChange(t *testing.T) {
 	}
 }
 
+func TestGitlabMergeRequestValidationErrorsFromFork(t *testing.T) {
+	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
+	ctx := context.Background()
+	runcnx, opts, glprovider, err := tgitlab.Setup(ctx)
+	assert.NilError(t, err)
+	ctx, err = cctx.GetControllerCtxInfo(ctx, runcnx)
+	assert.NilError(t, err)
+	runcnx.Clients.Log.Info("Testing GitLab validation error commenting from fork scenario")
+
+	// Get the original project onboarded to PaC
+	originalProject, resp, err := glprovider.Client().Projects.GetProject(opts.ProjectID, nil)
+	assert.NilError(t, err)
+	if resp != nil && resp.StatusCode == http.StatusNotFound {
+		t.Errorf("Repository %d not found", opts.ProjectID)
+	}
+
+	err = tgitlab.CreateCRD(ctx, originalProject, runcnx, opts, targetNS, nil)
+	assert.NilError(t, err)
+
+	// Get an existing fork of the original project
+	projectForks, _, err := glprovider.Client().Projects.ListProjectForks(opts.ProjectID, &clientGitlab.ListProjectsOptions{})
+	assert.NilError(t, err)
+
+	if len(projectForks) == 0 {
+		t.Fatal("No forks available for testing fork scenario. This test requires at least one fork of the project.")
+	}
+
+	forkProject := projectForks[0] // Use the first available fork
+	runcnx.Clients.Log.Infof("Using existing fork project: %s (ID: %d) from original: %s (ID: %d)",
+		forkProject.PathWithNamespace, forkProject.ID, originalProject.PathWithNamespace, originalProject.ID)
+
+	// Commit invalid .tekton files to the fork
+	entries, err := payload.GetEntries(map[string]string{
+		".tekton/bad-yaml.yaml": "testdata/failures/bad-yaml.yaml",
+	}, targetNS, originalProject.DefaultBranch,
+		triggertype.PullRequest.String(), map[string]string{})
+	assert.NilError(t, err)
+
+	targetRefName := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-fork-test")
+	forkCloneURL, err := scm.MakeGitCloneURL(forkProject.WebURL, opts.UserName, opts.Password)
+	assert.NilError(t, err)
+
+	commitTitle := "Add invalid .tekton file from fork - " + targetRefName
+	scmOpts := &scm.Opts{
+		GitURL:        forkCloneURL,
+		CommitTitle:   commitTitle,
+		Log:           runcnx.Clients.Log,
+		WebURL:        forkProject.WebURL,
+		TargetRefName: targetRefName,
+		BaseRefName:   originalProject.DefaultBranch,
+	}
+	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
+	runcnx.Clients.Log.Infof("Pushed invalid .tekton files to fork branch: %s", targetRefName)
+
+	// Create merge request from fork to original project
+	mrTitle := "TestValidationErrorsFromFork - " + targetRefName
+	mrOptions := &clientGitlab.CreateMergeRequestOptions{
+		Title:        &mrTitle,
+		SourceBranch: &targetRefName,
+		TargetBranch: &originalProject.DefaultBranch,
+		// Create MR on the target project (original), not the source (fork)
+		TargetProjectID: &originalProject.ID,
+	}
+
+	mr, _, err := glprovider.Client().MergeRequests.CreateMergeRequest(forkProject.ID, mrOptions)
+	assert.NilError(t, err)
+	runcnx.Clients.Log.Infof("Created merge request from fork to original: %s/-/merge_requests/%d",
+		originalProject.WebURL, mr.IID)
+
+	defer func() {
+		// Clean up MR and namespace using TearDown
+		tgitlab.TearDown(ctx, t, runcnx, glprovider, mr.IID, "", targetNS, originalProject.ID)
+
+		runcnx.Clients.Log.Infof("Deleting branch %s from fork project", targetRefName)
+		_, err := glprovider.Client().Branches.DeleteBranch(forkProject.ID, targetRefName)
+		if err != nil {
+			runcnx.Clients.Log.Warnf("Failed to delete branch from fork: %v", err)
+		}
+	}()
+
+	runcnx.Clients.Log.Info("Waiting for webhook validation to process MR and post validation comment...")
+
+	maxLoop := 12 // Wait up to 72 seconds for webhook processing
+	foundValidationComment := false
+
+	for i := 0; i < maxLoop; i++ {
+		notes, _, err := glprovider.Client().Notes.ListMergeRequestNotes(originalProject.ID, mr.IID, nil)
+		assert.NilError(t, err)
+
+		for _, note := range notes {
+			// Look for the validation error comment that PaC should post via webhook
+			if regexp.MustCompile(`.*There are some errors in your PipelineRun template.*`).MatchString(note.Body) &&
+				regexp.MustCompile(`.*bad-yaml\.yaml.*yaml validation error.*`).MatchString(note.Body) {
+				runcnx.Clients.Log.Info("Found validation error comment on original project's MR!")
+				foundValidationComment = true
+
+				// Verify the comment format matches PaC's validation error format
+				assert.Assert(t, regexp.MustCompile(`\[!CAUTION\]`).MatchString(note.Body), "Comment should contain caution header")
+				break
+			}
+		}
+
+		if foundValidationComment {
+			break
+		}
+
+		runcnx.Clients.Log.Infof("Loop %d/%d: Waiting for webhook validation to post comment (testing TargetProjectID fix)", i+1, maxLoop)
+		time.Sleep(6 * time.Second)
+	}
+
+	assert.Assert(t, foundValidationComment, "Validation error comment should appear on original project's MR. ")
+}
+
 // Local Variables:
 // compile-command: "go test -tags=e2e -v -run ^TestGitlabMergeRequest$"
 // End:
