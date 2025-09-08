@@ -108,7 +108,7 @@ jobs:
               core.setFailed(`Permission check failed for @${actor}. They are likely not a collaborator on the repository. Error: ${error.message}`);
             }
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: "go.mod"
 
