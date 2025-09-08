@@ -107,6 +107,10 @@ repository.
 The most recent five statuses of any PipelineRuns associated with a repository
 are stored within the corresponding repository custom resource (CR).
 
+{{< hint danger >}}
+The `pipelinerun_status` field in the `Repository` CR is scheduled for deprecation and will be removed in a future release. Please avoid relying on it.
+{{< /hint >}}
+
 ```console
 % kubectl get repo -n pipelines-as-code-ci
 NAME                  URL                                                        NAMESPACE             SUCCEEDED   REASON      STARTTIME   COMPLETIONTIME

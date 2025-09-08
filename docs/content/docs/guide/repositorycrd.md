@@ -15,6 +15,10 @@ The Repository CR serves the following purposes:
 - Letting you declare [custom parameters]({{< relref "/docs/guide/customparams" >}})
   within the `PipelineRun` that can be expanded based on certain filters.
 
+{{< hint danger >}}
+The `pipelinerun_status` field in the `Repository` CR is scheduled for deprecation and will be removed in a future release. Please avoid relying on it.
+{{< /hint >}}
+
 To configure Pipelines-as-Code, a Repository CR must be created within the
 user's namespace, for example `project-repository`, where their CI will run.
 
