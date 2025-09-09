@@ -270,6 +270,8 @@ func TestGiteaACLCommentsAllowing(t *testing.T) {
 // the status of CI shows as success. Now non authorized user pushes to PR, the CI will again go to pending
 // and require /ok-to-test again from authorized user.
 func TestGiteaACLCommentsAllowingRememberOkToTestFalse(t *testing.T) {
+	t.Skip("Skipping test changing the global config map for now")
+
 	ctx := context.Background()
 	topts := &tgitea.TestOpts{
 		TargetEvent: triggertype.PullRequest.String(),
