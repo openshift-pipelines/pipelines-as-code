@@ -74,7 +74,7 @@ func (c *repositories) Get(ctx context.Context, name string, options v1.GetOptio
 		VersionedParams(&options, scheme.ParameterCodec).
 		Do(ctx).
 		Into(result)
-	return
+	return result, err
 }
 
 // List takes label and field selectors, and returns the list of Repositories that match those selectors.
@@ -91,7 +91,7 @@ func (c *repositories) List(ctx context.Context, opts v1.ListOptions) (result *v
 		Timeout(timeout).
 		Do(ctx).
 		Into(result)
-	return
+	return result, err
 }
 
 // Watch returns a watch.Interface that watches the requested repositories.
@@ -119,7 +119,7 @@ func (c *repositories) Create(ctx context.Context, repository *v1alpha1.Reposito
 		Body(repository).
 		Do(ctx).
 		Into(result)
-	return
+	return result, err
 }
 
 // Update takes the representation of a repository and updates it. Returns the server's representation of the repository, and an error, if there is any.
@@ -133,7 +133,7 @@ func (c *repositories) Update(ctx context.Context, repository *v1alpha1.Reposito
 		Body(repository).
 		Do(ctx).
 		Into(result)
-	return
+	return result, err
 }
 
 // UpdateStatus was generated because the type contains a Status member.
@@ -149,7 +149,7 @@ func (c *repositories) UpdateStatus(ctx context.Context, repository *v1alpha1.Re
 		Body(repository).
 		Do(ctx).
 		Into(result)
-	return
+	return result, err
 }
 
 // Delete takes name of the repository and deletes it. Returns an error if one occurs.
@@ -191,5 +191,5 @@ func (c *repositories) Patch(ctx context.Context, name string, pt types.PatchTyp
 		Body(data).
 		Do(ctx).
 		Into(result)
-	return
+	return result, err
 }

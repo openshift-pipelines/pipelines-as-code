@@ -1,0 +1,107 @@
+CEL Expression Evaluator for Pipelines as Code
+Detected provider: %s
+
+AVAILABLE VARIABLES:
+
+  Direct variables (as per PAC documentation):
+    event              - event type (push, pull_request, tag)
+    event_type         - same as event (for compatibility)
+    target_branch      - target branch name (e.g., "main", "develop")
+    source_branch      - source branch name (e.g., "feature/new-api")
+    target_url         - target repository URL
+    source_url         - source repository URL
+    event_title        - PR title or commit message
+    revision           - commit SHA
+    repo_owner         - repository owner (organization/user)
+    repo_name          - repository name
+    sender             - event sender (username)
+    repo_url           - repository full URL
+    git_tag            - Git tag pushed (empty for non-tag events)
+    target_namespace   - target namespace for PipelineRun
+    trigger_comment    - comment that triggered the run
+    pull_request_labels - PR labels separated by newlines
+    pull_request_number - PR/MR number
+    git_auth_secret    - auto-generated git auth secret name
+
+  Webhook payload (body.*):
+    body.action                    - PR action (opened, synchronize, closed, etc.)
+    body.number                    - PR/issue number
+    body.pull_request.user.login   - PR author username
+    body.pull_request.draft        - true if PR is draft
+    body.pull_request.title        - PR title
+    body.pull_request.body         - PR description
+    body.pull_request.head.ref     - source branch name
+    body.pull_request.base.ref     - target branch name
+    body.repository.name           - repository name
+    body.repository.full_name      - owner/repo format
+    body.sender.login              - event sender username
+
+  HTTP headers (headers.*):
+    headers['x-github-event']      - GitHub event type
+    headers['x-gitlab-event']      - GitLab event type
+    headers['x-github-delivery']   - GitHub delivery ID
+    headers['content-type']        - request content type
+    headers['user-agent']          - user agent string
+
+  Files (files.*):
+    Note: File-related variables and functions have limited support in CLI mode
+    files.all, files.added, files.modified, files.deleted, files.renamed will be empty arrays
+    The .pathChanged() function is not available in CLI mode
+
+  PAC Parameters (pac.* - for backward compatibility):
+    pac.event, pac.target_branch, pac.source_branch, etc.
+    These mirror the direct variables above
+
+SUPPORTED FILE FORMATS:
+
+  Body file (-b, --body):
+    JSON webhook payload from GitHub, GitLab, Bitbucket, or Gitea
+
+  Headers file (-H, --headers):
+    • JSON format: {"X-GitHub-Event": "pull_request", "Content-Type": "application/json"}
+    • HTTP format: X-GitHub-Event: pull_request\nContent-Type: application/json
+    • Gosmee script: Shell scripts with curl commands (auto-detected)
+
+CEL OPERATORS AND FUNCTIONS:
+
+  Comparison: ==, !=, <, <=, >, >=
+  Logical: &&, ||, !
+  String functions: .matches(), .startsWith(), .endsWith(), .contains()
+  Membership: in (e.g., "main" in ["main", "develop"])
+  
+  Note: The .pathChanged() function and files.* properties are not fully
+  functional in CLI mode. Use this tool for testing basic expressions only.
+
+EXAMPLE EXPRESSIONS:
+
+  Basic conditions:
+    event == "pull_request"
+    target_branch == "main"
+    source_branch != "experimental"
+
+  String matching:
+    source_branch.startsWith("feature/")
+    source_branch.matches("^(feature|bugfix)/.*")
+    event_title.contains("WIP")
+
+  Complex conditions:
+    event == "pull_request" && target_branch == "main" && !body.pull_request.draft
+    event == "push" && target_branch in ["main", "develop", "staging"]
+    body.action == "opened" && body.pull_request.user.login == "dependabot[bot]"
+
+  Header checks:
+    headers['x-github-event'] == "pull_request"
+    headers['user-agent'].contains("GitHub-Hookshot")
+
+TIPS:
+
+  • Use Tab for autocompletion
+  • Access nested JSON with dot notation: body.pull_request.user.login
+  • Use brackets for headers: headers['x-github-event']
+  • String literals need quotes: "main", not main
+  • Test expressions incrementally to debug complex conditions
+
+CEL LANGUAGE REFERENCE:
+
+  • CEL Introduction: https://github.com/google/cel-spec/blob/master/doc/intro.md
+  • CEL Language Definition: https://github.com/google/cel-spec/blob/master/doc/langdef.md
