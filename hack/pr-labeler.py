@@ -39,7 +39,7 @@ def get_paginated_data(url, headers, timeout=300):
 def get_excluded_labels():
     """Get excluded labels from environment variable or use default"""
     excluded_env = os.environ.get(
-        "EXCLUDED_LABELS", "good-first-issue,help-wanted,wontfix"
+        "EXCLUDED_LABELS", "good-first-issue,help-wanted,wontfix,hack"
     )
     # Split by comma and strip whitespace, filter out empty strings
     return {label.strip() for label in excluded_env.split(",") if label.strip()}
@@ -131,7 +131,14 @@ Commit messages:
 IMPORTANT: You can ONLY suggest labels from this list of available labels in the repository:
 {labels_text}
 
-Based on the PR title, description, files changed, and commit messages, suggest 2-4 relevant labels from the available labels list above. Use the label descriptions to understand their intended purpose.
+Based on the PR title, description, files changed, and commit messages, suggest up to 3 relevant labels from the available labels list above. Use the label descriptions to understand their intended purpose.
+
+IMPORTANT RESTRICTIONS:
+- Only suggest "documentation" label if files in the docs/ directory are modified
+- Only suggest "e2e" label if files in the test/ directory are modified for e2e tests
+- Only suggest provider labels ("github", "gitlab", "bitbucket", "gitea") if files in the pkg/provider/ directory are modified
+- Provider labels should match the specific provider subdirectory modified (e.g., "github" only if pkg/provider/github/ files are changed)
+- Maximum 3 labels total
 
 Respond with only a JSON array of label names that exist in the available labels list, like: ["enhancement", "backend"]
 """
@@ -277,6 +284,14 @@ def main():
     print(f"Files changed: {len(files_changed)} files")
     print(f"Commits: {len(commit_messages)} commits")
 
+    # Skip if PR already has max_labels or more labels (unless unlimited)
+    max_labels = int(os.environ.get("MAX_LABELS", "-1"))
+    if max_labels > 0 and len(current_labels) >= max_labels:
+        print(
+            f"PR already has {len(current_labels)} labels (max: {max_labels}), skipping label addition"
+        )
+        return
+
     # Analyze with Gemini
     suggested_labels = analyze_with_gemini(
         pr_title, pr_description, files_changed, commit_messages, available_labels
@@ -301,9 +316,71 @@ def main():
         ]
         print(f"Warning: Gemini suggested invalid labels: {invalid_labels}")
 
+    # Apply restrictions based on files changed
+    has_docs_files = any(
+        file.split("\t")[1].startswith("docs/") for file in files_changed
+    )
+    has_test_files = any(
+        file.split("\t")[1].startswith("test/") for file in files_changed
+    )
+    has_provider_files = any(
+        file.split("\t")[1].startswith("pkg/provider/") for file in files_changed
+    )
+
+    # Detect specific provider subdirectories modified
+    provider_types = set()
+    if has_provider_files:
+        for file in files_changed:
+            file_path = file.split("\t")[1]
+            if file_path.startswith("pkg/provider/"):
+                path_parts = file_path.split("/")
+                if len(path_parts) >= 3:  # pkg/provider/[subdir]/...
+                    subdir = path_parts[2]
+                    if subdir in [
+                        "github",
+                        "gitlab",
+                        "bitbucketcloud",
+                        "bitbucketdatacenter",
+                        "gitea",
+                    ]:
+                        if subdir.startswith("bitbucket"):
+                            provider_types.add("bitbucket")
+                        else:
+                            provider_types.add(subdir)
+
+    # Filter out restricted labels
+    filtered_labels = []
+    for label in valid_suggested_labels:
+        if label == "documentation" and not has_docs_files:
+            print("Skipping 'documentation' label - no docs/ files modified")
+            continue
+        if label == "e2e" and not has_test_files:
+            print("Skipping 'e2e' label - no test/ files modified")
+            continue
+        # Provider-specific label restrictions
+        if (
+            label in ["github", "gitlab", "bitbucket", "gitea"]
+            and not has_provider_files
+        ):
+            print(f"Skipping '{label}' label - no pkg/provider/ files modified")
+            continue
+        if (
+            label in ["github", "gitlab", "bitbucket", "gitea"]
+            and label not in provider_types
+        ):
+            print(f"Skipping '{label}' label - no pkg/provider/{label}/ files modified")
+            continue
+        filtered_labels.append(label)
+
+    # Limit to maximum labels (unless unlimited)
+    max_labels = int(os.environ.get("MAX_LABELS", "-1"))
+    if max_labels > 0 and len(filtered_labels) > max_labels:
+        print(f"Limiting labels from {len(filtered_labels)} to {max_labels}")
+        filtered_labels = filtered_labels[:max_labels]
+
     # Filter out labels that already exist
     new_labels = [
-        label for label in valid_suggested_labels if label not in existing_labels_set
+        label for label in filtered_labels if label not in existing_labels_set
     ]
 
     if new_labels:

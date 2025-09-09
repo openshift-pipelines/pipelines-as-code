@@ -23,7 +23,9 @@ spec:
     - name: gemini_model
       value: "gemini-2.5-flash"
     - name: excluded_labels
-      value: "good-first-issue,help-wanted,wontfix"
+      value: "good-first-issue,help-wanted,wontfix,hack"
+    - name: max_labels
+      value: "3"
   pipelineSpec:
     params:
       - name: repo_url
@@ -33,6 +35,7 @@ spec:
       - name: repo_name
       - name: gemini_model
       - name: excluded_labels
+      - name: max_labels
     tasks:
       - name: pr-labeler
         taskSpec:
@@ -44,6 +47,7 @@ spec:
             - name: repo_name
             - name: gemini_model
             - name: excluded_labels
+            - name: max_labels
           workspaces:
             - name: source
           steps:
@@ -86,6 +90,8 @@ spec:
                   value: "$(params.gemini_model)"
                 - name: EXCLUDED_LABELS
                   value: "$(params.excluded_labels)"
+                - name: MAX_LABELS
+                  value: "$(params.max_labels)"
               command:
                 - ./hack/pr-labeler.py
         params:
@@ -103,6 +109,8 @@ spec:
             value: "$(params.gemini_model)"
           - name: excluded_labels
             value: "$(params.excluded_labels)"
+          - name: max_labels
+            value: "$(params.max_labels)"
         workspaces:
           - name: source
             workspace: source
