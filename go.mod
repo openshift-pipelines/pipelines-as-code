@@ -9,6 +9,7 @@ require (
 	code.gitea.io/sdk/gitea v0.21.0
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/bradleyfalzon/ghinstallation/v2 v2.15.0
+	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
 	github.com/cloudevents/sdk-go/v2 v2.16.0
 	github.com/fvbommel/sortorder v1.1.0
 	github.com/gobwas/glob v0.2.3
@@ -128,8 +129,8 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/net v0.39.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/term v0.31.0 // indirect
+	golang.org/x/sys v0.35.0 // indirect
+	golang.org/x/term v0.34.0
 	golang.org/x/time v0.11.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.5.0 // indirect
 	google.golang.org/api v0.231.0 // indirect
