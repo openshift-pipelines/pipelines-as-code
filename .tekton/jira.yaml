@@ -18,9 +18,9 @@ spec:
     - name: GITHUB_TOKEN_SECRET_KEY
       value: "git-provider-token"
     - name: AI_TOKEN_SECRET
-      value: "gemini"
+      value: "gemini-api-key"
     - name: AI_TOKEN_SECRET_KEY
-      value: "secret"
+      value: "api-key"
     - name: JIRA_ENDPOINT
       value: "https://issues.redhat.com"
     - name: JIRA_TOKEN_SECRET
