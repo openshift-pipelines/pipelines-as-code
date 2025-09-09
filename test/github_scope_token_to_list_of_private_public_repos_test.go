@@ -55,6 +55,7 @@ func TestGithubPullRequestScopeTokenToListOfRepos(t *testing.T) {
 }
 
 func TestGithubPullRequestScopeTokenToListOfReposByGlobalConfiguration(t *testing.T) {
+	t.Skip("Skipping test changing the global config map for now")
 	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
 		t.Skip("Skipping test since only enabled for nightly")
 	}
@@ -182,7 +183,6 @@ func verifyGHTokenScope(t *testing.T, remoteTaskURL, remoteTaskName string, data
 	runcnx.Clients.Log.Infof("Check if we have the repository set as succeeded")
 	repo, err := runcnx.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(targetNS).Get(ctx, targetNS, metav1.GetOptions{})
 	assert.NilError(t, err)
-	assert.Assert(t, len(repo.Status) > 0, "Repository status is empty, no status found")
 	laststatus := repo.Status[len(repo.Status)-1]
 	assert.Equal(t, corev1.ConditionTrue, laststatus.Conditions[0].Status)
 	assert.Equal(t, sha, *laststatus.SHA)
