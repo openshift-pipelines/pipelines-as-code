@@ -19,6 +19,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketdatacenter/types"
 	providerMetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/metrics"
 	"go.uber.org/zap"
 )
@@ -400,10 +401,16 @@ func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) (changedf
 	if runevent.TriggerTarget == triggertype.Push {
 		opts := &scm.ListOptions{Page: 1, Size: apiResponseLimit}
 		changedFiles := changedfiles.ChangedFiles{}
+		isMergeCommit, relevantSha := v.getNonMergeCommitSHA(runevent)
+		if isMergeCommit {
+			v.Logger.Infof("Detected a merge commit as HEAD; "+
+				"using second parent commit SHA %s (source branch HEAD) to list files", relevantSha)
+		}
+
 		for {
-			changes, _, err := v.Client().Git.ListChanges(ctx, OrgAndRepo, runevent.SHA, opts)
+			changes, _, err := v.Client().Git.ListChanges(ctx, OrgAndRepo, relevantSha, opts)
 			if err != nil {
-				return changedfiles.ChangedFiles{}, fmt.Errorf("failed to list changes for commit %s: %w", runevent.SHA, err)
+				return changedfiles.ChangedFiles{}, fmt.Errorf("failed to list changes for commit %s: %w", relevantSha, err)
 			}
 
 			for _, c := range changes {
@@ -431,6 +438,31 @@ func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) (changedf
 		return changedFiles, nil
 	}
 	return changedfiles.ChangedFiles{}, nil
+}
+
+// getCommitNonMergeCommit gets the SHA of the commit from an Event. If the commit is a Merge Commit
+// the second parent's SHA is returned instead. The second parent of a MergeCommit contains the relevant
+// file changes of the commit, however that commit does not exist on the branch which was pushed to so
+// it cannot be used instead of the MergeCommit in many cases.
+func (v *Provider) getNonMergeCommitSHA(runevent *info.Event) (bool, string) {
+	// In Bitbucket Data Center, when a pull request is merged, it creates two commits in the repository:
+	// 1. A merge commit, which is represented by `changes[0].ToHash`.
+	// 2. The actual commit containing the changes from the source branch.
+	//
+	// However, the merge commit often does not contain any file changes itself,
+	// which can cause issues when determining whether file modifications should trigger PipelineRuns.
+	//
+	// Typically, a regular (non-merge) commit has a single parent, but a merge commit has two parents:
+	// - The first parent is the previous HEAD of the destination branch (the branch into which the PR was merged).
+	// - The second parent is the HEAD of the source branch (the branch being merged).
+	//
+	// To correctly identify the actual commit that contains the changes (i.e., the source branch's HEAD),
+	// we inspect `e.Commits[0]`, and if it has more than one parent, we take the second parent.
+	// This helps ensure we reference the correct commit.
+	if pushEvent, ok := runevent.Event.(*types.PushRequestEvent); ok && len(pushEvent.Commits) > 1 && len(pushEvent.Commits[0].Parents) > 1 {
+		return true, pushEvent.Commits[0].Parents[1].ID
+	}
+	return false, runevent.SHA
 }
 
 func (v *Provider) CreateToken(_ context.Context, _ []string, _ *info.Event) (string, error) {
