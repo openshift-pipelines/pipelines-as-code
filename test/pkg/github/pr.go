@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"maps"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -119,6 +120,7 @@ type PRTest struct {
 	SHA             string
 	Logger          *zap.SugaredLogger
 	CommitTitle     string
+	ExtraArgs       map[string]string
 }
 
 func (g *PRTest) RunPullRequest(ctx context.Context, t *testing.T) {
@@ -148,8 +150,10 @@ func (g *PRTest) RunPullRequest(ctx context.Context, t *testing.T) {
 		yamlEntries[filepath.Join(".tekton", filepath.Base(v))] = v
 	}
 
-	entries, err := payload.GetEntries(yamlEntries, targetNS, options.MainBranch, triggertype.PullRequest.String(),
-		map[string]string{"TargetURL": repoinfo.GetHTMLURL(), "SourceURL": repoinfo.GetHTMLURL()})
+	args := map[string]string{"TargetURL": repoinfo.GetHTMLURL(), "SourceURL": repoinfo.GetHTMLURL()}
+	maps.Copy(args, g.ExtraArgs)
+
+	entries, err := payload.GetEntries(yamlEntries, targetNS, options.MainBranch, triggertype.PullRequest.String(), args)
 	assert.NilError(t, err)
 
 	targetRefName := fmt.Sprintf("refs/heads/%s",

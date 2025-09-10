@@ -123,6 +123,7 @@ func TestGiteaPullRequestPipelineAnnotations(t *testing.T) {
 		ExtraArgs: map[string]string{
 			"RemoteTaskURL":  options.RemoteTaskURL,
 			"RemoteTaskName": options.RemoteTaskName,
+			"RemotePipeline": "https://raw.githubusercontent.com/chmouel/scratchmyback/b33592ca2572b8f32be19576b2b3f31244c0479a/pipelinerun-http.yaml",
 		},
 	}
 	_, f := tgitea.TestPR(t, topts)
