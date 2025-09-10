@@ -109,6 +109,7 @@ func TestIsAllowed(t *testing.T) {
 				}
 				if tt.ownerFile != "" {
 					thelp.MuxGetFile(mux, tt.fields.targetProjectID, "OWNERS", tt.ownerFile, false)
+					thelp.MuxGetFile(mux, tt.fields.targetProjectID, "OWNERS_ALIASES", tt.ownerFile, false)
 				}
 				if tt.commentContent != "" {
 					thelp.MuxDiscussionsNote(mux, tt.fields.targetProjectID,

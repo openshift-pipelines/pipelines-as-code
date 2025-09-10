@@ -75,7 +75,10 @@ func TestAskGLWebhookConfig(t *testing.T) {
 			gl := gitLabConfig{IOStream: io}
 			err := gl.askGLWebhookConfig(tt.repoURL, tt.controllerURL, tt.providerURL, tt.personalaccesstoken)
 			if tt.wantErrStr != "" {
-				assert.Equal(t, err.Error(), tt.wantErrStr)
+				assert.Assert(t, err != nil, "expected an error but got nil")
+				if err != nil {
+					assert.Equal(t, err.Error(), tt.wantErrStr)
+				}
 				return
 			}
 			assert.NilError(t, err)
