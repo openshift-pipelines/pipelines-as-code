@@ -17,6 +17,8 @@ import (
 
 var reasonMessageReplacementRegexp = regexp.MustCompile(`\(image: .*`)
 
+const maxErrorSnippetCharacterLimit = 65535 // This is the maximum size allowed by Github check run logs and may apply to all other providers
+
 // GetTaskRunStatusForPipelineTask takes a minimal embedded status child reference and returns the actual TaskRunStatus
 // for the PipelineTask. It returns an error if the child reference's kind isn't TaskRun.
 func GetTaskRunStatusForPipelineTask(ctx context.Context, client versioned.Interface, ns string, childRef tektonv1.ChildStatusReference) (*tektonv1.TaskRunStatus, error) {
@@ -113,8 +115,13 @@ func CollectFailedTasksLogSnippet(ctx context.Context, cs *params.Run, kinteract
 					if strings.HasSuffix(trimmed, " Skipping step because a previous step failed") {
 						continue
 					}
-					// see if a pattern match from errRe
-					ti.LogSnippet = strings.TrimSpace(trimmed)
+					if len(trimmed) > maxErrorSnippetCharacterLimit {
+						runes := []rune(trimmed)
+						if len(runes) > maxErrorSnippetCharacterLimit {
+							trimmed = string(runes[:maxErrorSnippetCharacterLimit])
+						}
+					}
+					ti.LogSnippet = trimmed
 				}
 			}
 		}
