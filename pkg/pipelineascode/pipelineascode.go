@@ -56,13 +56,21 @@ func NewPacs(event *info.Event, vcx provider.Interface, run *params.Run, pacInfo
 }
 
 func (p *PacRun) Run(ctx context.Context) error {
-	matchedPRs, repo, err := p.matchRepoPR(ctx)
-	if repo != nil && p.event.TriggerTarget == triggertype.PullRequestClosed {
-		if err := p.cancelAllInProgressBelongingToClosedPullRequest(ctx, repo); err != nil {
-			return fmt.Errorf("error cancelling in progress pipelineRuns belonging to pull request %d: %w", p.event.PullRequestNumber, err)
+	// For PullRequestClosed events, skip matching logic and go straight to cancellation
+	if p.event.TriggerTarget == triggertype.PullRequestClosed {
+		repo, err := p.verifyRepoAndUser(ctx)
+		if err != nil {
+			return err
+		}
+		if repo != nil {
+			if err := p.cancelAllInProgressBelongingToClosedPullRequest(ctx, repo); err != nil {
+				return fmt.Errorf("error cancelling in progress pipelineRuns belonging to pull request %d: %w", p.event.PullRequestNumber, err)
+			}
 		}
 		return nil
 	}
+
+	matchedPRs, repo, err := p.matchRepoPR(ctx)
 	if err != nil {
 		createStatusErr := p.vcx.CreateStatus(ctx, p.event, provider.StatusOpts{
 			Status:     CompletedStatus,
