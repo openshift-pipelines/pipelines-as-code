@@ -144,7 +144,7 @@ func Test_GenerateJWT(t *testing.T) {
 				},
 			}
 
-			ip := NewInstallation(httptest.NewRequest(http.MethodGet, "http://localhost", strings.NewReader("")), run, &v1alpha1.Repository{}, &github.Provider{}, tt.namespace.GetName())
+			ip := NewInstallation(httptest.NewRequest(http.MethodGet, "http://localhost", strings.NewReader("")), run, &v1alpha1.Repository{}, &github.Provider{}, tt.namespace.GetName(), nil)
 			token, err := ip.GenerateJWT(ctx)
 			if tt.wantErr {
 				assert.Assert(t, err != nil)
@@ -206,7 +206,7 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 	ctx = info.StoreCurrentControllerName(ctx, "default")
 	ctx = info.StoreNS(ctx, testNamespace.GetName())
 
-	ip := NewInstallation(httptest.NewRequest(http.MethodGet, "http://localhost", strings.NewReader("")), run, &v1alpha1.Repository{}, &github.Provider{}, testNamespace.GetName())
+	ip := NewInstallation(httptest.NewRequest(http.MethodGet, "http://localhost", strings.NewReader("")), run, &v1alpha1.Repository{}, &github.Provider{}, testNamespace.GetName(), nil)
 	jwtToken, err := ip.GenerateJWT(ctx)
 	assert.NilError(t, err)
 	req := httptest.NewRequest(http.MethodGet, "http://localhost", strings.NewReader(""))
@@ -256,7 +256,7 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 			`{"total_count": 2,"repositories": [{"id":1,"html_url": "https://matched/%s/incoming"},{"id":2,"html_url": "https://anotherrepo/that/would/failit"}]}`,
 			orgName)
 	})
-	ip = NewInstallation(req, run, repo, gprovider, testNamespace.GetName())
+	ip = NewInstallation(req, run, repo, gprovider, testNamespace.GetName(), nil)
 	_, token, installationID, err := ip.GetAndUpdateInstallationID(ctx)
 	assert.NilError(t, err)
 	assert.Equal(t, installationID, int64(wantID))
@@ -294,6 +294,24 @@ func TestGetAndUpdateInstallationID_Fallbacks(t *testing.T) {
 		skip                bool
 		expectedErrorString string
 	}{
+		{
+			name:    "repo installation succeeds directly",
+			repoURL: fmt.Sprintf("https://matched/%s/%s", orgName, repoName),
+			setupMux: func(mux *http.ServeMux, jwtToken string) {
+				mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/installation", orgName, repoName), func(w http.ResponseWriter, _ *http.Request) {
+					_, _ = fmt.Fprintf(w, `{"id": %d}`, orgID)
+				})
+				mux.HandleFunc(fmt.Sprintf("/app/installations/%d/access_tokens", orgID), func(w http.ResponseWriter, r *http.Request) {
+					testMethod(t, r)
+					w.Header().Set("Authorization", "Bearer "+jwtToken)
+					w.Header().Set("Accept", "application/vnd.github+json")
+					_, _ = fmt.Fprintf(w, `{"token": "%s"}`, wantToken)
+				})
+			},
+			wantErr:            false,
+			wantInstallationID: orgID,
+			wantToken:          wantToken,
+		},
 		{
 			name:    "repo installation fails, org installation succeeds",
 			repoURL: fmt.Sprintf("https://matched/%s/%s", orgName, repoName),
@@ -357,13 +375,40 @@ func TestGetAndUpdateInstallationID_Fallbacks(t *testing.T) {
 			expectedErrorString: "could not find repository, organization or user installation",
 		},
 		{
-			name:    "invalid repo url",
-			repoURL: "https://invalid/url",
-			setupMux: func(_ *http.ServeMux, _ string) {
+			name:    "repo installation succeeds but token generation fails",
+			repoURL: fmt.Sprintf("https://matched/%s/%s", orgName, repoName),
+			setupMux: func(mux *http.ServeMux, jwtToken string) {
+				mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/installation", orgName, repoName), func(w http.ResponseWriter, _ *http.Request) {
+					_, _ = fmt.Fprintf(w, `{"id": %d}`, orgID)
+				})
+				mux.HandleFunc(fmt.Sprintf("/app/installations/%d/access_tokens", orgID), func(w http.ResponseWriter, r *http.Request) {
+					testMethod(t, r)
+					w.Header().Set("Authorization", "Bearer "+jwtToken)
+					w.Header().Set("Accept", "application/vnd.github+json")
+					w.WriteHeader(http.StatusForbidden)
+					_, _ = fmt.Fprintf(w, `{"message": "Forbidden"}`)
+				})
 			},
-			wantErr:             true,
-			expectedErrorString: "invalid repository URL path",
+			wantErr:            false, // Should not error, but return empty token
+			wantInstallationID: orgID,
+			wantToken:          "", // Empty token when generation fails
 		},
+				{
+					name:    "invalid repo url - too few path segments",
+					repoURL: "https://invalid/url",
+					setupMux: func(_ *http.ServeMux, _ string) {
+					},
+					wantErr:             true,
+					expectedErrorString: "invalid repository URL path",
+				},
+				{
+					name:    "invalid GitHub repo url - too many path segments",
+					repoURL: "https://github.com/group/subgroup/repo",
+					setupMux: func(_ *http.ServeMux, _ string) {
+					},
+					wantErr:             true,
+					expectedErrorString: "invalid repository URL path",
+				},
 	}
 
 	for _, tt := range tests {
@@ -393,7 +438,7 @@ func TestGetAndUpdateInstallationID_Fallbacks(t *testing.T) {
 			ctx = info.StoreCurrentControllerName(ctx, "default")
 			ctx = info.StoreNS(ctx, testNamespace.GetName())
 
-			ip := NewInstallation(httptest.NewRequest(http.MethodGet, "http://localhost", strings.NewReader("")), run, &v1alpha1.Repository{}, &github.Provider{}, testNamespace.GetName())
+			ip := NewInstallation(httptest.NewRequest(http.MethodGet, "http://localhost", strings.NewReader("")), run, &v1alpha1.Repository{}, &github.Provider{}, testNamespace.GetName(), nil)
 			jwtToken, err := ip.GenerateJWT(ctx)
 			assert.NilError(t, err)
 
@@ -412,7 +457,7 @@ func TestGetAndUpdateInstallationID_Fallbacks(t *testing.T) {
 			gprovider.SetGithubClient(fakeghclient)
 			t.Setenv("PAC_GIT_PROVIDER_TOKEN_APIURL", serverURL)
 
-			ip = NewInstallation(httptest.NewRequest(http.MethodGet, "http://localhost", strings.NewReader("")), run, repo, gprovider, testNamespace.GetName())
+			ip = NewInstallation(httptest.NewRequest(http.MethodGet, "http://localhost", strings.NewReader("")), run, repo, gprovider, testNamespace.GetName(), nil)
 			_, token, installationID, err := ip.GetAndUpdateInstallationID(ctx)
 
 			if tt.wantErr {
