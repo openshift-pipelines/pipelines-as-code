@@ -25,8 +25,9 @@ type PullRequest struct {
 	Draft                   bool       `json:"draft"`
 	IsLocked                bool       `json:"is_locked"`
 	Comments                int        `json:"comments"`
+
 	// number of review comments made on the diff of a PR review (not including comments on commits or issues in a PR)
-	ReviewComments int `json:"review_comments"`
+	ReviewComments int `json:"review_comments,omitempty"`
 
 	Additions    *int `json:"additions,omitempty"`
 	Deletions    *int `json:"deletions,omitempty"`

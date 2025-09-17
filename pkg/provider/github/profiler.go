@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/google/go-github/v71/github"
+	"github.com/google/go-github/v74/github"
 	providerMetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/metrics"
 )
 
