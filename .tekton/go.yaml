@@ -56,7 +56,7 @@ spec:
             - name: unittest
               # we get bumped out when usingh the official image with docker.io
               # ratelimit so workaround this.
-              image: golang:1.23
+              image: golang:1.24
               env:
                 - name: GOCACHE
                   value: $(workspaces.source.path)/go-build-cache/cache
@@ -71,7 +71,7 @@ spec:
                 make test
 
             - name: coverage
-              image: golang:1.23
+              image: golang:1.24
               env:
                 - name: CODECOV_TOKEN
                   valueFrom:
