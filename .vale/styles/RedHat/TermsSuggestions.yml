@@ -16,7 +16,7 @@ swap:
   "bottom(?:-)?right": lower right|lower-right
   "shell(?! prompt| script)": shell prompt
   "x64|x86-64|(?<!64-bit )x86": 64-bit x86|x86_64
-  '(?<!-)\bk8s\b(?!-)': Kubernetes
+  '(?<!-|\.)\bk8s\b(?!-|\.)': Kubernetes
   '(?<!.*-|program )operator': Operator
   '(?<!.*-|program )operators': Operators
   '(?<![\.\-])(?:zip|gzip|tar)(?! file| archive)': compress
