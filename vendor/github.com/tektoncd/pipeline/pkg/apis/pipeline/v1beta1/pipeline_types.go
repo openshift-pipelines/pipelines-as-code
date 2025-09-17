@@ -124,7 +124,6 @@ type PipelineSpec struct {
 	Tasks []PipelineTask `json:"tasks,omitempty"`
 	// Params declares a list of input parameters that must be supplied when
 	// this Pipeline is run.
-	// +listType=atomic
 	Params ParamSpecs `json:"params,omitempty"`
 	// Workspaces declares a set of named workspaces that are expected to be
 	// provided by a PipelineRun.
@@ -239,7 +238,6 @@ type PipelineTask struct {
 
 	// Parameters declares parameters passed to this task.
 	// +optional
-	// +listType=atomic
 	Params Params `json:"params,omitempty"`
 
 	// Matrix declares parameters used to fan out this task.
@@ -252,7 +250,7 @@ type PipelineTask struct {
 	// +listType=atomic
 	Workspaces []WorkspacePipelineTaskBinding `json:"workspaces,omitempty"`
 
-	// Time after which the TaskRun times out. Defaults to 1 hour.
+	// Duration after which the TaskRun times out. Defaults to 1 hour.
 	// Refer Go's ParseDuration documentation for expected format: https://golang.org/pkg/time/#ParseDuration
 	// +optional
 	Timeout *metav1.Duration `json:"timeout,omitempty"`
