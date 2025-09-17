@@ -23,13 +23,12 @@ filters:
   - "[bB]oolean"
   - "[bB]ootable"
   - "[bB]reakpoint(s)?"
-  - '\b[cC]he\b'
   - "[cC]hrony"
   - "[cC]lassloading"
   - "[cC]lasspath"
   - "[cC]olocate"
   - "[cC]olocation"
-  - '\b[cC]onfig\b'
+  - "[cC]omposable"
   - "[cC]ontainerd"
   - "[cC]orequisite"
   - "[cC]ustomizer"
@@ -43,7 +42,6 @@ filters:
   - "[dD]eserialization"
   - "[dD]eserialize(d)?"
   - "[dD]esynchronize(d)?"
-  - '\b[dD]ev\b'
   - "[dD]ev[wW]orkspace"
   - "[dD]evfile"
   - "[dD]istro"
@@ -58,7 +56,6 @@ filters:
   - "[fF]indability"
   - "[gG]bps"
   - "[gG]ibibyte"
-  - '\b[gG]it\b'
   - "[gG]lock"
   - "[gG]radle"
   - "[gG]rafana"
@@ -66,13 +63,14 @@ filters:
   - "[hH]eatmap"
   - "[hH]ostname"
   - "[hH]yperconverged"
+  - "[iI]nferencing"
+  - "[Ii]nferencing"
   - "[iI]node"
   - "[iI]ntranode"
   - "[iI]ntrapartition"
   - "[iI]ntrarecord"
   - "[iI]ntrasystem"
   - "[iI]nvocable"
-  - '\b[iI]tem\b'
   - "[jJ]et[bB]rains"
   - "[jJ]ournald"
   - "[jJ]ournaling"
@@ -194,7 +192,6 @@ filters:
   - "[sS]ervlet"
   - "[sS]etter"
   - "[sS]harding"
-  - '\b[Ss]u\b'
   - "[sS]ubcommand(s)?"
   - "[sS]ubmenu(s)?"
   - "[sS]ubnet(s)?"
@@ -231,7 +228,25 @@ filters:
   - "I/O"
   - "Let\\'s Encrypt"
   - '\.NET'
+  - '\b[cC]he\b'
+  - '\b[cC]onfig\b'
+  - '\b[dD]ev\b'
+  - '\b[gG]it\b'
+  - '\b[iI]tem\b'
+  - '\b[Ss]u\b'
   - 'Node\.js'
+  - '[Ff]inetune'
+  - '[Ff]inetuning'
+  - '[Mm]ultimodal'
+  - '[Oo]neshot'
+  - '[Qq]uantizable'
+  - '[Qq]uantizes'
+  - '[Qq]uantizing'
+  - '[Ss]moothquant'
+  - '[Ss]parsification'
+  - '[Ss]parsified'
+  - '[Ss]parsify'
+  - '[Tt]okenizers?'
   - ACLs
   - adoc
   - AGPLv
@@ -241,6 +256,7 @@ filters:
   - Antora
   - API
   - Applixware
+  - Arcee
   - Asciidoctor
   - AssertJ
   - autoconfigure
@@ -253,6 +269,7 @@ filters:
   - Bitbucket
   - BOM
   - Bonjour
+  - bootc
   - Bouncy Castle
   - btn
   - Btrfs
@@ -274,6 +291,7 @@ filters:
   - Containerfile
   - Cookiecutter
   - CPUs
+  - CPUs?
   - CR
   - CRD
   - CRDs
@@ -285,7 +303,10 @@ filters:
   - CVEs
   - Cygmon
   - DaemonSet
+  - dataclass
+  - dataclasses
   - Datadog
+  - dataloaders?
   - Dev
   - DevWorkspace
   - Dex
@@ -308,6 +329,7 @@ filters:
   - Failsafe
   - FDs
   - Fernflower
+  - FFmpeg
   - firewalld
   - Flathub
   - Flatpak
@@ -322,6 +344,7 @@ filters:
   - GitLab
   - Gluster
   - GNUPro
+  - GPUs?
   - GraalVM
   - GraphQL
   - Graylog
@@ -330,6 +353,7 @@ filters:
   - gRPC
   - GTID
   - GUI
+  - hadamard
   - Hashicorp
   - Helgrind
   - Helm
@@ -339,9 +363,13 @@ filters:
   - HTTP
   - https
   - HTTPS
+  - https?
+  - Hunyuan
   - IDE
   - IDEs
   - IKEv
+  - impactful
+  - inferencing
   - Infinispan
   - Intelephense
   - IntelliJ
@@ -373,17 +401,22 @@ filters:
   - Knowledgebase
   - Kogito
   - Kompose
+  - Konflux
   - kubelet
   - Kubernetes
   - Kubespray
   - Kylin
   - Laravel
+  - layernorm
   - LGPLv
   - libOSMesa
   - librados
   - librbd
   - Libreswan
+  - linearization
+  - linearize
   - Liquibase
+  - LLMs?
   - Logstash
   - Lombok
   - Makefile
@@ -391,9 +424,11 @@ filters:
   - Maven
   - MicroProfile
   - Microsoft
+  - Minicpm
   - Minikube
   - Minishift
   - Mirantis
+  - Mixtral
   - Mockito
   - MongoDB
   - multischema
@@ -409,7 +444,6 @@ filters:
   - npm
   - NuGet
   - Nutanix
-  - NVidia
   - NVMe
   - OAuth
   - objectClass
@@ -426,15 +460,19 @@ filters:
   - OSs
   - OSTree
   - OTel
+  - Ovis
   - PCIe
   - PDF
+  - performant
   - Petitboot
   - PHP
   - PIDs
+  - pixtral
   - Podman
   - PostgreSQL
   - PowerShell
   - precache
+  - pretrained
   - Prometheus
   - proxied
   - PVCs
@@ -447,24 +485,30 @@ filters:
   - Quarkus
   - Quiltflower
   - Qute
+  - Qwen
   - Realtime
+  - rebase
   - Redis
   - Redistributions
   - relaxngDatatype
+  - Reranker
   - RESTEasy
   - Restic
+  - ROCm
   - Rolfe
   - Rollup
   - ROMs
   - rootful
   - rootless
   - RPMs
+  - safetensors?
   - Sakila
   - sbt
   - SCM
   - SELinux
   - Semeru
   - Shadowman
+  - sharded
   - Skopeo
   - SLAs
   - SmallRye
@@ -472,19 +516,23 @@ filters:
   - startx
   - STMicroelectronics
   - Stratis
+  - strided
   - subaddress
   - subcapacity
   - subtab
-  - superobject
   - Suchow
+  - superobject
   - SVG
   - Symfony
   - Tekton
   - Telekom
   - Temurin
+  - Tencent
   - Tensorflow
   - Texinfo
+  - tokenization
   - Toolset
+  - TPUs?
   - Traefik
   - Uber
   - UIDs
@@ -499,8 +547,10 @@ filters:
   - Velero
   - Vert.x
   - vHost
+  - vLLM
   - VMs
   - VMware
+  - Voxtral
   - vsix
   - vSphere
   - WebAuthn

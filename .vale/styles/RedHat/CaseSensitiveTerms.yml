@@ -32,7 +32,7 @@ swap:
   '(?<!JBoss )EAP|(?<!Red Hat )JBoss(?!\sCommunity|\sBroker|\sClients|\sConsole|\sAMQ|\sData\sGrid|\sBRMS|\sBPMS|\sEnterprise\sApplication\sPlatform|\.org|\sInterconnect|\sEAP|\sBPM\sSuite)': JBoss EAP
   '(?<!Realtime )Decision\sServer': Realtime Decision Server
   '[nN]odejs|[nN]ode\.JS|node\.js': Node.js
-  'dotNet': .NET
+  '\b(NVidia|N-Vidia|Nvidia|nVIDIA|nvidia[^\/])\b': NVIDIA
   'A-MQ(?!\sBroker|\sClient|\sConsole|\sInterconnect)': AMQ
   'A-MQ\sBroker': AMQ Broker
   'A-MQ\sClients': AMQ Clients
@@ -42,6 +42,7 @@ swap:
   'ActiveMQ\sArtemis|ActiveMQ(?!\sArtemis)': built-in messaging|JBoss EAP built-in messaging|JBoss EAP messaging
   'Admin\sPortal|webadmin\sportal|webadmin|Administrator\sPortal|Administration\sportal': Administration Portal
   'BRMS\sengine': inference engine
+  'dotNet': .NET
   'GUI\seditor|Business\sCentral\seditor': guided editor
   'JBoss\.org': JBoss Community
   'JBoss\sAMQ': AMQ
