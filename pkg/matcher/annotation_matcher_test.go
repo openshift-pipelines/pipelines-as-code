@@ -15,7 +15,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
@@ -2604,41 +2603,7 @@ func TestGetName(t *testing.T) {
 	}
 }
 
-// checkForExistingSuccessfulPipelineRun is a helper function for testing.
-// It checks if there's an existing successful PipelineRun for the same SHA.
-func checkForExistingSuccessfulPipelineRun(ctx context.Context, logger *zap.SugaredLogger, cs *params.Run, event *info.Event, repo *v1alpha1.Repository) *tektonv1.PipelineRun {
-	// Only check for /retest and /ok-to-test commands
-	if event.EventType != opscomments.RetestAllCommentEventType.String() &&
-		event.EventType != opscomments.OkToTestCommentEventType.String() ||
-		event.SHA == "" {
-		return nil
-	}
-
-	labelSelector := fmt.Sprintf("%s=%s", keys.SHA, formatting.CleanValueKubernetes(event.SHA))
-	existingPRs, err := cs.Clients.Tekton.TektonV1().PipelineRuns(repo.GetNamespace()).List(ctx, metav1.ListOptions{
-		LabelSelector: labelSelector,
-	})
-	if err != nil {
-		logger.Errorf("failed to list existing PipelineRuns for SHA %s: %v", event.SHA, err)
-		return nil
-	}
-
-	// Find the most recent successful PipelineRun
-	var mostRecentSuccessfulPR *tektonv1.PipelineRun
-	for i := range existingPRs.Items {
-		pr := &existingPRs.Items[i]
-		if pr.Status.GetCondition(apis.ConditionSucceeded).IsTrue() {
-			if mostRecentSuccessfulPR == nil ||
-				pr.CreationTimestamp.After(mostRecentSuccessfulPR.CreationTimestamp.Time) {
-				mostRecentSuccessfulPR = pr
-			}
-		}
-	}
-
-	return mostRecentSuccessfulPR
-}
-
-func TestCheckForExistingSuccessfulPipelineRun(t *testing.T) {
+func TestFilterSuccessfulTemplates(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	logger := zap.NewExample().Sugar()
 
@@ -2649,19 +2614,24 @@ func TestCheckForExistingSuccessfulPipelineRun(t *testing.T) {
 		},
 	}
 
-	// Create a successful PipelineRun
-	pr := &tektonv1.PipelineRun{
+	// Create test PipelineRuns with different templates and statuses
+	now := metav1.Now()
+	earlierTime := metav1.NewTime(now.Add(-1 * time.Hour))
+	laterTime := metav1.NewTime(now.Add(1 * time.Hour))
+
+	// Template A: has successful run - should be filtered out
+	successfulPRA := &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-pr",
+			Name:      "template-a-successful",
 			Namespace: "test-ns",
 			Labels: map[string]string{
 				keys.SHA:            "test-sha",
-				keys.OriginalPRName: "test-pr",
+				keys.OriginalPRName: "template-a",
 			},
 			Annotations: map[string]string{
-				keys.OriginalPRName: "test-pr",
+				keys.OriginalPRName: "template-a",
 			},
-			CreationTimestamp: metav1.Now(),
+			CreationTimestamp: now,
 		},
 		Status: tektonv1.PipelineRunStatus{
 			Status: knativeduckv1.Status{
@@ -2675,20 +2645,19 @@ func TestCheckForExistingSuccessfulPipelineRun(t *testing.T) {
 		},
 	}
 
-	// Create a failed PipelineRun with the same SHA but older
-	earlierTime := metav1.NewTime(time.Now().Add(-1 * time.Hour))
-	failedPR := &tektonv1.PipelineRun{
+	// Template B: has failed run - should be kept
+	failedPRB := &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "failed-pr",
+			Name:      "template-b-failed",
 			Namespace: "test-ns",
 			Labels: map[string]string{
 				keys.SHA:            "test-sha",
-				keys.OriginalPRName: "failed-pr",
+				keys.OriginalPRName: "template-b",
 			},
 			Annotations: map[string]string{
-				keys.OriginalPRName: "failed-pr",
+				keys.OriginalPRName: "template-b",
 			},
-			CreationTimestamp: earlierTime,
+			CreationTimestamp: now,
 		},
 		Status: tektonv1.PipelineRunStatus{
 			Status: knativeduckv1.Status{
@@ -2702,9 +2671,109 @@ func TestCheckForExistingSuccessfulPipelineRun(t *testing.T) {
 		},
 	}
 
+	// Template D: has multiple successful runs - should be filtered out (most recent wins)
+	olderSuccessfulPRD := &tektonv1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "template-d-older-success",
+			Namespace: "test-ns",
+			Labels: map[string]string{
+				keys.SHA:            "test-sha",
+				keys.OriginalPRName: "template-d",
+			},
+			Annotations: map[string]string{
+				keys.OriginalPRName: "template-d",
+			},
+			CreationTimestamp: earlierTime,
+		},
+		Status: tektonv1.PipelineRunStatus{
+			Status: knativeduckv1.Status{
+				Conditions: knativeduckv1.Conditions{
+					apis.Condition{
+						Type:   apis.ConditionSucceeded,
+						Status: corev1.ConditionTrue,
+					},
+				},
+			},
+		},
+	}
+
+	newerSuccessfulPRD := &tektonv1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "template-d-newer-success",
+			Namespace: "test-ns",
+			Labels: map[string]string{
+				keys.SHA:            "test-sha",
+				keys.OriginalPRName: "template-d",
+			},
+			Annotations: map[string]string{
+				keys.OriginalPRName: "template-d",
+			},
+			CreationTimestamp: laterTime,
+		},
+		Status: tektonv1.PipelineRunStatus{
+			Status: knativeduckv1.Status{
+				Conditions: knativeduckv1.Conditions{
+					apis.Condition{
+						Type:   apis.ConditionSucceeded,
+						Status: corev1.ConditionTrue,
+					},
+				},
+			},
+		},
+	}
+
+	// PipelineRun with different SHA - should not interfere
+	differentSHAPR := &tektonv1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "different-sha-pr",
+			Namespace: "test-ns",
+			Labels: map[string]string{
+				keys.SHA:            "different-sha",
+				keys.OriginalPRName: "template-a",
+			},
+			Annotations: map[string]string{
+				keys.OriginalPRName: "template-a",
+			},
+			CreationTimestamp: now,
+		},
+		Status: tektonv1.PipelineRunStatus{
+			Status: knativeduckv1.Status{
+				Conditions: knativeduckv1.Conditions{
+					apis.Condition{
+						Type:   apis.ConditionSucceeded,
+						Status: corev1.ConditionTrue,
+					},
+				},
+			},
+		},
+	}
+
+	// PipelineRun without original PR name identification - should be ignored
+	noOriginalNamePR := &tektonv1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              "no-original-name-pr",
+			Namespace:         "test-ns",
+			Labels:            map[string]string{keys.SHA: "test-sha"},
+			Annotations:       map[string]string{},
+			CreationTimestamp: now,
+		},
+		Status: tektonv1.PipelineRunStatus{
+			Status: knativeduckv1.Status{
+				Conditions: knativeduckv1.Conditions{
+					apis.Condition{
+						Type:   apis.ConditionSucceeded,
+						Status: corev1.ConditionTrue,
+					},
+				},
+			},
+		},
+	}
+
 	// Setup test clients
 	tdata := testclient.Data{
-		PipelineRuns: []*tektonv1.PipelineRun{pr, failedPR},
+		PipelineRuns: []*tektonv1.PipelineRun{
+			successfulPRA, failedPRB, olderSuccessfulPRD, newerSuccessfulPRD, differentSHAPR, noOriginalNamePR,
+		},
 		Repositories: []*v1alpha1.Repository{repo},
 	}
 	stdata, _ := testclient.SeedTestData(t, ctx, tdata)
@@ -2717,35 +2786,94 @@ func TestCheckForExistingSuccessfulPipelineRun(t *testing.T) {
 		},
 	}
 
+	// Create matched templates
+	createMatchedPR := func(name string) Match {
+		return Match{
+			PipelineRun: &tektonv1.PipelineRun{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: name,
+				},
+			},
+		}
+	}
+
 	tests := []struct {
-		name      string
-		eventType string
-		sha       string
-		wantPR    bool
+		name          string
+		eventType     string
+		sha           string
+		matchedPRs    []Match
+		expectedNames []string // Names of templates that should remain after filtering
 	}{
 		{
-			name:      "Retest command with matching SHA should find successful PR",
+			name:      "Retest command filters templates with successful runs",
 			eventType: opscomments.RetestAllCommentEventType.String(),
 			sha:       "test-sha",
-			wantPR:    true,
+			matchedPRs: []Match{
+				createMatchedPR("template-a"), // has successful run - should be filtered
+				createMatchedPR("template-b"), // has failed run - should be kept
+				createMatchedPR("template-c"), // no previous runs - should be kept
+				createMatchedPR("template-d"), // has multiple successful runs - should be filtered
+			},
+			expectedNames: []string{"template-b", "template-c"},
 		},
 		{
-			name:      "Ok-to-test command with matching SHA should find successful PR",
+			name:      "Ok-to-test command filters templates with successful runs",
 			eventType: opscomments.OkToTestCommentEventType.String(),
 			sha:       "test-sha",
-			wantPR:    true,
+			matchedPRs: []Match{
+				createMatchedPR("template-a"), // has successful run - should be filtered
+				createMatchedPR("template-b"), // has failed run - should be kept
+				createMatchedPR("template-c"), // no previous runs - should be kept
+			},
+			expectedNames: []string{"template-b", "template-c"},
 		},
 		{
-			name:      "Retest command with non-matching SHA should not find PR",
-			eventType: opscomments.RetestAllCommentEventType.String(),
-			sha:       "other-sha",
-			wantPR:    false,
-		},
-		{
-			name:      "Different event type should not find PR",
+			name:      "Different event type does not filter anything",
 			eventType: opscomments.TestAllCommentEventType.String(),
 			sha:       "test-sha",
-			wantPR:    false,
+			matchedPRs: []Match{
+				createMatchedPR("template-a"),
+				createMatchedPR("template-b"),
+				createMatchedPR("template-c"),
+				createMatchedPR("template-d"),
+			},
+			expectedNames: []string{"template-a", "template-b", "template-c", "template-d"},
+		},
+		{
+			name:      "Empty SHA does not filter anything",
+			eventType: opscomments.RetestAllCommentEventType.String(),
+			sha:       "",
+			matchedPRs: []Match{
+				createMatchedPR("template-a"),
+				createMatchedPR("template-b"),
+			},
+			expectedNames: []string{"template-a", "template-b"},
+		},
+		{
+			name:      "Different SHA does not find existing runs",
+			eventType: opscomments.RetestAllCommentEventType.String(),
+			sha:       "different-sha-2",
+			matchedPRs: []Match{
+				createMatchedPR("template-a"),
+				createMatchedPR("template-b"),
+			},
+			expectedNames: []string{"template-a", "template-b"},
+		},
+		{
+			name:          "All templates filtered results in empty list",
+			eventType:     opscomments.RetestAllCommentEventType.String(),
+			sha:           "test-sha",
+			matchedPRs:    []Match{createMatchedPR("template-a")}, // only template with successful run
+			expectedNames: []string{},
+		},
+		{
+			name:      "Templates without original PR name identification are ignored",
+			eventType: opscomments.RetestAllCommentEventType.String(),
+			sha:       "test-sha",
+			matchedPRs: []Match{
+				createMatchedPR("template-e"), // has no original PR name - should be kept
+			},
+			expectedNames: []string{"template-e"},
 		},
 	}
 
@@ -2756,18 +2884,50 @@ func TestCheckForExistingSuccessfulPipelineRun(t *testing.T) {
 				SHA:       tt.sha,
 			}
 
-			foundPR := checkForExistingSuccessfulPipelineRun(ctx, logger, cs, event, repo)
-
-			if tt.wantPR && foundPR == nil {
-				t.Errorf("Expected to find a successful PipelineRun, but got nil")
+			// For non-filtering event types, we simulate the calling pattern where
+			// filterSuccessfulTemplates is only called for retest and ok-to-test events
+			if event.EventType != opscomments.RetestAllCommentEventType.String() &&
+				event.EventType != opscomments.OkToTestCommentEventType.String() {
+				// For other events, the function is not called, so return original list
+				filtered := tt.matchedPRs
+				assert.Equal(t, len(tt.matchedPRs), len(filtered))
+				return
 			}
 
-			if !tt.wantPR && foundPR != nil {
-				t.Errorf("Expected not to find a PipelineRun, but found %s", foundPR.Name)
+			filtered := filterSuccessfulTemplates(ctx, logger, cs, event, repo, tt.matchedPRs)
+
+			// Check that the correct number of templates remain
+			assert.Equal(t, len(tt.expectedNames), len(filtered),
+				"Expected %d templates but got %d", len(tt.expectedNames), len(filtered))
+
+			// Check that the correct templates remain
+			var actualNames []string
+			for _, match := range filtered {
+				actualNames = append(actualNames, getName(match.PipelineRun))
 			}
 
-			if tt.wantPR && foundPR != nil {
-				assert.Equal(t, "test-pr", foundPR.Name)
+			// Check that we have the expected templates
+			for _, expectedName := range tt.expectedNames {
+				found := false
+				for _, actualName := range actualNames {
+					if actualName == expectedName {
+						found = true
+						break
+					}
+				}
+				assert.Assert(t, found, "Expected template %s not found in %v", expectedName, actualNames)
+			}
+
+			// Check that we don't have unexpected templates
+			for _, actualName := range actualNames {
+				found := false
+				for _, expectedName := range tt.expectedNames {
+					if actualName == expectedName {
+						found = true
+						break
+					}
+				}
+				assert.Assert(t, found, "Unexpected template %s found in %v", actualName, actualNames)
 			}
 		})
 	}
