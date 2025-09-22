@@ -280,17 +280,27 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 		Context:     gitlab.Ptr(contextName),
 	}
 
-	// In case we have access, set the status. Typically, on a Merge Request (MR)
-	// from a fork in an upstream repository, the token needs to have write access
-	// to the fork repository in order to create a status. However, the token set on the
-	// Repository CR usually doesn't have such broad access, preventing from creating
-	// a status comment on it.
-	// This would work on a push or an MR from a branch within the same repo.
-	// Ignoring errors because of the write access issues,
-	if _, _, err := v.Client().Commits.SetCommitStatus(event.SourceProjectID, event.SHA, opt); err != nil {
-		v.eventEmitter.EmitMessage(v.repo, zap.ErrorLevel, "FailedToSetCommitStatus",
-			"cannot set status with the GitLab token because of: "+err.Error())
+	// setCommitStatus attempts to set the commit status for a given SHA, handling GitLab's permission model.
+	// First tries the source project (fork), then falls back to the target project (upstream repo).
+	// This fallback is necessary because:
+	// - In fork/MR scenarios, the GitLab token may not have write access to the contributor's fork
+	// - This ensures commit status can be displayed somewhere useful regardless
+	// of permission differences
+	// Returns nil if status is set on either project, logs error if both attempts fail.
+	_, _, err := v.Client().Commits.SetCommitStatus(event.SourceProjectID, event.SHA, opt)
+	if err == nil {
+		v.Logger.Debugf("created commit status on source project ID %d", event.SourceProjectID)
+		return nil
 	}
+	if _, _, err2 := v.Client().Commits.SetCommitStatus(event.TargetProjectID, event.SHA, opt); err2 == nil {
+		v.Logger.Debugf("created commit status on target project ID %d", event.TargetProjectID)
+		return nil
+	}
+	v.Logger.Debugf(
+		"Failed to create commit status: source project ID %d, target project ID %d. "+
+			"If you want Gitlab Pipeline Status update, ensure your GitLab token has access "+
+			"to the source repository. Error: %v",
+		event.SourceProjectID, event.TargetProjectID, err)
 
 	eventType := triggertype.IsPullRequestType(event.EventType)
 	// When a GitOps command is sent on a pushed commit, it mistakenly treats it as a pull_request

@@ -130,7 +130,7 @@ func PushFilesToRefGit(t *testing.T, opts *Opts, entries map[string]string) stri
 	assert.NilError(t, err)
 
 	gitPushPullRetry(t, opts, path)
-	return sha
+	return strings.TrimSpace(sha)
 }
 
 func ChangeFilesRefGit(t *testing.T, opts *Opts, fileChanges []FileChange) {

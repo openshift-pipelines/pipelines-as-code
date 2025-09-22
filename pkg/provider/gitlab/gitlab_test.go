@@ -201,6 +201,66 @@ func TestCreateStatus(t *testing.T) {
 				postStr: "has completed",
 			},
 		},
+		{
+			name:       "commit status success on source project",
+			wantClient: true,
+			wantErr:    false,
+			fields: fields{
+				targetProjectID: 100,
+			},
+			args: args{
+				statusOpts: provider.StatusOpts{
+					Conclusion: "success",
+				},
+				event: &info.Event{
+					TriggerTarget:   "pull_request",
+					SourceProjectID: 200,
+					TargetProjectID: 100,
+					SHA:             "abc123",
+				},
+				postStr: "has successfully",
+			},
+		},
+		{
+			name:       "commit status falls back to target project",
+			wantClient: true,
+			wantErr:    false,
+			fields: fields{
+				targetProjectID: 100,
+			},
+			args: args{
+				statusOpts: provider.StatusOpts{
+					Conclusion: "success",
+				},
+				event: &info.Event{
+					TriggerTarget:   "pull_request",
+					SourceProjectID: 404, // Will fail to find this project
+					TargetProjectID: 100,
+					SHA:             "abc123",
+				},
+				postStr: "has successfully",
+			},
+		},
+		{
+			name:       "commit status fails on both projects but continues",
+			wantClient: true,
+			wantErr:    false,
+			fields: fields{
+				targetProjectID: 100,
+			},
+			args: args{
+				statusOpts: provider.StatusOpts{
+					Conclusion: "success",
+				},
+				event: &info.Event{
+					TriggerTarget:   "pull_request",
+					SourceProjectID: 404, // Will fail
+					TargetProjectID: 405, // Will fail
+					SHA:             "abc123",
+				},
+				postStr: "has successfully",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -216,6 +276,7 @@ func TestCreateStatus(t *testing.T) {
 			v := &Provider{
 				targetProjectID: tt.fields.targetProjectID,
 				run:             params.New(),
+				Logger:          logger,
 				pacInfo: &info.PacOpts{
 					Settings: settings.Settings{
 						ApplicationName: settings.PACApplicationNameDefaultValue,
@@ -232,6 +293,40 @@ func TestCreateStatus(t *testing.T) {
 				client, mux, tearDown := thelp.Setup(t)
 				v.SetGitLabClient(client)
 				defer tearDown()
+
+				// Mock commit status endpoints for both source and target projects
+				if tt.args.event.SourceProjectID != 0 {
+					// Mock source project commit status endpoint
+					sourceStatusPath := fmt.Sprintf("/projects/%d/statuses/%s", tt.args.event.SourceProjectID, tt.args.event.SHA)
+					mux.HandleFunc(sourceStatusPath, func(rw http.ResponseWriter, _ *http.Request) {
+						if tt.args.event.SourceProjectID == 404 {
+							// Simulate failure on source project
+							rw.WriteHeader(http.StatusNotFound)
+							fmt.Fprint(rw, `{"message": "404 Project Not Found"}`)
+							return
+						}
+						// Success on source project
+						rw.WriteHeader(http.StatusCreated)
+						fmt.Fprint(rw, `{}`)
+					})
+				}
+
+				if tt.args.event.TargetProjectID != 0 {
+					// Mock target project commit status endpoint
+					targetStatusPath := fmt.Sprintf("/projects/%d/statuses/%s", tt.args.event.TargetProjectID, tt.args.event.SHA)
+					mux.HandleFunc(targetStatusPath, func(rw http.ResponseWriter, _ *http.Request) {
+						if tt.args.event.TargetProjectID == 404 {
+							// Simulate failure on target project
+							rw.WriteHeader(http.StatusNotFound)
+							fmt.Fprint(rw, `{"message": "404 Project Not Found"}`)
+							return
+						}
+						// Success on target project
+						rw.WriteHeader(http.StatusCreated)
+						fmt.Fprint(rw, `{}`)
+					})
+				}
+
 				thelp.MuxNotePost(t, mux, v.targetProjectID, tt.args.event.PullRequestNumber, tt.args.postStr)
 			}
 
@@ -1044,9 +1139,12 @@ func TestGitLabCreateComment(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fakeclient, mux, teardown := thelp.Setup(t)
 			defer teardown()
+			observer, _ := zapobserver.New(zap.InfoLevel)
+			logger := zap.New(observer).Sugar()
 
 			if tt.clientNil {
 				p := &Provider{
+					Logger:          logger,
 					sourceProjectID: 666,
 				}
 				err := p.CreateComment(context.Background(), tt.event, tt.commit, tt.updateMarker)
