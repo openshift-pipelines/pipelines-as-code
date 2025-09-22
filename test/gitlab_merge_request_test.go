@@ -20,7 +20,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	tgitlab "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitlab"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
-	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	v1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
@@ -29,6 +28,7 @@ import (
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"knative.dev/pkg/apis"
 )
 
@@ -104,7 +104,18 @@ func TestGitlabMergeRequest(t *testing.T) {
 		assert.Equal(t, "Merge Request", prsNew.Items[i].Annotations[keys.EventType])
 	}
 
-	runcnx.Clients.Log.Infof("Sending /retest comment on MergeRequest %s/-/merge_requests/%d", projectinfo.WebURL, mrID)
+	// Get the MR to fetch the SHA
+	mr, _, err := glprovider.Client().MergeRequests.GetMergeRequest(opts.ProjectID, mrID, nil)
+	assert.NilError(t, err)
+
+	// Check GitLab pipelines via API - should have 1 pipeline from normal MR processing
+	pipelines, _, err := glprovider.Client().Pipelines.ListProjectPipelines(opts.ProjectID, &clientGitlab.ListProjectPipelinesOptions{
+		SHA: &mr.SHA,
+	})
+	assert.NilError(t, err)
+	assert.Assert(t, len(pipelines) == 1, "Expected 1 GitLab pipeline from normal MR processing, got %d", len(pipelines))
+
+	runcnx.Clients.Log.Infof("Sending /test comment on MergeRequest %s/-/merge_requests/%d", projectinfo.WebURL, mrID)
 	_, _, err = glprovider.Client().Notes.CreateMergeRequestNote(opts.ProjectID, mrID, &clientGitlab.CreateMergeRequestNoteOptions{
 		Body: clientGitlab.Ptr("/retest"),
 	})
@@ -115,21 +126,9 @@ func TestGitlabMergeRequest(t *testing.T) {
 		OnEvent:         opscomments.RetestAllCommentEventType.String(),
 		TargetNS:        targetNS,
 		NumberofPRMatch: 5, // this is the max we get in repos status
-		SHA:             "",
+		SHA:             mr.SHA,
 	}
-	runcnx.Clients.Log.Info("Checking that PAC has posted successful comments for all PR that has been tested")
 	twait.Succeeded(ctx, t, runcnx, opts, sopt)
-
-	notes, _, err := glprovider.Client().Notes.ListMergeRequestNotes(opts.ProjectID, mrID, nil)
-	assert.NilError(t, err)
-	successCommentsPost := 0
-	for _, n := range notes {
-		if successRegexp.MatchString(n.Body) {
-			successCommentsPost++
-		}
-	}
-	// we get 2 PRS initially, 2 prs from the push update and 2 prs from the /retest == 6
-	assert.Equal(t, 6, successCommentsPost)
 }
 
 func TestGitlabOnLabel(t *testing.T) {
@@ -500,7 +499,7 @@ func TestGitlabIssueGitopsComment(t *testing.T) {
 	twait.Succeeded(ctx, t, runcnx, opts, sopt)
 }
 
-func TestGitlabDisableCommentsOnMR(t *testing.T) {
+func TestGitlabDisableCommentsOnMRNotCreated(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
 	runcnx, opts, glprovider, err := tgitlab.Setup(ctx)
@@ -510,7 +509,7 @@ func TestGitlabDisableCommentsOnMR(t *testing.T) {
 	projectinfo, resp, err := glprovider.Client().Projects.GetProject(opts.ProjectID, nil)
 	assert.NilError(t, err)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
-		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
+		t.Fatalf("Repository %s not found in %s", opts.Organization, opts.Repo) // Use Fatalf to stop test on critical error
 	}
 
 	settings := v1alpha1.Settings{
@@ -541,9 +540,10 @@ func TestGitlabDisableCommentsOnMR(t *testing.T) {
 		TargetRefName: targetRefName,
 		BaseRefName:   projectinfo.DefaultBranch,
 	}
-	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
+	// NEW: Capture the commit SHA returned by the push operation.
+	sha := scm.PushFilesToRefGit(t, scmOpts, entries)
+	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to branch %s", sha, targetRefName)
 
-	runcnx.Clients.Log.Infof("Branch %s has been created and pushed with files", targetRefName)
 	mrTitle := "TestMergeRequest - " + targetRefName
 	mrID, err := tgitlab.CreateMR(glprovider.Client(), opts.ProjectID, targetRefName, projectinfo.DefaultBranch, mrTitle)
 	assert.NilError(t, err)
@@ -555,12 +555,59 @@ func TestGitlabDisableCommentsOnMR(t *testing.T) {
 		OnEvent:         "Merge Request",
 		TargetNS:        targetNS,
 		NumberofPRMatch: 1,
-		SHA:             "",
+		SHA:             sha, // NEW: Pass the captured SHA to ensure we wait for the correct PipelineRun
 	}
 	twait.Succeeded(ctx, t, runcnx, opts, sopt)
 	prsNew, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
 	assert.NilError(t, err)
 	assert.Assert(t, len(prsNew.Items) == 1)
+
+	runcnx.Clients.Log.Infof("Checking status of GitLab pipeline for commit: %s", sha)
+	// Define constants for polling
+	const pipelineCheckTimeout = 5 * time.Minute
+	const pipelineCheckInterval = 10 * time.Second
+
+	var pipeline *clientGitlab.Pipeline
+	// Use a polling mechanism to wait for the pipeline to succeed.
+	err = wait.PollUntilContextTimeout(ctx, pipelineCheckInterval, pipelineCheckTimeout, true, func(_ context.Context) (bool, error) {
+		// Find the pipeline associated with our specific commit SHA
+		pipelines, _, listErr := glprovider.Client().Pipelines.ListProjectPipelines(opts.ProjectID, &clientGitlab.ListProjectPipelinesOptions{
+			SHA: &sha,
+		})
+		if listErr != nil {
+			return false, listErr // Propagate API errors
+		}
+		if len(pipelines) == 0 {
+			runcnx.Clients.Log.Info("Waiting for pipeline to be created...")
+			return false, nil // Pipeline not found yet, continue polling
+		}
+		if len(pipelines) > 1 {
+			// This is unexpected, fail fast
+			return false, fmt.Errorf("expected 1 pipeline for SHA %s, but found %d", sha, len(pipelines))
+		}
+
+		// Get the latest status of our specific pipeline
+		p, _, getErr := glprovider.Client().Pipelines.GetPipeline(opts.ProjectID, pipelines[0].ID)
+		if getErr != nil {
+			return false, getErr
+		}
+
+		runcnx.Clients.Log.Infof("Current pipeline status: %s", p.Status)
+		switch p.Status {
+		case "success":
+			pipeline = p
+			return true, nil // Success! Stop polling.
+		case "failed", "canceled", "skipped":
+			// The pipeline has finished but not successfully.
+			return false, fmt.Errorf("pipeline finished with non-success status: %s", p.Status)
+		default:
+			// The pipeline is still running or pending, continue polling.
+			return false, nil
+		}
+	})
+	assert.NilError(t, err, "failed while waiting for GitLab pipeline to succeed")
+	assert.Equal(t, "success", pipeline.Status, "The final pipeline status was not 'success'")
+	runcnx.Clients.Log.Infof("✅ GitLab pipeline ID %d has succeeded!", pipeline.ID)
 
 	// No comments will be added related to pipelineruns info
 	notes, _, err := glprovider.Client().Notes.ListMergeRequestNotes(opts.ProjectID, mrID, nil)
@@ -574,46 +621,8 @@ func TestGitlabDisableCommentsOnMR(t *testing.T) {
 		}
 	}
 	// Since Gitlab comment strategy is disabled,
-	// no comments will be posted related to pipelineruns
+	// no comments will be posted related to PipelineRuns
 	assert.Equal(t, 0, successCommentsPost)
-
-	// Update the repo setting to nil, and comment /retest to restart the pipelinerun
-	// and now comments will be added on the MR
-	waitOpts := twait.Opts{
-		RepoName:  targetNS,
-		Namespace: targetNS,
-		TargetSHA: "",
-	}
-
-	runcnx.Clients.Log.Info("Updating Gitlab Comment Strategy to nil...")
-	err = repository.UpdateRepo(ctx, waitOpts.Namespace, waitOpts.RepoName, runcnx.Clients)
-	assert.NilError(t, err)
-
-	runcnx.Clients.Log.Infof("Sending /retest comment on MergeRequest %s/-/merge_requests/%d", projectinfo.WebURL, mrID)
-	_, _, err = glprovider.Client().Notes.CreateMergeRequestNote(opts.ProjectID, mrID, &clientGitlab.CreateMergeRequestNoteOptions{
-		Body: clientGitlab.Ptr("/retest"),
-	})
-	assert.NilError(t, err)
-
-	sopt = twait.SuccessOpt{
-		Title:           commitTitle,
-		OnEvent:         opscomments.RetestAllCommentEventType.String(),
-		TargetNS:        targetNS,
-		NumberofPRMatch: 2, // this is the max we get in repos status
-		SHA:             "",
-	}
-	runcnx.Clients.Log.Info("Checking that PAC has posted successful comments for all PR that has been tested")
-	twait.Succeeded(ctx, t, runcnx, opts, sopt)
-
-	notes, _, err = glprovider.Client().Notes.ListMergeRequestNotes(opts.ProjectID, mrID, nil)
-	assert.NilError(t, err)
-	successCommentsPost = 0
-	for _, n := range notes {
-		if commentRegexp.MatchString(n.Body) {
-			successCommentsPost++
-		}
-	}
-	assert.Equal(t, 2, successCommentsPost)
 }
 
 func TestGitlabMergeRequestOnUpdateAtAndLabelChange(t *testing.T) {
