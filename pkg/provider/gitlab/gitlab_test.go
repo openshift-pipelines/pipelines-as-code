@@ -396,6 +396,99 @@ func TestSetClient(t *testing.T) {
 	assert.Equal(t, expected, logs[0].Message)
 }
 
+func TestSetClientRepositoryAccessCheck(t *testing.T) {
+	ctx, _ := rtesting.SetupFakeContext(t)
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	fakelogger := zap.New(observer).Sugar()
+	run := &params.Run{
+		Clients: clients.Clients{
+			Log: fakelogger,
+		},
+	}
+
+	tests := []struct {
+		name              string
+		triggerTarget     triggertype.Trigger
+		sourceProjectID   int
+		setupMockResponse func(*http.ServeMux, int)
+		expectedError     string
+	}{
+		{
+			name:            "Non-pull request trigger should skip access check",
+			triggerTarget:   triggertype.Push,
+			sourceProjectID: 123,
+			setupMockResponse: func(_ *http.ServeMux, _ int) {
+				// No mock needed - should not make the call
+			},
+			expectedError: "",
+		},
+		{
+			name:            "Pull request with successful access",
+			triggerTarget:   triggertype.PullRequest,
+			sourceProjectID: 123,
+			setupMockResponse: func(mux *http.ServeMux, projectID int) {
+				path := fmt.Sprintf("/projects/%d", projectID)
+				mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
+					if r.Method == http.MethodGet {
+						rw.WriteHeader(http.StatusOK)
+						fmt.Fprint(rw, `{"id": 123, "name": "test-repo"}`)
+					}
+				})
+			},
+			expectedError: "",
+		},
+		{
+			name:            "Pull request with not found should return specific error",
+			triggerTarget:   triggertype.PullRequest,
+			sourceProjectID: 456,
+			setupMockResponse: func(mux *http.ServeMux, projectID int) {
+				path := fmt.Sprintf("/projects/%d", projectID)
+				mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
+					if r.Method == http.MethodGet {
+						// Return 404 without error to test the status code check
+						rw.WriteHeader(http.StatusNotFound)
+						fmt.Fprint(rw, `{"message": "404 Project Not Found"}`)
+					}
+				})
+			},
+			expectedError: "failed to access GitLab source repository ID 456: please ensure token has 'read_repository' scope on that repository",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockClient, mux, tearDown := thelp.Setup(t)
+			defer tearDown()
+
+			// Setup the mock for the repository access check API call
+			if tt.setupMockResponse != nil {
+				tt.setupMockResponse(mux, tt.sourceProjectID)
+			}
+
+			v := &Provider{gitlabClient: mockClient}
+			event := &info.Event{
+				Provider: &info.Provider{
+					Token: "test-token",
+				},
+				Organization:    "test-org",
+				Repository:      "test-repo",
+				TriggerTarget:   tt.triggerTarget,
+				SourceProjectID: tt.sourceProjectID,
+				TargetProjectID: 123,
+			}
+
+			err := v.SetClient(ctx, run, event, nil, nil)
+
+			if tt.expectedError != "" {
+				assert.Assert(t, err != nil, "expected error but got none")
+				assert.ErrorContains(t, err, tt.expectedError)
+			} else {
+				assert.NilError(t, err, "unexpected error: %v", err)
+			}
+		})
+	}
+}
+
 func TestSetClientDetectAPIURL(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	observer, _ := zapobserver.New(zap.InfoLevel)
