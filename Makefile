@@ -59,6 +59,7 @@ test-clean:  ## Clean testcache
 .PHONY: test test-unit
 test-no-cache: test-clean test-unit ## Run test-unit without caching
 test-unit: ## Run unit tests
+	@mkdir -p tmp/
 	@echo "Running unit tests..."
 	$(GO) test $(DEFAULT_GO_TEST_FLAGS) $(GO_TEST_FLAGS) -timeout $(TIMEOUT_UNIT) ./pkg/...
 
