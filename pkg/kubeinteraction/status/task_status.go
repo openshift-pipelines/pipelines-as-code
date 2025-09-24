@@ -118,7 +118,7 @@ func CollectFailedTasksLogSnippet(ctx context.Context, cs *params.Run, kinteract
 					}
 					if len(trimmed) > maxErrorSnippetCharacterLimit && utf8.RuneCountInString(trimmed) > maxErrorSnippetCharacterLimit {
 						runes := []rune(trimmed)
-						trimmed = string(runes[:maxErrorSnippetCharacterLimit])
+						trimmed = trimmed[:maxErrorSnippetCharacterLimit]
 					}
 					ti.LogSnippet = trimmed
 				}
