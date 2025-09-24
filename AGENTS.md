@@ -1,3 +1,6 @@
+Read all those files:
+
+@.github/pull_request_template.md
 @.cursor/rules/architecture.mdc
 @.cursor/rules/code-formatting.mdc
 @.cursor/rules/dependencies.mdc
