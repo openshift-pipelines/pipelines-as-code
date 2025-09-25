@@ -575,8 +575,7 @@ if [[ ${#commit_args[@]} -eq 0 ]]; then
 else
   # Direct commit selection: use provided commit arguments
   echo "🎯 Direct commit selection: Using provided commit references"
-  mapfile -t selected_commits < <(validate_commits "${commit_args[@]}")
-  if [[ $? -ne 0 ]]; then
+  if ! mapfile -t selected_commits < <(validate_commits "${commit_args[@]}"); then
     echo "❌ Commit validation failed. Exiting."
     exit 1
   fi
@@ -589,8 +588,7 @@ if [[ "$remove_mode" == "true" ]]; then
   if [[ -n "$remove_llms" ]]; then
     # Auto remove mode: use provided LLM list
     echo "🗑️  Auto LLM removal: Using provided LLMs"
-    mapfile -t selected_llms < <(validate_llms "$remove_llms")
-    if [[ $? -ne 0 ]]; then
+    if ! mapfile -t selected_llms < <(validate_llms "$remove_llms"); then
       echo "❌ LLM validation failed. Exiting."
       exit 1
     fi
@@ -608,8 +606,7 @@ else
   if [[ -n "$auto_llms" ]]; then
     # Auto LLM selection: use provided LLM list
     echo "🤖 Auto LLM selection: Using provided LLMs"
-    mapfile -t selected_llms < <(validate_llms "$auto_llms")
-    if [[ $? -ne 0 ]]; then
+    if ! mapfile -t selected_llms < <(validate_llms "$auto_llms"); then
       echo "❌ LLM validation failed. Exiting."
       exit 1
     fi
