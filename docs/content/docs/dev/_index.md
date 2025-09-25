@@ -432,6 +432,61 @@ for arm64.
 - A GitHub action is using [ko](https://ko.build/) to build the amd64 and arm64 images whenever there is
 a push to a branch or for a release.
 
+## LLM Assistance Disclosure
+
+When submitting a pull request to Pipelines-as-Code, contributors must disclose
+any AI/LLM assistance used during development. This promotes transparency and
+proper attribution in our collaborative development environment.
+
+### Required Disclosure
+
+All contributors must:
+
+1. **Check the appropriate boxes** in the PR template's "🤖 AI Assistance"
+   section
+2. **Specify which LLM was used** (GitHub Copilot, ChatGPT, Claude, Cursor,
+   Gemini, etc.)
+3. **Indicate the extent of assistance** (documentation, code generation, PR
+   description, etc.)
+4. **Add Co-authored-by trailers** to commit messages when AI significantly
+   contributed to the code
+
+### Adding Co-authored-by Trailers
+
+For commits where AI contributed significantly to the code, add appropriate
+`Co-authored-by` trailers to your commit messages. You can use our helper
+script to automate this process:
+
+```shell
+./hack/add-llm-coauthor.sh
+```
+
+This interactive script will:
+
+- Help you select commits that used AI assistance
+- Choose which AI assistants to credit
+- Automatically add proper `Co-authored-by` trailers to your commit messages
+
+**Examples of Co-authored-by trailers:**
+
+```text
+Co-authored-by: Claude <noreply@anthropic.com>
+Co-authored-by: ChatGPT <noreply@chatgpt.com>
+Co-authored-by: Cursor <cursor@users.noreply.github.com>
+Co-authored-by: Copilot <Copilot@users.noreply.github.com>
+Co-authored-by: Gemini <gemini@google.com>
+```
+
+### Why We Require This
+
+- **Transparency**: Helps reviewers understand the development process
+- **Attribution**: Properly credits AI tools that significantly contributed
+- **Learning**: Helps the team understand effective AI-assisted development patterns
+- **Compliance**: Meets organizational requirements for AI tool usage tracking
+
+See the [PR template](.github/pull_request_template.md) for complete details on
+the AI assistance disclosure requirements.
+
 ## Testing External contributor Pull Requests for E2E Testing
 
 When an external contributor submits a pull request (PR), E2E tests may not run

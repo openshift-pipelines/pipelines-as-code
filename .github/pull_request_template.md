@@ -62,6 +62,9 @@ If you have used AI assistance, please provide the following details:
 > Co-authored-by: Claude <noreply@anthropic.com>
 > Co-authored-by: Cursor <noreply@cursor.com>
 > Co-authored-by: Copilot <Copilot@users.noreply.github.com>
+>
+> **💡You can use the script `./hack/add-llm-coauthor.sh` to automatically add
+> these co-author trailers to your commits.
 
 ## ✅ Submitter Checklist
 
