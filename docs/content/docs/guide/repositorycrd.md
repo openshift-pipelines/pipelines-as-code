@@ -10,7 +10,7 @@ The Repository CR serves the following purposes:
 - Informing Pipelines-as-Code that an event from a specific URL needs to be handled.
 - Specifying the namespace where the `PipelineRuns` will be executed.
 - Referencing an API secret, username, or API URL if necessary for Git provider
-  platforms that require it (e.g., when using webhooks instead of the GitHub
+  platforms (e.g., when using webhooks instead of the GitHub
   application).
 - Providing the last `PipelineRun` statuses for the repository (5 by default).
 - Letting you declare [custom parameters]({{< relref "/docs/guide/customparams" >}})
@@ -23,8 +23,8 @@ The `pipelinerun_status` field in the `Repository` CR is scheduled for deprecati
 To configure Pipelines-as-Code, a Repository CR must be created within the
 user's namespace, for example `project-repository`, where their CI will run.
 
-Keep in mind that creating a Repository CR in the namespace where
-Pipelines-as-Code is deployed is not supported (for example
+Note that you cannot create a Repository CR in the same namespace where
+Pipelines-as-Code is deployed (for example
 `openshift-pipelines` or `pipelines-as-code` namespace).
 
 You can create the Repository CR using the [tkn pac]({{< relref
@@ -184,7 +184,7 @@ spec:
   concurrency_limit: <number>
 ```
 
-When multiple PipelineRuns match the event, they will be started in alphabetical order.
+When multiple PipelineRuns match the event, they will be started in alphabetical order by PipelineRun name.
 
 Example:
 

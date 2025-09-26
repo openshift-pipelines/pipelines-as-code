@@ -42,7 +42,7 @@ your Repository resources.
 
 ### Setting Up VS Code for CRD Validation
 
-![VSCode and openapi Schema](/images/vscode-openapi-schema.png)
+![VS Code and OpenAPI Schema](/images/vscode-openapi-schema.png)
 
 1. Install the [Kubernetes](https://marketplace.visualstudio.com/items?itemName=ms-kubernetes-tools.vscode-kubernetes-tools) extension (by Microsoft)
 2. Install the [YAML](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) extension (by Red Hat)

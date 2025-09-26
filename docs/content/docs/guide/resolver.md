@@ -175,7 +175,7 @@ GitHub app token are scoped to the owner or organization where the repository is
 If you are using the GitHub webhook method you are able to fetch any private or
 public repositories on any organization where the personal token is allowed.
 
-There is settings you can set in the Pipelines-as-Code `Configmap` to control that behaviour, see the
+There are settings you can set in the pipelines-as-code ConfigMap to control that behavior, see the
 `secret-github-app-token-scoped` and `secret-github-app-scope-extra-repos` settings in the
 [settings documentation](/docs/install/settings).
 

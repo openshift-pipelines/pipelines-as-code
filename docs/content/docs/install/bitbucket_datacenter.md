@@ -2,9 +2,9 @@
 title: Bitbucket Data Center
 weight: 15
 ---
-# Install Pipelines-As-Code on Bitbucket Data Center
+# Install Pipelines-as-Code on Bitbucket Data Center
 
-Pipelines-As-Code has a full support of [Bitbucket
+Pipelines-as-Code has full support for [Bitbucket
 Data Center](https://www.atlassian.com/software/bitbucket/enterprise).
 
 After following the [installation](/docs/install/installation):
@@ -87,7 +87,7 @@ recreate it.
 ## Notes
 
 * `git_provider.secret` cannot reference a secret in another namespace,
-  Pipelines as code always assumes it will be the same namespace as where the
+  Pipelines-as-Code always assumes it will be in the same namespace where the
   repository has been created.
 
 * `tkn-pac create` and `bootstrap` is not supported on Bitbucket Data Center.
