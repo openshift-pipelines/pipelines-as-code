@@ -36,8 +36,8 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "list",
 		Aliases:      []string{"ls"},
-		Short:        "List Pipelines as Code Repository",
-		Long:         `List Pipelines as Code Repository`,
+		Short:        "List Pipelines-as-Code repositories",
+		Long:         `List Pipelines-as-Code repositories`,
 		SilenceUsage: true,
 		Annotations: map[string]string{
 			"commandType": "main",

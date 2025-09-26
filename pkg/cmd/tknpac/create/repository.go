@@ -216,7 +216,7 @@ func getRepoURL(opts *RepoOptions) error {
 		return nil
 	}
 
-	q := "Enter the Git repository url "
+	q := "Enter the Git repository URL "
 	var err error
 	if opts.GitInfo.URL != "" {
 		opts.GitInfo.URL, err = cleanupGitURL(opts.GitInfo.URL)

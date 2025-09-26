@@ -49,7 +49,7 @@ func TestInstall(t *testing.T) {
 	err := install(ctx, run, opts)
 	// get an error because i need to figure out how to fake dynamic client
 	assert.Assert(t, err != nil)
-	assert.Equal(t, "=> Checking if Pipelines as Code is installed.\n", out.String())
+	assert.Equal(t, "=> Checking if Pipelines-as-Code is installed.\n", out.String())
 }
 
 func TestDetectPacInstallation(t *testing.T) {
