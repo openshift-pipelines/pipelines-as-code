@@ -22,8 +22,8 @@ import (
 func Root(clients *params.Run) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "tkn-pac",
-		Short:        "Pipelines as Code CLI",
-		Long:         `tkn plugin to use Pipelines as Code as a CLI`,
+		Short:        "Pipelines-as-Code CLI",
+		Long:         `tkn plugin to use Pipelines-as-Code as a CLI`,
 		SilenceUsage: true,
 		Annotations: map[string]string{
 			"commandType": "main",
