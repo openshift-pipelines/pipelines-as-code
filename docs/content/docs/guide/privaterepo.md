@@ -33,7 +33,7 @@ when you delete the `PipelineRun` it references to.
 
 {{< hint warning >}}
 To disable this behavior, you can configure the `secret-auto-create` setting in
-the Pipelines-as-Code Configmap. You can set it to either false or true
+the pipelines-as-code ConfigMap. You can set it to either false or true
 depending on your requirements.
 {{< /hint >}}
 

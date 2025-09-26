@@ -4,7 +4,7 @@ weight: 20
 ---
 # Kubernetes
 
-Pipelines-as-Code works on kubernetes/minikube/kind.
+Pipelines-as-Code works on Kubernetes/minikube/kind.
 
 ## Prerequisites
 
@@ -12,17 +12,17 @@ You will need to pre-install the
 [pipeline](https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml)
 `release.yaml` file on your kubernetes cluster.
 
-You will need at least a kubernetes version greater than 1.23
+You will need at least a Kubernetes version greater than 1.23.
 
 ## Install
 
-The release YAML to install pipelines are for the released version :
+The release YAML files to install pipelines are for the released version:
 
 ```shell
 kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/stable/release.k8s.yaml
 ```
 
-and for the nightly :
+and for the nightly:
 
 ```shell
 kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/nightly/release.k8s.yaml
@@ -30,7 +30,7 @@ kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines
 
 ## Verify
 
-Ensure that the pipelines-as-code controller, webhook, and watcher have come up healthy, for example:
+Ensure that the pipelines-as-code controller, webhook, and watcher have started up successfully, for example:
 
 ```shell
 $ kubectl get deployment -n pipelines-as-code
@@ -44,10 +44,10 @@ All three deployments should have all pods ready before moving on to ingress set
 
 ## Ingress
 
-You will need a
+You will need an
 [`Ingress`](https://kubernetes.io/docs/concepts/services-networking/ingress/)
-setup to point to make your pipelines-as-code controller available to `Github`,
-`GitLab` or other `Git` providers.
+setup to make your pipelines-as-code controller available to GitHub,
+GitLab or other Git providers.
 
 The ingress configuration depends on your Kubernetes provider. See below for
 some examples.

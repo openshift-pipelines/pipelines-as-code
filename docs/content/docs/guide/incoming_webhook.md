@@ -5,8 +5,8 @@ weight: 50
 
 # Incoming webhook
 
-Pipelines-as-Code support the concept of incoming webhook URL. It let you
-trigger PipelineRun in a Repository using a shared secret and URL,
+Pipelines-as-Code supports the concept of incoming webhook URL. It lets you
+trigger PipelineRuns in a Repository using a shared secret and URL,
 instead of creating a new code iteration.
 
 ## Incoming Webhook URL
@@ -19,23 +19,23 @@ your `.tekton` directory if the `on-event` annotation of the targeted PipelineRu
 targeting a push or incoming event.
 
 {{< hint info >}}
-If you are not using the github app provider (ie: webhook based provider) you
+If you are not using the GitHub app provider (i.e., webhook based provider) you
 will need to have a `git_provider` spec to specify a token.
 
-Additionally since we are not able to detect automatically the type of provider
-on URL. You will need to add it to the `git_provider.type` spec. Supported
+Additionally, since we are not able to detect automatically the type of provider
+on URL, you will need to add it to the `git_provider.type` spec. Supported
 values are:
 
 - github
 - gitlab
 - bitbucket-cloud
 
-Whereas for `github-apps` this doesn't need to be added.
+Whereas for `github-apps` this does not need to be added.
 {{< /hint >}}
 
-### GithubApp
+### GitHub App
 
-The example below illustrates the use of GithubApp to trigger a PipelineRun
+The example below illustrates the use of GitHub App to trigger a PipelineRun
 based on an incoming webhook URL.
 
 The Repository Custom Resource (CR) specifies the target branch as
@@ -110,8 +110,7 @@ curl -H "Content-Type: application/json" -X POST "https://control.pac.url/incomi
 
 In both cases, the `"/incoming"` path to the controller URL and the `"POST"` method will remain unchanged.
 
-It is important to note that when the PipelineRun is triggered, Pipelines as
-Code will treat it as a push event and will have the capability to report the
+It is important to note that when the PipelineRun is triggered, Pipelines-as-Code will treat it as a push event and will have the capability to report the
 status of the PipelineRuns. To obtain a report or a notification, a finally
 task can be added directly to the Pipeline, or the Repo CRD can be inspected
 using the tkn pac CLI. The [statuses](/docs/guide/statuses) documentation
@@ -171,7 +170,7 @@ curl -H "X-GitHub-Enterprise-Host: github.example.com" -X POST "https://control.
 
 ### Using incoming webhook with webhook based providers
 
-Webhook based providers (i.e: GitHub Webhook, GitLab, Bitbucket etc..) supports
+Webhook based providers (i.e., GitHub Webhook, GitLab, Bitbucket etc..) support
 incoming webhook, using the token provided in the git_provider section.
 
 Here is an example of a Repository CRD matching the target branch main with a GitHub webhook provider:
@@ -196,5 +195,5 @@ spec:
       type: webhook-url
 ```
 
-As noted in the section above, you need to specify a incoming secret inside
+As noted in the section above, you need to specify an incoming secret inside
 the `repo-incoming-secret` Secret.

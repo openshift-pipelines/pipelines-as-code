@@ -58,7 +58,7 @@ annotations:
 This will match the pipeline `pipeline-push-on-1.0-tags` when you push the 1.0
 tags into your repository.
 
-Matching annotations are currently required; otherwise, `Pipelines-as-Code` will not
+Matching annotations are currently required; otherwise, Pipelines-as-Code will not
 match your `PipelineRun`.
 
 When multiple PipelineRuns match an event, it will run them in parallel
@@ -312,12 +312,12 @@ The fields available are:
 
 CEL expressions let you do more complex filtering compared to the simple `on-target` annotation matching and enable more advanced scenarios.
 
-For example, if I want to have a `PipelineRun` targeting a `pull_request` but
+For example, if you want to have a `PipelineRun` targeting a `pull_request` but
 not the `experimental` branch you could have:
 
 ```yaml
 pipelinesascode.tekton.dev/on-cel-expression: |
-  event == "pull_request" && target_branch != experimental"
+  event == "pull_request" && target_branch != "experimental"
 ```
 
 {{< hint info >}}
@@ -406,7 +406,7 @@ This example will match all pull requests starting with the title `[DOWNSTREAM]`
 
 ```yaml
 pipelinesascode.tekton.dev/on-cel-expression: |
-  event == "pull_request && event_title.startsWith("[DOWNSTREAM]")
+  event == "pull_request" && event_title.startsWith("[DOWNSTREAM]")
 ```
 
 The event title will be the pull request title on `pull_request` and the

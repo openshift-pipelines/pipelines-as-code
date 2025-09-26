@@ -5,7 +5,7 @@ weight: 12
 
 # Use Pipelines-as-Code with GitHub Webhook
 
-If you are not able to create a GitHub application you can use Pipelines-as-Code with [GitHub Webhook](https://docs.github.com/en/developers/webhooks-and-events/webhooks/creating-webhooks) on your repository.
+If you are not able to create a GitHub application, you can use Pipelines-as-Code with [GitHub Webhook](https://docs.github.com/en/developers/webhooks-and-events/webhooks/creating-webhooks) on your repository.
 
 Using Pipelines-as-Code through GitHub webhook does not give you access to the
 [GitHub CheckRun
@@ -13,10 +13,10 @@ API](https://docs.github.com/en/rest/guides/getting-started-with-the-checks-api)
 therefore the status of
 the tasks will be added as a Comment on the PullRequest and not through the **Checks** Tab.
 
-gitops comment (ie: /retest /ok-to-test) with GitHub webhook is
-not supported. If you need to restart the CI you will need to generate a new
+GitOps comments (i.e., /retest /ok-to-test) with GitHub webhook are
+not supported. If you need to restart the CI, you will need to generate a new
 commit. You can make it quick with this command line snippet (adjust branchname to the name of
-the branch) :
+the branch):
 
 ```console
 git commit --amend -a --no-edit && git push --force-with-lease origin branchname
@@ -32,12 +32,12 @@ Follow this guide to create a personal token:
 
 <https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token>
 
-### [Fine grained token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token#creating-a-fine-grained-personal-access-token)
+### [Fine-grained token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token#creating-a-fine-grained-personal-access-token)
 
-If you want to generate a fine grained token (which is more secure), you can
+If you want to generate a fine-grained token (which is more secure), you can
 scope your token to the repository you want tested.
 
-The permissions needed are :
+The permissions needed are:
 
 | Name            | Access         |
 |:---------------:|:--------------:|
@@ -51,26 +51,26 @@ The permissions needed are :
 ### [Classic Tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token#creating-a-personal-access-token-classic)
 
 Depending on the Repository access scope, the token will need different
-permissions. For public repositories the scope are:
+permissions. For public repositories, the scope needed is:
 
 * `public_repo` scope
 
-For private repositories the scope are:
+For private repositories, the scope needed is:
 
 * The whole `repo` scope
 
 {{< hint info >}}
-You can click directly on this link to prefill the permissions needed
+You can click directly on this link to prefill the permissions needed:
 <https://github.com/settings/tokens/new?description=pipelines-as-code-token&scopes=repo>
-{{< /hint  >}}
+{{< /hint >}}
 
-You will have to note the generated token somewhere, or otherwise you will have to recreate it.
+You will have to note the generated token somewhere, or you will have to recreate it.
 
-For best security practice you will probably want to have a short token
+For best security practice, you will probably want to have a short token
 expiration (like the default 30 days). GitHub will send you a notification email
-if your token expires. Follow [Update Token](#update-token) to replace expired token with a new one.
+if your token expires. Follow [Update Token](#update-token) to replace an expired token with a new one.
 
-**NOTE:** If you are going to configure webhook through CLI, you must also add a scope `admin:repo_hook`
+**NOTE:** If you are going to configure a webhook through CLI, you must also add the scope `admin:repo_hook`.
 
 ## Create a `Repository` and configure webhook
 
@@ -81,9 +81,9 @@ There are two ways to create the `Repository` and configure the webhook:
 * Use the [`tkn pac create repo`](/docs/guide/cli) command to
   configure a webhook and create the `Repository` CR.
 
-  You need to have a personal access token created with `admin:repo_hook` scope. `tkn pac` will use this token to configure the
-webhook, and add it in a secret in the cluster which will be used by Pipelines-As-Code controller for accessing the `Repository`.
-After configuring the webhook, you will be able to update the token in the secret with just the scopes mentioned [here](#create-github-personal-access-token).
+  You need to have a personal access token created with the `admin:repo_hook` scope. `tkn pac` will use this token to configure the
+  webhook, and add it to a secret in the cluster which will be used by the Pipelines-as-Code controller for accessing the `Repository`.
+  After configuring the webhook, you will be able to update the token in the secret with just the scopes mentioned [here](#create-github-personal-access-token).
 
 Below is the sample format for `tkn pac create repo`
 
@@ -99,7 +99,7 @@ $ tkn pac create repo
 👀 I have detected a controller url: https://pipelines-as-code-controller-openshift-pipelines.apps.awscl2.aws.ospqa.com
 ? Do you want me to use it? Yes
 ? Please enter the secret to configure the webhook for payload validation (default: sJNwdmTifHTs):  sJNwdmTifHTs
-ℹ ️You now need to create a GitHub personal access token, please checkout the docs at https://is.gd/KJ1dDH for the required scopes
+ℹ️ You now need to create a GitHub personal access token; please check the docs at https://is.gd/KJ1dDH for the required scopes
 ? Please enter the GitHub access token:  ****************************************
 ✓ Webhook has been created on repository owner/repo
 🔑 Webhook Secret owner-repo has been created in the repo-pipelines namespace.
@@ -113,9 +113,9 @@ $ tkn pac create repo
 
 ### Create a `Repository` and configure webhook manually
 
-* Go to your repository or organization **Settings** --> **Webhooks** and click on **Add webhook** button.
+* Go to your repository or organization **Settings** --> **Webhooks** and click on the **Add webhook** button.
 
-  * Set the **Payload URL** to Pipelines-as-Code controller public URL. On OpenShift, you can get the public URL of the Pipelines-as-Code controller like this:
+  * Set the **Payload URL** to the Pipelines-as-Code controller public URL. On OpenShift, you can get the public URL of the Pipelines-as-Code controller like this:
 
     ```shell
     echo https://$(oc get route -n pipelines-as-code pipelines-as-code-controller -o jsonpath='{.spec.host}')
@@ -123,7 +123,7 @@ $ tkn pac create repo
 
   * Choose Content type as **application/json**
 
-  * Add a Webhook secret or generate a random one with this command (and note it, we will need it later):
+  * Add a Webhook secret or generate a random one with this command (and note it; we will need it later):
 
     ```shell
     head -c 30 /dev/random | base64
@@ -154,7 +154,7 @@ $ tkn pac create repo
     --from-literal webhook.secret="SECRET_AS_SET_IN_WEBHOOK_CONFIGURATION"
   ```
 
-* Create `Repository CRD` referencing everything :
+* Create the `Repository CRD` referencing everything:
 
   ```yaml
   ---
@@ -176,17 +176,17 @@ $ tkn pac create repo
         # key: "webhook.secret"
   ```
 
-## GitHub webhook Notes
+## GitHub Webhook Notes
 
-* Pipelines as code always assumes that the `Secret` is in the same namespace where the `Repository` has been created.
+* Pipelines-as-Code always assumes that the `Secret` is in the same namespace where the `Repository` has been created.
 
-## Add webhook secret
+## Add Webhook Secret
 
-* For an existing `Repository`, if webhook secret has been deleted (or you want to add a new webhook to project settings) for GitHub,
-  use `tkn pac webhook add` command to add a webhook to project repository settings, as well as update the `webhook.secret`
-  key in the existing `Secret` object without updating `Repository`.
+* For an existing `Repository`, if the webhook secret has been deleted (or you want to add a new webhook to project settings) for GitHub,
+  use the `tkn pac webhook add` command to add a webhook to project repository settings, as well as update the `webhook.secret`
+  key in the existing `Secret` object without updating the `Repository`.
 
-Below is the sample format for `tkn pac webhook add`
+Below is the sample format for `tkn pac webhook add`:
 
 ```shell script
 $ tkn pac webhook add -n repo-pipelines
@@ -200,20 +200,20 @@ $ tkn pac webhook add -n repo-pipelines
 
 ```
 
-**Note:** If `Repository` exist in a namespace other than the `default` namespace, use `tkn pac webhook add [-n namespace]`.
-  In the above example, `Repository` exist in the `repo-pipelines` namespace rather than the `default` namespace; therefore
+**Note:** If the `Repository` exists in a namespace other than the `default` namespace, use `tkn pac webhook add [-n namespace]`.
+  In the above example, the `Repository` exists in the `repo-pipelines` namespace rather than the `default` namespace; therefore
   the webhook was added in the `repo-pipelines` namespace.
 
-## Update token
+## Update Token
 
 There are two ways to update the provider token for the existing `Repository`:
 
-### Update using tkn pac cli
+### Update using tkn pac CLI
 
 * Use the [`tkn pac webhook update-token`](/docs/guide/cli) command which
   will update provider token for the existing `Repository` CR.
 
-Below is the sample format for `tkn pac webhook update-token`
+Below is the sample format for `tkn pac webhook update-token`:
 
 ```shell script
 $ tkn pac webhook update-token -n repo-pipelines
@@ -223,9 +223,9 @@ $ tkn pac webhook update-token -n repo-pipelines
 
 ```
 
-**NOTE:** If `Repository` exist in a namespace other than the `default` namespace, use `tkn pac webhook update-token [-n namespace]`.
-  In the above example, `Repository` exist in the `repo-pipelines` namespace rather than the `default` namespace; therefore
-  the webhook token updated in the `repo-pipelines` namespace.
+**NOTE:** If the `Repository` exists in a namespace other than the `default` namespace, use `tkn pac webhook update-token [-n namespace]`.
+  In the above example, the `Repository` exists in the `repo-pipelines` namespace rather than the `default` namespace; therefore
+  the webhook token was updated in the `repo-pipelines` namespace.
 
 ### Update by changing `Repository` YAML or using `kubectl patch` command
 

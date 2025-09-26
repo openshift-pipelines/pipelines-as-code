@@ -16,7 +16,7 @@ For example, when you are on a Pull Request, you may want to restart failed Pipe
 Example:
 
 ```text
-Thanks for contributing. This is a much-needed bugfix, and we love it ❤️ The
+Thanks for contributing. This is a much-needed bugfix, and we appreciate it ❤️ The
 failure is not with your PR but seems to be an infrastructure issue.
 
 /retest
@@ -42,7 +42,7 @@ Similar to `/retest`, the `/ok-to-test` command will only trigger new PipelineRu
 If you have multiple `PipelineRun` and you want to target a specific `PipelineRun`, you can use the `/test` command followed by the specific PipelineRun name to restart it. Example:
 
 ```text
-Roses are red, violets are blue. Pipelines are bound to flake by design.
+Pipeline execution appears to be unstable due to external factors. Retesting this specific pipeline.
 
 /test <pipelinerun-name>
 ```
@@ -262,7 +262,7 @@ For example, if you want to cancel all your PipelineRuns, you can add a comment 
 Example:
 
 ```text
-It seems the infrastructure is down, so cancelling the PipelineRuns.
+The infrastructure appears to be experiencing issues. Cancelling the current PipelineRuns.
 
 /cancel
 ```
@@ -272,7 +272,7 @@ If you have multiple `PipelineRun` and you want to target a specific `PipelineRu
 Example:
 
 ```text
-Roses are red, violets are blue. Why run the pipeline when the infrastructure is down.
+The infrastructure appears to be experiencing issues, cancelling this specific pipeline.
 
 /cancel <pipelinerun-name>
 ```

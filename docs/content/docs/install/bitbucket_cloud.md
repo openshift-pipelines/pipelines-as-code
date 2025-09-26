@@ -4,9 +4,9 @@ weight: 14
 ---
 # Use Pipelines-as-Code with Bitbucket Cloud
 
-Pipelines-As-Code supports on [Bitbucket Cloud](https://bitbucket.org) through a webhook.
+Pipelines-as-Code supports [Bitbucket Cloud](https://bitbucket.org) through a webhook.
 
-Follow the Pipelines-As-Code [installation](/docs/install/installation) according to your Kubernetes cluster.
+Follow the Pipelines-as-Code [installation](/docs/install/installation) according to your Kubernetes cluster.
 
 ## Create Bitbucket Cloud App Password
 
@@ -41,7 +41,7 @@ There are two ways to create the `Repository` and configure the webhook:
 configure a webhook and create the `Repository` CR.
 
   You need to have a App Password created. `tkn pac` will use this token to configure the webhook, and add it in a secret
-in the cluster which will be used by Pipelines-As-Code controller for accessing the `Repository`.
+in the cluster which will be used by the Pipelines-as-Code controller for accessing the `Repository`.
 
 Below is the sample format for `tkn pac create repo`
 
@@ -82,7 +82,7 @@ $ tkn pac create repo
     echo https://$(oc get route -n pipelines-as-code pipelines-as-code-controller -o jsonpath='{.spec.host}')
     ```
 
-  - The individual events to select are :
+  - The individual events to select are:
     - Repository -> Push
     - Repository -> Updated
     - Repository -> Commit comment created
@@ -135,7 +135,7 @@ Personal Bitbucket Settings, and there you will find your username there, as sho
 ## Bitbucket Cloud Notes
 
 - The `git_provider.secret` key cannot reference to a secret in another namespace.
-  Pipelines as code always assumes that it will be in the same namespace where the
+  Pipelines-as-Code always assumes that it will be in the same namespace where the
   `Repository` has been created.
 
 - The `tkn pac create` and `tkn pac bootstrap` commands are not supported on Bitbucket Cloud.
@@ -182,8 +182,8 @@ $ tkn pac webhook add -n repo-pipelines
 
 ```
 
-**Note:** If `Repository` exist in a namespace other than the `default` namespace, use `tkn pac webhook add [-n namespace]`.
-  In the above example, `Repository` exist in the `repo-pipelines` namespace rather than the `default` namespace; therefore
+**Note:** If `Repository` exists in a namespace other than the `default` namespace, use `tkn pac webhook add [-n namespace]`.
+  In the above example, `Repository` exists in the `repo-pipelines` namespace rather than the `default` namespace; therefore
   the webhook was added in the `repo-pipelines` namespace.
 
 ## Update token
@@ -205,8 +205,8 @@ $ tkn pac webhook update-token -n repo-pipelines
 
 ```
 
-**NOTE:** If `Repository` exist in a namespace other than the `default` namespace, use `tkn pac webhook update-token [-n namespace]`.
-  In the above example, `Repository` exist in the `repo-pipelines` namespace rather than the `default` namespace; therefore
+**NOTE:** If `Repository` exists in a namespace other than the `default` namespace, use `tkn pac webhook update-token [-n namespace]`.
+  In the above example, `Repository` exists in the `repo-pipelines` namespace rather than the `default` namespace; therefore
   the webhook token updated in the `repo-pipelines` namespace.
 
 ### Update by changing `Repository` YAML or using `kubectl patch` command
