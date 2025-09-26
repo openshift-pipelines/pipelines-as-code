@@ -4,14 +4,14 @@ kind: PipelineRun
 metadata:
   name: pipelinerun-go
   annotations:
-    # The event we are targeting as seen from the webhook payload
+    # The event we target as seen from the webhook payload
     # this can be an array too, i.e: [pull_request, push]
     pipelinesascode.tekton.dev/on-event: "pull_request"
 
-    # The branch or tag we are targeting (ie: main, refs/tags/*)
+    # The branch or tag we target (i.e., main, refs/tags/*)
     pipelinesascode.tekton.dev/on-target-branch: "main"
 
-    # Fetch the git-clone task from hub, we are able to reference later on it
+    # Fetch the git-clone task from hub, we can reference later on it
     # with taskRef and it will automatically be embedded into our pipeline.
     pipelinesascode.tekton.dev/task: "git-clone"
 
@@ -28,8 +28,8 @@ metadata:
     pipelinesascode.tekton.dev/max-keep-runs: "5"
 spec:
   params:
-    # The variable with brackets are special to Pipelines as Code
-    # They will automatically be expanded with the events from Github.
+    # The variable with brackets are special to Pipelines-as-Code
+    # They will automatically be expanded with the events from GitHub.
     - name: repo_url
       value: "{{ repo_url }}"
     - name: revision
