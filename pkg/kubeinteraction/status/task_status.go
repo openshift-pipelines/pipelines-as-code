@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
@@ -16,6 +17,8 @@ import (
 )
 
 var reasonMessageReplacementRegexp = regexp.MustCompile(`\(image: .*`)
+
+const maxErrorSnippetCharacterLimit = 65535 // This is the maximum size allowed by Github check run logs and may apply to all other providers
 
 // GetTaskRunStatusForPipelineTask takes a minimal embedded status child reference and returns the actual TaskRunStatus
 // for the PipelineTask. It returns an error if the child reference's kind isn't TaskRun.
@@ -113,8 +116,11 @@ func CollectFailedTasksLogSnippet(ctx context.Context, cs *params.Run, kinteract
 					if strings.HasSuffix(trimmed, " Skipping step because a previous step failed") {
 						continue
 					}
-					// see if a pattern match from errRe
-					ti.LogSnippet = strings.TrimSpace(trimmed)
+					if len(trimmed) > maxErrorSnippetCharacterLimit && utf8.RuneCountInString(trimmed) > maxErrorSnippetCharacterLimit {
+						runes := []rune(trimmed)
+						trimmed = trimmed[:maxErrorSnippetCharacterLimit]
+					}
+					ti.LogSnippet = trimmed
 				}
 			}
 		}

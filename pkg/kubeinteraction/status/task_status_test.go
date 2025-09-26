@@ -2,6 +2,7 @@ package status
 
 import (
 	"testing"
+	"unicode/utf8"
 
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -114,6 +115,136 @@ func TestCollectFailedTasksLogSnippet(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCollectFailedTasksLogSnippetUTF8SafeTruncation(t *testing.T) {
+	clock := clockwork.NewFakeClock()
+
+	tests := []struct {
+		name               string
+		podOutput          string
+		expectedTruncation bool
+		expectedLength     int
+	}{
+		{
+			name:               "short ascii text",
+			podOutput:          "Error: simple failure message",
+			expectedTruncation: false,
+			expectedLength:     29,
+		},
+		{
+			name:               "long ascii text over limit",
+			podOutput:          string(make([]byte, maxErrorSnippetCharacterLimit+100)), // Fill with null bytes which are 1 byte each
+			expectedTruncation: true,
+			expectedLength:     maxErrorSnippetCharacterLimit,
+		},
+		{
+			name:               "utf8 text under limit",
+			podOutput:          "🚀 Error: deployment failed with émojis and spécial chars",
+			expectedTruncation: false,
+			expectedLength:     len([]rune("🚀 Error: deployment failed with émojis and spécial chars")),
+		},
+		{
+			name:               "utf8 text over limit",
+			podOutput:          "🚀 " + string(make([]rune, maxErrorSnippetCharacterLimit)), // Create string with unicode chars
+			expectedTruncation: true,
+			expectedLength:     maxErrorSnippetCharacterLimit,
+		},
+		{
+			name:               "mixed utf8 at boundary",
+			podOutput:          string(make([]rune, maxErrorSnippetCharacterLimit+1)) + "🚀🔥💥",
+			expectedTruncation: true,
+			expectedLength:     maxErrorSnippetCharacterLimit,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pr := tektontest.MakePRCompletion(clock, "pipeline-newest", "ns", tektonv1.PipelineRunReasonSuccessful.String(), nil, make(map[string]string), 10)
+			pr.Status.ChildReferences = []tektonv1.ChildStatusReference{
+				{
+					TypeMeta: runtime.TypeMeta{
+						Kind: "TaskRun",
+					},
+					Name:             "task1",
+					PipelineTaskName: "task1",
+				},
+			}
+
+			taskStatus := tektonv1.TaskRunStatusFields{
+				PodName: "task1",
+				Steps: []tektonv1.StepState{
+					{
+						Name: "step1",
+						ContainerState: corev1.ContainerState{
+							Terminated: &corev1.ContainerStateTerminated{
+								ExitCode: 1,
+							},
+						},
+					},
+				},
+			}
+
+			tdata := testclient.Data{
+				TaskRuns: []*tektonv1.TaskRun{
+					tektontest.MakeTaskRunCompletion(clock, "task1", "ns", "pipeline-newest",
+						map[string]string{}, taskStatus, knativeduckv1.Conditions{
+							{
+								Type:    knativeapi.ConditionSucceeded,
+								Status:  corev1.ConditionFalse,
+								Reason:  "Failed",
+								Message: "task failed",
+							},
+						},
+						10),
+				},
+			}
+
+			ctx, _ := rtesting.SetupFakeContext(t)
+			stdata, _ := testclient.SeedTestData(t, ctx, tdata)
+			cs := &params.Run{Clients: paramclients.Clients{
+				Tekton: stdata.Pipeline,
+			}}
+
+			intf := &kubernetestint.KinterfaceTest{
+				GetPodLogsOutput: map[string]string{
+					"task1": tt.podOutput,
+				},
+			}
+
+			got := CollectFailedTasksLogSnippet(ctx, cs, intf, pr, 1)
+			assert.Equal(t, 1, len(got))
+
+			snippet := got["task1"].LogSnippet
+			runeCount := len([]rune(snippet))
+
+			if tt.expectedTruncation {
+				// Should be truncated to exactly maxErrorSnippetCharacterLimit runes
+				assert.Equal(t, maxErrorSnippetCharacterLimit, runeCount,
+					"Expected truncated string to be exactly %d runes, got %d",
+					maxErrorSnippetCharacterLimit, runeCount)
+
+				// Verify the string is valid UTF-8 after truncation
+				assert.True(t, validateUTF8(snippet), "Truncated string should be valid UTF-8")
+
+				// Should be shorter than original
+				assert.Less(t, runeCount, len([]rune(tt.podOutput)),
+					"Truncated string should be shorter than original")
+			} else {
+				// Should match expected length exactly
+				assert.Equal(t, tt.expectedLength, runeCount,
+					"Expected string length %d runes, got %d", tt.expectedLength, runeCount)
+
+				// Should match original (no truncation)
+				assert.Equal(t, tt.podOutput, snippet, "String should not be truncated")
+			}
+		})
+	}
+}
+
+// validateUTF8 checks if a string contains valid UTF-8 encoding.
+func validateUTF8(s string) bool {
+	return utf8.ValidString(s)
 }
 
 func TestGetStatusFromTaskStatusOrFromAsking(t *testing.T) {

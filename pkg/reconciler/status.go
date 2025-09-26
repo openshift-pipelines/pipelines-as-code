@@ -24,8 +24,8 @@ import (
 )
 
 const (
-	maxPipelineRunStatusRun = 5
-	logSnippetNumLines      = 3
+	maxPipelineRunStatusRun             = 5
+	defaultErrorLogSnippetNumberOfLines = 3
 )
 
 var backoffSchedule = []time.Duration{
@@ -81,7 +81,11 @@ func (r *Reconciler) updateRepoRunStatus(ctx context.Context, logger *zap.Sugare
 }
 
 func (r *Reconciler) getFailureSnippet(ctx context.Context, pr *tektonv1.PipelineRun) string {
-	taskinfos := kstatus.CollectFailedTasksLogSnippet(ctx, r.run, r.kinteract, pr, logSnippetNumLines)
+	lines := settings.DefaultSettings().ErrorLogSnippetNumberOfLines
+	if r.run.Info.Pac != nil {
+		lines = r.run.Info.Pac.ErrorLogSnippetNumberOfLines
+	}
+	taskinfos := kstatus.CollectFailedTasksLogSnippet(ctx, r.run, r.kinteract, pr, lines)
 	if len(taskinfos) == 0 {
 		return ""
 	}
