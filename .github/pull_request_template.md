@@ -21,6 +21,7 @@ Fixes #
 - [ ] 💅 Refactor (`refactor:`)
 - [ ] 🔧 Enhancement (`enhance:`)
 - [ ] 📦 Dependency update (`deps:`)
+- [ ] 🏷️ Tag Release (`DNM:`)
 
 ## 🧪 Testing Strategy
 
