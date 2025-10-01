@@ -47,3 +47,27 @@ class PRData:
             pr_info=pr_info,
             current_labels=current_labels,
         )
+
+    @property
+    def number(self) -> int:
+        """Get PR number from pr_info."""
+        return self.pr_info.get("number", 0) if self.pr_info else 0
+
+    @property
+    def author(self) -> str:
+        """Get PR author from pr_info."""
+        if self.pr_info and "user" in self.pr_info:
+            return self.pr_info["user"].get("login", "unknown")
+        return "unknown"
+
+    @property
+    def url(self) -> str:
+        """Get PR HTML URL from pr_info."""
+        return self.pr_info.get("html_url", "") if self.pr_info else ""
+
+    @property
+    def comments(self) -> List[dict]:
+        """Get PR comments. Currently returns empty list - would need GitHub API extension."""
+        # This would require additional GitHub API calls to fetch comments
+        # For now, return empty list as comments aren't currently fetched in from_github
+        return []
