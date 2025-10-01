@@ -13,3 +13,10 @@ Read all those files:
 @.cursor/rules/srvkp-jira-template.mdc
 @.cursor/rules/testing-quality.mdc
 @.cursor/rules/useful-commands.mdc
+
+# Editing code
+
+- always do a make fix-python-errors after editing python files
+- always do a make fix-markdownlint editing markdown files
+- always do a make fumpt after editing go files
+- always do a make fix-trailings-spaces editing markdown files
