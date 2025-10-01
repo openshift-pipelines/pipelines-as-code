@@ -26,7 +26,7 @@ func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command
 	cmd := &cobra.Command{
 		Args:    cobra.MinimumNArgs(0),
 		Use:     "repository",
-		Short:   "Delete a Pipelines as Code Repository or multiple of them",
+		Short:   "Delete a Pipelines-as-Code repository or multiple repositories",
 		Long:    longHelp,
 		Aliases: []string{"repo"},
 		ValidArgsFunction: func(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {

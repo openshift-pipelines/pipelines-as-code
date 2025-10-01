@@ -186,7 +186,7 @@ func TestGiteaPullRequestPrivateRepository(t *testing.T) {
 	}
 	ctx, f := tgitea.TestPR(t, topts)
 	defer f()
-	reg := regexp.MustCompile(".*successfully fetched git-clone task from default configured catalog HUB")
+	reg := regexp.MustCompile(".*successfully fetched git-clone task from default configured catalog Hub")
 	maxLines := int64(100)
 	err := twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *reg, 20, "controller", &maxLines)
 	assert.NilError(t, err)
@@ -677,11 +677,11 @@ func TestGiteaWithCLIGeneratePipeline(t *testing.T) {
 					"license": "BSD"
 				  }`,
 			},
-			generateOutputRegexp: `We have detected your repository using the programming language.*Nodejs`,
+			generateOutputRegexp: `We detected your repository uses the.*[Nn]odejs.*programming language`,
 		},
 		{
 			name:                 "CLI generate python",
-			generateOutputRegexp: `We have detected your repository using the programming language.*Python`,
+			generateOutputRegexp: `We detected your repository uses the.*Python.*programming language`,
 			fileToAdd: map[string]string{
 				"setup.py":    "# setup.py\n",
 				"__init__.py": "# __init__.py\n",
@@ -689,7 +689,7 @@ func TestGiteaWithCLIGeneratePipeline(t *testing.T) {
 		},
 		{
 			name:                 "CLI generate golang",
-			generateOutputRegexp: `We have detected your repository using the programming language.*Go`,
+			generateOutputRegexp: `We detected your repository uses the.*Go.*programming language`,
 			fileToAdd: map[string]string{
 				"go.mod": "module github.com/mylady/ismybike",
 				"main.go": `package main

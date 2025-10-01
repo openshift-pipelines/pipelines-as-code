@@ -1,14 +1,14 @@
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  name: jira-create
+  name: issue-create
   annotations:
     pipelinesascode.tekton.dev/max-keep-runs: "2"
-    pipelinesascode.tekton.dev/on-comment: "^/jira-create"
+    pipelinesascode.tekton.dev/on-comment: "^/issue-create"
 spec:
   description: |
-    Generate a JIRA ticket from a pull request using Gemini AI.
-    Triggered by commenting `/jira-create` on a PR.
+    Generate a GitHub issue from a pull request using Gemini AI.
+    Triggered by commenting `/issue-create` on a PR.
   params:
     - name: repo_url
       value: "{{repo_url}}"
@@ -22,14 +22,6 @@ spec:
       value: "{{repo_name}}"
     - name: gemini_model
       value: "gemini-2.5-flash-lite-preview-06-17"
-    - name: jira_endpoint
-      value: "https://issues.redhat.com"
-    - name: jira_project
-      value: "SRVKP"
-    - name: jira_component
-      value: "Pipelines as Code"
-    - name: jira_issuetype
-      value: "Story"
   pipelineSpec:
     params:
       - name: repo_url
@@ -38,12 +30,8 @@ spec:
       - name: repo_owner
       - name: repo_name
       - name: gemini_model
-      - name: jira_endpoint
-      - name: jira_project
-      - name: jira_component
-      - name: jira_issuetype
     tasks:
-      - name: generate-jira-ticket
+      - name: generate-issue
         taskSpec:
           params:
             - name: repo_url
@@ -52,10 +40,6 @@ spec:
             - name: repo_owner
             - name: repo_name
             - name: gemini_model
-            - name: jira_endpoint
-            - name: jira_project
-            - name: jira_component
-            - name: jira_issuetype
           workspaces:
             - name: source
           steps:
@@ -72,7 +56,7 @@ spec:
                   value: "$(params.repo_url)"
                 - name: revision
                   value: "$(params.revision)"
-            - name: generate-jira-ticket-content
+            - name: generate-issue-content
               image: ghcr.io/astral-sh/uv:debian
               workingDir: $(workspaces.source.path)
               env:
@@ -96,21 +80,8 @@ spec:
                   value: "$(params.revision)"
                 - name: GEMINI_MODEL
                   value: "$(params.gemini_model)"
-                - name: JIRA_ENDPOINT
-                  value: "$(params.jira_endpoint)"
-                - name: JIRA_TOKEN
-                  valueFrom:
-                    secretKeyRef:
-                      name: "jira"
-                      key: "secret"
-                - name: JIRA_PROJECT
-                  value: "$(params.jira_project)"
-                - name: JIRA_COMPONENT
-                  value: "$(params.jira_component)"
-                - name: JIRA_ISSUETYPE
-                  value: "$(params.jira_issuetype)"
               script: |
-                uv run --directory ./hack/pr-ci pr-ci jira-create
+                uv run --directory ./hack/pr-ci pr-ci issue-create
         params:
           - name: repo_url
             value: "$(params.repo_url)"
@@ -124,14 +95,6 @@ spec:
             value: "$(params.repo_name)"
           - name: gemini_model
             value: "$(params.gemini_model)"
-          - name: jira_endpoint
-            value: "$(params.jira_endpoint)"
-          - name: jira_project
-            value: "$(params.jira_project)"
-          - name: jira_component
-            value: "$(params.jira_component)"
-          - name: jira_issuetype
-            value: "$(params.jira_issuetype)"
         workspaces:
           - name: source
             workspace: source

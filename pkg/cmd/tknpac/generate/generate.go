@@ -55,13 +55,13 @@ func Command(_ *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "generate",
 		Aliases: []string{"gen"},
-		Short:   "Generate PipelineRun",
+		Short:   "Generate a PipelineRun",
 		RunE: func(_ *cobra.Command, _ []string) error {
 			gopt.CLIOpts = cli.NewCliOptions()
 			gopt.IOStreams.SetColorEnabled(!gopt.CLIOpts.NoColoring)
 
 			if gopt.generateWithClusterTask {
-				return fmt.Errorf("ClusterTasks is deprecated and not available anymore")
+				return fmt.Errorf("ClusterTasks are deprecated and not available anymore")
 			}
 			cwd, err := os.Getwd()
 			if err != nil {
@@ -75,17 +75,17 @@ func Command(_ *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 		},
 	}
 	cmd.PersistentFlags().StringVar(&gopt.Event.BaseBranch, "branch", "",
-		"The target branch for the PipelineRun to handle (eg: main, nightly)")
+		"Target branch for the PipelineRun to handle (e.g., main, nightly)")
 	cmd.PersistentFlags().StringVar(&gopt.Event.EventType, "event-type", "",
-		"The event type of the repository event to handle (eg: pull_request, push)")
+		"Event type of the repository event to handle (e.g., pull_request, push)")
 	cmd.PersistentFlags().StringVar(&gopt.pipelineRunName, "pipeline-name", "",
-		"The pipeline name")
+		"Pipeline name")
 	cmd.PersistentFlags().StringVarP(&gopt.FileName, "file-name", "f", "",
-		"The file name location")
+		"File name location")
 	cmd.PersistentFlags().BoolVar(&gopt.overwrite, "overwrite", false,
-		"Whether to overwrite the file if it exist")
+		"Whether to overwrite the file if it exists")
 	cmd.PersistentFlags().StringVarP(&gopt.language, "language", "l", "",
-		"Generate for this programming language")
+		"Generate template for this programming language")
 	cmd.PersistentFlags().BoolVarP(&gopt.generateWithClusterTask, "use-clustertasks", "", false,
 		"Deprecated, not available anymore")
 	_ = cmd.PersistentFlags().MarkDeprecated("use-clustertasks", "This flag will be removed in a future release")
@@ -148,9 +148,9 @@ func (o *Opts) branchOrTag() error {
 	o.Event.BaseBranch = mainBranch
 
 	if o.Event.EventType == triggertype.PullRequest.String() {
-		msg = "Enter the target GIT branch for the Pull Request (default: %s): "
+		msg = "Enter the target Git branch for the Pull Request (default: %s): "
 	} else if o.Event.EventType == "push" {
-		msg = "Enter a target GIT branch or a tag for the push (default: %s)"
+		msg = "Enter a target Git branch or tag for the push (default: %s)"
 	}
 
 	if err := prompt.SurveyAskOne(
@@ -207,17 +207,16 @@ func (o *Opts) samplePipeline(recreateTemplate bool) error {
 	if _, err := os.Stat(fpath); !os.IsNotExist(err) && !o.overwrite {
 		if recreateTemplate {
 			var overwrite bool
-			msg := fmt.Sprintf("There is already a file named: %s would you like me to override it?", relpath)
+			msg := fmt.Sprintf("A file named %s already exists. Would you like to override it?", relpath)
 			if err := prompt.SurveyAskOne(&survey.Confirm{Message: msg, Default: false}, &overwrite); err != nil {
 				return err
 			}
 			if !overwrite {
-				fmt.Fprintf(o.IOStreams.ErrOut, "%s Not overwriting file, exiting...\n", cs.WarningIcon())
-				fmt.Fprintf(o.IOStreams.ErrOut, "%s Feel free to use the -f flag if you want to target another file name\n...", cs.InfoIcon())
+				fmt.Fprintf(o.IOStreams.ErrOut, "%s File not overwritten, exiting...\n", cs.WarningIcon())
+				fmt.Fprintf(o.IOStreams.ErrOut, "%s Use the -f flag to specify a different file name.\n", cs.InfoIcon())
 			}
 		} else {
-			fmt.Fprintf(o.IOStreams.Out, "%s There is already a file named: %s, skipping template generation, feel free to use \"%s pac generate\" command to generate sample template.\n", cs.InfoIcon(), relpath,
-				settings.TknBinaryName)
+			fmt.Fprintf(o.IOStreams.Out, "%s File %s already exists, skipping template generation. Use \"%s pac generate\" to generate a sample template.\n", cs.InfoIcon(), relpath, settings.TknBinaryName)
 		}
 		return nil
 	}
