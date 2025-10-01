@@ -7,6 +7,7 @@ from .comments import CommentManager
 from .config import Config
 from .gemini import GeminiAnalyzer, GeminiIssueGenerator
 from .github import GitHubClient
+from .jira import GeminiJiraGenerator, JiraClient
 from .linter import PRLinter
 from .pr_data import PRData
 from .utils import check_file_categories, detect_modified_providers
@@ -211,12 +212,125 @@ This pull request resolves the issue described above. The issue was automaticall
     print(f"Successfully created issue #{issue_number} and posted comment with link.")
 
 
+def run_jira_create() -> None:
+    """Generate and create a JIRA ticket from PR content."""
+    config = Config.from_env(require_gemini=True)
+    if not config:
+        print(
+            "Error: Missing required environment variables (including GEMINI_API_KEY)"
+        )
+        return
+
+    # Validate JIRA configuration
+    required_jira_config = {
+        "JIRA_ENDPOINT": config.jira_endpoint,
+        "JIRA_TOKEN": config.jira_token,
+        "JIRA_PROJECT": config.jira_project,
+    }
+
+    missing_config = [name for name, value in required_jira_config.items() if not value]
+    if missing_config:
+        print(f"Error: Missing required JIRA configuration: {', '.join(missing_config)}")
+        return
+
+    github = GitHubClient(config)
+    pr_data = PRData.from_github(github)
+    if not pr_data:
+        print("Could not fetch PR data for JIRA ticket creation")
+        return
+
+    print(f"Generating JIRA ticket for PR #{config.pr_number}: {pr_data.title}")
+    print(f"Using Gemini model: {config.gemini_model}")
+    print(f"JIRA project: {config.jira_project}")
+    print(f"JIRA component: {config.jira_component or 'None'}")
+    print(f"JIRA issue type: {config.jira_issuetype}")
+
+    # Generate JIRA ticket content with Gemini
+    jira_generator = GeminiJiraGenerator(config.gemini_api_key, config.gemini_model)
+
+    # Check if there's a user query from PR comments (trigger comment)
+    user_query = ""
+    if pr_data.comments:
+        # Look for /jira-create command in comments
+        for comment in pr_data.comments:
+            if "/jira-create" in comment.get("body", ""):
+                # Extract any text after the command
+                body = comment.get("body", "")
+                if "/jira-create" in body:
+                    parts = body.split("/jira-create", 1)
+                    if len(parts) > 1:
+                        user_query = parts[1].strip()
+                break
+
+    jira_data = jira_generator.generate_jira_ticket(pr_data, user_query)
+
+    if not jira_data or not jira_data.get("title") or not jira_data.get("description"):
+        print("Gemini did not generate valid JIRA ticket content.")
+        return
+
+    print(f"Generated JIRA ticket: {jira_data['title']}")
+
+    # Create the actual JIRA ticket
+    jira_client = JiraClient(config)
+    created_ticket = jira_client.create_ticket(
+        summary=jira_data["title"],
+        description=jira_data["description"]
+    )
+
+    if not created_ticket:
+        print("Failed to create JIRA ticket.")
+        return
+
+    ticket_key = created_ticket.get("key")
+    ticket_url = f"{config.jira_endpoint.rstrip('/')}/browse/{ticket_key}"
+
+    print(f"Successfully created JIRA ticket: {ticket_key}")
+    print(f"JIRA URL: {ticket_url}")
+
+    # Post a comment with the created JIRA ticket link
+    comment_manager = CommentManager(github)
+    comment_manager.marker = "<!-- jira-ticket-created -->"
+
+    pretty_comment = f"""{comment_manager.marker}
+## ✅ JIRA Ticket Created
+
+> **AI-generated JIRA ticket has been created for this PR**
+
+### 🎫 Created Ticket
+**[{ticket_key}]({ticket_url})** - {jira_data["title"]}
+
+### 📋 Ticket Details
+- **Project**: {config.jira_project}
+- **Component**: {config.jira_component or "None"}
+- **Issue Type**: {config.jira_issuetype}
+
+### 🔗 Relationship
+This JIRA ticket represents the feature/enhancement being implemented in this pull request.
+
+### 📝 Ticket Content Preview
+<details>
+<summary>Click to view the generated JIRA content</summary>
+
+```
+{jira_data["description"][:1000]}{'...' if len(jira_data["description"]) > 1000 else ''}
+```
+
+</details>
+
+---
+
+<sub>🤖 *JIRA ticket created automatically using `/jira-create` command*</sub>"""
+
+    comment_manager.upsert_comment(pretty_comment)
+    print(f"Successfully created JIRA ticket {ticket_key} and posted comment with link.")
+
+
 def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(description="PR CI utilities")
     parser.add_argument(
         "command",
-        choices=["lint", "update", "all", "issue-create"],
+        choices=["lint", "update", "all", "issue-create", "jira-create"],
         nargs="?",
         default="all",
         help="Which action to run (default: all)",
@@ -231,6 +345,9 @@ def main() -> None:
 
     if args.command == "issue-create":
         run_issue_create()
+
+    if args.command == "jira-create":
+        run_jira_create()
 
 
 if __name__ == "__main__":
