@@ -32,6 +32,7 @@ class JiraClient:
         self,
         summary: str,
         description: str,
+        custom_fields: Optional[Dict[str, Any]] = None,
     ) -> Optional[Dict[str, Any]]:
         """Create a new issue in JIRA."""
         api_url = f"{self.endpoint}/rest/api/2/issue"
@@ -46,6 +47,10 @@ class JiraClient:
         if self.config.jira_component:
             fields["components"] = [{"name": self.config.jira_component}]
 
+        # Add custom fields if provided
+        if custom_fields:
+            fields.update(custom_fields)
+
         payload = {"fields": fields}
 
         try:
@@ -54,7 +59,7 @@ class JiraClient:
             return response.json()
         except requests.exceptions.RequestException as e:
             print(f"Failed to create JIRA ticket: {e}")
-            if hasattr(e, 'response') and e.response is not None:
+            if hasattr(e, "response") and e.response is not None:
                 print(f"Response: {e.response.text}")
             return None
 
@@ -62,11 +67,15 @@ class JiraClient:
 class GeminiJiraGenerator:
     """Generates JIRA tickets using Gemini AI."""
 
-    def __init__(self, api_key: str, model: str = "gemini-2.5-flash-lite-preview-06-17"):
+    def __init__(
+        self, api_key: str, model: str = "gemini-2.5-flash-lite-preview-06-17"
+    ):
         """Initialize with Gemini credentials."""
         self.client = GeminiClient(api_key, model)
 
-    def generate_jira_ticket(self, pr_data: PRData, user_query: str = "") -> Optional[Dict[str, str]]:
+    def generate_jira_ticket(
+        self, pr_data: PRData, user_query: str = ""
+    ) -> Optional[Dict[str, str]]:
         """Generate JIRA ticket content for a PR."""
         # Use SRVKP JIRA template from the project rules
         jira_template = """h1. Story (Required)
@@ -179,13 +188,17 @@ Respond only with the JSON object."""
             # Parse JSON response
             parsed = json.loads(response.strip())
 
-            if not isinstance(parsed, dict) or "title" not in parsed or "description" not in parsed:
+            if (
+                not isinstance(parsed, dict)
+                or "title" not in parsed
+                or "description" not in parsed
+            ):
                 print(f"Invalid JSON structure in Gemini response: {parsed}")
                 return None
 
             return {
                 "title": str(parsed["title"]).strip(),
-                "description": str(parsed["description"]).strip()
+                "description": str(parsed["description"]).strip(),
             }
 
         except json.JSONDecodeError as e:
@@ -247,3 +260,50 @@ Respond only with the JSON object."""
             formatted.append(f"- {commit}")
 
         return "\n".join(formatted)
+
+    def generate_release_note(self, pr_data: PRData) -> Optional[str]:
+        """Generate a Red Hat style release note from PR data."""
+        prompt = f"""Generate a concise 3-line release note for this pull request following Red Hat documentation style.
+
+**Guidelines:**
+- Maximum 3 lines
+- Focus on user-facing benefits and functionality
+- Use clear, professional language
+- Highlight key changes or fixes
+- Avoid technical implementation details
+- Start with action verbs when possible
+- Be specific about what changed/improved
+
+**Pull Request Information:**
+- Title: {pr_data.title}
+- Description: {pr_data.description or "No description provided"}
+- Author: {pr_data.author}
+
+**Recent commits:**
+{self._format_commits(pr_data.commit_messages)}
+
+Generate a release note that clearly communicates the value of this change to end users. Respond with only the release note text, no additional formatting or explanation."""
+
+        try:
+            response = self.client.generate_content(prompt)
+            if not response:
+                return None
+
+            # Clean and validate the response
+            release_note = response.strip()
+
+            # Ensure it's not too long (3 lines max, ~200 chars per line)
+            lines = release_note.split("\n")
+            if len(lines) > 3:
+                release_note = "\n".join(lines[:3])
+
+            # Truncate if still too long
+            if len(release_note) > 600:
+                release_note = release_note[:597] + "..."
+
+            return release_note
+
+        except Exception as e:
+            print(f"Error generating release note: {e}")
+            # Fallback to PR title if generation fails
+            return f"Updated functionality in {pr_data.title}"

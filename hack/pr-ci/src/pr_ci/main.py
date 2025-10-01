@@ -230,7 +230,9 @@ def run_jira_create() -> None:
 
     missing_config = [name for name, value in required_jira_config.items() if not value]
     if missing_config:
-        print(f"Error: Missing required JIRA configuration: {', '.join(missing_config)}")
+        print(
+            f"Error: Missing required JIRA configuration: {', '.join(missing_config)}"
+        )
         return
 
     github = GitHubClient(config)
@@ -270,11 +272,26 @@ def run_jira_create() -> None:
 
     print(f"Generated JIRA ticket: {jira_data['title']}")
 
+    # Generate release note for custom field
+    print("Generating release note...")
+    release_note = jira_generator.generate_release_note(pr_data)
+    if release_note:
+        print(f"Generated release note: {release_note[:100]}...")
+    else:
+        print("Warning: Could not generate release note, using fallback")
+        release_note = f"Updated functionality in {pr_data.title}"
+
+    # Build custom fields
+    custom_fields = config.build_jira_custom_fields(
+        pr_url=pr_data.url, release_note=release_note
+    )
+
     # Create the actual JIRA ticket
     jira_client = JiraClient(config)
     created_ticket = jira_client.create_ticket(
         summary=jira_data["title"],
-        description=jira_data["description"]
+        description=jira_data["description"],
+        custom_fields=custom_fields,
     )
 
     if not created_ticket:
@@ -303,6 +320,8 @@ def run_jira_create() -> None:
 - **Project**: {config.jira_project}
 - **Component**: {config.jira_component or "None"}
 - **Issue Type**: {config.jira_issuetype}
+- **Git PR**: {pr_data.url}
+- **Release Note**: {release_note}
 
 ### 🔗 Relationship
 This JIRA ticket represents the feature/enhancement being implemented in this pull request.
@@ -312,7 +331,7 @@ This JIRA ticket represents the feature/enhancement being implemented in this pu
 <summary>Click to view the generated JIRA content</summary>
 
 ```
-{jira_data["description"][:1000]}{'...' if len(jira_data["description"]) > 1000 else ''}
+{jira_data["description"][:1000]}{"..." if len(jira_data["description"]) > 1000 else ""}
 ```
 
 </details>
@@ -322,7 +341,9 @@ This JIRA ticket represents the feature/enhancement being implemented in this pu
 <sub>🤖 *JIRA ticket created automatically using `/jira-create` command*</sub>"""
 
     comment_manager.upsert_comment(pretty_comment)
-    print(f"Successfully created JIRA ticket {ticket_key} and posted comment with link.")
+    print(
+        f"Successfully created JIRA ticket {ticket_key} and posted comment with link."
+    )
 
 
 def main() -> None:

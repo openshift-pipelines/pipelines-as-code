@@ -8,6 +8,12 @@ from typing import Optional
 
 DEFAULT_MODEL = "gemini-2.5-flash-lite-preview-06-17"
 
+# JIRA Custom Fields
+JIRA_CUSTOM_FIELDS = {
+    "git_pr": "customfield_12310220",  # Git PR URL field
+    "release_note": "customfield_12317313",  # Release Note field
+}
+
 
 @dataclass
 class Config:
@@ -82,3 +88,19 @@ class Config:
             jira_component=jira_component,
             jira_issuetype=jira_issuetype,
         )
+
+    def build_jira_custom_fields(
+        self, pr_url: str, release_note: str
+    ) -> dict[str, str]:
+        """Build custom fields dictionary for JIRA ticket creation."""
+        custom_fields = {}
+
+        # Git PR URL field
+        if pr_url:
+            custom_fields[JIRA_CUSTOM_FIELDS["git_pr"]] = pr_url
+
+        # Release Note field
+        if release_note:
+            custom_fields[JIRA_CUSTOM_FIELDS["release_note"]] = release_note
+
+        return custom_fields
