@@ -28,6 +28,12 @@ class Config:
             "hack",
         }
     )
+    # JIRA configuration
+    jira_endpoint: str = ""
+    jira_token: str = ""
+    jira_project: str = ""
+    jira_component: str = ""
+    jira_issuetype: str = "Story"
 
     @classmethod
     def from_env(cls, require_gemini: bool = False) -> Optional["Config"]:
@@ -54,6 +60,13 @@ class Config:
             label.strip() for label in excluded_env.split(",") if label.strip()
         }
 
+        # JIRA configuration
+        jira_endpoint = os.environ.get("JIRA_ENDPOINT", "")
+        jira_token = os.environ.get("JIRA_TOKEN", "")
+        jira_project = os.environ.get("JIRA_PROJECT", "")
+        jira_component = os.environ.get("JIRA_COMPONENT", "")
+        jira_issuetype = os.environ.get("JIRA_ISSUETYPE", "Story")
+
         return cls(
             github_token=github_token,
             repo_owner=repo_owner,
@@ -63,4 +76,9 @@ class Config:
             gemini_model=gemini_model,
             max_labels=max_labels,
             excluded_labels=excluded_labels,
+            jira_endpoint=jira_endpoint,
+            jira_token=jira_token,
+            jira_project=jira_project,
+            jira_component=jira_component,
+            jira_issuetype=jira_issuetype,
         )
