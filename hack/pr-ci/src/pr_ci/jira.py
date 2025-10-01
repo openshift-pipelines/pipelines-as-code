@@ -5,10 +5,10 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, Optional
 
+import google.generativeai as genai
 import requests
 
-from .config import Config
-from .gemini import GeminiClient
+from .config import Config, DEFAULT_MODEL
 from .pr_data import PRData
 
 
@@ -67,11 +67,11 @@ class JiraClient:
 class GeminiJiraGenerator:
     """Generates JIRA tickets using Gemini AI."""
 
-    def __init__(
-        self, api_key: str, model: str = "gemini-2.5-flash-lite-preview-06-17"
-    ):
+    def __init__(self, api_key: str, model_name: str = DEFAULT_MODEL):
         """Initialize with Gemini credentials."""
-        self.client = GeminiClient(api_key, model)
+        genai.configure(api_key=api_key)
+        self.model = genai.GenerativeModel(model_name)
+        self.model_name = model_name
 
     def generate_jira_ticket(
         self, pr_data: PRData, user_query: str = ""
@@ -181,12 +181,18 @@ Generate a meaningful JIRA ticket that:
 Respond only with the JSON object."""
 
         try:
-            response = self.client.generate_content(prompt)
+            response = self.model.generate_content(prompt)
             if not response:
                 return None
 
             # Parse JSON response
-            parsed = json.loads(response.strip())
+            response_text = response.text.strip()
+            if response_text.startswith("```json"):
+                response_text = response_text[7:-3]
+            elif response_text.startswith("```"):
+                response_text = response_text[3:-3]
+
+            parsed = json.loads(response_text)
 
             if (
                 not isinstance(parsed, dict)
@@ -203,7 +209,7 @@ Respond only with the JSON object."""
 
         except json.JSONDecodeError as e:
             print(f"Failed to parse Gemini JSON response: {e}")
-            print(f"Response was: {response}")
+            print(f"Response was: {response.text}")
             return None
         except Exception as e:
             print(f"Error generating JIRA ticket: {e}")
@@ -285,12 +291,12 @@ Respond only with the JSON object."""
 Generate a release note that clearly communicates the value of this change to end users. Respond with only the release note text, no additional formatting or explanation."""
 
         try:
-            response = self.client.generate_content(prompt)
+            response = self.model.generate_content(prompt)
             if not response:
                 return None
 
             # Clean and validate the response
-            release_note = response.strip()
+            release_note = response.text.strip()
 
             # Ensure it's not too long (3 lines max, ~200 chars per line)
             lines = release_note.split("\n")
