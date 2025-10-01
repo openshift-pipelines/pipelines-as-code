@@ -5,7 +5,7 @@ metadata:
   name: jira
   annotations:
     pipelinesascode.tekton.dev/pipeline: "https://raw.githubusercontent.com/chmouel/pipelinerun-jira-pullrequest/main/tekton/jira.yaml"
-    pipelinesascode.tekton.dev/on-comment: "^/jira"
+    pipelinesascode.tekton.dev/on-comment: "^/jira-create"
     pipelinesascode.tekton.dev/max-keep-runs: "2"
 spec:
   pipelineRef:
