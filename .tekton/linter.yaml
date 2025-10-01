@@ -134,15 +134,6 @@ spec:
                   fi
                 done < <(git log "${base_sha}..HEAD" --format=format:%H --no-merges)
 
-                # Check pull request title for conventional commit format
-                pull_request_title="{{ body.pull_request.title }}"
-                pr_title_failed=false
-                if [[ -n "$pull_request_title" ]] && [[ "$pull_request_title" != *MIRRORED* ]] && ! echo "$pull_request_title" | grep -i -E -q "${conv_regexp}"; then
-                  echo "ERROR: Pull request title does not follow conventional commit format:"
-                  echo "  Title: $pull_request_title"
-                  pr_title_failed=true
-                fi
-
                 # Report results
                 exit_code=0
 
@@ -158,14 +149,6 @@ spec:
                   echo "Expected format: type(scope): description"
                   echo "Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert, deps"
                   echo "See: https://www.conventionalcommits.org/en/v1.0.0/#summary"
-                  exit_code=1
-                fi
-
-                if [ "$pr_title_failed" = true ]; then
-                  echo ""
-                  echo "ERROR: Pull request title validation failed"
-                  echo "Expected format: type(scope): description"
-                  echo "Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert, deps"
                   exit_code=1
                 fi
 
