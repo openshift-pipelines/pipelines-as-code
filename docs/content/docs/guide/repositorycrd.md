@@ -159,6 +159,9 @@ spec:
       comment_strategy: "disable_all"
 ```
 
+Note: The `disable_all` strategy applies only to comments about a PipelineRun's status (e.g., "started," "succeeded").
+If your PipelineRun YAML definition fails validation, a comment detailing the error will always be posted to the merge request.
+
 ## Disabling all comments for PipelineRuns in GitHub Pull Requests on GitHub Webhook Setup
 
 `comment_strategy` allows you to disable the comments on GitHub PR for a Repository
