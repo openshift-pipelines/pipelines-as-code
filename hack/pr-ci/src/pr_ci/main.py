@@ -26,6 +26,10 @@ def run_lint() -> None:
         print("Could not fetch PR info for linting")
         return
 
+    if pr_data.is_mirrored:
+        print(f"Skipping lint checks for mirrored PR: {pr_data.title}")
+        return
+
     linter = PRLinter(pr_data, github)
     linter.check_all()
     linter.report()
@@ -44,6 +48,10 @@ def run_update() -> None:
     pr_data = PRData.from_github(github)
     if not pr_data:
         print("Could not fetch PR data")
+        return
+
+    if pr_data.is_mirrored:
+        print(f"Skipping label update for mirrored PR: {pr_data.title}")
         return
 
     print(f"Analyzing PR #{config.pr_number}: {pr_data.title}")
@@ -145,6 +153,10 @@ def run_issue_create() -> None:
         print("Could not fetch PR data for issue creation")
         return
 
+    if pr_data.is_mirrored:
+        print(f"Skipping issue creation for mirrored PR: {pr_data.title}")
+        return
+
     print(f"Generating issue for PR #{config.pr_number}: {pr_data.title}")
 
     # Generate issue content with Gemini
@@ -239,6 +251,10 @@ def run_jira_create() -> None:
     pr_data = PRData.from_github(github)
     if not pr_data:
         print("Could not fetch PR data for JIRA ticket creation")
+        return
+
+    if pr_data.is_mirrored:
+        print(f"Skipping JIRA ticket creation for mirrored PR: {pr_data.title}")
         return
 
     print(f"Generating JIRA ticket for PR #{config.pr_number}: {pr_data.title}")
