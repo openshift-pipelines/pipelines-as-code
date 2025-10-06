@@ -7,6 +7,8 @@ from typing import List, Optional
 
 from .github import GitHubClient
 
+MIRRORED_TAGS = ("🪞 [MIRRORED]", "[MIRRORED]")
+
 
 @dataclass
 class PRData:
@@ -71,3 +73,8 @@ class PRData:
         # This would require additional GitHub API calls to fetch comments
         # For now, return empty list as comments aren't currently fetched in from_github
         return []
+
+    @property
+    def is_mirrored(self) -> bool:
+        """Check if this is a mirrored PR based on title."""
+        return any(self.title.startswith(tag) for tag in MIRRORED_TAGS)
