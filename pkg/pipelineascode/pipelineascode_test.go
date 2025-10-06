@@ -1,6 +1,7 @@
 package pipelineascode
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -35,7 +36,9 @@ import (
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -96,6 +99,28 @@ func testSetupCommonGhReplies(t *testing.T, mux *http.ServeMux, runevent info.Ev
 		})
 }
 
+// getSecretTestRunEvent returns a common runevent for secret-related test cases.
+func getSecretTestRunEvent() info.Event {
+	return info.Event{
+		Event: &github.PullRequestEvent{
+			PullRequest: &github.PullRequest{
+				Number: github.Ptr(666),
+			},
+		},
+		SHA:               "fromwebhook",
+		Organization:      "owner",
+		Sender:            "owner",
+		Repository:        "repo",
+		URL:               "https://service/documentation",
+		HeadBranch:        "press",
+		BaseBranch:        "main",
+		EventType:         "pull_request",
+		TriggerTarget:     "pull_request",
+		PullRequestNumber: 666,
+		InstallationID:    1234,
+	}
+}
+
 func TestRun(t *testing.T) {
 	var hubCatalogs sync.Map
 	hubCatalogs.Store(
@@ -128,6 +153,7 @@ func TestRun(t *testing.T) {
 		concurrencyLimit             int
 		expectedLogSnippet           string
 		expectedPostedComment        string // TODO: multiple posted comments when we need it
+		secretCreationError          error  // Error to inject for secret creation
 	}{
 		{
 			name: "pull request/fail-to-start-apps",
@@ -540,6 +566,21 @@ func TestRun(t *testing.T) {
 			},
 			tektondir: "testdata/pending_pipelinerun",
 		},
+		{
+			name:                "pull request/secret already exists - should emit warning and continue",
+			runevent:            getSecretTestRunEvent(),
+			tektondir:           "testdata/pull_request",
+			finalStatus:         "neutral",
+			secretCreationError: errors.NewAlreadyExists(schema.GroupResource{Group: "", Resource: "secrets"}, "test-secret"),
+		},
+		{
+			name:                "pull request/secret creation failure - should return error",
+			runevent:            getSecretTestRunEvent(),
+			tektondir:           "testdata/pull_request",
+			finalStatus:         "failure",
+			finalStatusText:     "creating basic auth secret",
+			secretCreationError: fmt.Errorf("connection timeout"),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -656,10 +697,20 @@ func TestRun(t *testing.T) {
 			ctx = info.StoreCurrentControllerName(ctx, "default")
 			ctx = info.StoreNS(ctx, repo.InstallNamespace)
 
-			k8int := &kitesthelper.KinterfaceTest{
+			kintTest := kitesthelper.KinterfaceTest{
 				ConsoleURL:               "https://console.url",
 				ExpectedNumberofCleanups: tt.expectedNumberofCleanups,
 				GetSecretResult:          secrets,
+			}
+
+			var k8int kubeinteraction.Interface
+			if tt.secretCreationError != nil {
+				k8int = &KinterfaceTestWithError{
+					KinterfaceTest:    kintTest,
+					CreateSecretError: tt.secretCreationError,
+				}
+			} else {
+				k8int = &kintTest
 			}
 
 			// InstallationID > 0 is used to detect if we are a GitHub APP
@@ -787,4 +838,14 @@ func TestGetExecutionOrderPatch(t *testing.T) {
 			assert.DeepEqual(t, expected, result)
 		})
 	}
+}
+
+// KinterfaceTestWithError extends KinterfaceTest to allow injection of specific errors.
+type KinterfaceTestWithError struct {
+	kitesthelper.KinterfaceTest
+	CreateSecretError error
+}
+
+func (k *KinterfaceTestWithError) CreateSecret(_ context.Context, _ string, _ *corev1.Secret) error {
+	return k.CreateSecretError
 }
