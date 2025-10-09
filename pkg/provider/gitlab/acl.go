@@ -47,19 +47,22 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(ctx context.Context, e
 		nextPage = resp.NextPage
 	}
 
-	for _, comment := range discussions {
-		// TODO: maybe we do threads in the future but for now we just check the top thread for ops related comments
-		topthread := comment.Notes[0]
-		if acl.MatchRegexp(acl.OKToTestCommentRegexp, topthread.Body) {
-			commenterEvent := info.NewEvent()
-			commenterEvent.Event = event.Event
-			commenterEvent.Sender = topthread.Author.Username
-			commenterEvent.BaseBranch = event.BaseBranch
-			commenterEvent.HeadBranch = event.HeadBranch
-			commenterEvent.DefaultBranch = event.DefaultBranch
-			// TODO: we could probably do with caching when checking all issues?
-			if v.checkMembership(ctx, commenterEvent, topthread.Author.ID) {
-				return true, nil
+	for _, discussion := range discussions {
+		// Iterate through every note in the discussion thread and evaluate them.
+		// If a note contains an OK-to-test command, verify the commenter's permission
+		// (either project membership or presence in OWNERS/OWNERS_ALIASES).
+		for _, note := range discussion.Notes {
+			if acl.MatchRegexp(acl.OKToTestCommentRegexp, note.Body) {
+				commenterEvent := info.NewEvent()
+				commenterEvent.Event = event.Event
+				commenterEvent.Sender = note.Author.Username
+				commenterEvent.BaseBranch = event.BaseBranch
+				commenterEvent.HeadBranch = event.HeadBranch
+				commenterEvent.DefaultBranch = event.DefaultBranch
+				// We could add caching for membership checks in the future.
+				if v.checkMembership(ctx, commenterEvent, note.Author.ID) {
+					return true, nil
+				}
 			}
 		}
 	}

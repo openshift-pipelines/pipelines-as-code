@@ -29,6 +29,7 @@ func TestIsAllowed(t *testing.T) {
 		commentContent  string
 		commentAuthor   string
 		commentAuthorID int
+		threadFirstNote string
 	}{
 		{
 			name:    "check client has been set",
@@ -77,6 +78,23 @@ func TestIsAllowed(t *testing.T) {
 			commentAuthorID: 1111,
 		},
 		{
+			name:       "allowed when /ok-to-test is in a reply note",
+			allowed:    true,
+			wantClient: true,
+			fields: fields{
+				userID:          6666,
+				targetProjectID: 2525,
+			},
+			args: args{
+				event: &info.Event{Sender: "noowner", PullRequestNumber: 2},
+			},
+			allowMemberID:   1111,
+			threadFirstNote: "random comment",
+			commentContent:  "/ok-to-test",
+			commentAuthor:   "admin",
+			commentAuthorID: 1111,
+		},
+		{
 			name:       "disallowed from non authorized note",
 			wantClient: true,
 			fields: fields{
@@ -111,8 +129,15 @@ func TestIsAllowed(t *testing.T) {
 					thelp.MuxGetFile(mux, tt.fields.targetProjectID, "OWNERS", tt.ownerFile, false)
 				}
 				if tt.commentContent != "" {
-					thelp.MuxDiscussionsNote(mux, tt.fields.targetProjectID,
-						tt.args.event.PullRequestNumber, tt.commentAuthor, tt.commentAuthorID, tt.commentContent)
+					if tt.threadFirstNote != "" {
+						thelp.MuxDiscussionsNoteWithReply(mux, tt.fields.targetProjectID,
+							tt.args.event.PullRequestNumber,
+							"someuser", 2222, tt.threadFirstNote,
+							tt.commentAuthor, tt.commentAuthorID, tt.commentContent)
+					} else {
+						thelp.MuxDiscussionsNote(mux, tt.fields.targetProjectID,
+							tt.args.event.PullRequestNumber, tt.commentAuthor, tt.commentAuthorID, tt.commentContent)
+					}
 				} else {
 					thelp.MuxDiscussionsNoteEmpty(mux, tt.fields.targetProjectID, tt.args.event.PullRequestNumber)
 				}

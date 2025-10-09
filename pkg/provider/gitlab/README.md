@@ -32,7 +32,6 @@
 
 ### Until there is a ask for it
 
-- /ok-to-test in threads comments (only top level comment is supported atm).
 - caching API calls for permissions.
 
 ## NOTES
