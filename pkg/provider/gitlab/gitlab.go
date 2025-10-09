@@ -62,6 +62,9 @@ type Provider struct {
 	eventEmitter      *events.EventEmitter
 	repo              *v1alpha1.Repository
 	triggerEvent      string
+	// memberCache caches membership/permission checks by user ID within the
+	// current provider instance lifecycle to avoid repeated API calls.
+	memberCache map[int]bool
 }
 
 func (v *Provider) Client() *gitlab.Client {
