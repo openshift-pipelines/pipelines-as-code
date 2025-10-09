@@ -66,6 +66,18 @@ func MuxDisallowUserID(mux *http.ServeMux, projectID, userID int) {
 	})
 }
 
+// MuxAllowUserIDCounting registers a handler that returns an allowed member and increments
+// the provided counter each time it is called. Useful to assert caching behavior.
+func MuxAllowUserIDCounting(mux *http.ServeMux, projectID, userID int, counter *int) {
+	path := fmt.Sprintf("/projects/%d/members/all/%d", projectID, userID)
+	mux.HandleFunc(path, func(rw http.ResponseWriter, _ *http.Request) {
+		if counter != nil {
+			*counter++
+		}
+		fmt.Fprintf(rw, `{"id": %d}`, userID)
+	})
+}
+
 func MuxListTektonDir(_ *testing.T, mux *http.ServeMux, pid int, ref, prs string, wantTreeAPIErr, wantFilesAPIErr bool) {
 	mux.HandleFunc(fmt.Sprintf("/projects/%d/repository/tree", pid), func(rw http.ResponseWriter, r *http.Request) {
 		if wantTreeAPIErr {
