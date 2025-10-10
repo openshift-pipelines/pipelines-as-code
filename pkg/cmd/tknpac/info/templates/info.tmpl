@@ -14,7 +14,7 @@
  Webhook URL: {{ .Info.HookConfig.URL }}
 {{- end }}
 {{- end }}
-{{- if (gt (len .Repos) 1) }}
+{{- if (gt (len .Repos) 0) }}
 
 {{ $.CS.Underline "Repositories CR" }}: {{ len .Repos  }}
    Namespace	URL
