@@ -175,7 +175,9 @@ jobs:
           TEST_BITBUCKET_SERVER_API_URL: ${{ secrets.BITBUCKET_SERVER_API_URL }}
           TEST_BITBUCKET_SERVER_WEBHOOK_SECRET: ${{ secrets.BITBUCKET_SERVER_WEBHOOK_SECRET }}
         run: |
-          ./hack/gh-workflow-ci.sh run_e2e_tests
+          set -o pipefail
+          LOG_FILE="/tmp/e2e-tests-${{ matrix.provider }}.log"
+          ./hack/gh-workflow-ci.sh run_e2e_tests 2>&1 | tee "${LOG_FILE}"
 
       - name: Run E2E Tests on nightly
         # This step still runs specifically for schedule or workflow_dispatch
@@ -194,7 +196,30 @@ jobs:
           TEST_BITBUCKET_SERVER_API_URL: ${{ secrets.BITBUCKET_SERVER_API_URL }}
           TEST_BITBUCKET_SERVER_WEBHOOK_SECRET: ${{ secrets.BITBUCKET_SERVER_WEBHOOK_SECRET }}
         run: |
-          ./hack/gh-workflow-ci.sh run_e2e_tests
+          set -o pipefail
+          LOG_FILE="/tmp/e2e-tests-${{ matrix.provider }}.log"
+          ./hack/gh-workflow-ci.sh run_e2e_tests 2>&1 | tee "${LOG_FILE}"
+
+      - name: Summarize failing tests
+        if: ${{ failure() }}
+        id: failing-tests
+        run: |
+          LOG_FILE="/tmp/e2e-tests-${{ matrix.provider }}.log"
+          if [[ ! -f "${LOG_FILE}" || ! -s "${LOG_FILE}" ]]; then
+            echo "slack_message=E2E job failed but no test log was captured for provider '${{ matrix.provider }}'." >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          mapfile -t FAILURES < <(grep -E '^--- FAIL: ' "${LOG_FILE}" | sed -E 's/^--- FAIL: ([^[:space:]]+).*/\1/' | sort -u)
+
+          if [[ ${#FAILURES[@]} -eq 0 ]]; then
+            echo "slack_message=E2E job failed without explicit go test failures; check workflow logs for provider '${{ matrix.provider }}'." >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          joined_failures=$(printf '%s, ' "${FAILURES[@]}")
+          joined_failures=${joined_failures%, }
+          echo "slack_message=Failing tests for provider ${{ matrix.provider }}: ${joined_failures}" >> "${GITHUB_OUTPUT}"
 
       - name: Collect logs
         if: ${{ always() }}
@@ -216,11 +241,14 @@ jobs:
           name: logs-e2e-tests-${{ matrix.provider }}
           path: /tmp/logs
 
-      - name: Report Status
+      - name: Report E2E test results to Slack
         if: ${{ always() && github.ref_name == 'main' && github.event_name == 'schedule' }}
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
           notify_when: "failure"
+          message_format: |
+            {emoji} *{workflow}* {status_message} in <{repo_url}|{repo}@{branch}> on <{commit_url}|{commit_sha}>
+            ${{ steps.failing-tests.outputs.slack_message }}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
