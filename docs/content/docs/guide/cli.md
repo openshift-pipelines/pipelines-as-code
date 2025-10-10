@@ -458,7 +458,7 @@ tkn pac cel -b <body.json> -H <headers.txt>
 If run in a terminal, you'll get a prompt:
 
 ```console
-CEL expression> 
+CEL expression>
 ```
 
 * Use ↑/↓ arrows to navigate history.
@@ -485,7 +485,7 @@ echo 'event == "pull_request"' | tkn pac cel -b body.json -H headers.txt
 
 * **Webhook payload** (`body.*`): All fields from the webhook JSON.
 * **HTTP headers** (`headers.*`): All HTTP headers.
-* **Files** (`files.*`): Always empty in CLI mode.  
+* **Files** (`files.*`): Always empty in CLI mode.
   **Note:** `fileChanged`, `fileDeleted`, `fileModified` and similar functions are **not implemented yet** in the CLI.
 * **PAC Parameters** (`pac.*`): All variables for backward compatibility.
 

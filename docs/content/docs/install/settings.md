@@ -158,7 +158,7 @@ There are a few things you can configure through the ConfigMap
   both a push event and a pull request. If a push event comes from a commit that is
   part of an open pull request, the push event will be skipped as it would create
   a duplicate PipelineRun.
-  
+
   This feature works by checking if a pushed commit SHA exists in any open pull request,
   and if so, skipping the push event processing.
 
@@ -207,12 +207,12 @@ Pipelines-as-Code supports fetching tasks and pipelines with its remote annotati
 * `hub-catalog-type`
 
   The type of hub catalog. Supported values are:
-  
+
   * `artifacthub` - For Artifact Hub (default if not specified)
   * `tektonhub` - For Tekton Hub
 
 * By default, both Artifact Hub and Tekton Hub are configured:
-  
+
   * Artifact Hub is the default catalog (no prefix needed, but `artifact://` can be used explicitly)
   * Tekton Hub is available using the `tektonhub://` prefix
 
@@ -223,7 +223,7 @@ Pipelines-as-Code supports fetching tasks and pipelines with its remote annotati
   catalog-1-name: "tekton"
   catalog-1-url: "https://api.custom.hub/v1"
   catalog-1-type: "tektonhub"
-  
+
   catalog-2-id: "artifact"
   catalog-2-name: "tekton-catalog-tasks"
   catalog-2-url: "https://artifacthub.io"
