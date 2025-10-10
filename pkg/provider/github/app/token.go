@@ -10,29 +10,33 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
+	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 )
 
 type Install struct {
-	request   *http.Request
-	run       *params.Run
-	repo      *v1alpha1.Repository
-	ghClient  *github.Provider
-	namespace string
+	request      *http.Request
+	run          *params.Run
+	repo         *v1alpha1.Repository
+	ghClient     *github.Provider
+	namespace    string
+	eventEmitter *events.EventEmitter
 }
 
-func NewInstallation(req *http.Request, run *params.Run, repo *v1alpha1.Repository, gh *github.Provider, namespace string) *Install {
+func NewInstallation(req *http.Request, run *params.Run, repo *v1alpha1.Repository, gh *github.Provider, namespace string, eventEmitter *events.EventEmitter) *Install {
 	if req == nil {
 		req = &http.Request{}
 	}
 	return &Install{
-		request:   req,
-		run:       run,
-		repo:      repo,
-		ghClient:  gh,
-		namespace: namespace,
+		request:      req,
+		run:          run,
+		repo:         repo,
+		ghClient:     gh,
+		namespace:    namespace,
+		eventEmitter: eventEmitter,
 	}
 }
 
@@ -95,7 +99,14 @@ func (ip *Install) GetAndUpdateInstallationID(ctx context.Context) (string, stri
 	installationID := *installation.ID
 	token, err := ip.ghClient.GetAppToken(ctx, ip.run.Clients.Kube, enterpriseHost, installationID, ip.namespace)
 	if err != nil {
-		logger.Warnf("Could not get a token for installation ID %d: %v", installationID, err)
+		msg := fmt.Sprintf("Could not get a token for installation ID %d: %v", installationID, err)
+		logger.Warn(msg)
+		
+		// Emit an event for better visibility of GitHub App token issues
+		if ip.eventEmitter != nil {
+			ip.eventEmitter.EmitMessage(ip.repo, zap.WarnLevel, "GitHubAppTokenGenerationFailed", msg)
+		}
+		
 		// Return with the installation ID even if token generation fails,
 		// as some operations might only need the ID.
 		return enterpriseHost, "", installationID, nil
