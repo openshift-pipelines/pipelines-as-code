@@ -124,6 +124,29 @@ func MuxDiscussionsNote(mux *http.ServeMux, pid, mrID int, author string, author
 	})
 }
 
+// MuxDiscussionsNoteWithReply returns a single discussion where the first note
+// does not contain the trigger but a subsequent reply does. This simulates
+// /ok-to-test being posted in a thread reply.
+func MuxDiscussionsNoteWithReply(mux *http.ServeMux, pid, mrID int, firstAuthor string, firstAuthorID int, firstContent, okAuthor string, okAuthorID int, okContent string) {
+	path := fmt.Sprintf("/projects/%d/merge_requests/%d/discussions", pid, mrID)
+	mux.HandleFunc(path, func(rw http.ResponseWriter, _ *http.Request) {
+		fmt.Fprintf(rw, `[
+            {
+                "notes": [
+                    {
+                        "body": %q,
+                        "author": {"username": %q, "id": %d}
+                    },
+                    {
+                        "body": %q,
+                        "author": {"username": %q, "id": %d}
+                    }
+                ]
+            }
+        ]`, firstContent, firstAuthor, firstAuthorID, okContent, okAuthor, okAuthorID)
+	})
+}
+
 func MuxGetFile(mux *http.ServeMux, pid int, fname, content string, wantErr bool) {
 	mux.HandleFunc(fmt.Sprintf("/projects/%d/repository/files/%s/raw", pid, fname), func(rw http.ResponseWriter, _ *http.Request) {
 		if wantErr {
