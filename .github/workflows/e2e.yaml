@@ -79,34 +79,58 @@ jobs:
         uses: actions/github-script@v8
         with:
           script: |
-            const actor = context.payload.pull_request.user.login;
-            const org = context.repo.owner;
+            const context = github.context;
 
-            // Allow a specific list of trusted bots to bypass the permission check.
-            const trustedBots = ['dependabot[bot]']; // Add any other trusted bot accounts here
-            if (trustedBots.includes(actor)) {
-              core.info(`User @${actor} is a trusted bot, allowing.`);
-              return;
-            }
+            async function run() {
+              const actor = context.payload.pull_request.user.login;
+              const repoOwner = context.repo.owner;
+              const repoName = context.repo.repo;
+              const targetOrg = 'openshift-pipelines';
 
-            try {
-              // Directly check the user's permission level on the repository.
-              // This covers both org members and external collaborators with sufficient access.
-              const response = await github.rest.repos.getCollaboratorPermissionLevel({
-                owner: org,
-                repo: context.repo.repo,
-                username: actor,
-              });
-
-              const permission = response.data.permission;
-              if (permission !== 'admin' && permission !== 'write') {
-                core.setFailed(`❌ User @${actor} has only '${permission}' repository permission. 'write' or 'admin' is required.`);
-              } else {
-                core.info(`✅ User @${actor} has '${permission}' repository permission. Proceeding.`);
+              // Condition 1: Check if the user is a trusted bot.
+              const trustedBots = ['dependabot[bot]', 'renovate[bot]'];
+              if (trustedBots.includes(actor)) {
+                core.info(`✅ Condition met: User @${actor} is a trusted bot. Proceeding.`);
+                return; // Success
               }
-            } catch (error) {
-              core.setFailed(`Permission check failed for @${actor}. They are likely not a collaborator on the repository. Error: ${error.message}`);
+
+              // Condition 2: Check for public membership in the target organization.
+              core.info(`User @${actor} is not a trusted bot. Checking for membership in '${targetOrg}'...`);
+              try {
+                await github.rest.orgs.checkMembershipForUser({
+                  org: targetOrg,
+                  username: actor,
+                });
+                core.info(`✅ Condition met: User @${actor} is a public member of '${targetOrg}'. Proceeding.`);
+                return; // Success
+              } catch (error) {
+                // This is not a failure, just one unmet condition. Log and continue.
+                core.info(`ⓘ User @${actor} is not a public member of '${targetOrg}'. Checking repository permissions as a fallback.`);
+              }
+
+              // Condition 3: Check for write/admin permission on the repository.
+              try {
+                const response = await github.rest.repos.getCollaboratorPermissionLevel({
+                  owner: repoOwner,
+                  repo: repoName,
+                  username: actor,
+                });
+
+                const permission = response.data.permission;
+                if (permission === 'admin' || permission === 'write') {
+                  core.info(`✅ Condition met: User @${actor} has '${permission}' repository permission. Proceeding.`);
+                  return; // Success
+                } else {
+                  // If we reach here, no conditions were met. This is the final failure.
+                  core.setFailed(`❌ Permission check failed. User @${actor} did not meet any required conditions (trusted bot, org member, or repo write access).`);
+                }
+              } catch (error) {
+                // This error means they are not even a collaborator.
+                core.setFailed(`❌ Permission check failed. User @${actor} is not a collaborator on this repository and did not meet other conditions.`);
+              }
             }
+
+            run();
 
       - uses: actions/setup-go@v6
         with:
