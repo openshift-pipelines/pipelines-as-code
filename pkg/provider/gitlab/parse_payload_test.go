@@ -201,12 +201,15 @@ func TestParsePayload(t *testing.T) {
 			wantErrMsg: "error parse_payload: the repository in event payload must not be nil",
 		},
 		{
-			name: "bad/commit comment wrong branch keyword",
+			name:   "bad/commit comment wrong branch keyword",
+			fields: fields{sourceProjectID: 200},
 			args: args{
 				event:   gitlab.EventTypeNote,
 				payload: sample.CommitNoteEventAsJSON("/test brrranch:fix", "create", "{}"),
 			},
-			wantErrMsg: "the GitOps comment brrranch does not contain a branch word",
+			wantErrMsg:     "does not contain a branch or tag word",
+			wantKubeClient: true,
+			wantClient:     true,
 		},
 		{
 			name:   "good/commit comment /test all pipelineruns",
@@ -307,6 +310,82 @@ func TestParsePayload(t *testing.T) {
 			wantKubeClient: true,
 			wantClient:     true,
 		},
+		{
+			name:   "good/commit comment /test on a tag",
+			fields: fields{sourceProjectID: 200},
+			args: args{
+				event:   gitlab.EventTypeNote,
+				payload: sample.CommitNoteEventAsJSON("/test tag:v1.0.0", "create", "{}"),
+			},
+			want: &info.Event{
+				EventType:     opscomments.TestSingleCommentEventType.String(),
+				TriggerTarget: triggertype.Push,
+				Organization:  "hello/this/is/me/ze",
+				Repository:    "project",
+				HeadBranch:    "refs/tags/v1.0.0",
+				BaseBranch:    "refs/tags/v1.0.0",
+			},
+			wantKubeClient: true,
+			wantClient:     true,
+		},
+		{
+			name:   "good/commit comment /retest on a tag",
+			fields: fields{sourceProjectID: 200},
+			args: args{
+				event:   gitlab.EventTypeNote,
+				payload: sample.CommitNoteEventAsJSON("/retest tag:v1.0.0", "create", "{}"),
+			},
+			want: &info.Event{
+				EventType:     opscomments.RetestSingleCommentEventType.String(),
+				TriggerTarget: triggertype.Push,
+				Organization:  "hello/this/is/me/ze",
+				Repository:    "project",
+				HeadBranch:    "refs/tags/v1.0.0",
+				BaseBranch:    "refs/tags/v1.0.0",
+			},
+			wantKubeClient: true,
+			wantClient:     true,
+		},
+		{
+			name:   "good/commit comment /cancel on a tag",
+			fields: fields{sourceProjectID: 200},
+			args: args{
+				event:   gitlab.EventTypeNote,
+				payload: sample.CommitNoteEventAsJSON("/cancel tag:v1.0.0", "create", "{}"),
+			},
+			want: &info.Event{
+				EventType:     opscomments.CancelCommentSingleEventType.String(),
+				TriggerTarget: triggertype.Push,
+				Organization:  "hello/this/is/me/ze",
+				Repository:    "project",
+				HeadBranch:    "refs/tags/v1.0.0",
+				BaseBranch:    "refs/tags/v1.0.0",
+			},
+			wantKubeClient: true,
+			wantClient:     true,
+		},
+		{
+			name:   "bad/commit comment tag does not exist",
+			fields: fields{sourceProjectID: 200},
+			args: args{
+				event:   gitlab.EventTypeNote,
+				payload: sample.CommitNoteEventAsJSON("/test tag:nonexistent", "create", "{}"),
+			},
+			wantErrMsg:     "error getting tag nonexistent",
+			wantKubeClient: true,
+			wantClient:     true,
+		},
+		{
+			name:   "bad/commit comment SHA does not match tag commit",
+			fields: fields{sourceProjectID: 200},
+			args: args{
+				event:   gitlab.EventTypeNote,
+				payload: sample.CommitNoteEventAsJSON("/test tag:v1.0.0-mismatch", "create", "{}"),
+			},
+			wantErrMsg:     "provided SHA sha is not the tagged commit for the tag v1.0.0-mismatch",
+			wantKubeClient: true,
+			wantClient:     true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -375,6 +454,32 @@ func TestParsePayload(t *testing.T) {
 						bytes, _ := json.Marshal(branch)
 						_, _ = rw.Write(bytes)
 					})
+				// Mock tag API for v1.0.0 (valid tag with matching SHA)
+				mux.HandleFunc("/projects/200/repository/tags/v1.0.0",
+					func(rw http.ResponseWriter, _ *http.Request) {
+						tag := &gitlab.Tag{
+							Name:   "v1.0.0",
+							Commit: &gitlab.Commit{ID: "sha"},
+						}
+						bytes, _ := json.Marshal(tag)
+						_, _ = rw.Write(bytes)
+					})
+				// Mock tag API for v1.0.0-mismatch (tag with non-matching SHA)
+				mux.HandleFunc("/projects/200/repository/tags/v1.0.0-mismatch",
+					func(rw http.ResponseWriter, _ *http.Request) {
+						tag := &gitlab.Tag{
+							Name:   "v1.0.0-mismatch",
+							Commit: &gitlab.Commit{ID: "different-sha"},
+						}
+						bytes, _ := json.Marshal(tag)
+						_, _ = rw.Write(bytes)
+					})
+				// Mock tag API for nonexistent (return 404)
+				mux.HandleFunc("/projects/200/repository/tags/nonexistent",
+					func(rw http.ResponseWriter, _ *http.Request) {
+						rw.WriteHeader(http.StatusNotFound)
+						_, _ = rw.Write([]byte(`{"message":"404 Tag Not Found"}`))
+					})
 				defer tearDown()
 			}
 
@@ -397,6 +502,12 @@ func TestParsePayload(t *testing.T) {
 				}
 				if tt.want.TargetCancelPipelineRun != "" {
 					assert.Equal(t, tt.want.TargetCancelPipelineRun, got.TargetCancelPipelineRun)
+				}
+				if tt.want.HeadBranch != "" {
+					assert.Equal(t, tt.want.HeadBranch, got.HeadBranch)
+				}
+				if tt.want.BaseBranch != "" {
+					assert.Equal(t, tt.want.BaseBranch, got.BaseBranch)
 				}
 			}
 		})
