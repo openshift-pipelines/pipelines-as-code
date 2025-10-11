@@ -124,7 +124,7 @@ The PipelineRun will be restarted regardless of the annotations if the comment `
 
 ### Triggering PipelineRun on Git tags
 
-{{< support_matrix github_app="true" github_webhook="true" gitea="false" gitlab="false" bitbucket_cloud="false" bitbucket_server="false" >}}
+{{< support_matrix github_app="true" github_webhook="true" gitea="false" gitlab="true" bitbucket_cloud="false" bitbucket_server="false" >}}
 
 You can retrigger a PipelineRun against a specific Git tag by commenting on
 the tagged commit using a GitOps command. Pipelines-as-Code will resolve the
