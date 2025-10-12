@@ -34,18 +34,30 @@ func (o *OpenshiftConsole) GetName() string {
 }
 
 func (o *OpenshiftConsole) URL() string {
+	if o.host == "" {
+		return "https://openshift.url.is.not.configured"
+	}
 	return "https://" + o.host
 }
 
 func (o *OpenshiftConsole) DetailURL(pr *tektonv1.PipelineRun) string {
+	if o.host == "" {
+		return fmt.Sprintf(openShiftPipelineDetailViewURL, "openshift.url.is.not.configured", pr.GetNamespace(), pr.GetName())
+	}
 	return fmt.Sprintf(openShiftPipelineDetailViewURL, o.host, pr.GetNamespace(), pr.GetName())
 }
 
 func (o *OpenshiftConsole) TaskLogURL(pr *tektonv1.PipelineRun, taskRunStatus *tektonv1.PipelineRunTaskRunStatus) string {
+	if o.host == "" {
+		return fmt.Sprintf(openShiftPipelineTaskLogURL, o.DetailURL(pr), taskRunStatus.PipelineTaskName)
+	}
 	return fmt.Sprintf(openShiftPipelineTaskLogURL, o.DetailURL(pr), taskRunStatus.PipelineTaskName)
 }
 
 func (o *OpenshiftConsole) NamespaceURL(pr *tektonv1.PipelineRun) string {
+	if o.host == "" {
+		return fmt.Sprintf(openShiftPipelineNamespaceViewURL, "openshift.url.is.not.configured", pr.GetNamespace())
+	}
 	return fmt.Sprintf(openShiftPipelineNamespaceViewURL, o.host, pr.GetNamespace())
 }
 

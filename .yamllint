@@ -3,6 +3,7 @@ ignore: |
   .git
   test/testdata/failures/pipeline_bad_format.yaml
   test/testdata/failures/bad-yaml.yaml
+  test/testdata/failures/bad-pipelinerun.yaml
   *badyaml.yaml
   .github/workflows/*
 
