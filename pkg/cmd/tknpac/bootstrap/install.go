@@ -181,7 +181,7 @@ func installPac(ctx context.Context, run *params.Run, opts *bootstrapOpts) error
 
 	fmt.Fprintf(opts.ioStreams.Out, "✓ Pipelines-as-Code %s has been installed\n", latestVersion)
 
-	if (!isOpenShift && opts.RouteName == "") || opts.forceInstallGosmee {
+	if opts.forceInstallGosmee {
 		if err := installGosmeeForwarder(ctx, opts); err != nil {
 			return err
 		}

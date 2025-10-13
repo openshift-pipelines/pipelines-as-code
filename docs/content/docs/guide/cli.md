@@ -124,9 +124,14 @@ option to install a webhook forwarder called
 [gosmee](https://github.com/chmouel/gosmee). This forwarder enables connectivity
 between the Pipelines-as-Code controller and GitHub without requiring an
 internet connection. In this scenario, it will set up a forwarding URL on
-<https://hook.pipelinesascode.com> and set it up on GitHub. For OpenShift, it
-will not prompt you unless you explicitly specify the `--force-gosmee` flag
-(which can be useful if you are running [OpenShift Local](https://developers.redhat.com/products/openshift-local/overview) for instance).
+<https://hook.pipelinesascode.com> and set it up on GitHub.
+
+On OpenShift, the bootstrap command automatically detects and uses OpenShift
+Routes (as described above), and will not prompt you to use gosmee. If you need
+to use gosmee instead (for example, when running [OpenShift
+Local](https://developers.redhat.com/products/openshift-local/overview)), you
+can explicitly specify the `--force-gosmee` flag to bypass the OpenShift Route
+detection and force the use of gosmee.
 
 gosmee should not be used in production environments, but it can be useful for
 testing.
