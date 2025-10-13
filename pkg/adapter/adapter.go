@@ -3,6 +3,7 @@ package adapter
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -171,8 +172,17 @@ func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 
 		isIncoming, targettedRepo, err := l.detectIncoming(ctx, request, payload)
 		if err != nil {
-			l.logger.Errorf("error processing incoming webhook: %v", err)
-			return
+			if errors.Is(err, errDeprecatedRequestMode) {
+				// TODO: change this to a request failure once the deprecation is removed
+				// In this specific case the error can be non-nil while the rest of the return values are valid
+				response.Header().Add("Deprecation", "true")
+			} else {
+				if errors.Is(err, errMissingFields) {
+					l.writeResponse(response, http.StatusBadRequest, err.Error())
+				}
+				l.logger.Errorf("error processing incoming webhook: %v", err)
+				return
+			}
 		}
 
 		if isIncoming {
