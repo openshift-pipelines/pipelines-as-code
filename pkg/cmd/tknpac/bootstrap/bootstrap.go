@@ -111,7 +111,7 @@ func install(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 func createSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 	var err error
 
-	if opts.RouteName == "" {
+	if opts.RouteName == "" && !opts.forceInstallGosmee {
 		opts.RouteName, _ = DetectOpenShiftRoute(ctx, run, opts.targetNamespace)
 		if opts.RouteName != "" {
 			opts.autoDetectedRoute = true
