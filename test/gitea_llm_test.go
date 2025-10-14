@@ -1,0 +1,65 @@
+//go:build e2e
+
+package test
+
+import (
+	"fmt"
+	"regexp"
+	"testing"
+
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
+	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+func TestGiteaLLM(t *testing.T) {
+	llmRoleName := "make the failure a beautiful success"
+	topts := &tgitea.TestOpts{
+		ExpectEvents: false,
+		TargetEvent:  triggertype.PullRequest.String(),
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml": "testdata/pipelinerun.yaml",
+		},
+		CreateSecret: []corev1.Secret{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "llm-secret",
+				},
+				Data: map[string][]byte{
+					"token": []byte("sk-xxxx"),
+				},
+			},
+		},
+		Settings: &v1alpha1.Settings{
+			AIAnalysis: &v1alpha1.AIAnalysisConfig{
+				Enabled:  true,
+				Provider: "openai",
+				TokenSecretRef: &v1alpha1.LLMSecret{
+					Secret: &v1alpha1.Secret{
+						Name: "llm-secret",
+						Key:  "token",
+					},
+					URL: "http://nonoai.pipelines-as-code:8765/v1",
+				},
+				Roles: []v1alpha1.AnalysisRole{
+					{
+						Name:         llmRoleName,
+						Prompt:       "what is the meaning of life",
+						ContextItems: &v1alpha1.ContextConfig{},
+						Output:       "pr-comment",
+					},
+				},
+			},
+		},
+	}
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+	topts.Regexp = regexp.MustCompile(fmt.Sprintf(".*%s.*", llmRoleName))
+	tgitea.WaitForPullRequestCommentGoldenMatch(t, topts, "testdata/gitea-llm-comment.golden")
+}
+
+// Local Variables:
+// compile-command: "go test -tags=e2e -v -run TestGiteaPush ."
+// End:
