@@ -19,8 +19,7 @@ HUGO_BIN := $(TMPDIR)/hugo/hugo
 PY_FILES := $(shell find . -type f -regex ".*\.py" -not -regex ".*\.venv/.*" -print)
 SH_FILES := $(shell find hack/ -type f -regex ".*\.sh" -not -regex ".*\.venv/.*" -print)
 YAML_FILES := $(shell find . -not -regex '^./vendor/.*' -type f -regex ".*y[a]ml" -print)
-MD_FILES := $(shell find . -type f -regex ".*md"  -not -regex '^./vendor/.*' -not -regex ".*\.venv/.*" -not -regex '^./.vale/.*'  -not -regex "^./docs/themes/.*" -not -regex "^./.git/.*" -print)
-
+MD_FILES := $(shell find . -type f -regex ".*md"  -not -regex '^./tmp/.*' -not -regex '^./vendor/.*' -not -regex ".*\.venv/.*" -not -regex '^./.vale/.*'  -not -regex "^./docs/themes/.*" -not -regex "^./.git/.*" -print)
 
 ifeq ($(PAC_VERSION),)
 	PAC_VERSION="$(shell git describe --tags --exact-match 2>/dev/null || echo nightly-`date +'%Y%m%d'`-`git rev-parse --short HEAD`)"
