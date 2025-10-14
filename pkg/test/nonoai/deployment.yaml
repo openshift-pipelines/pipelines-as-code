@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nonoai
+  namespace: pipelines-as-code
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nonoai
+  template:
+    metadata:
+      labels:
+        app: nonoai
+    spec:
+      containers:
+        - name: server
+          image: "ko://github.com/openshift-pipelines/pipelines-as-code/pkg/test/nonoai"
+          ports:
+            - containerPort: 8765
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nonoai
+  namespace: pipelines-as-code
+spec:
+  selector:
+    app: nonoai
+  ports:
+    - port: 8765
+      targetPort: 8765

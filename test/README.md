@@ -244,6 +244,17 @@ For local debugging, you can:
 1. Set the same environment variables locally
 2. Run `make test-e2e` with specific test filters
 
+### LLM E2E Tests
+
+The LLM E2E tests uses a fake AI called `nonoai` to reply to the e2e tests and make them reliable (and cheap).
+
+Deploy it with ko with `./pkg/test/nonoai/deployment.yaml`
+
+Responses and fake are included in this json file `./pkg/test/nonoai/responses.json`
+
+See an example of an E2E Test using it in
+[./gitea_llm_test.go](./gitea_llm_test.go)
+
 ### Notifications
 
 Failed nightly runs trigger Slack notifications to alert the team of potential regressions.

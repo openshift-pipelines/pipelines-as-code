@@ -27,6 +27,7 @@ import (
 	v1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"github.com/tektoncd/pipeline/pkg/names"
 	"gotest.tools/v3/assert"
+	"gotest.tools/v3/golden"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -63,6 +64,7 @@ type TestOpts struct {
 	Token                 string
 	SHA                   string
 	FileChanges           []scm.FileChange
+	CreateSecret          []corev1.Secret
 }
 
 func PostCommentOnPullRequest(t *testing.T, topt *TestOpts, body string) {
@@ -162,6 +164,15 @@ func TestPR(t *testing.T, topts *TestOpts) (context.Context, func()) {
 
 	topts.Token, err = CreateToken(topts)
 	assert.NilError(t, err)
+
+	for _, sec := range topts.CreateSecret {
+		ns := sec.GetNamespace()
+		if ns == "" {
+			ns = topts.TargetNS
+		}
+		_, err := topts.ParamsRun.Clients.Kube.CoreV1().Secrets(ns).Create(ctx, &sec, metav1.CreateOptions{})
+		assert.NilError(t, err, "failed to create secret %s in namespace %s: %v", sec.GetName(), ns, err)
+	}
 
 	gp := &v1alpha1.GitProvider{
 		Type: "gitea",
@@ -522,6 +533,38 @@ func WaitForPullRequestCommentMatch(t *testing.T, topts *TestOpts) {
 		}
 		if i > 60 {
 			t.Fatalf("gitea driver has not been posted any comment")
+		}
+		time.Sleep(2 * time.Second)
+		i++
+	}
+}
+
+// WaitForPullRequestCommentGoldenMatch will wait for a comment matching exactly (golden style) the content.
+func WaitForPullRequestCommentGoldenMatch(t *testing.T, topts *TestOpts, goldenFile string) {
+	i := 0
+	if topts.Regexp == nil {
+		t.Fatalf("topts.Regexp cannot be nil")
+	}
+
+	for {
+		comments, _, err := topts.GiteaCNX.Client().ListRepoIssueComments(topts.PullRequest.Base.Repository.Owner.UserName, topts.PullRequest.Base.Repository.Name, gitea.ListIssueCommentOptions{})
+		assert.NilError(t, err)
+		for _, v := range comments {
+			if v.Body == "" {
+				continue
+			}
+			// we do first match on regexp in a comment and then golden string, or golden string update will get the first comment.
+			if !topts.Regexp.MatchString(v.Body) {
+				continue
+			}
+			topts.ParamsRun.Clients.Log.Infof("Found regexp match in comment: %s", topts.Regexp.String())
+			if golden.String(v.Body, goldenFile)().Success() {
+				topts.ParamsRun.Clients.Log.Infof("Found golden match in comment: %s", v.Body)
+				return
+			}
+		}
+		if i > 60 {
+			t.Fatalf("we did not match the expected golden file output in the gitea comments after 2 minutes")
 		}
 		time.Sleep(2 * time.Second)
 		i++
