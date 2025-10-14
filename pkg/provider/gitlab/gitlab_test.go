@@ -143,6 +143,20 @@ func TestCreateStatus(t *testing.T) {
 			},
 		},
 		{
+			name:       "cancelled conclusion",
+			wantClient: true,
+			wantErr:    false,
+			args: args{
+				statusOpts: provider.StatusOpts{
+					Conclusion: "cancelled",
+				},
+				event: &info.Event{
+					TriggerTarget: "pull_request",
+				},
+				postStr: "has cancelled",
+			},
+		},
+		{
 			name:       "gitops comments completed",
 			wantClient: true,
 			wantErr:    false,
