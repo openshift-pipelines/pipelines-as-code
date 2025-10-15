@@ -252,6 +252,53 @@ func TestAnalyzer_ValidateConfig(t *testing.T) {
 	}
 }
 
+func TestGetContextCacheKey(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   *v1alpha1.ContextConfig
+		expected string
+	}{
+		{
+			name:     "nil config returns default key",
+			config:   nil,
+			expected: "default",
+		},
+		{
+			name:     "config without container logs",
+			config:   &v1alpha1.ContextConfig{},
+			expected: "commit:false-pr:false-error:false-logs:false-0",
+		},
+		{
+			name: "container logs enabled with explicit max lines",
+			config: &v1alpha1.ContextConfig{
+				CommitContent: true,
+				PRContent:     true,
+				ErrorContent:  true,
+				ContainerLogs: &v1alpha1.ContainerLogsConfig{
+					Enabled:  true,
+					MaxLines: 25,
+				},
+			},
+			expected: "commit:true-pr:true-error:true-logs:true-25",
+		},
+		{
+			name: "container logs enabled with default max lines",
+			config: &v1alpha1.ContextConfig{
+				ContainerLogs: &v1alpha1.ContainerLogsConfig{
+					Enabled: true,
+				},
+			},
+			expected: "commit:false-pr:false-error:false-logs:true-50",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, getContextCacheKey(tt.config), tt.expected)
+		})
+	}
+}
+
 func TestAnalyzer_ShouldTriggerRoleEvaluations(t *testing.T) {
 	logger, _ := logger.GetLogger()
 	run := &params.Run{}

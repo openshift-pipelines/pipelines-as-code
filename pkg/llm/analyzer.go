@@ -261,12 +261,17 @@ func getContextCacheKey(config *v1alpha1.ContextConfig) string {
 	if config == nil {
 		return "default"
 	}
+	maxLines := 0
+	if config.ContainerLogs != nil {
+		maxLines = config.ContainerLogs.GetMaxLines()
+	}
+
 	return fmt.Sprintf("commit:%t-pr:%t-error:%t-logs:%t-%d",
 		config.CommitContent,
 		config.PRContent,
 		config.ErrorContent,
 		config.ContainerLogs != nil && config.ContainerLogs.Enabled,
-		config.ContainerLogs.GetMaxLines(),
+		maxLines,
 	)
 }
 
