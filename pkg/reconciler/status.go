@@ -73,6 +73,7 @@ func (r *Reconciler) updateRepoRunStatus(ctx context.Context, logger *zap.Sugare
 			continue
 		}
 		logger.Infof("Repository status of %s has been updated", nrepo.Name)
+		logger.Warn("The `pipelinerun_status` field in the Repository CR is scheduled for deprecation and will be removed in a future release. Please avoid relying on it.")
 		return nil
 	}
 
