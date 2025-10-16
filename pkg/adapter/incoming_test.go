@@ -104,6 +104,7 @@ func Test_listener_detectIncoming(t *testing.T) {
 		querySecret      string
 		queryBranch      string
 		queryHeaders     http.Header
+		queryNamespace   string
 		incomingBody     string
 		secretResult     map[string]string
 	}
@@ -148,6 +149,64 @@ func Test_listener_detectIncoming(t *testing.T) {
 				querySecret:      "verysecrete",
 				queryPipelineRun: "pipelinerun1",
 				queryBranch:      "main",
+			},
+		},
+		{
+			name: "good/incoming with namespace",
+			want: true,
+			args: args{
+				secretResult: map[string]string{"good-secret": "verysecrete"},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      "test-good",
+								Namespace: "bad-namespace",
+							},
+							Spec: v1alpha1.RepositorySpec{
+								URL: goodURL,
+								Incomings: &[]v1alpha1.Incoming{
+									{
+										Targets: []string{"main"},
+										Secret: v1alpha1.Secret{
+											Name: "good-secret",
+										},
+									},
+								},
+								GitProvider: &v1alpha1.GitProvider{
+									Type: "github",
+								},
+							},
+						},
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      "test-good",
+								Namespace: "good-namespace",
+							},
+							Spec: v1alpha1.RepositorySpec{
+								URL: goodURL,
+								Incomings: &[]v1alpha1.Incoming{
+									{
+										Targets: []string{"main"},
+										Secret: v1alpha1.Secret{
+											Name: "good-secret",
+										},
+									},
+								},
+								GitProvider: &v1alpha1.GitProvider{
+									Type: "github",
+								},
+							},
+						},
+					},
+				},
+				method:           "GET",
+				queryURL:         "/incoming",
+				queryRepository:  "test-good",
+				querySecret:      "verysecrete",
+				queryPipelineRun: "pipelinerun1",
+				queryBranch:      "main",
+				queryNamespace:   "good-namespace",
 			},
 		},
 		{
@@ -315,6 +374,61 @@ func Test_listener_detectIncoming(t *testing.T) {
 				queryPipelineRun: "pr",
 				querySecret:      "secret",
 				queryBranch:      "branch",
+			},
+			wantErr: true,
+		},
+		{
+			name: "bad/multiple repos with name",
+			args: args{
+				queryURL:         "/incoming",
+				queryRepository:  "repo",
+				queryPipelineRun: "pr",
+				querySecret:      "secret",
+				queryBranch:      "main",
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      "repo",
+								Namespace: "bad-namespace",
+							},
+							Spec: v1alpha1.RepositorySpec{
+								URL: goodURL,
+								Incomings: &[]v1alpha1.Incoming{
+									{
+										Targets: []string{"main"},
+										Secret: v1alpha1.Secret{
+											Name: "good-secret",
+										},
+									},
+								},
+								GitProvider: &v1alpha1.GitProvider{
+									Type: "github",
+								},
+							},
+						},
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      "repo",
+								Namespace: "good-namespace",
+							},
+							Spec: v1alpha1.RepositorySpec{
+								URL: goodURL,
+								Incomings: &[]v1alpha1.Incoming{
+									{
+										Targets: []string{"main"},
+										Secret: v1alpha1.Secret{
+											Name: "good-secret",
+										},
+									},
+								},
+								GitProvider: &v1alpha1.GitProvider{
+									Type: "github",
+								},
+							},
+						},
+					},
+				},
 			},
 			wantErr: true,
 		},
@@ -683,8 +797,8 @@ func Test_listener_detectIncoming(t *testing.T) {
 
 			// make a new request
 			req := httptest.NewRequest(tt.args.method,
-				fmt.Sprintf("http://localhost%s?repository=%s&secret=%s&pipelinerun=%s&branch=%s", tt.args.queryURL,
-					tt.args.queryRepository, tt.args.querySecret, tt.args.queryPipelineRun, tt.args.queryBranch),
+				fmt.Sprintf("http://localhost%s?repository=%s&secret=%s&pipelinerun=%s&branch=%s&namespace=%s", tt.args.queryURL,
+					tt.args.queryRepository, tt.args.querySecret, tt.args.queryPipelineRun, tt.args.queryBranch, tt.args.queryNamespace),
 				strings.NewReader(tt.args.incomingBody))
 			req.Header = tt.args.queryHeaders
 			got, _, err := l.detectIncoming(ctx, req, []byte(tt.args.incomingBody))
@@ -949,18 +1063,18 @@ func Test_detectIncoming_legacy_warning(t *testing.T) {
 		},
 	}
 	tests := []struct {
-		name          string
-		req           *http.Request
-		body          []byte
-		expectWarning bool
+		name       string
+		req        *http.Request
+		body       []byte
+		legacyMode bool
 	}{
 		{
 			name: "legacy mode - params in URL",
 			req: httptest.NewRequest(http.MethodPost,
 				"http://localhost/incoming?repository=test-good&secret=verysecrete&pipelinerun=pipelinerun1&branch=main",
 				strings.NewReader("")),
-			body:          nil,
-			expectWarning: true,
+			body:       nil,
+			legacyMode: true,
 		},
 		{
 			name: "new mode - params in JSON body",
@@ -978,8 +1092,8 @@ func Test_detectIncoming_legacy_warning(t *testing.T) {
 				r.Header.Set("Content-Type", "application/json")
 				return r
 			}(),
-			body:          []byte(`{"repository":"test-good","branch":"main","pipelinerun":"pipelinerun2","secret":"verysecrete","params":{"foo":"bar"}}`),
-			expectWarning: false,
+			body:       []byte(`{"repository":"test-good","branch":"main","pipelinerun":"pipelinerun2","secret":"verysecrete","params":{"foo":"bar"}}`),
+			legacyMode: false,
 		},
 	}
 
@@ -995,19 +1109,18 @@ func Test_detectIncoming_legacy_warning(t *testing.T) {
 				event:  info.NewEvent(),
 			}
 			got, _, err := l.detectIncoming(ctx, tt.req, tt.body)
-			assert.NilError(t, err)
-			assert.Assert(t, got)
-			found := false
-			for _, entry := range observedLogs.All() {
-				if strings.Contains(entry.Message, "[SECURITY] Incoming webhook used legacy URL-based secret passing") {
-					found = true
-					break
-				}
-			}
-			if tt.expectWarning {
-				assert.Assert(t, found, "expected security warning log for legacy URL-based secret passing")
+			if tt.legacyMode {
+				assert.ErrorIs(t, err, errDeprecatedRequestMode)
 			} else {
-				assert.Assert(t, !found, "did not expect security warning log for new mode")
+				assert.NilError(t, err)
+			}
+			assert.Assert(t, got)
+
+			warningLogFound := observedLogs.FilterMessageSnippet("[SECURITY] Incoming webhook used legacy URL-based secret passing").Len() != 0
+			if tt.legacyMode {
+				assert.Assert(t, warningLogFound, "expected security warning log for legacy URL-based secret passing")
+			} else {
+				assert.Assert(t, !warningLogFound, "did not expect security warning log for new mode")
 			}
 		})
 	}
