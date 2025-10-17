@@ -2,6 +2,8 @@ package matcher
 
 import (
 	"context"
+	"fmt"
+	"regexp"
 	"strings"
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -46,14 +48,51 @@ func GetRepo(ctx context.Context, cs *params.Run, repoName string) (*apipac.Repo
 }
 
 // IncomingWebhookRule will match a rule to an incoming rule, currently a rule is a target branch.
+// Supports both exact string matching and regex patterns (auto-detected).
+// Uses first-match-wins strategy: returns the first webhook with a matching target.
 func IncomingWebhookRule(branch string, incomingWebhooks []apipac.Incoming) *apipac.Incoming {
 	// TODO: one day we will match the hook.Type here when we get something else than the dumb one (ie: slack)
-	for _, hook := range incomingWebhooks {
-		for _, v := range hook.Targets {
-			if v == branch {
-				return &hook
+	for i := range incomingWebhooks {
+		hook := &incomingWebhooks[i]
+
+		// Check each target in this webhook
+		for _, target := range hook.Targets {
+			matched, err := matchTarget(branch, target)
+			if err != nil {
+				// Skip invalid regex patterns and continue to next target
+				continue
+			}
+
+			if matched {
+				// First match wins - return immediately
+				return hook
 			}
 		}
 	}
 	return nil
+}
+
+// matchTarget checks if a branch matches a target pattern (exact or regex).
+func matchTarget(branch, target string) (bool, error) {
+	// Try exact match first.
+	if target == branch {
+		return true, nil
+	}
+
+	// Auto-detect regex patterns by checking for metacharacters.
+	if strings.ContainsAny(target, "^$*+|[](){}") ||
+		strings.Contains(target, ".*") ||
+		strings.Contains(target, ".+") ||
+		strings.Contains(target, `\d`) ||
+		strings.Contains(target, `\w`) ||
+		strings.Contains(target, `\s`) {
+		re, err := regexp.Compile(target)
+		if err != nil {
+			return false, fmt.Errorf("invalid regex pattern '%s': %w", target, err)
+		}
+
+		return re.MatchString(branch), nil
+	}
+
+	return false, nil
 }
