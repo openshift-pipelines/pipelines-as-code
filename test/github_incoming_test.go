@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
@@ -40,7 +41,7 @@ func TestGithubAppIncoming(t *testing.T) {
 	}, randomedString, randomedString, triggertype.Incoming.String(), map[string]string{})
 	assert.NilError(t, err)
 
-	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, false, false)
+	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, []string{randomedString}, false, false, 1)
 }
 
 func TestGithubSecondIncoming(t *testing.T) {
@@ -51,7 +52,7 @@ func TestGithubSecondIncoming(t *testing.T) {
 	}, randomedString, randomedString, triggertype.Incoming.String(), map[string]string{})
 	assert.NilError(t, err)
 
-	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, false, true)
+	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, []string{randomedString}, false, true, 1)
 }
 
 func TestGithubWebhookIncoming(t *testing.T) {
@@ -77,7 +78,7 @@ func TestGithubWebhookIncoming(t *testing.T) {
 		entries[k] = v
 	}
 
-	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, true, false)
+	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, []string{randomedString}, true, false, 1)
 }
 
 // TestGithubAppIncomingForDifferentEvent tests that a Pipelinerun with the incoming event
@@ -91,15 +92,100 @@ func TestGithubAppIncomingForDifferentEvent(t *testing.T) {
 	}, randomedString, randomedString, triggertype.PullRequest.String(), map[string]string{})
 	assert.NilError(t, err)
 
-	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming-", entries, false, false)
+	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming-", entries, []string{randomedString}, false, false, 1)
 }
 
-func verifyIncomingWebhook(t *testing.T, randomedString, pipelinerunName string, entries map[string]string, onWebhook, onSecondController bool) {
+// TestGithubAppIncomingGlobPattern tests incoming webhook with glob pattern matching.
+func TestGithubAppIncomingGlobPattern(t *testing.T) {
+	randomedString := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
+
+	entries, err := payload.GetEntries(map[string]string{
+		".tekton/pipelinerun-incoming.yaml": "testdata/pipelinerun-incoming.yaml",
+	}, randomedString, randomedString, triggertype.Incoming.String(), map[string]string{})
+	assert.NilError(t, err)
+
+	// Test with glob pattern that matches the branch name
+	// Pattern: pac-e2e-ns* should match branch pac-e2e-ns-xxxxx
+	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, []string{"pac-e2e-ns*"}, false, false, 1)
+}
+
+// TestGithubAppIncomingGlobPrefixPattern tests incoming webhook with prefix glob pattern.
+func TestGithubAppIncomingGlobPrefixPattern(t *testing.T) {
+	// Create a branch name with "feature-" prefix (using hyphen instead of slash for Kubernetes compliance)
+	randomedString := fmt.Sprintf("feature-%s", names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e"))
+
+	entries, err := payload.GetEntries(map[string]string{
+		".tekton/pipelinerun-incoming.yaml": "testdata/pipelinerun-incoming.yaml",
+	}, randomedString, randomedString, triggertype.Incoming.String(), map[string]string{})
+	assert.NilError(t, err)
+
+	// Test with glob pattern that matches feature branches
+	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, []string{"feature-*"}, false, false, 1)
+}
+
+// TestGithubAppIncomingGlobFirstMatchWins tests first-match-wins with multiple glob targets.
+func TestGithubAppIncomingGlobFirstMatchWins(t *testing.T) {
+	randomedString := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
+
+	entries, err := payload.GetEntries(map[string]string{
+		".tekton/pipelinerun-incoming.yaml": "testdata/pipelinerun-incoming.yaml",
+	}, randomedString, randomedString, triggertype.Incoming.String(), map[string]string{})
+	assert.NilError(t, err)
+
+	// Multiple patterns - first one that matches should win
+	// Both pac-e2e-ns* and * will match, but first should win
+	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, []string{"pac-e2e-ns*", "*"}, false, false, 1)
+}
+
+// TestGithubAppIncomingNoMatch tests that incoming webhook fails when branch doesn't match any target.
+func TestGithubAppIncomingNoMatch(t *testing.T) {
+	randomedString := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
+
+	entries, err := payload.GetEntries(map[string]string{
+		".tekton/pipelinerun-incoming.yaml": "testdata/pipelinerun-incoming.yaml",
+	}, randomedString, randomedString, triggertype.Incoming.String(), map[string]string{})
+	assert.NilError(t, err)
+
+	// Test with glob pattern that will NOT match the branch
+	// Pattern: production-* should NOT match branch pac-e2e-ns-xxxxx
+	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, []string{"production-*"}, false, false, 0)
+}
+
+// TestGithubAppIncomingMultiplePatternsNoMatch tests that incoming webhook fails when none of the patterns match.
+func TestGithubAppIncomingMultiplePatternsNoMatch(t *testing.T) {
+	randomedString := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
+
+	entries, err := payload.GetEntries(map[string]string{
+		".tekton/pipelinerun-incoming.yaml": "testdata/pipelinerun-incoming.yaml",
+	}, randomedString, randomedString, triggertype.Incoming.String(), map[string]string{})
+	assert.NilError(t, err)
+
+	// Multiple patterns that all don't match the branch
+	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, []string{"production-*", "staging-*", "release-*"}, false, false, 0)
+}
+
+// TestGithubAppIncomingNoMatchExactName tests that exact non-matching string doesn't match.
+func TestGithubAppIncomingNoMatchExactName(t *testing.T) {
+	randomedString := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
+
+	entries, err := payload.GetEntries(map[string]string{
+		".tekton/pipelinerun-incoming.yaml": "testdata/pipelinerun-incoming.yaml",
+	}, randomedString, randomedString, triggertype.Incoming.String(), map[string]string{})
+	assert.NilError(t, err)
+
+	// Test with exact branch name that doesn't match
+	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, []string{"main", "develop", "staging"}, false, false, 0)
+}
+
+func verifyIncomingWebhook(t *testing.T, randomedString, pipelinerunName string, entries map[string]string, targets []string, onWebhook, onSecondController bool, numberOfPR int) {
 	ctx := context.Background()
 	ctx, runcnx, opts, ghprovider, err := tgithub.Setup(ctx, onSecondController, onWebhook)
 	assert.NilError(t, err)
 	label := "GithubApp Incoming"
-	logmsg := fmt.Sprintf("Testing %s with Github APPS integration on %s", label, randomedString)
+	if numberOfPR == 0 {
+		label = "GithubApp Incoming No Match"
+	}
+	logmsg := fmt.Sprintf("Testing %s with Github APPS integration on %s with targets %v", label, randomedString, targets)
 	runcnx.Clients.Log.Info(logmsg)
 
 	repoinfo, resp, err := ghprovider.Client().Repositories.Get(ctx, opts.Organization, opts.Repo)
@@ -115,7 +201,7 @@ func verifyIncomingWebhook(t *testing.T, randomedString, pipelinerunName string,
 				Name: incomingSecretName,
 				Key:  "incoming",
 			},
-			Targets: []string{randomedString},
+			Targets: targets,
 			Params: []string{
 				"the_best_superhero_is",
 			},
@@ -177,9 +263,7 @@ func verifyIncomingWebhook(t *testing.T, randomedString, pipelinerunName string,
 	httpResp, err := client.Do(req)
 	assert.NilError(t, err)
 	defer httpResp.Body.Close()
-	runcnx.Clients.Log.Infof("Kicked off on incoming URL: %s", incomingURL)
-	assert.Assert(t, httpResp.StatusCode >= 200 && httpResp.StatusCode < 300, "http status Code should be %d", httpResp.StatusCode)
-	// to re enable after debugging...
+
 	g := tgithub.PRTest{
 		Cnx:              runcnx,
 		Options:          opts,
@@ -194,27 +278,43 @@ func verifyIncomingWebhook(t *testing.T, randomedString, pipelinerunName string,
 	}
 	defer g.TearDown(ctx, t)
 
-	sopt := wait.SuccessOpt{
-		Title:           title,
-		OnEvent:         triggertype.Incoming.String(),
-		TargetNS:        randomedString,
-		NumberofPRMatch: 1,
-		SHA:             "",
+	if numberOfPR > 0 {
+		runcnx.Clients.Log.Infof("Kicked off on incoming URL: %s with branch: %s, targets: %v", incomingURL, randomedString, targets)
+		assert.Assert(t, httpResp.StatusCode >= 200 && httpResp.StatusCode < 300, "HTTP status code mismatch: expected=2xx, actual=%d (branch: %s, targets: %v)", httpResp.StatusCode, randomedString, targets)
+
+		sopt := wait.SuccessOpt{
+			Title:           title,
+			OnEvent:         triggertype.Incoming.String(),
+			TargetNS:        randomedString,
+			NumberofPRMatch: numberOfPR,
+			SHA:             "",
+		}
+		wait.Succeeded(ctx, t, runcnx, opts, sopt)
+	} else {
+		runcnx.Clients.Log.Infof("Attempted incoming URL: %s with branch: %s, targets: %v", incomingURL, randomedString, targets)
+
+		// Wait a bit to ensure no PipelineRun gets created.
+		time.Sleep(5 * time.Second)
 	}
-	wait.Succeeded(ctx, t, runcnx, opts, sopt)
+
+	// Verify PipelineRun count matches expected
 	prsNew, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(randomedString).List(ctx, metav1.ListOptions{})
 	assert.NilError(t, err)
-	assert.Assert(t, len(prsNew.Items) == 1)
+	assert.Assert(t, len(prsNew.Items) == numberOfPR, "PipelineRun count mismatch: expected=%d, actual=%d (branch: %s, targets: %v)", numberOfPR, len(prsNew.Items), randomedString, targets)
 
-	prName := prsNew.Items[0].GetName()
-	index := strings.LastIndex(prsNew.Items[0].GetGenerateName(), "-")
-	if index != -1 {
-		prName = prsNew.Items[0].GetGenerateName()[:index]
+	if numberOfPR > 0 {
+		prName := prsNew.Items[0].GetName()
+		index := strings.LastIndex(prsNew.Items[0].GetGenerateName(), "-")
+		if index != -1 {
+			prName = prsNew.Items[0].GetGenerateName()[:index]
+		}
+		assert.Assert(t, prName == "pipelinerun-incoming", "Expected PipelineRun name 'pipelinerun-incoming', got '%s'", prName)
+
+		err = wait.RegexpMatchingInPodLog(context.Background(), runcnx, randomedString, "pipelinesascode.tekton.dev/event-type=incoming", "step-task", *regexp.MustCompile(".*It's a Bird... It's a Plane... It's Superman"), "", 2)
+		assert.NilError(t, err, "Error while checking the logs of the pods")
+	} else {
+		runcnx.Clients.Log.Infof("Successfully verified no PipelineRun was created for non-matching branch %s with targets %v", randomedString, targets)
 	}
-	assert.Assert(t, prName == "pipelinerun-incoming")
-
-	err = wait.RegexpMatchingInPodLog(context.Background(), runcnx, randomedString, "pipelinesascode.tekton.dev/event-type=incoming", "step-task", *regexp.MustCompile(".*It's a Bird... It's a Plane... It's Superman"), "", 2)
-	assert.NilError(t, err, "Error while checking the logs of the pods")
 }
 
 // Local Variables:
