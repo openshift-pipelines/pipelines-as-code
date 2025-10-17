@@ -263,6 +263,9 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	case "neutral":
 		statusOpts.Conclusion = "canceled"
 		statusOpts.Title = "stopped"
+	case "cancelled":
+		statusOpts.Conclusion = "canceled"
+		statusOpts.Title = "cancelled validating this commit"
 	case "failure":
 		statusOpts.Conclusion = "failed"
 		statusOpts.Title = "failed"
