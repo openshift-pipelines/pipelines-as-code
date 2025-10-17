@@ -10,8 +10,14 @@ spec:
   url: "https://forge.com/owner/sample-app"
   incoming:
     - type: webhook-url
+      # Targets support glob patterns with character classes and wildcards
       targets:
-        - main
+        - main                              # Exact match
+        - develop                           # Exact match
+        - feature/*                         # All feature branches (e.g., feature/new-ui)
+        - release/v[0-9]*.[0-9]*.[0-9]*     # Semver releases (e.g., release/v1.2.3)
+        - hotfix/[A-Z]*-[0-9]*              # JIRA pattern (e.g., hotfix/JIRA-123)
+        - "{staging,production}/*"          # Alternation: staging/* or production/*
       secret:
         name: "webhook-secret"
         key: "webhook.secret"
