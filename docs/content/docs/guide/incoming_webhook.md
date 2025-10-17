@@ -59,6 +59,95 @@ spec:
       type: webhook-url
 ```
 
+### Regex Pattern Matching in Targets
+
+The `targets` field supports both exact string matching and regex patterns, allowing you to match multiple branches with a single rule.
+
+**Auto-detection:** Pipelines-as-Code automatically detects regex patterns by checking for common regex metacharacters (`^`, `$`, `*`, `+`, `|`, `[]`, `()`, `{}`).
+
+**First-match-wins:** If multiple incoming webhooks match the same branch, the first matching webhook in the YAML order is used. Place more specific webhooks before general catch-all webhooks.
+
+#### Examples
+
+**Match feature branches with regex:**
+
+```yaml
+apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+kind: Repository
+metadata:
+  name: repo
+  namespace: ns
+spec:
+  url: "https://github.com/owner/repo"
+  incoming:
+    - targets:
+        - ^feature/.*  # Matches any branch starting with "feature/"
+      secret:
+        name: feature-webhook-secret
+      type: webhook-url
+```
+
+**Multiple webhooks with first-match-wins:**
+
+```yaml
+apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+kind: Repository
+metadata:
+  name: repo
+  namespace: ns
+spec:
+  url: "https://github.com/owner/repo"
+  incoming:
+    # Production - checked first (most specific)
+    - targets:
+        - main
+        - "^v[0-9]+\.[0-9]+\.[0-9]+$"  # Semver tags like v1.2.3
+      secret:
+        name: prod-webhook-secret
+      params:
+        - prod_env
+      type: webhook-url
+    
+    # Feature branches - checked second
+    - targets:
+        - ^feature/.*
+      secret:
+        name: feature-webhook-secret
+      params:
+        - dev_env
+      type: webhook-url
+    
+    # Catch-all - checked last
+    - targets:
+        - ^.*$  # Matches any branch not caught above
+      secret:
+        name: default-webhook-secret
+      type: webhook-url
+```
+
+**Mix exact matches and regex patterns:**
+
+```yaml
+incoming:
+  - targets:
+      - main              # Exact match
+      - staging           # Exact match
+      - ^release/.*       # Regex pattern
+      - ^hotfix/.*        # Regex pattern
+    secret:
+      name: repo-incoming-secret
+    type: webhook-url
+```
+
+**Best Practices:**
+
+- Use anchors (`^` and `$`) in regex patterns to avoid unintended matches
+- Place production/sensitive webhooks first in the list
+- Use exact matches for known branches when possible (faster than regex)
+- [Test regex patterns](https://regex101.com/) to ensure they match only intended branches
+
+### Using Incoming Webhooks
+
 A PipelineRun is then annotated to target the incoming event and the main branch:
 
 ```yaml
