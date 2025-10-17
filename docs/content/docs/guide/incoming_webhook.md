@@ -59,6 +59,114 @@ spec:
       type: webhook-url
 ```
 
+### Glob Pattern Matching in Targets
+
+The `targets` field supports both exact string matching and glob patterns, allowing you to match multiple branches with a single rule.
+
+**Glob patterns:** Use shell-style patterns:
+
+- `*` - matches any characters (e.g., `feature/*` matches `feature/login`, `feature/api`)
+- `?` - matches exactly one character (e.g., `v?` matches `v1`, `v2`)
+- `[abc]` - matches one character from set (e.g., `[A-Z]*` matches any uppercase letter)
+- `[0-9]` - matches digits (e.g., `v[0-9]*.[0-9]*` matches `v1.2`, `v10.5`)
+- `{a,b,c}` - matches alternatives (e.g., `{dev,staging}/*` matches `dev/test` or `staging/test`)
+
+**First-match-wins:** If multiple incoming webhooks match the same branch, the first matching webhook in the YAML order is used. Place more specific webhooks before general catch-all webhooks.
+
+#### Examples
+
+**Match feature branches with glob:**
+
+```yaml
+apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+kind: Repository
+metadata:
+  name: repo
+  namespace: ns
+spec:
+  url: "https://github.com/owner/repo"
+  incoming:
+    - targets:
+        - "feature/*"  # Matches any branch starting with "feature/"
+      secret:
+        name: feature-webhook-secret
+      type: webhook-url
+```
+
+**Multiple webhooks with first-match-wins:**
+
+```yaml
+apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+kind: Repository
+metadata:
+  name: repo
+  namespace: ns
+spec:
+  url: "https://github.com/owner/repo"
+  incoming:
+    # Production - checked first (most specific)
+    - targets:
+        - main
+        - "v[0-9]*.[0-9]*.[0-9]*"  # Semver tags like v1.2.3
+      secret:
+        name: prod-webhook-secret
+      params:
+        - prod_env
+      type: webhook-url
+    
+    # Feature branches - checked second
+    - targets:
+        - "feature/*"
+        - "bugfix/*"
+      secret:
+        name: feature-webhook-secret
+      params:
+        - dev_env
+      type: webhook-url
+    
+    # Catch-all - checked last
+    - targets:
+        - "*"  # Matches any branch not caught above
+      secret:
+        name: default-webhook-secret
+      type: webhook-url
+```
+
+**Mix exact matches and glob patterns:**
+
+```yaml
+incoming:
+  - targets:
+      - main                            # Exact match
+      - staging                         # Exact match
+      - "release/v[0-9]*.[0-9]*.[0-9]*" # Semver releases
+      - "hotfix/[A-Z]*-[0-9]*"          # JIRA tickets (e.g., JIRA-123, PROJ-456)
+      - "{dev,test,qa}/*"               # Alternation pattern
+    secret:
+      name: repo-incoming-secret
+    type: webhook-url
+```
+
+**Glob Pattern Syntax:**
+
+- `*` - matches any characters (zero or more)
+- `?` - matches exactly one character
+- `[abc]` - matches one character: a, b, or c
+- `[a-z]` - matches one character in range a to z
+- `[0-9]` - matches one digit
+- `{a,b,c}` - matches any of the alternatives (alternation)
+
+**Best Practices:**
+
+- Place production/sensitive webhooks first in the list
+- Use exact matches for known branches when possible (faster than glob patterns)
+- Use character classes `[0-9]`, `[A-Z]` for more precise matching
+- Glob patterns match the entire branch name (no partial matches unless you use `*` prefix/suffix)
+- Test your patterns: branch `feature-login` matches `feature-*` but not `*feature*`
+- [Test your glob patterns online](https://www.digitalocean.com/community/tools/glob) before deploying to ensure they match only intended branches
+
+### Using Incoming Webhooks
+
 A PipelineRun is then annotated to target the incoming event and the main branch:
 
 ```yaml
