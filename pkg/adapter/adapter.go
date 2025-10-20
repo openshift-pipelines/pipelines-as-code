@@ -3,6 +3,7 @@ package adapter
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -171,6 +172,9 @@ func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 
 		isIncoming, targettedRepo, err := l.detectIncoming(ctx, request, payload)
 		if err != nil {
+			if errors.Is(err, errMissingFields) {
+				l.writeResponse(response, http.StatusBadRequest, err.Error())
+			}
 			l.logger.Errorf("error processing incoming webhook: %v", err)
 			return
 		}

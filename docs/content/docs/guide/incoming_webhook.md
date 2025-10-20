@@ -7,7 +7,8 @@ weight: 50
 
 Pipelines-as-Code supports the concept of incoming webhook URL. It lets you
 trigger PipelineRuns in a Repository using a shared secret and URL,
-instead of creating a new code iteration.
+instead of creating a new code iteration. This allows users to trigger
+PipelineRuns using an HTTP request, e.g. with `curl` or from a webservice.
 
 ## Incoming Webhook URL
 
@@ -32,6 +33,20 @@ values are:
 
 Whereas for `github-apps` this does not need to be added.
 {{< /hint >}}
+
+### Required Parameters
+
+Whether using the recommended POST request body or deprecated QueryParams,
+the `/incoming` request accepts the following parameters:
+
+| Parameter   | Type   | Description                                                                          | Required                                          |
+|-------------|--------|--------------------------------------------------------------------------------------|---------------------------------------------------|
+|`repository` |`string`| Name of Repository CR                                                                | `true`                                            |
+|`namespace`  |`string`| Namespace with the Repository CR                                                     | When Repository name is not unique in the cluster |
+|`branch`     |`string`| Branch configured for incoming webhook                                               | `true`                                            |
+|`pipelinerun`|`string`| Name (or generateName) of PipelineRun, used to match PipelineRun definition          | `true`                                            |
+|`secret`     |`string`| Secret key referenced by the Repository CR in desired incoming webhook configuration | `true`                                            |
+|`params`     |`json`  | Parameters to override in PipelineRun context                                        | `false`                                           |
 
 ### GitHub App
 

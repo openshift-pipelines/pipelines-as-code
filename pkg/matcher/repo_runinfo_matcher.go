@@ -2,6 +2,7 @@ package matcher
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -12,6 +13,8 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+var ErrRepositoryNameConflict = errors.New("multiple repositories exist with the given name")
 
 func MatchEventURLRepo(ctx context.Context, cs *params.Run, event *info.Event, ns string) (*apipac.Repository, error) {
 	repositories, err := cs.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(ns).List(
@@ -30,21 +33,25 @@ func MatchEventURLRepo(ctx context.Context, cs *params.Run, event *info.Event, n
 	return nil, nil
 }
 
-// GetRepo get a repo by name anywhere on a cluster.
-func GetRepo(ctx context.Context, cs *params.Run, repoName string) (*apipac.Repository, error) {
-	repositories, err := cs.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("").List(
-		ctx, metav1.ListOptions{})
+// GetRepoByName get a repo by name anywhere on a cluster.
+// Parameter 'ns' may optionally be supplied in case of a naming conflict.
+func GetRepoByName(ctx context.Context, cs *params.Run, repoName, ns string) (*apipac.Repository, error) {
+	repositories, err := cs.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(ns).List(
+		ctx, metav1.ListOptions{
+			FieldSelector: "metadata.name==" + repoName,
+		})
 	if err != nil {
 		return nil, err
 	}
-	for i := len(repositories.Items) - 1; i >= 0; i-- {
-		repo := repositories.Items[i]
-		if repo.GetName() == repoName {
-			return &repo, nil
-		}
-	}
 
-	return nil, nil
+	switch len(repositories.Items) {
+	case 0:
+		return nil, nil
+	case 1:
+		return &repositories.Items[0], nil
+	default:
+		return nil, ErrRepositoryNameConflict
+	}
 }
 
 // IncomingWebhookRule will match a rule to an incoming rule, currently a rule is a target branch.
