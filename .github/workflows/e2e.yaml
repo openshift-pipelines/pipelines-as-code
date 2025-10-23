@@ -285,6 +285,7 @@ jobs:
           TEST_GITHUB_SECOND_SMEE_URL: ${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}
           TEST_GITHUB_SECOND_PRIVATE_KEY: ${{ secrets.TEST_GITHUB_SECOND_PRIVATE_KEY }}
           TEST_GITHUB_SECOND_WEBHOOK_SECRET: ${{ secrets.TEST_GITHUB_SECOND_WEBHOOK_SECRET }}
+          TEST_GITHUB_SECOND_APPLICATION_ID: ${{ vars.TEST_GITHUB_SECOND_APPLICATION_ID }}
         run: |
           ./hack/gh-workflow-ci.sh create_second_github_app_controller_on_ghe
 

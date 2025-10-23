@@ -39,6 +39,7 @@ create_second_github_app_controller_on_ghe() {
   # Read from environment variables instead of arguments
   local test_github_second_smee_url="${TEST_GITHUB_SECOND_SMEE_URL}"
   local test_github_second_private_key="${TEST_GITHUB_SECOND_PRIVATE_KEY}"
+  local test_github_second_application_id="${TEST_GITHUB_SECOND_APPLICATION_ID}"
   local test_github_second_webhook_secret="${TEST_GITHUB_SECOND_WEBHOOK_SECRET}"
 
   if [[ -n "$(type -p apt)" ]]; then
@@ -62,7 +63,7 @@ create_second_github_app_controller_on_ghe() {
   kubectl delete secret -n pipelines-as-code ghe-secret || true
   kubectl -n pipelines-as-code create secret generic ghe-secret \
     --from-literal github-private-key="${test_github_second_private_key}" \
-    --from-literal github-application-id="2" \
+    --from-literal github-application-id="${test_github_second_application_id}" \
     --from-literal webhook.secret="${test_github_second_webhook_secret}"
   sed "s/name: pipelines-as-code/name: ghe-configmap/" <config/302-pac-configmap.yaml | kubectl apply -n pipelines-as-code -f-
   kubectl patch configmap -n pipelines-as-code ghe-configmap -p '{"data":{"application-name": "Pipelines as Code GHE"}}'
