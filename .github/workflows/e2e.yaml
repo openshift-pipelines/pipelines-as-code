@@ -80,16 +80,16 @@ jobs:
         uses: actions/github-script@v8
         with:
           script: |
-            if (!github || !github.context || !github.context.payload || !github.context.payload.pull_request) {
+            if (!context || !context.payload || !context.payload.pull_request) {
               core.setFailed('Invalid GitHub context: missing required pull_request information');
               return;
             }
 
             async function run() {
-              const actor = github.context.payload.pull_request.user.login;
-              const repoOwner = github.context.repo.owner;
-              const repoName = github.context.repo.repo;
-              const targetOrg = github.context.repo.owner;
+              const actor = context.payload.pull_request.user.login;
+              const repoOwner = context.repo.owner;
+              const repoName = context.repo.repo;
+              const targetOrg = context.repo.owner;
 
               core.info(`🔍 Starting permission check for user: @${actor}`);
               core.info(`📋 Repository: ${repoOwner}/${repoName}`);
@@ -221,6 +221,7 @@ jobs:
                   core.setFailed(
                     `❌ Permission check failed. User @${actor} did not meet any required conditions (trusted bot, org member, or repo write access).`,
                   );
+                  return;
                 }
               } catch (error) {
                 // This error means they are not even a collaborator.
@@ -228,6 +229,7 @@ jobs:
                 core.setFailed(
                   `❌ Permission check failed. User @${actor} is not a collaborator on this repository and did not meet other conditions.`,
                 );
+                return;
               }
             }
 
