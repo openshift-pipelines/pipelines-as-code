@@ -84,13 +84,12 @@ jobs:
               core.setFailed('Invalid GitHub context: missing required pull_request information');
               return;
             }
-            const context = github.context;
 
             async function run() {
-              const actor = context.payload.pull_request.user.login;
-              const repoOwner = context.repo.owner;
-              const repoName = context.repo.repo;
-              const targetOrg = context.repo.owner;
+              const actor = github.context.payload.pull_request.user.login;
+              const repoOwner = github.context.repo.owner;
+              const repoName = github.context.repo.repo;
+              const targetOrg = github.context.repo.owner;
 
               core.info(`🔍 Starting permission check for user: @${actor}`);
               core.info(`📋 Repository: ${repoOwner}/${repoName}`);
