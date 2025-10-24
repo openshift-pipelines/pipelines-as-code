@@ -339,7 +339,7 @@ func TestGithubSecondCancelInProgress(t *testing.T) {
 	err = twait.UntilPipelineRunCreated(ctx, g.Cnx.Clients, waitOpts)
 	assert.NilError(t, err)
 
-	g.Cnx.Clients.Log.Infof("Sleeping for 10 seconds to let the pipelinerun to be canceled")
+	g.Cnx.Clients.Log.Infof("Sleeping for 10 seconds to let the pipelinerun to be cancelled")
 
 	i := 0
 	foundCancelled := false
@@ -357,7 +357,7 @@ func TestGithubSecondCancelInProgress(t *testing.T) {
 				continue
 			}
 			if pr.Status.Conditions[0].Reason == "Cancelled" {
-				g.Cnx.Clients.Log.Infof("PipelineRun %s has been canceled", pr.Name)
+				g.Cnx.Clients.Log.Infof("PipelineRun %s has been cancelled", pr.Name)
 				foundCancelled = true
 				break
 			}
@@ -400,16 +400,16 @@ func TestGithubSecondCancelInProgressPRClosed(t *testing.T) {
 	})
 	assert.NilError(t, err)
 
-	g.Cnx.Clients.Log.Infof("Sleeping for 10 seconds to let the pipelinerun to be canceled")
+	g.Cnx.Clients.Log.Infof("Sleeping for 10 seconds to let the pipelinerun to be cancelled")
 	time.Sleep(10 * time.Second)
 
-	g.Cnx.Clients.Log.Infof("Checking that the pipelinerun has been canceled")
+	g.Cnx.Clients.Log.Infof("Checking that the pipelinerun has been cancelled")
 
 	prs, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(context.Background(), metav1.ListOptions{})
 	assert.NilError(t, err)
 	assert.Equal(t, len(prs.Items), 1, "should have only one pipelinerun, but we have: %d", len(prs.Items))
 
-	assert.Equal(t, prs.Items[0].GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason(), "Cancelled", "should have been canceled")
+	assert.Equal(t, prs.Items[0].GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason(), "Cancelled", "should have been cancelled")
 
 	res, resp, err := g.Provider.Client().Checks.ListCheckRunsForRef(ctx, g.Options.Organization, g.Options.Repo, g.SHA, &github.ListCheckRunsOptions{
 		AppID:       g.Provider.ApplicationID,

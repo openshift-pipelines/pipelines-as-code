@@ -360,7 +360,7 @@ func TestGitlabCancelInProgressOnChange(t *testing.T) {
 	err = twait.UntilPipelineRunCreated(ctx, runcnx.Clients, newPipelineWaitOpts)
 	assert.NilError(t, err)
 
-	runcnx.Clients.Log.Infof("Waiting for old pipelinerun to be canceled")
+	runcnx.Clients.Log.Infof("Waiting for old pipelinerun to be cancelled")
 	cancelledErr := twait.UntilPipelineRunHasReason(ctx, runcnx.Clients, v1.PipelineRunReasonCancelled, originalPipelineWaitOpts)
 	assert.NilError(t, cancelledErr)
 }
@@ -429,7 +429,7 @@ func TestGitlabCancelInProgressOnPRClose(t *testing.T) {
 	prs, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(context.Background(), metav1.ListOptions{})
 	assert.NilError(t, err)
 	assert.Equal(t, len(prs.Items), 1, "should have only one pipelinerun, but we have: %d", len(prs.Items))
-	assert.Equal(t, prs.Items[0].GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason(), "Cancelled", "should have been canceled")
+	assert.Equal(t, prs.Items[0].GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason(), "Cancelled", "should have been cancelled")
 
 	// failing on `true` condition because for cancelled PipelineRun we want `false` condition.
 	waitOpts.FailOnRepoCondition = corev1.ConditionTrue
@@ -597,7 +597,7 @@ func TestGitlabDisableCommentsOnMRNotCreated(t *testing.T) {
 		case "success":
 			pipeline = p
 			return true, nil // Success! Stop polling.
-		case "failed", "canceled", "skipped":
+		case "failed", "canceled", "skipped": //nolint:misspell
 			// The pipeline has finished but not successfully.
 			return false, fmt.Errorf("pipeline finished with non-success status: %s", p.Status)
 		default:

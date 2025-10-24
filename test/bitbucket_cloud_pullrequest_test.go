@@ -98,14 +98,14 @@ func TestBitbucketCloudPullRequestCancelInProgressMerged(t *testing.T) {
 	_, err = bprovider.Client().Repositories.PullRequests.Decline(po)
 	assert.NilError(t, err)
 
-	runcnx.Clients.Log.Info("Waiting 10 seconds to check things has been canceled")
+	runcnx.Clients.Log.Info("Waiting 10 seconds to check things has been cancelled")
 	time.Sleep(10 * time.Second) // “Evil does not sleep. It waits.” - Galadriel
 
 	prs, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(context.Background(), metav1.ListOptions{})
 	assert.NilError(t, err)
 	assert.Equal(t, len(prs.Items), 1, "should have only one pipelinerun, but we have: %d", len(prs.Items))
 
-	assert.Equal(t, prs.Items[0].GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason(), "Cancelled", "should have been canceled")
+	assert.Equal(t, prs.Items[0].GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason(), "Cancelled", "should have been cancelled")
 }
 
 // Local Variables:
