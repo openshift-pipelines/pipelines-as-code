@@ -26,10 +26,11 @@ func GetEntries(yamlfile map[string]string, targetNS, targetBranch, targetEvent 
 	}
 	entries := map[string]string{}
 	for target, file := range yamlfile {
-		name := strings.TrimSuffix(filepath.Base(target), filepath.Ext(target))
-		// add some random character to name so that each PR has different name
-		extraParams["PipelineName"] = name + "-" + strings.ToLower(random.AlphaString(4))
-		// PipelineName can be overridden by extraParams
+		if extraParams["PipelineName"] == "" {
+			name := strings.TrimSuffix(filepath.Base(target), filepath.Ext(target))
+			// add some random character to name so that each PR has different name
+			extraParams["PipelineName"] = name + "-" + strings.ToLower(random.AlphaString(4))
+		}
 		newParams := vinceMap(params, extraParams)
 
 		output, err := ApplyTemplate(file, newParams)
