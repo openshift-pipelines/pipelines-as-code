@@ -540,7 +540,7 @@ func TestGiteaConfigCancelInProgress(t *testing.T) {
 			cancelledPr++
 		}
 	}
-	assert.Equal(t, cancelledPr, 1, "only one pr should have been canceled")
+	assert.Equal(t, cancelledPr, 1, "only one pr should have been cancelled")
 
 	// Test that cancelling works with /retest - use specific PipelineRun name to bypass success check
 	tgitea.PostCommentOnPullRequest(t, topts, "/retest pr-cancel-in-progress")
@@ -554,7 +554,7 @@ func TestGiteaConfigCancelInProgress(t *testing.T) {
 			cancelledPr++
 		}
 	}
-	assert.Equal(t, cancelledPr, 2, "tweo pr should have been canceled")
+	assert.Equal(t, cancelledPr, 2, "two pr should have been cancelled")
 }
 
 func TestGiteaConfigCancelInProgressAfterPRClosed(t *testing.T) {
@@ -586,14 +586,14 @@ func TestGiteaConfigCancelInProgressAfterPRClosed(t *testing.T) {
 	})
 	assert.NilError(t, err)
 
-	topts.ParamsRun.Clients.Log.Info("Waiting 10 seconds to check things has been canceled")
+	topts.ParamsRun.Clients.Log.Info("Waiting 10 seconds to check things has been cancelled")
 	time.Sleep(10 * time.Second) // “Evil does not sleep. It waits.” - Galadriel
 
 	prs, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{})
 	assert.NilError(t, err)
 	assert.Equal(t, len(prs.Items), 1, "should have only one pipelinerun, but we have: %d", len(prs.Items))
 
-	assert.Equal(t, prs.Items[0].GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason(), "Cancelled", "should have been canceled")
+	assert.Equal(t, prs.Items[0].GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason(), "Cancelled", "should have been cancelled")
 }
 
 func TestGiteaPush(t *testing.T) {

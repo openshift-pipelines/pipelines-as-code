@@ -106,7 +106,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 	}
 
 	// queue pipelines which are in queued state and pending status
-	// if status is not pending, it could be canceled so let it be reported, even if state is queued
+	// if status is not pending, it could be cancelled so let it be reported, even if state is queued
 	if state == kubeinteraction.StateQueued && pr.Spec.Status == tektonv1.PipelineRunSpecStatusPending {
 		return r.queuePipelineRun(ctx, logger, pr)
 	}
