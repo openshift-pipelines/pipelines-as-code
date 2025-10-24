@@ -27,12 +27,30 @@ func (v *Provider) IsAllowedOwnersFile(_ context.Context, event *info.Event) (bo
 }
 
 func (v *Provider) checkMembership(ctx context.Context, event *info.Event, userid int) bool {
+	// Initialize cache lazily
+	if v.memberCache == nil {
+		v.memberCache = map[int]bool{}
+	}
+
+	if allowed, ok := v.memberCache[userid]; ok {
+		return allowed
+	}
+
 	member, _, err := v.Client().ProjectMembers.GetInheritedProjectMember(v.targetProjectID, userid)
-	if err == nil && member.ID != 0 && member.ID == userid {
+	if err != nil {
+		// If the API call fails, fall back without caching the result so a
+		// transient failure can be retried on the next invocation.
+		isAllowed, _ := v.IsAllowedOwnersFile(ctx, event)
+		return isAllowed
+	}
+
+	if member.ID != 0 && member.ID == userid {
+		v.memberCache[userid] = true
 		return true
 	}
 
 	isAllowed, _ := v.IsAllowedOwnersFile(ctx, event)
+	v.memberCache[userid] = isAllowed
 	return isAllowed
 }
 
