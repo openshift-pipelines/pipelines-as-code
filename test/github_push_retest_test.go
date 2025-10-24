@@ -172,8 +172,8 @@ func TestGithubPushRequestGitOpsCommentCancel(t *testing.T) {
 		&github.RepositoryComment{Body: github.Ptr(comment)})
 	assert.NilError(t, err)
 
-	g.Cnx.Clients.Log.Infof("Waiting for Repository to be updated still to %d since it has been canceled", numberOfStatus)
-	repo, _ := twait.UntilRepositoryUpdated(ctx, g.Cnx.Clients, waitOpts) // don't check for error, because canceled is not success and this will fail
+	g.Cnx.Clients.Log.Infof("Waiting for Repository to be updated still to %d since it has been cancelled", numberOfStatus)
+	repo, _ := twait.UntilRepositoryUpdated(ctx, g.Cnx.Clients, waitOpts) // don't check for error, because cancelled is not success and this will fail
 	cancelled := false
 	for _, c := range repo.Status {
 		if c.Conditions[0].Reason == tektonv1.TaskRunReasonCancelled.String() {
