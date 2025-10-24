@@ -77,12 +77,12 @@ func makeGitAuthSecret(ctx context.Context, cs *params.Run, filenames []string, 
 		provideSecret := false
 		msg := "We have detected a git_auth_secret in your PipelineRun. Would you like to provide a API token for the git_clone task?"
 		if err := prompt.SurveyAskOne(&survey.Confirm{Message: msg, Default: true}, &provideSecret); err != nil {
-			return "", "", fmt.Errorf("canceled")
+			return "", "", fmt.Errorf("cancelled")
 		}
 		if provideSecret {
 			msg := `Enter a token to be used for the git_auth_secret`
 			if err := prompt.SurveyAskOne(&survey.Password{Message: msg}, &token); err != nil {
-				return "", "", fmt.Errorf("canceled")
+				return "", "", fmt.Errorf("cancelled")
 			}
 		}
 	}

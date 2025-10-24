@@ -57,6 +57,12 @@ linters:
     - whitespace
     - zerologlint
   settings:
+    misspell:
+      ignore-words:
+        - cancelled
+      extra-words:
+        - typo: "canceled"
+          correction: "cancelled"
     errcheck:
       exclude-functions:
         - (*github.com/tektoncd/pipeline/vendor/go.uber.org/zap.SugaredLogger).Sync
@@ -82,6 +88,14 @@ linters:
         path: _test\.go
       - path: pkg/resolve/resolve.go
         text: don't use `init` function
+      - linters:
+          - misspell
+        path: pkg/provider/gitlab/gitlab\.go
+        text: '`canceled` is a misspelling of `cancelled`'
+      - linters:
+          - misspell
+        path: test/gitlab.*\.go
+        text: '`canceled` is a misspelling of `cancelled`'
     paths:
       - vendor
       - pkg/provider/gitea/structs
