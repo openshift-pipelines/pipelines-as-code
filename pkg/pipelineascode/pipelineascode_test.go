@@ -1,7 +1,6 @@
 package pipelineascode
 
 import (
-	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -838,14 +837,4 @@ func TestGetExecutionOrderPatch(t *testing.T) {
 			assert.DeepEqual(t, expected, result)
 		})
 	}
-}
-
-// KinterfaceTestWithError extends KinterfaceTest to allow injection of specific errors.
-type KinterfaceTestWithError struct {
-	kitesthelper.KinterfaceTest
-	CreateSecretError error
-}
-
-func (k *KinterfaceTestWithError) CreateSecret(_ context.Context, _ string, _ *corev1.Secret) error {
-	return k.CreateSecretError
 }
