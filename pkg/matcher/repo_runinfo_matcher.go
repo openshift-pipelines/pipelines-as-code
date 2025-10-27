@@ -2,8 +2,10 @@ package matcher
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
+	"github.com/gobwas/glob"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -46,14 +48,37 @@ func GetRepo(ctx context.Context, cs *params.Run, repoName string) (*apipac.Repo
 }
 
 // IncomingWebhookRule will match a rule to an incoming rule, currently a rule is a target branch.
+// Supports both exact string matching and glob patterns.
+// Uses first-match-wins strategy: returns the first webhook with a matching target.
 func IncomingWebhookRule(branch string, incomingWebhooks []apipac.Incoming) *apipac.Incoming {
 	// TODO: one day we will match the hook.Type here when we get something else than the dumb one (ie: slack)
-	for _, hook := range incomingWebhooks {
-		for _, v := range hook.Targets {
-			if v == branch {
-				return &hook
+	for i := range incomingWebhooks {
+		hook := &incomingWebhooks[i]
+
+		// Check each target in this webhook
+		for _, target := range hook.Targets {
+			matched, err := matchTarget(branch, target)
+			if err != nil {
+				// Skip invalid glob patterns and continue to next target
+				continue
+			}
+
+			if matched {
+				// First match wins - return immediately
+				return hook
 			}
 		}
 	}
 	return nil
+}
+
+// matchTarget checks if a branch matches a target pattern using glob matching.
+// Supports both exact string matching and glob patterns.
+func matchTarget(branch, target string) (bool, error) {
+	g, err := glob.Compile(target)
+	if err != nil {
+		return false, fmt.Errorf("invalid glob pattern %q: %w", target, err)
+	}
+
+	return g.Match(branch), nil
 }
