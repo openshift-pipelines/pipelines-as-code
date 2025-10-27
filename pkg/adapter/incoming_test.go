@@ -233,6 +233,43 @@ func Test_listener_detectIncoming(t *testing.T) {
 			},
 		},
 		{
+			name: "good/incoming with default secret key",
+			want: true,
+			args: args{
+				secretResult: map[string]string{"incoming-secret": "verysecrete"},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "test-default-key",
+							},
+							Spec: v1alpha1.RepositorySpec{
+								URL: goodURL,
+								Incomings: &[]v1alpha1.Incoming{
+									{
+										Targets: []string{"main"},
+										Secret: v1alpha1.Secret{
+											Name: "incoming-secret",
+											// Key is not specified, should default to "secret"
+										},
+									},
+								},
+								GitProvider: &v1alpha1.GitProvider{
+									Type: "github",
+								},
+							},
+						},
+					},
+				},
+				method:           http.MethodPost,
+				queryURL:         "/incoming",
+				queryRepository:  "test-default-key",
+				querySecret:      "verysecrete",
+				queryPipelineRun: "pipelinerun1",
+				queryBranch:      "main",
+			},
+		},
+		{
 			name: "invalid incoming body",
 			args: args{
 				method:           http.MethodPost,
