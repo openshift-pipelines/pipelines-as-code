@@ -59,6 +59,8 @@ spec:
       type: webhook-url
 ```
 
+**Note:** If no secret key is specified in the Repository CR, the default key `secret` will be used to retrieve the secret value from the `repo-incoming-secret` Secret resource.
+
 ### Glob Pattern Matching in Targets
 
 The `targets` field supports both exact string matching and glob patterns, allowing you to match multiple branches with a single rule.

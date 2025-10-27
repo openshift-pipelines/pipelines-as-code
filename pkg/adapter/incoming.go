@@ -23,6 +23,10 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	defaultIncomingWebhookSecretKey = "secret"
+)
+
 func compareSecret(incomingSecret, secretValue string) bool {
 	return subtle.ConstantTimeCompare([]byte(incomingSecret), []byte(secretValue)) != 0
 }
@@ -122,6 +126,11 @@ func (l *listener) detectIncoming(ctx context.Context, req *http.Request, payloa
 		Name:      hook.Secret.Name,
 		Key:       hook.Secret.Key,
 	}
+
+	if secretOpts.Key == "" {
+		secretOpts.Key = defaultIncomingWebhookSecretKey
+	}
+
 	secretValue, err := l.kint.GetSecret(ctx, secretOpts)
 	if err != nil {
 		return false, nil, fmt.Errorf("error getting secret referenced in incoming-webhook: %w", err)
