@@ -62,6 +62,9 @@ type Provider struct {
 	eventEmitter      *events.EventEmitter
 	repo              *v1alpha1.Repository
 	triggerEvent      string
+	// memberCache caches membership/permission checks by user ID within the
+	// current provider instance lifecycle to avoid repeated API calls.
+	memberCache map[int]bool
 }
 
 func (v *Provider) Client() *gitlab.Client {
@@ -249,6 +252,7 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.
 	return nil
 }
 
+//nolint:misspell
 func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts provider.StatusOpts,
 ) error {
 	var detailsURL string
@@ -263,6 +267,9 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	case "neutral":
 		statusOpts.Conclusion = "canceled"
 		statusOpts.Title = "stopped"
+	case "cancelled":
+		statusOpts.Conclusion = "canceled"
+		statusOpts.Title = "cancelled validating this commit"
 	case "failure":
 		statusOpts.Conclusion = "failed"
 		statusOpts.Title = "failed"
