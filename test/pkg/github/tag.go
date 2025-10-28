@@ -29,8 +29,6 @@ func CreateTag(ctx context.Context, t *testing.T, runcnx *params.Run, ghcnx *pac
 	tag, _, err := ghcnx.Client().Git.CreateTag(ctx, opts.Organization, opts.Repo, tag)
 	assert.NilError(t, err)
 
-	runcnx.Clients.Log.Infof("Tag %s has been created successfully", *tag.SHA)
-
 	refToCreate := &github.Reference{
 		Ref:    github.Ptr("refs/tags/" + tagName),
 		Object: &github.GitObject{SHA: tag.SHA},
@@ -40,4 +38,9 @@ func CreateTag(ctx context.Context, t *testing.T, runcnx *params.Run, ghcnx *pac
 	runcnx.Clients.Log.Infof("Tag %s has been created successfully", tag.GetTag())
 
 	return tag, nil
+}
+
+func DeleteTag(ctx context.Context, ghcnx *pacgithub.Provider, opts options.E2E, tagName string) error {
+	_, err := ghcnx.Client().Git.DeleteRef(ctx, opts.Organization, opts.Repo, "refs/tags/"+tagName)
+	return err
 }
