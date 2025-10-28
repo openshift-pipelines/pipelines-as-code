@@ -356,6 +356,18 @@ func TestParsePayLoad(t *testing.T) {
 	samplePRNoRepo.Repo = nil
 	samplePrEventClosed := samplePRevent
 	samplePrEventClosed.Action = github.Ptr("closed")
+
+	sampleGhPRs := []*github.PullRequest{
+		{
+			Number: github.Ptr(41),
+			State:  github.Ptr("closed"),
+		},
+		{
+			Number: github.Ptr(42),
+			State:  github.Ptr("open"),
+		},
+	}
+
 	tests := []struct {
 		name                       string
 		wantErrString              string
@@ -371,6 +383,7 @@ func TestParsePayLoad(t *testing.T) {
 		wantedBranchName           string
 		wantedTagName              string
 		isCancelPipelineRunEnabled bool
+		skipPushEventForPRCommits  bool
 	}{
 		{
 			name:          "bad/unknown event",
@@ -897,6 +910,41 @@ func TestParsePayLoad(t *testing.T) {
 			wantedBranchName:  "main",
 			wantErrString:     "provided SHA samplePRshanew is not the HEAD commit of the branch main",
 		},
+		{
+			name:          "good/skip push event for skip-pr-commits setting",
+			eventType:     "push",
+			triggerTarget: "push",
+			githubClient:  true,
+			payloadEventStruct: github.PushEvent{
+				Ref: github.Ptr("refs/heads/main"),
+				Repo: &github.PushEventRepository{
+					Owner: &github.User{Login: github.Ptr("owner")},
+					Name:  github.Ptr("pushRepo"),
+				},
+				HeadCommit: &github.HeadCommit{ID: github.Ptr("SHAPush")},
+			},
+			shaRet:                    "SHAPush",
+			skipPushEventForPRCommits: true,
+			muxReplies:                map[string]any{"/repos/owner/pushRepo/commits/SHAPush/pulls": sampleGhPRs},
+			wantErrString:             "commit SHAPush is part of pull request #42, skipping push event",
+		},
+		{
+			name:          "good/skip tag push event for skip-pr-commits setting",
+			eventType:     "push",
+			triggerTarget: "push",
+			githubClient:  true,
+			payloadEventStruct: github.PushEvent{
+				Ref: github.Ptr("refs/tags/v1.0.0"),
+				Repo: &github.PushEventRepository{
+					Owner: &github.User{Login: github.Ptr("owner")},
+					Name:  github.Ptr("pushRepo"),
+				},
+				HeadCommit: &github.HeadCommit{ID: github.Ptr("SHAPush")},
+			},
+			shaRet:                    "SHAPush",
+			skipPushEventForPRCommits: true,
+			muxReplies:                map[string]any{"/repos/owner/pushRepo/commits/SHAPush/pulls": sampleGhPRs},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -969,7 +1017,7 @@ func TestParsePayLoad(t *testing.T) {
 				ghClient: ghClient,
 				Logger:   logger,
 				pacInfo: &info.PacOpts{
-					Settings: settings.Settings{},
+					Settings: settings.Settings{SkipPushEventForPRCommits: tt.skipPushEventForPRCommits},
 				},
 			}
 			request := &http.Request{Header: map[string][]string{}}

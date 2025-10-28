@@ -164,6 +164,9 @@ There are a few things you can configure through the ConfigMap
 
   Default: `true`
 
+  **Note:** This setting does not apply to git tag push events. Tag push events will always trigger
+  pipeline runs regardless of whether the tagged commit is part of an open pull request.
+
 {{< support_matrix github_app="true" github_webhook="true" gitea="false" gitlab="false" bitbucket_cloud="false" bitbucket_datacenter="false" >}}
 
 ### Global Cancel In Progress Settings
