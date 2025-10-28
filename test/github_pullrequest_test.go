@@ -1,3 +1,5 @@
+//go:build e2e
+
 package test
 
 import (
@@ -23,6 +25,7 @@ import (
 
 	"github.com/google/go-github/v74/github"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	"github.com/tektoncd/pipeline/pkg/names"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 	"gotest.tools/v3/golden"
@@ -649,6 +652,37 @@ func TestGithubDisableCommentsOnPR(t *testing.T) {
 		}
 	}
 	assert.Equal(t, 0, successCommentsPost)
+}
+
+func TestGithubIgnoreTagPushCommitsFromSkipPushEventsSetting(t *testing.T) {
+	ctx := context.Background()
+	g := &tgithub.PRTest{
+		Label:         "Github PullRequest",
+		YamlFiles:     []string{"testdata/pipelinerun.yaml"},
+		NoStatusCheck: true,
+	}
+	g.RunPullRequest(ctx, t)
+	defer g.TearDown(ctx, t)
+
+	tag := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("v1.0")
+
+	_, err := tgithub.CreateTag(ctx, t, g.Cnx, g.Provider, g.Options, g.SHA, tag)
+	assert.NilError(t, err)
+	defer tgithub.DeleteTag(ctx, g.Provider, g.Options, tag) //nolint:errcheck
+
+	globalNs, _, err := params.GetInstallLocation(ctx, g.Cnx)
+	assert.NilError(t, err)
+	ctx = info.StoreNS(ctx, globalNs)
+
+	reg := regexp.MustCompile(fmt.Sprintf("Processing tag push event for commit %s despite skip-push-events-for-pr-commits being enabled.*", g.SHA))
+	maxLines := int64(100)
+	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 20, "controller", &maxLines)
+	assert.NilError(t, err)
+
+	g.Cnx.Clients.Log.Infof("Deleting tag %s", tag)
+	err = tgithub.DeleteTag(ctx, g.Provider, g.Options, tag)
+	assert.NilError(t, err)
+	g.Cnx.Clients.Log.Infof("Tag %s has been deleted", tag)
 }
 
 // Local Variables:
