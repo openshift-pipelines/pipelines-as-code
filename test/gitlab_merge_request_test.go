@@ -1,6 +1,3 @@
-//go:build e2e
-// +build e2e
-
 package test
 
 import (
@@ -15,6 +12,7 @@ import (
 
 	"github.com/google/go-github/v74/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
@@ -810,6 +808,147 @@ func TestGitlabMergeRequestValidationErrorsFromFork(t *testing.T) {
 	}
 
 	assert.Assert(t, foundValidationComment, "Validation error comment should appear on original project's MR. ")
+}
+
+func TestGitlabConsistentCommitStatusOnMR(t *testing.T) {
+	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
+	ctx := context.Background()
+	runcnx, opts, glprovider, err := tgitlab.Setup(ctx)
+	assert.NilError(t, err)
+	ctx, err = cctx.GetControllerCtxInfo(ctx, runcnx)
+	assert.NilError(t, err)
+	runcnx.Clients.Log.Info("Testing GitLab consistent commit status on Merge Request scenario")
+
+	projectinfo, resp, err := glprovider.Client().Projects.GetProject(opts.ProjectID, nil)
+	assert.NilError(t, err)
+	if resp != nil && resp.StatusCode == http.StatusNotFound {
+		t.Errorf("Repository %d not found", opts.ProjectID)
+	}
+
+	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, opts, targetNS, nil)
+	assert.NilError(t, err)
+
+	entries, err := payload.GetEntries(map[string]string{
+		".tekton/bad-pipelinerun.yaml":         "testdata/failures/bad-pipelinerun.yaml",
+		".tekton/always-good-pipelinerun.yaml": "testdata/always-good-pipelinerun.yaml",
+	}, targetNS, projectinfo.DefaultBranch,
+		triggertype.PullRequest.String(), map[string]string{})
+	assert.NilError(t, err)
+
+	targetRefName := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
+	cloneURL, err := scm.MakeGitCloneURL(projectinfo.WebURL, opts.UserName, opts.Password)
+	assert.NilError(t, err)
+
+	commitTitle := "Add invalid .tekton file - " + targetRefName
+	scmOpts := &scm.Opts{
+		GitURL:        cloneURL,
+		CommitTitle:   commitTitle,
+		Log:           runcnx.Clients.Log,
+		WebURL:        projectinfo.WebURL,
+		TargetRefName: targetRefName,
+		BaseRefName:   projectinfo.DefaultBranch,
+	}
+	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
+	runcnx.Clients.Log.Infof("Pushed invalid .tekton files to branch: %s", targetRefName)
+
+	mrTitle := "TestConsistentCommitStatusOnMR - " + targetRefName
+	mrOptions := &clientGitlab.CreateMergeRequestOptions{
+		Title:        &mrTitle,
+		SourceBranch: &targetRefName,
+		TargetBranch: &projectinfo.DefaultBranch,
+	}
+
+	mr, _, err := glprovider.Client().MergeRequests.CreateMergeRequest(projectinfo.ID, mrOptions)
+	assert.NilError(t, err)
+	runcnx.Clients.Log.Infof("Created merge request: %s", mr.WebURL)
+
+	defer tgitlab.TearDown(ctx, t, runcnx, glprovider, mr.IID, targetRefName, targetNS, projectinfo.ID)
+
+	sopt := twait.SuccessOpt{
+		Title:           commitTitle,
+		OnEvent:         "Merge Request",
+		TargetNS:        targetNS,
+		NumberofPRMatch: 1, // there must be one PipelineRun because one is invalid
+		SHA:             mr.SHA,
+	}
+	twait.Succeeded(ctx, t, runcnx, opts, sopt)
+	labelSelector := fmt.Sprintf("%s=%s", keys.SHA, formatting.CleanValueKubernetes(mr.SHA))
+	prsNew, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	assert.NilError(t, err)
+	assert.Assert(t, len(prsNew.Items) == 1)
+
+	commitStatuses, _, err := glprovider.Client().Commits.GetCommitStatuses(projectinfo.ID, mr.SHA, &clientGitlab.GetCommitStatusesOptions{})
+	assert.NilError(t, err)
+	assert.Assert(t, len(commitStatuses) == 2)
+
+	// here we don't know which status is returned first from  GitLab API
+	// so we need to check both by their names
+	for _, cs := range commitStatuses {
+		switch cs.Name {
+		case "Pipelines as Code CI / bad-converts-good-pipelinerun":
+			assert.Assert(t, cs.Status == "failed")
+		case "Pipelines as Code CI / always-good-pipelinerun":
+			assert.Assert(t, cs.Status == "success")
+		default:
+			t.Fatalf("unexpected commit status name: %s", cs.Name)
+		}
+	}
+
+	entries, err = payload.GetEntries(map[string]string{
+		".tekton/bad-pipelinerun.yaml":         "testdata/bad-converts-good-pipelinerun.yaml",
+		".tekton/always-good-pipelinerun.yaml": "testdata/always-good-pipelinerun.yaml",
+	}, targetNS, projectinfo.DefaultBranch,
+		triggertype.PullRequest.String(), map[string]string{})
+	assert.NilError(t, err)
+
+	commitTitle = "Add good .tekton file - " + targetRefName
+	scmOpts = &scm.Opts{
+		GitURL:        cloneURL,
+		CommitTitle:   commitTitle,
+		Log:           runcnx.Clients.Log,
+		WebURL:        projectinfo.WebURL,
+		TargetRefName: targetRefName,
+		BaseRefName:   projectinfo.DefaultBranch,
+		PushForce:     true,
+	}
+	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
+	runcnx.Clients.Log.Infof("Pushed good .tekton files to branch: %s", targetRefName)
+
+	// get latest MR because of last commit it is update
+	mr, _, err = glprovider.Client().MergeRequests.GetMergeRequest(projectinfo.ID, mr.IID, nil)
+	assert.NilError(t, err)
+
+	sopt = twait.SuccessOpt{
+		Title:           commitTitle,
+		OnEvent:         "Merge Request",
+		TargetNS:        targetNS,
+		NumberofPRMatch: 2,
+		SHA:             mr.SHA,
+	}
+
+	twait.Succeeded(ctx, t, runcnx, opts, sopt)
+	labelSelector = fmt.Sprintf("%s=%s", keys.SHA, formatting.CleanValueKubernetes(mr.SHA))
+	prsNew, err = runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	assert.NilError(t, err)
+	assert.Assert(t, len(prsNew.Items) == 2)
+
+	commitStatuses, _, err = glprovider.Client().Commits.GetCommitStatuses(projectinfo.ID, mr.SHA, &clientGitlab.GetCommitStatusesOptions{})
+	assert.NilError(t, err)
+	assert.Assert(t, len(commitStatuses) == 2)
+
+	// now both should be success
+	for _, cs := range commitStatuses {
+		switch cs.Name {
+		case "Pipelines as Code CI / bad-converts-good-pipelinerun", "Pipelines as Code CI / always-good-pipelinerun":
+			assert.Assert(t, cs.Status == "success")
+		default:
+			t.Fatalf("unexpected commit status name: %s", cs.Name)
+		}
+	}
 }
 
 // Local Variables:
