@@ -58,6 +58,14 @@ type AnalysisRole struct {
 	// +kubebuilder:validation:Required
 	Prompt string `json:"prompt"`
 
+	// Model specifies which LLM model to use for this role (optional).
+	// You can specify any model supported by your provider.
+	// If not specified, provider-specific defaults are used:
+	// - OpenAI: gpt-5-mini
+	// - Gemini: gemini-2.5-flash-lite
+	// +optional
+	Model string `json:"model,omitempty"`
+
 	// OnCEL is a CEL expression that determines when this role should be triggered
 	// +optional
 	OnCEL string `json:"on_cel,omitempty"`
@@ -117,6 +125,11 @@ func (r *AnalysisRole) GetOutput() string {
 		return "pr-comment"
 	}
 	return r.Output
+}
+
+// GetModel returns the configured model or an empty string to use provider default.
+func (r *AnalysisRole) GetModel() string {
+	return r.Model
 }
 
 // GetAPIURL returns the configured API URL, or the provider's default if not specified.

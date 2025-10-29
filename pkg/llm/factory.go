@@ -18,6 +18,7 @@ import (
 type ClientConfig struct {
 	Provider       llmtypes.AIProvider
 	APIURL         string
+	Model          string // Model name to use (empty string uses provider default)
 	TokenSecretRef *v1alpha1.Secret
 	TimeoutSeconds int
 	MaxTokens      int
@@ -60,8 +61,14 @@ func (f *Factory) CreateClient(ctx context.Context, config *ClientConfig, namesp
 	// Use APIURL from config (already validated)
 	baseURL := config.APIURL
 
+	// Use model from config or default
+	model := config.Model
+	if model == "" {
+		model = getDefaultModel(config.Provider)
+	}
+
 	// Create provider-specific client directly
-	baseClient, err := f.createProviderClient(config.Provider, token, baseURL, timeoutSeconds, maxTokens)
+	baseClient, err := f.createProviderClient(config.Provider, token, baseURL, model, timeoutSeconds, maxTokens)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create %s client: %w", config.Provider, err)
 	}
@@ -195,11 +202,12 @@ func (f *Factory) applyDefaults(timeoutSeconds, maxTokens int) (int, int) {
 }
 
 // createProviderClient creates a provider-specific client.
-func (f *Factory) createProviderClient(provider llmtypes.AIProvider, token, baseURL string, timeoutSeconds, maxTokens int) (llmtypes.Client, error) {
+func (f *Factory) createProviderClient(provider llmtypes.AIProvider, token, baseURL, model string, timeoutSeconds, maxTokens int) (llmtypes.Client, error) {
 	switch provider {
 	case llmtypes.LLMProviderOpenAI:
 		config := &openai.Config{
 			APIKey:         token,
+			Model:          model,
 			TimeoutSeconds: timeoutSeconds,
 			MaxTokens:      maxTokens,
 		}
@@ -210,6 +218,7 @@ func (f *Factory) createProviderClient(provider llmtypes.AIProvider, token, base
 	case llmtypes.LLMProviderGemini:
 		config := &gemini.Config{
 			APIKey:         token,
+			Model:          model,
 			TimeoutSeconds: timeoutSeconds,
 			MaxTokens:      maxTokens,
 		}
@@ -240,4 +249,16 @@ func (f *Factory) CreateClientFromProvider(ctx context.Context, provider, secret
 	}
 
 	return f.CreateClient(ctx, config, namespace)
+}
+
+// getDefaultModel returns the default model for a provider.
+func getDefaultModel(provider llmtypes.AIProvider) string {
+	switch provider {
+	case llmtypes.LLMProviderOpenAI:
+		return "gpt-5-mini"
+	case llmtypes.LLMProviderGemini:
+		return "gemini-2.5-flash-lite"
+	default:
+		return ""
+	}
 }

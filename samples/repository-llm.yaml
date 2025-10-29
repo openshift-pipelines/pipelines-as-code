@@ -1,5 +1,11 @@
 # Example Repository CRD showcasing various LLM Analysis scenarios
 # This demonstrates different use cases for AI-powered CI/CD analysis
+#
+# MODEL SELECTION:
+# Each role can specify a different model. You can use any model supported by your provider.
+# - Consult OpenAI docs: https://platform.openai.com/docs/models
+# - Consult Gemini docs: https://ai.google.dev/gemini-api/docs/models/gemini
+# If no model is specified, provider defaults are used (gpt-5-mini for OpenAI, gemini-2.5-flash-lite for Gemini)
 
 apiVersion: v1
 kind: Namespace
@@ -46,6 +52,7 @@ spec:
                 # Only triggers on security-related failures
                 # Posts detailed security analysis as PR comment
                 - name: "security-failure-analysis"
+                  model: "gemini-2.5-pro"  # Using the most capable model for security analysis
                   prompt: |
                       You are a DevSecOps assistant specializing in security tooling analysis.
 
@@ -107,6 +114,7 @@ spec:
                 # ═══════════════════════════════════════════════════════════════
                 # Provides quick diagnosis for any CI failure on PRs
                 - name: "quick-failure-diagnosis"
+                  model: "gemini-2.5-flash"  # Using a balanced model for quick feedback
                   prompt: |
                       You are an expert DevOps engineer analyzing a Tekton/Pipelines-as-Code failure.
 
@@ -148,6 +156,7 @@ spec:
                 # ═══════════════════════════════════════════════════════════════
                 # Identifies flaky tests and patterns in test failures
                 - name: "test-failure-patterns"
+                  model: "gemini-2.5-flash"  # Using a balanced model
                   prompt: |
                       You are a test reliability engineer analyzing test failures.
 
@@ -199,6 +208,7 @@ spec:
                 # ═══════════════════════════════════════════════════════════════
                 # Analyzes dependency update PRs (e.g., from Dependabot)
                 - name: "dependency-update-review"
+                  # No model specified - uses provider default
                   prompt: |
                       You are a dependency management expert reviewing an automated dependency update.
 

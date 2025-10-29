@@ -15,7 +15,7 @@ import (
 
 const (
 	defaultBaseURL = "https://generativelanguage.googleapis.com/v1beta"
-	defaultModel   = "gemini-2.5-flash-lite-preview-06-17"
+	defaultModel   = "gemini-2.5-flash-lite"
 
 	// Default configuration values.
 	defaultTimeoutSeconds = 30

@@ -22,8 +22,10 @@ The LLM analysis feature enables you to:
 
 ## Supported Providers
 
-- **OpenAI** (GPT-4, GPT-3.5-turbo, etc.)
-- **Google Gemini** (gemini-pro, etc.)
+- **OpenAI** - Default model: `gpt-5-mini`
+- **Google Gemini** - Default model: `gemini-2.5-flash-lite`
+
+You can specify any model supported by your chosen provider. See [Model Selection](#model-selection) for guidance.
 
 ## Configuration
 
@@ -47,6 +49,7 @@ spec:
         key: "token"
       roles:
         - name: "failure-analysis"
+          model: "gpt-5-mini"  # Optional: specify model (uses provider default if omitted)
           prompt: |
             You are a DevOps expert. Analyze this failed pipeline and:
             1. Identify the root cause
@@ -83,6 +86,7 @@ Each role defines a specific analysis scenario:
 |-------|------|----------|-------------|
 | `name` | string | Yes | Unique identifier for this role |
 | `prompt` | string | Yes | Prompt template for the LLM |
+| `model` | string | No | Model name (consult provider documentation for available models). Uses provider default if not specified. |
 | `on_cel` | string | No | CEL expression for conditional triggering |
 | `output` | string | Yes | Output destination (currently only `pr-comment` is supported) |
 | `context_items` | object | No | Configuration for context inclusion |
@@ -98,6 +102,47 @@ Control what information is sent to the LLM:
 | `error_content` | boolean | Include error messages and failures |
 | `container_logs.enabled` | boolean | Include container/task logs |
 | `container_logs.max_lines` | integer | Limit log lines (1-1000, default: 50). ⚠️ High values may impact performance |
+
+## Model Selection
+
+Each analysis role can specify a different model to optimize for your needs. If no model is specified, provider-specific defaults are used:
+
+- **OpenAI**: `gpt-5-mini`
+- **Gemini**: `gemini-2.5-flash-lite`
+
+### Specifying Models
+
+You can use any model name supported by your chosen provider. Consult your provider's documentation for available models:
+
+- **OpenAI Models**: <https://platform.openai.com/docs/models>
+- **Gemini Models**: <https://ai.google.dev/gemini-api/docs/models/gemini>
+
+### Example: Per-Role Models
+
+```yaml
+settings:
+  ai:
+    enabled: true
+    provider: "openai"
+    secret_ref:
+      name: "openai-api-key"
+      key: "token"
+    roles:
+      # Use the most capable model for complex analysis
+      - name: "security-analysis"
+        model: "gpt-5"
+        prompt: "Analyze security failures..."
+
+      # Use default model (gpt-5-mini) for general analysis
+      - name: "general-failure"
+        # No model specified - uses provider default
+        prompt: "Analyze this failure..."
+
+      # Use the most economical model for quick checks
+      - name: "quick-check"
+        model: "gpt-5-nano"
+        prompt: "Quick diagnosis..."
+```
 
 ## CEL Expressions for Triggers
 
@@ -259,10 +304,10 @@ prompt: |
 
 ### Cost Management
 
-1. **Limit max_tokens**: Reduce costs by limiting response length
-2. **Use selective triggers**: Only analyze failures, not all runs
-3. **Control log lines**: Limit `max_lines` in container logs
-4. **Choose efficient models**: Consider using GPT-3.5-turbo for cost savings
+1. **Select appropriate models**: Use more economical models for simple tasks and reserve expensive models for complex analysis. Consult your provider's pricing documentation.
+2. **Limit max_tokens**: Reduce costs by limiting response length
+3. **Use selective triggers**: Only analyze failures, not all runs
+4. **Control log lines**: Limit `max_lines` in container logs to reduce context size
 
 ### Performance Tips
 

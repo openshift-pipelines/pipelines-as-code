@@ -328,3 +328,100 @@ func TestFactory_CreateClientFromProvider(t *testing.T) {
 	assert.Assert(t, client != nil)
 	assert.Equal(t, client.GetProviderName(), "openai")
 }
+
+func TestFactory_CreateClient_WithModel(t *testing.T) {
+	run := &params.Run{}
+	ktesthelper := &kitesthelper.KinterfaceTest{}
+	factory := NewFactory(run, ktesthelper)
+
+	tests := []struct {
+		name      string
+		config    *ClientConfig
+		wantError bool
+	}{
+		{
+			name: "openai with custom model",
+			config: &ClientConfig{
+				Provider: ltypes.LLMProviderOpenAI,
+				Model:    "gpt-5",
+				TokenSecretRef: &v1alpha1.Secret{
+					Name: "test-secret",
+					Key:  "token",
+				},
+				TimeoutSeconds: 30,
+				MaxTokens:      1000,
+			},
+			wantError: false,
+		},
+		{
+			name: "gemini with custom model",
+			config: &ClientConfig{
+				Provider: ltypes.LLMProviderGemini,
+				Model:    "gemini-2.5-pro",
+				TokenSecretRef: &v1alpha1.Secret{
+					Name: "test-secret",
+					Key:  "token",
+				},
+				TimeoutSeconds: 30,
+				MaxTokens:      1000,
+			},
+			wantError: false,
+		},
+		{
+			name: "openai with empty model uses default",
+			config: &ClientConfig{
+				Provider: ltypes.LLMProviderOpenAI,
+				Model:    "",
+				TokenSecretRef: &v1alpha1.Secret{
+					Name: "test-secret",
+					Key:  "token",
+				},
+				TimeoutSeconds: 30,
+				MaxTokens:      1000,
+			},
+			wantError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := factory.ValidateConfig(tt.config)
+			if tt.wantError {
+				assert.Assert(t, err != nil)
+			} else {
+				assert.NilError(t, err)
+			}
+		})
+	}
+}
+
+func TestGetDefaultModel(t *testing.T) {
+	tests := []struct {
+		name     string
+		provider ltypes.AIProvider
+		want     string
+	}{
+		{
+			name:     "OpenAI default",
+			provider: ltypes.LLMProviderOpenAI,
+			want:     "gpt-5-mini",
+		},
+		{
+			name:     "Gemini default",
+			provider: ltypes.LLMProviderGemini,
+			want:     "gemini-2.5-flash-lite",
+		},
+		{
+			name:     "Unknown provider",
+			provider: "unknown",
+			want:     "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getDefaultModel(tt.provider)
+			assert.Equal(t, got, tt.want)
+		})
+	}
+}

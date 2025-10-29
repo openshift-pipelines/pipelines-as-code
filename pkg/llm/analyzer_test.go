@@ -252,6 +252,94 @@ func TestAnalyzer_ValidateConfig(t *testing.T) {
 	}
 }
 
+func TestAnalyzer_ValidateConfig_WithModels(t *testing.T) {
+	logger, _ := logger.GetLogger()
+	run := &params.Run{}
+	kinteract := &kubeinteraction.Interaction{}
+	analyzer := NewAnalyzer(run, kinteract, logger)
+
+	tests := []struct {
+		name      string
+		config    *v1alpha1.AIAnalysisConfig
+		wantError bool
+	}{
+		{
+			name: "roles with different models",
+			config: &v1alpha1.AIAnalysisConfig{
+				Provider: "openai",
+				TokenSecretRef: &v1alpha1.Secret{
+					Name: "test-secret",
+					Key:  "token",
+				},
+				Roles: []v1alpha1.AnalysisRole{
+					{
+						Name:   "security-role",
+						Prompt: "analyze security",
+						Model:  "gpt-5",
+						Output: "pr-comment",
+					},
+					{
+						Name:   "quick-role",
+						Prompt: "quick analysis",
+						Model:  "gpt-5-nano",
+						Output: "pr-comment",
+					},
+				},
+			},
+			wantError: false,
+		},
+		{
+			name: "role with custom model",
+			config: &v1alpha1.AIAnalysisConfig{
+				Provider: "gemini",
+				TokenSecretRef: &v1alpha1.Secret{
+					Name: "test-secret",
+					Key:  "token",
+				},
+				Roles: []v1alpha1.AnalysisRole{
+					{
+						Name:   "custom-model-role",
+						Prompt: "test prompt",
+						Model:  "gemini-2.5-pro",
+						Output: "pr-comment",
+					},
+				},
+			},
+			wantError: false,
+		},
+		{
+			name: "role without model uses default",
+			config: &v1alpha1.AIAnalysisConfig{
+				Provider: "openai",
+				TokenSecretRef: &v1alpha1.Secret{
+					Name: "test-secret",
+					Key:  "token",
+				},
+				Roles: []v1alpha1.AnalysisRole{
+					{
+						Name:   "default-model-role",
+						Prompt: "test prompt",
+						Output: "pr-comment",
+					},
+				},
+			},
+			wantError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := analyzer.validateConfig(tt.config)
+
+			if tt.wantError {
+				assert.Assert(t, err != nil, "expected error but got none")
+			} else {
+				assert.NilError(t, err)
+			}
+		})
+	}
+}
+
 func TestGetContextCacheKey(t *testing.T) {
 	tests := []struct {
 		name     string

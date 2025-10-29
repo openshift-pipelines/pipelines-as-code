@@ -95,16 +95,10 @@ func (a *Analyzer) Analyze(ctx context.Context, request *AnalyzeRequest) ([]Anal
 		return nil, fmt.Errorf("invalid AI analysis configuration: %w", err)
 	}
 
-	// Create LLM client
+	// Determine namespace for secret retrieval
 	namespace := request.Repository.Namespace
 	if request.SecretNamespace != "" {
 		namespace = request.SecretNamespace
-	}
-
-	client, err := a.createClient(ctx, config, namespace)
-	if err != nil {
-		analysisLogger.With("error", err).Error("Failed to create LLM client")
-		return nil, fmt.Errorf("failed to create LLM client: %w", err)
 	}
 
 	// Build CEL context for role filtering
@@ -160,6 +154,17 @@ func (a *Analyzer) Analyze(ctx context.Context, request *AnalyzeRequest) ([]Anal
 				continue
 			}
 			contextCache[contextKey] = roleContext
+		}
+
+		// Create LLM client for this role
+		client, err := a.createClient(ctx, config, namespace, &role)
+		if err != nil {
+			roleLogger.With("error", err).Warn("Failed to create LLM client for role")
+			results = append(results, AnalysisResult{
+				Role:  role.Name,
+				Error: fmt.Errorf("client creation failed: %w", err),
+			})
+			continue
 		}
 
 		// Create analysis request
@@ -360,11 +365,12 @@ func (a *Analyzer) validateConfig(config *v1alpha1.AIAnalysisConfig) error {
 	return nil
 }
 
-// createClient creates an LLM client based on the configuration.
-func (a *Analyzer) createClient(ctx context.Context, config *v1alpha1.AIAnalysisConfig, namespace string) (ltypes.Client, error) {
+// createClient creates an LLM client based on the configuration and role.
+func (a *Analyzer) createClient(ctx context.Context, config *v1alpha1.AIAnalysisConfig, namespace string, role *v1alpha1.AnalysisRole) (ltypes.Client, error) {
 	clientConfig := &ClientConfig{
 		Provider:       ltypes.AIProvider(config.Provider),
 		APIURL:         config.GetAPIURL(), // Use helper to get URL with provider defaults
+		Model:          role.GetModel(),    // Use role-specific model
 		TokenSecretRef: config.TokenSecretRef,
 		TimeoutSeconds: config.TimeoutSeconds,
 		MaxTokens:      config.MaxTokens,
