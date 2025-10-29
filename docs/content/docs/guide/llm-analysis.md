@@ -279,6 +279,8 @@ Benefits:
 
 ## Setting Up API Keys
 
+> **Important**: The Secret must be created in the same namespace as the Repository custom resource (CR).
+
 ### OpenAI
 
 1. Get an API key from [OpenAI Platform](https://platform.openai.com/api-keys)

@@ -38,7 +38,6 @@ func (o *Orchestrator) ExecuteAnalysis(
 	pr *tektonv1.PipelineRun,
 	event *info.Event,
 	prov provider.Interface,
-	secretNamespace string,
 ) error {
 	// Check if AI analysis is configured and enabled
 	if repo.Spec.Settings == nil || repo.Spec.Settings.AIAnalysis == nil || !repo.Spec.Settings.AIAnalysis.Enabled {
@@ -53,11 +52,10 @@ func (o *Orchestrator) ExecuteAnalysis(
 
 	// Create analysis request
 	request := &AnalyzeRequest{
-		PipelineRun:     pr,
-		Event:           event,
-		Repository:      repo,
-		Provider:        prov,
-		SecretNamespace: secretNamespace,
+		PipelineRun: pr,
+		Event:       event,
+		Repository:  repo,
+		Provider:    prov,
 	}
 
 	// Perform analysis

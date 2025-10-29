@@ -46,11 +46,10 @@ func NewAnalyzer(run *params.Run, kinteract kubeinteraction.Interface, logger *z
 
 // AnalyzeRequest represents a request for LLM analysis.
 type AnalyzeRequest struct {
-	PipelineRun     *tektonv1.PipelineRun
-	Event           *info.Event
-	Repository      *v1alpha1.Repository
-	Provider        provider.Interface
-	SecretNamespace string
+	PipelineRun *tektonv1.PipelineRun
+	Event       *info.Event
+	Repository  *v1alpha1.Repository
+	Provider    provider.Interface
 }
 
 // Analyze performs LLM analysis based on the repository configuration.
@@ -95,11 +94,8 @@ func (a *Analyzer) Analyze(ctx context.Context, request *AnalyzeRequest) ([]Anal
 		return nil, fmt.Errorf("invalid AI analysis configuration: %w", err)
 	}
 
-	// Determine namespace for secret retrieval
+	// Secret must be in the same namespace as the Repository CR
 	namespace := request.Repository.Namespace
-	if request.SecretNamespace != "" {
-		namespace = request.SecretNamespace
-	}
 
 	// Build CEL context for role filtering
 	celContext, err := a.assembler.BuildCELContext(request.PipelineRun, request.Event, request.Repository)

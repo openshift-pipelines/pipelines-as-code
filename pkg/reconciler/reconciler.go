@@ -238,7 +238,7 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 	}
 
 	// Perform LLM analysis if configured (best-effort, non-blocking)
-	if err := r.performLLMAnalysis(ctx, logger, repo, newPr, event, provider, r.secretNS); err != nil {
+	if err := r.performLLMAnalysis(ctx, logger, repo, newPr, event, provider); err != nil {
 		logger.Warnf("LLM analysis failed (non-blocking): %v", err)
 		r.eventEmitter.EmitMessage(repo, zap.WarnLevel, "LLMAnalysisFailed",
 			fmt.Sprintf("AI/LLM analysis failed for repository %s/%s and pipeline run %s: %v", repo.Namespace, repo.Name, newPr.Name, err))
@@ -401,8 +401,7 @@ func (r *Reconciler) performLLMAnalysis(
 	pr *tektonv1.PipelineRun,
 	event *info.Event,
 	provider provider.Interface,
-	secretNamespace string,
 ) error {
 	orchestrator := llm.NewOrchestrator(r.run, r.kinteract, logger)
-	return orchestrator.ExecuteAnalysis(ctx, repo, pr, event, provider, secretNamespace)
+	return orchestrator.ExecuteAnalysis(ctx, repo, pr, event, provider)
 }
