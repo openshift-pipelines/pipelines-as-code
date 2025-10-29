@@ -45,6 +45,8 @@ type AIAnalysisConfig struct {
 	// Roles defines different analysis scenarios and their configurations
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinItems=1
+	// +listType=map
+	// +listMapKey=name
 	Roles []AnalysisRole `json:"roles"`
 }
 
