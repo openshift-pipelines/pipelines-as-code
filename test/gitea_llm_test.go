@@ -36,12 +36,10 @@ func TestGiteaLLM(t *testing.T) {
 			AIAnalysis: &v1alpha1.AIAnalysisConfig{
 				Enabled:  true,
 				Provider: "openai",
-				TokenSecretRef: &v1alpha1.LLMSecret{
-					Secret: &v1alpha1.Secret{
-						Name: "llm-secret",
-						Key:  "token",
-					},
-					URL: "http://nonoai.pipelines-as-code:8765/v1",
+				APIURL:   "http://nonoai.pipelines-as-code:8765/v1",
+				TokenSecretRef: &v1alpha1.Secret{
+					Name: "llm-secret",
+					Key:  "token",
 				},
 				Roles: []v1alpha1.AnalysisRole{
 					{

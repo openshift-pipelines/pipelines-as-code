@@ -364,6 +364,7 @@ func (a *Analyzer) validateConfig(config *v1alpha1.AIAnalysisConfig) error {
 func (a *Analyzer) createClient(ctx context.Context, config *v1alpha1.AIAnalysisConfig, namespace string) (ltypes.Client, error) {
 	clientConfig := &ClientConfig{
 		Provider:       ltypes.AIProvider(config.Provider),
+		APIURL:         config.GetAPIURL(), // Use helper to get URL with provider defaults
 		TokenSecretRef: config.TokenSecretRef,
 		TimeoutSeconds: config.TimeoutSeconds,
 		MaxTokens:      config.MaxTokens,

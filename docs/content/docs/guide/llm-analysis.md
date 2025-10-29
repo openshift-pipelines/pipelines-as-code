@@ -69,6 +69,7 @@ spec:
 |-------|------|----------|-------------|
 | `enabled` | boolean | Yes | Enable/disable LLM analysis |
 | `provider` | string | Yes | LLM provider: `openai` or `gemini` |
+| `api_url` | string | No | Custom API endpoint URL (overrides provider default) |
 | `timeout_seconds` | integer | No | Request timeout (1-300, default: 30) |
 | `max_tokens` | integer | No | Maximum response tokens (1-4000, default: 1000) |
 | `secret_ref` | object | Yes | Reference to Kubernetes secret with API key |
@@ -165,6 +166,61 @@ kubectl create secret generic openai-api-key \
 kubectl create secret generic gemini-api-key \
   --from-literal=token="your-gemini-api-key" \
   -n <namespace>
+```
+
+## Using Custom API Endpoints
+
+The `api_url` field allows you to override the default API endpoint for LLM providers. This is useful for:
+
+- Self-hosted LLM services (e.g., LocalAI, vLLM, Ollama with OpenAI adapter)
+- Enterprise proxy services
+- Regional or custom endpoints (e.g., Azure OpenAI)
+- Alternative OpenAI-compatible APIs
+
+### Example Configuration
+
+```yaml
+settings:
+  ai:
+    enabled: true
+    provider: "openai"
+    api_url: "https://custom-llm.example.com/v1"  # Custom endpoint
+    secret_ref:
+      name: "custom-api-key"
+      key: "token"
+    roles:
+      - name: "failure-analysis"
+        prompt: "Analyze this pipeline failure..."
+        output: "pr-comment"
+```
+
+### Default API Endpoints
+
+If `api_url` is not specified, these defaults are used:
+
+- **OpenAI**: `https://api.openai.com/v1`
+- **Gemini**: `https://generativelanguage.googleapis.com/v1beta`
+
+### URL Format Requirements
+
+The `api_url` must:
+
+- Use `http://` or `https://` scheme
+- Include a valid hostname
+- Optionally include port and path components
+
+Examples:
+
+```yaml
+# Valid URLs
+api_url: "https://api.openai.com/v1"
+api_url: "http://localhost:8080/v1"
+api_url: "https://custom-proxy.company.com:9000/openai/v1"
+
+# Invalid URLs
+api_url: "ftp://example.com"       # Wrong scheme
+api_url: "//example.com"           # Missing scheme
+api_url: "not-a-url"               # Invalid format
 ```
 
 ## Example: Complete Configuration

@@ -32,6 +32,7 @@ spec:
         ai:
             enabled: true
             provider: gemini
+            # api_url: "https://custom-gemini.example.com/v1"  # Optional: override default API endpoint
             timeout_seconds: 45
             max_tokens: 2000
             secret_ref:

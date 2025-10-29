@@ -128,10 +128,10 @@ func TestAnalyzer_ValidateConfig(t *testing.T) {
 			name: "valid config",
 			config: &v1alpha1.AIAnalysisConfig{
 				Provider: "openai",
-				TokenSecretRef: &v1alpha1.LLMSecret{Secret: &v1alpha1.Secret{
+				TokenSecretRef: &v1alpha1.Secret{
 					Name: "test-secret",
 					Key:  "token",
-				}},
+				},
 				Roles: []v1alpha1.AnalysisRole{
 					{
 						Name:   "test-role",
@@ -145,10 +145,10 @@ func TestAnalyzer_ValidateConfig(t *testing.T) {
 		{
 			name: "missing provider",
 			config: &v1alpha1.AIAnalysisConfig{
-				TokenSecretRef: &v1alpha1.LLMSecret{Secret: &v1alpha1.Secret{
+				TokenSecretRef: &v1alpha1.Secret{
 					Name: "test-secret",
 					Key:  "token",
-				}},
+				},
 				Roles: []v1alpha1.AnalysisRole{
 					{
 						Name:   "test-role",
@@ -177,10 +177,10 @@ func TestAnalyzer_ValidateConfig(t *testing.T) {
 			name: "no roles",
 			config: &v1alpha1.AIAnalysisConfig{
 				Provider: "openai",
-				TokenSecretRef: &v1alpha1.LLMSecret{Secret: &v1alpha1.Secret{
+				TokenSecretRef: &v1alpha1.Secret{
 					Name: "test-secret",
 					Key:  "token",
-				}},
+				},
 				Roles: []v1alpha1.AnalysisRole{},
 			},
 			wantError: true,
@@ -189,10 +189,10 @@ func TestAnalyzer_ValidateConfig(t *testing.T) {
 			name: "invalid role - missing name",
 			config: &v1alpha1.AIAnalysisConfig{
 				Provider: "openai",
-				TokenSecretRef: &v1alpha1.LLMSecret{Secret: &v1alpha1.Secret{
+				TokenSecretRef: &v1alpha1.Secret{
 					Name: "test-secret",
 					Key:  "token",
-				}},
+				},
 				Roles: []v1alpha1.AnalysisRole{
 					{
 						Prompt: "test prompt",
@@ -206,10 +206,10 @@ func TestAnalyzer_ValidateConfig(t *testing.T) {
 			name: "invalid role - missing prompt",
 			config: &v1alpha1.AIAnalysisConfig{
 				Provider: "openai",
-				TokenSecretRef: &v1alpha1.LLMSecret{Secret: &v1alpha1.Secret{
+				TokenSecretRef: &v1alpha1.Secret{
 					Name: "test-secret",
 					Key:  "token",
-				}},
+				},
 				Roles: []v1alpha1.AnalysisRole{
 					{
 						Name:   "test-role",
@@ -223,10 +223,10 @@ func TestAnalyzer_ValidateConfig(t *testing.T) {
 			name: "invalid role - invalid output",
 			config: &v1alpha1.AIAnalysisConfig{
 				Provider: "openai",
-				TokenSecretRef: &v1alpha1.LLMSecret{Secret: &v1alpha1.Secret{
+				TokenSecretRef: &v1alpha1.Secret{
 					Name: "test-secret",
 					Key:  "token",
-				}},
+				},
 				Roles: []v1alpha1.AnalysisRole{
 					{
 						Name:   "test-role",

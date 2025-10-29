@@ -1,8 +1,10 @@
 package v1alpha1
 
 const (
-	// DefaultContainerLogsMaxLines is the default maximum number of log lines to fetch per container.
-	DefaultContainerLogsMaxLines = 50
+	// defaultContainerLogsMaxLines is the default maximum number of log lines to fetch per container.
+	defaultContainerLogsMaxLines = 50
+	defaultOpenAIURL             = "https://api.openai.com/v1"
+	defaultGeminiURL             = "https://generativelanguage.googleapis.com/v1beta"
 )
 
 // AIAnalysisConfig defines configuration for AI/LLM-powered analysis of CI/CD pipeline events.
@@ -16,9 +18,17 @@ type AIAnalysisConfig struct {
 	// +kubebuilder:validation:Enum=openai;gemini
 	Provider string `json:"provider"`
 
+	// APIURL is an optional base URL to override the default API endpoint of the LLM provider.
+	// If not specified, provider-specific defaults are used:
+	// - OpenAI: https://api.openai.com/v1
+	// - Gemini: https://generativelanguage.googleapis.com/v1beta
+	// Use this to configure self-hosted LLM instances, proxy services, or alternative endpoints.
+	// +optional
+	APIURL string `json:"api_url,omitempty"`
+
 	// TokenSecretRef references the Kubernetes secret containing the LLM provider API token
 	// +kubebuilder:validation:Required
-	TokenSecretRef *LLMSecret `json:"secret_ref"`
+	TokenSecretRef *Secret `json:"secret_ref"`
 
 	// TimeoutSeconds sets the maximum time to wait for LLM analysis (default: 30)
 	// +optional
@@ -36,14 +46,6 @@ type AIAnalysisConfig struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinItems=1
 	Roles []AnalysisRole `json:"roles"`
-}
-
-type LLMSecret struct {
-	*Secret `json:",inline"`
-
-	// URL is an optional base URL to override the default API endpoint of the LLM provider
-	// +optional
-	URL string `json:"url,omitempty"`
 }
 
 // AnalysisRole defines a specific analysis scenario with its prompt, conditions, and output configuration.
@@ -104,7 +106,7 @@ type ContainerLogsConfig struct {
 
 func (c *ContainerLogsConfig) GetMaxLines() int {
 	if c == nil || c.MaxLines == 0 {
-		return DefaultContainerLogsMaxLines
+		return defaultContainerLogsMaxLines
 	}
 	return c.MaxLines
 }
@@ -115,4 +117,24 @@ func (r *AnalysisRole) GetOutput() string {
 		return "pr-comment"
 	}
 	return r.Output
+}
+
+// GetAPIURL returns the configured API URL, or the provider's default if not specified.
+func (c *AIAnalysisConfig) GetAPIURL() string {
+	if c.APIURL != "" {
+		return c.APIURL
+	}
+	return GetProviderDefaultAPIURL(c.Provider)
+}
+
+// GetProviderDefaultAPIURL returns the default API URL for a given LLM provider.
+func GetProviderDefaultAPIURL(provider string) string {
+	switch provider {
+	case "openai":
+		return defaultOpenAIURL
+	case "gemini":
+		return defaultGeminiURL
+	default:
+		return ""
+	}
 }

@@ -3,6 +3,7 @@ package llm
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
@@ -16,7 +17,8 @@ import (
 // ClientConfig holds the configuration needed to create LLM clients.
 type ClientConfig struct {
 	Provider       llmtypes.AIProvider
-	TokenSecretRef *v1alpha1.LLMSecret
+	APIURL         string
+	TokenSecretRef *v1alpha1.Secret
 	TimeoutSeconds int
 	MaxTokens      int
 }
@@ -41,6 +43,11 @@ func (f *Factory) CreateClient(ctx context.Context, config *ClientConfig, namesp
 		return nil, fmt.Errorf("client configuration is required")
 	}
 
+	// Validate configuration
+	if err := f.ValidateConfig(config); err != nil {
+		return nil, fmt.Errorf("invalid client configuration: %w", err)
+	}
+
 	// Retrieve the API token from the secret
 	token, err := f.getTokenFromSecret(ctx, config.TokenSecretRef, namespace)
 	if err != nil {
@@ -50,11 +57,8 @@ func (f *Factory) CreateClient(ctx context.Context, config *ClientConfig, namesp
 	// Apply defaults
 	timeoutSeconds, maxTokens := f.applyDefaults(config.TimeoutSeconds, config.MaxTokens)
 
-	// Get base URL override if provided
-	baseURL := ""
-	if config.TokenSecretRef != nil && config.TokenSecretRef.URL != "" {
-		baseURL = config.TokenSecretRef.URL
-	}
+	// Use APIURL from config (already validated)
+	baseURL := config.APIURL
 
 	// Create provider-specific client directly
 	baseClient, err := f.createProviderClient(config.Provider, token, baseURL, timeoutSeconds, maxTokens)
@@ -78,12 +82,17 @@ func (f *Factory) ValidateConfig(config *ClientConfig) error {
 	if config.TokenSecretRef == nil {
 		return fmt.Errorf("token secret reference is required")
 	}
-	if config.TokenSecretRef.Secret == nil {
-		return fmt.Errorf("token secret reference is invalid (embedded secret is nil)")
-	}
 	if config.TokenSecretRef.Name == "" {
 		return fmt.Errorf("token secret name is required")
 	}
+
+	// Validate APIURL format if provided
+	if config.APIURL != "" {
+		if err := f.validateURL(config.APIURL); err != nil {
+			return fmt.Errorf("invalid api_url: %w", err)
+		}
+	}
+
 	// Validate provider is supported
 	if !f.isProviderSupported(config.Provider) {
 		return fmt.Errorf("unsupported LLM provider: %s", config.Provider)
@@ -119,8 +128,32 @@ func (f *Factory) isProviderSupported(provider llmtypes.AIProvider) bool {
 	return false
 }
 
+// validateURL validates that the URL is properly formatted.
+func (f *Factory) validateURL(urlStr string) error {
+	if urlStr == "" {
+		return nil // Empty is valid (optional)
+	}
+
+	parsedURL, err := url.Parse(urlStr)
+	if err != nil {
+		return fmt.Errorf("failed to parse URL '%s': %w", urlStr, err)
+	}
+
+	// Ensure scheme is http or https
+	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+		return fmt.Errorf("URL scheme must be 'http' or 'https', got '%s'", parsedURL.Scheme)
+	}
+
+	// Ensure host is present
+	if parsedURL.Host == "" {
+		return fmt.Errorf("URL must contain a host")
+	}
+
+	return nil
+}
+
 // getTokenFromSecret retrieves the API token from a Kubernetes secret.
-func (f *Factory) getTokenFromSecret(ctx context.Context, secretRef *v1alpha1.LLMSecret, namespace string) (string, error) {
+func (f *Factory) getTokenFromSecret(ctx context.Context, secretRef *v1alpha1.Secret, namespace string) (string, error) {
 	if secretRef == nil {
 		return "", fmt.Errorf("secret reference is nil")
 	}
@@ -193,11 +226,10 @@ func (f *Factory) createProviderClient(provider llmtypes.AIProvider, token, base
 func (f *Factory) CreateClientFromProvider(ctx context.Context, provider, secretName, secretKey, namespace string, timeoutSeconds, maxTokens int) (llmtypes.Client, error) {
 	config := &ClientConfig{
 		Provider: llmtypes.AIProvider(provider),
-		TokenSecretRef: &v1alpha1.LLMSecret{
-			Secret: &v1alpha1.Secret{
-				Name: secretName,
-				Key:  secretKey,
-			},
+		APIURL:   "", // Use provider default
+		TokenSecretRef: &v1alpha1.Secret{
+			Name: secretName,
+			Key:  secretKey,
 		},
 		TimeoutSeconds: timeoutSeconds,
 		MaxTokens:      maxTokens,

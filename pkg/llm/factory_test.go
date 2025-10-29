@@ -26,10 +26,10 @@ func TestFactory_ValidateConfig(t *testing.T) {
 			name: "valid openai config",
 			config: &ClientConfig{
 				Provider: ltypes.LLMProviderOpenAI,
-				TokenSecretRef: &v1alpha1.LLMSecret{Secret: &v1alpha1.Secret{
+				TokenSecretRef: &v1alpha1.Secret{
 					Name: "test-secret",
 					Key:  "token",
-				}},
+				},
 				TimeoutSeconds: 30,
 				MaxTokens:      1000,
 			},
@@ -39,10 +39,10 @@ func TestFactory_ValidateConfig(t *testing.T) {
 			name: "valid gemini config",
 			config: &ClientConfig{
 				Provider: ltypes.LLMProviderGemini,
-				TokenSecretRef: &v1alpha1.LLMSecret{Secret: &v1alpha1.Secret{
+				TokenSecretRef: &v1alpha1.Secret{
 					Name: "test-secret",
 					Key:  "api_key",
-				}},
+				},
 				TimeoutSeconds: 45,
 				MaxTokens:      2000,
 			},
@@ -56,10 +56,10 @@ func TestFactory_ValidateConfig(t *testing.T) {
 		{
 			name: "missing provider",
 			config: &ClientConfig{
-				TokenSecretRef: &v1alpha1.LLMSecret{Secret: &v1alpha1.Secret{
+				TokenSecretRef: &v1alpha1.Secret{
 					Name: "test-secret",
 					Key:  "token",
-				}},
+				},
 			},
 			wantError: true,
 		},
@@ -74,10 +74,10 @@ func TestFactory_ValidateConfig(t *testing.T) {
 			name: "invalid provider",
 			config: &ClientConfig{
 				Provider: "invalid-provider",
-				TokenSecretRef: &v1alpha1.LLMSecret{Secret: &v1alpha1.Secret{
+				TokenSecretRef: &v1alpha1.Secret{
 					Name: "test-secret",
 					Key:  "token",
-				}},
+				},
 			},
 			wantError: true,
 		},
@@ -85,10 +85,10 @@ func TestFactory_ValidateConfig(t *testing.T) {
 			name: "negative timeout",
 			config: &ClientConfig{
 				Provider: ltypes.LLMProviderOpenAI,
-				TokenSecretRef: &v1alpha1.LLMSecret{Secret: &v1alpha1.Secret{
+				TokenSecretRef: &v1alpha1.Secret{
 					Name: "test-secret",
 					Key:  "token",
-				}},
+				},
 				TimeoutSeconds: -1,
 			},
 			wantError: true,
@@ -97,11 +97,71 @@ func TestFactory_ValidateConfig(t *testing.T) {
 			name: "negative max tokens",
 			config: &ClientConfig{
 				Provider: ltypes.LLMProviderOpenAI,
-				TokenSecretRef: &v1alpha1.LLMSecret{Secret: &v1alpha1.Secret{
+				TokenSecretRef: &v1alpha1.Secret{
 					Name: "test-secret",
 					Key:  "token",
-				}},
+				},
 				MaxTokens: -1,
+			},
+			wantError: true,
+		},
+		{
+			name: "valid config with custom api_url",
+			config: &ClientConfig{
+				Provider: ltypes.LLMProviderOpenAI,
+				APIURL:   "https://custom-openai.example.com/v1",
+				TokenSecretRef: &v1alpha1.Secret{
+					Name: "test-secret",
+					Key:  "token",
+				},
+			},
+			wantError: false,
+		},
+		{
+			name: "valid config with http api_url",
+			config: &ClientConfig{
+				Provider: ltypes.LLMProviderGemini,
+				APIURL:   "http://localhost:8080/v1",
+				TokenSecretRef: &v1alpha1.Secret{
+					Name: "test-secret",
+					Key:  "token",
+				},
+			},
+			wantError: false,
+		},
+		{
+			name: "invalid api_url - wrong scheme",
+			config: &ClientConfig{
+				Provider: ltypes.LLMProviderOpenAI,
+				APIURL:   "ftp://example.com",
+				TokenSecretRef: &v1alpha1.Secret{
+					Name: "test-secret",
+					Key:  "token",
+				},
+			},
+			wantError: true,
+		},
+		{
+			name: "invalid api_url - missing scheme",
+			config: &ClientConfig{
+				Provider: ltypes.LLMProviderOpenAI,
+				APIURL:   "example.com/v1",
+				TokenSecretRef: &v1alpha1.Secret{
+					Name: "test-secret",
+					Key:  "token",
+				},
+			},
+			wantError: true,
+		},
+		{
+			name: "invalid api_url - malformed",
+			config: &ClientConfig{
+				Provider: ltypes.LLMProviderOpenAI,
+				APIURL:   "://invalid",
+				TokenSecretRef: &v1alpha1.Secret{
+					Name: "test-secret",
+					Key:  "token",
+				},
 			},
 			wantError: true,
 		},
@@ -134,10 +194,10 @@ func TestFactory_CreateClient(t *testing.T) {
 			},
 			config: &ClientConfig{
 				Provider: ltypes.LLMProviderOpenAI,
-				TokenSecretRef: &v1alpha1.LLMSecret{Secret: &v1alpha1.Secret{
+				TokenSecretRef: &v1alpha1.Secret{
 					Name: "test-secret",
 					Key:  "token",
-				}},
+				},
 				TimeoutSeconds: 30,
 				MaxTokens:      1000,
 			},
@@ -151,10 +211,10 @@ func TestFactory_CreateClient(t *testing.T) {
 			},
 			config: &ClientConfig{
 				Provider: ltypes.LLMProviderGemini,
-				TokenSecretRef: &v1alpha1.LLMSecret{Secret: &v1alpha1.Secret{
+				TokenSecretRef: &v1alpha1.Secret{
 					Name: "test-secret",
 					Key:  "token",
-				}},
+				},
 				TimeoutSeconds: 30,
 				MaxTokens:      1000,
 			},
@@ -165,10 +225,10 @@ func TestFactory_CreateClient(t *testing.T) {
 			name: "missing secret",
 			config: &ClientConfig{
 				Provider: ltypes.LLMProviderOpenAI,
-				TokenSecretRef: &v1alpha1.LLMSecret{Secret: &v1alpha1.Secret{
+				TokenSecretRef: &v1alpha1.Secret{
 					Name: "missing-secret",
 					Key:  "token",
-				}},
+				},
 			},
 			namespace: "default",
 			wantError: true,
@@ -177,10 +237,10 @@ func TestFactory_CreateClient(t *testing.T) {
 			name: "unsupported provider",
 			config: &ClientConfig{
 				Provider: "unsupported",
-				TokenSecretRef: &v1alpha1.LLMSecret{Secret: &v1alpha1.Secret{
+				TokenSecretRef: &v1alpha1.Secret{
 					Name: "test-secret",
 					Key:  "token",
-				}},
+				},
 			},
 			namespace: "default",
 			wantError: true,
