@@ -1,7 +1,9 @@
 package context
 
 import (
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
@@ -12,6 +14,7 @@ import (
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
 func TestBuildCELContext(t *testing.T) {
@@ -333,5 +336,140 @@ func TestBuildCELContext_ConditionalFields(t *testing.T) {
 		// trigger_comment should not exist
 		_, exists := eventMap["trigger_comment"]
 		assert.Assert(t, !exists, "trigger_comment should not exist when empty")
+	})
+}
+
+func TestBuildCommitContent(t *testing.T) {
+	logger, _ := logger.GetLogger()
+	run := &params.Run{}
+	kinteract := &kubeinteraction.Interaction{}
+	assembler := NewAssembler(run, kinteract, logger)
+	ctx, _ := rtesting.SetupFakeContext(t)
+
+	t.Run("basic commit fields without provider", func(t *testing.T) {
+		event := &info.Event{
+			SHA:      "abc123",
+			SHATitle: "feat: add new feature",
+		}
+
+		commitData, err := assembler.buildCommitContent(ctx, event, nil)
+		assert.NilError(t, err)
+
+		// Should have basic fields
+		assert.Equal(t, commitData["sha"], "abc123")
+		assert.Equal(t, commitData["message"], "feat: add new feature")
+
+		// Should not have extended fields
+		_, hasURL := commitData["url"]
+		assert.Assert(t, !hasURL, "url should not exist without provider")
+	})
+
+	t.Run("with full commit information after GetCommitInfo", func(t *testing.T) {
+		event := &info.Event{
+			SHA:               "abc123",
+			SHATitle:          "feat: add new feature",
+			SHAURL:            "https://github.com/org/repo/commit/abc123",
+			SHAMessage:        "feat: add new feature\n\nThis is the detailed commit message explaining the changes.",
+			SHAAuthorName:     "John Doe",
+			SHAAuthorEmail:    "john@example.com", // Populated but excluded from LLM context
+			SHACommitterName:  "GitHub",
+			SHACommitterEmail: "noreply@github.com", // Populated but excluded from LLM context
+		}
+
+		commitData, err := assembler.buildCommitContent(ctx, event, nil)
+		assert.NilError(t, err)
+
+		// Basic fields
+		assert.Equal(t, commitData["sha"], "abc123")
+		assert.Equal(t, commitData["message"], "feat: add new feature")
+		assert.Equal(t, commitData["url"], "https://github.com/org/repo/commit/abc123")
+
+		// Full message
+		fullMsg, ok := commitData["full_message"].(string)
+		assert.Assert(t, ok, "full_message should be a string")
+		assert.Assert(t, strings.Contains(fullMsg, "detailed commit message"))
+
+		// Author information (name only, email excluded for privacy)
+		author, ok := commitData["author"].(map[string]any)
+		assert.Assert(t, ok, "author should be a map")
+		assert.Equal(t, author["name"], "John Doe")
+		_, hasEmail := author["email"]
+		assert.Assert(t, !hasEmail, "email should be excluded for privacy/PII reasons")
+
+		// Committer information (name only, email excluded for privacy)
+		committer, ok := commitData["committer"].(map[string]any)
+		assert.Assert(t, ok, "committer should be a map")
+		assert.Equal(t, committer["name"], "GitHub")
+		_, hasEmail = committer["email"]
+		assert.Assert(t, !hasEmail, "email should be excluded for privacy/PII reasons")
+	})
+
+	t.Run("with author date and committer date", func(t *testing.T) {
+		authorDate := time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC)
+		committerDate := time.Date(2024, 1, 15, 10, 31, 0, 0, time.UTC)
+
+		event := &info.Event{
+			SHA:              "abc123",
+			SHATitle:         "fix: bug fix",
+			SHAAuthorName:    "Jane Developer",
+			SHAAuthorDate:    authorDate,
+			SHACommitterName: "CI Bot",
+			SHACommitterDate: committerDate,
+		}
+
+		commitData, err := assembler.buildCommitContent(ctx, event, nil)
+		assert.NilError(t, err)
+
+		author, ok := commitData["author"].(map[string]any)
+		assert.Assert(t, ok)
+		assert.DeepEqual(t, author["date"], authorDate)
+
+		committer, ok := commitData["committer"].(map[string]any)
+		assert.Assert(t, ok)
+		assert.DeepEqual(t, committer["date"], committerDate)
+	})
+
+	t.Run("when full_message equals title, don't duplicate", func(t *testing.T) {
+		event := &info.Event{
+			SHA:        "abc123",
+			SHATitle:   "fix: simple fix",
+			SHAMessage: "fix: simple fix", // Same as title
+		}
+
+		commitData, err := assembler.buildCommitContent(ctx, event, nil)
+		assert.NilError(t, err)
+
+		// full_message should not be present since it's the same as title
+		_, hasFull := commitData["full_message"]
+		assert.Assert(t, !hasFull, "full_message should not exist when same as title")
+	})
+
+	t.Run("verify emails are always excluded even when present", func(t *testing.T) {
+		event := &info.Event{
+			SHA:               "abc123",
+			SHATitle:          "feat: new feature",
+			SHAAuthorName:     "John Doe",
+			SHAAuthorEmail:    "john@example.com",   // Present but should be excluded
+			SHACommitterEmail: "commit@example.com", // Present but should be excluded
+		}
+
+		commitData, err := assembler.buildCommitContent(ctx, event, nil)
+		assert.NilError(t, err)
+
+		// Email should never be included, even when populated
+		author, ok := commitData["author"].(map[string]any)
+		assert.Assert(t, ok, "author should exist")
+		assert.Equal(t, author["name"], "John Doe")
+		_, hasAuthorEmail := author["email"]
+		assert.Assert(t, !hasAuthorEmail, "author email must be excluded for privacy")
+
+		// Committer should not exist (no name provided)
+		_, hasCommitter := commitData["committer"]
+		assert.Assert(t, !hasCommitter, "committer should not exist without name or date")
+	})
+
+	t.Run("nil event", func(t *testing.T) {
+		_, err := assembler.buildCommitContent(ctx, nil, nil)
+		assert.ErrorContains(t, err, "event is nil")
 	})
 }

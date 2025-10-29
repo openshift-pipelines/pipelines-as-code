@@ -477,6 +477,19 @@ func (v *Provider) GetCommitInfo(_ context.Context, runevent *info.Event) error 
 		runevent.SHA = branchinfo.ID
 		runevent.SHATitle = branchinfo.Title
 		runevent.SHAURL = branchinfo.WebURL
+
+		// Populate full commit information for LLM context
+		runevent.SHAMessage = branchinfo.Message
+		runevent.SHAAuthorName = branchinfo.AuthorName
+		runevent.SHAAuthorEmail = branchinfo.AuthorEmail
+		if branchinfo.AuthoredDate != nil {
+			runevent.SHAAuthorDate = *branchinfo.AuthoredDate
+		}
+		runevent.SHACommitterName = branchinfo.CommitterName
+		runevent.SHACommitterEmail = branchinfo.CommitterEmail
+		if branchinfo.CommittedDate != nil {
+			runevent.SHACommitterDate = *branchinfo.CommittedDate
+		}
 	}
 
 	return nil

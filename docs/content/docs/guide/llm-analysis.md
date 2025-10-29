@@ -97,11 +97,33 @@ Control what information is sent to the LLM:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `commit_content` | boolean | Include commit message and diff |
+| `commit_content` | boolean | Include commit information (see Commit Fields below) |
 | `pr_content` | boolean | Include PR title, description, metadata |
 | `error_content` | boolean | Include error messages and failures |
 | `container_logs.enabled` | boolean | Include container/task logs |
 | `container_logs.max_lines` | integer | Limit log lines (1-1000, default: 50). ⚠️ High values may impact performance |
+
+#### Commit Fields
+
+When `commit_content: true` is enabled, the following fields are included in the LLM context:
+
+| Field | Type | Description | Example |
+|-------|------|-------------|---------|
+| `commit.sha` | string | Commit SHA hash | `"abc123def456..."` |
+| `commit.message` | string | Commit title (first line/paragraph) | `"feat: add new feature"` |
+| `commit.url` | string | Web URL to view the commit | `"https://github.com/org/repo/commit/abc123"` |
+| `commit.full_message` | string | Complete commit message (if different from title) | `"feat: add new feature\n\nDetailed description..."` |
+| `commit.author.name` | string | Author's name | `"John Doe"` |
+| `commit.author.date` | timestamp | When the commit was authored | `"2024-01-15T10:30:00Z"` |
+| `commit.committer.name` | string | Committer's name (may differ from author) | `"GitHub"` |
+| `commit.committer.date` | timestamp | When the commit was committed | `"2024-01-15T10:31:00Z"` |
+
+**Privacy & Security Notes:**
+
+- **Email addresses are intentionally excluded** from the commit context to protect personally identifiable information (PII) when sending data to external LLM APIs
+- Fields are only included if available from the git provider
+- Some providers may have limited information (e.g., Bitbucket Cloud only provides author name)
+- Author and committer may be the same person or different (e.g., when using `git commit --amend` or rebasing)
 
 ## Model Selection
 

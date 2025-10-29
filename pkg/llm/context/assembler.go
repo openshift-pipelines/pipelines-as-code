@@ -56,7 +56,7 @@ func (a *Assembler) BuildContext(
 	// Add commit content if requested
 	if contextConfig.CommitContent {
 		if commitData, err := a.buildCommitContent(ctx, event, provider); err != nil {
-			a.logger.Warnf("Failed to build commit content: %v", err)
+			a.logger.Warnf("we couldn't retrieve the commit details. this may limit the analysis, but we'll proceed with the available information. (error: %v)", err)
 		} else {
 			contextData["commit"] = commitData
 		}
@@ -146,6 +146,43 @@ func (a *Assembler) buildCommitContent(ctx context.Context, event *info.Event, p
 		if err := provider.GetCommitInfo(ctx, event); err != nil {
 			a.logger.Warnf("Failed to get additional commit info: %v", err)
 		}
+	}
+
+	// Add extended commit fields if available (after GetCommitInfo or if already populated)
+	// Add URL if available
+	if event.SHAURL != "" {
+		commitData["url"] = event.SHAURL
+	}
+
+	// Add full commit message if available and different from title
+	if event.SHAMessage != "" && event.SHAMessage != event.SHATitle {
+		commitData["full_message"] = event.SHAMessage
+	}
+
+	// Add author information if available
+	// Note: Email addresses are excluded for privacy/PII reasons
+	if event.SHAAuthorName != "" || !event.SHAAuthorDate.IsZero() {
+		author := map[string]any{}
+		if event.SHAAuthorName != "" {
+			author["name"] = event.SHAAuthorName
+		}
+		if !event.SHAAuthorDate.IsZero() {
+			author["date"] = event.SHAAuthorDate
+		}
+		commitData["author"] = author
+	}
+
+	// Add committer information if available
+	// Note: Email addresses are excluded for privacy/PII reasons
+	if event.SHACommitterName != "" || !event.SHACommitterDate.IsZero() {
+		committer := map[string]any{}
+		if event.SHACommitterName != "" {
+			committer["name"] = event.SHACommitterName
+		}
+		if !event.SHACommitterDate.IsZero() {
+			committer["date"] = event.SHACommitterDate
+		}
+		commitData["committer"] = committer
 	}
 
 	return commitData, nil

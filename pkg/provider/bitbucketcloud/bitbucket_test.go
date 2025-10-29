@@ -183,7 +183,7 @@ func TestGetCommitInfo(t *testing.T) {
 		repoinfo   *bitbucket.Repository
 	}{
 		{
-			name:  "Get commit info",
+			name:  "Get commit info with author",
 			event: bbcloudtest.MakeEvent(nil),
 			commitinfo: types.Commit{
 				Hash: "convertedcommit",
@@ -192,7 +192,26 @@ func TestGetCommitInfo(t *testing.T) {
 						HRef: "https://everywhereigo",
 					},
 				},
-				Message: "Das Commit",
+				Message: "Das Commit\n\nWith full message details",
+				Author: types.Author{
+					User: types.User{DisplayName: "John Doe"},
+				},
+			},
+			repoinfo: &bitbucket.Repository{
+				Mainbranch: bitbucket.RepositoryBranch{Name: "branshe"},
+			},
+		},
+		{
+			name:  "Get commit info without author",
+			event: bbcloudtest.MakeEvent(nil),
+			commitinfo: types.Commit{
+				Hash: "convertedcommit",
+				Links: types.Links{
+					HTML: types.HTMLLink{
+						HRef: "https://everywhereigo",
+					},
+				},
+				Message: "Simple message",
 				Author:  types.Author{},
 			},
 			repoinfo: &bitbucket.Repository{
@@ -241,6 +260,14 @@ func TestGetCommitInfo(t *testing.T) {
 			assert.Equal(t, tt.commitinfo.Links.HTML.HRef, tt.event.SHAURL)
 			assert.Equal(t, tt.commitinfo.Hash, tt.event.SHA)
 			assert.Equal(t, tt.commitinfo.Message, tt.event.SHATitle)
+
+			// Verify new extended commit fields
+			assert.Equal(t, tt.commitinfo.Message, tt.event.SHAMessage, "SHAMessage should match")
+
+			// Bitbucket Cloud only provides author DisplayName (no email or dates)
+			if tt.commitinfo.Author.User.DisplayName != "" {
+				assert.Equal(t, tt.commitinfo.Author.User.DisplayName, tt.event.SHAAuthorName, "SHAAuthorName should match")
+			}
 		})
 	}
 }
