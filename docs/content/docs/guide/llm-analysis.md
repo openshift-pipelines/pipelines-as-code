@@ -148,6 +148,8 @@ settings:
 
 Use CEL expressions in `on_cel` to control when analysis runs. If `on_cel` is not specified, the role will always execute.
 
+### Example CEL Expressions
+
 ```yaml
 # Only on failures
 on_cel: 'body.pipelineRun.status.conditions[0].reason == "Failed"'
@@ -158,16 +160,104 @@ on_cel: 'body.event.event_type == "pull_request"'
 # Only on main branch
 on_cel: 'body.event.base_branch == "main"'
 
+# Only on default branch (works across repos with different default branches)
+on_cel: 'body.event.base_branch == body.event.default_branch'
+
+# Skip analysis for bot users
+on_cel: 'body.event.sender != "dependabot[bot]"'
+
+# Only for PRs with specific labels
+on_cel: '"needs-review" in body.event.pull_request_labels'
+
+# Only when triggered by comment
+on_cel: 'body.event.trigger_comment.startsWith("/analyze")'
+
 # Combine conditions
 on_cel: 'body.pipelineRun.status.conditions[0].reason == "Failed" && body.event.event_type == "pull_request"'
 ```
 
-Available fields in CEL context:
+### Available CEL Context Fields
 
-- `body.pipelineRun` - PipelineRun status and metadata
-- `body.event.event_type` - Event type (pull_request, push, etc.)
-- `body.event.base_branch` - Target branch name
-- `body.event.head_branch` - Source branch name
+#### Top-Level Context
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `body.pipelineRun` | object | Full PipelineRun object with status and metadata |
+| `body.repository` | object | Full Repository CRD object |
+| `body.event` | object | Event information (see Event Fields below) |
+| `pac` | map[string]string | PAC parameters map |
+
+#### Event Fields (`body.event.*`)
+
+**Event Type and Trigger:**
+
+| Field | Type | Description | Example |
+|-------|------|-------------|---------|
+| `event_type` | string | Event type from provider | `"pull_request"`, `"push"`, `"Merge Request Hook"` |
+| `trigger_target` | string | Normalized trigger type across providers | `"pull_request"`, `"push"` |
+
+**Branch and Commit Information:**
+
+| Field | Type | Description | Example |
+|-------|------|-------------|---------|
+| `sha` | string | Commit SHA | `"abc123def456..."` |
+| `sha_title` | string | Commit title/message | `"feat: add new feature"` |
+| `base_branch` | string | Target branch for PR (or branch for push) | `"main"` |
+| `head_branch` | string | Source branch for PR (or branch for push) | `"feature-branch"` |
+| `default_branch` | string | Default branch of the repository | `"main"` or `"master"` |
+
+**Repository Information:**
+
+| Field | Type | Description | Example |
+|-------|------|-------------|---------|
+| `organization` | string | Organization/owner name | `"my-org"` |
+| `repository` | string | Repository name | `"my-repo"` |
+
+**URLs:**
+
+| Field | Type | Description | Example |
+|-------|------|-------------|---------|
+| `url` | string | Web URL to repository | `"https://github.com/org/repo"` |
+| `sha_url` | string | Web URL to commit | `"https://github.com/org/repo/commit/abc123"` |
+| `base_url` | string | Web URL to base branch | `"https://github.com/org/repo/tree/main"` |
+| `head_url` | string | Web URL to head branch | `"https://github.com/org/repo/tree/feature"` |
+
+**User Information:**
+
+| Field | Type | Description | Example |
+|-------|------|-------------|---------|
+| `sender` | string | User who triggered the event | `"user123"`, `"dependabot[bot]"` |
+
+**Pull Request Fields (only populated for PR events):**
+
+| Field | Type | Description | Example |
+|-------|------|-------------|---------|
+| `pull_request_number` | int | PR/MR number | `42` |
+| `pull_request_title` | string | PR/MR title | `"Add new feature"` |
+| `pull_request_labels` | []string | List of PR/MR labels | `["enhancement", "needs-review"]` |
+
+**Comment Trigger Fields (only when triggered by comment):**
+
+| Field | Type | Description | Example |
+|-------|------|-------------|---------|
+| `trigger_comment` | string | Comment that triggered the run | `"/test"`, `"/retest"` |
+
+**Webhook Fields:**
+
+| Field | Type | Description | Example |
+|-------|------|-------------|---------|
+| `target_pipelinerun` | string | Target PipelineRun for incoming webhooks | `"my-pipeline-run"` |
+
+### Excluded Fields
+
+The following fields are **intentionally excluded** from CEL context for security and architectural reasons:
+
+- **`event.Provider`** - Contains sensitive API tokens and webhook secrets
+- **`event.Request`** - Contains raw HTTP headers and payload which may include secrets
+- **`event.InstallationID`, `AccountID`, `GHEURL`, `CloneURL`** - Provider-specific internal identifiers and URLs
+- **`event.SourceProjectID`, `TargetProjectID`** - GitLab-specific internal identifiers
+- **`event.State`** - Internal state management fields
+- **`event.Event`** - Raw provider event object (already represented in structured fields)
 
 ## Output Destinations
 
@@ -181,9 +271,9 @@ output: "pr-comment"
 
 Benefits:
 
-- ✅ Visible to all developers
-- ✅ Can be updated with new analysis
-- ✅ Easy to discuss and follow up
+- Visible to all developers
+- Can be updated with new analysis
+- Easy to discuss and follow up
 
 > **Coming Soon**: Additional output destinations including `check-run` (GitHub check runs) and `annotation` (PipelineRun annotations) will be available in future releases.
 

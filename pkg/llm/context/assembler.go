@@ -246,6 +246,15 @@ func (a *Assembler) buildContainerLogs(ctx context.Context, pipelineRun *tektonv
 }
 
 // BuildCELContext builds context data for CEL expression evaluation.
+//
+// This function exposes a carefully curated subset of event data to CEL expressions.
+// The following fields are EXCLUDED for security or internal implementation reasons:
+//   - event.Provider (contains API tokens and webhook secrets)
+//   - event.Request (contains raw HTTP headers and payload which may include secrets)
+//   - event.InstallationID, AccountID, GHEURL, CloneURL (provider-specific internal IDs/URLs)
+//   - event.SourceProjectID, TargetProjectID (GitLab-specific internal IDs)
+//   - event.State (internal state management fields)
+//   - event.Event (raw event object, already represented in structured fields)
 func (a *Assembler) BuildCELContext(
 	pipelineRun *tektonv1.PipelineRun,
 	event *info.Event,
@@ -274,17 +283,44 @@ func (a *Assembler) BuildCELContext(
 	// Add event information to CEL context
 	if event != nil {
 		eventMap := map[string]any{
-			"event_type":   event.EventType,
-			"sha":          event.SHA,
-			"base_branch":  event.BaseBranch,
-			"head_branch":  event.HeadBranch,
+			// Event type and trigger information
+			"event_type":     event.EventType,
+			"trigger_target": event.TriggerTarget.String(),
+
+			// Branch and commit information
+			"sha":            event.SHA,
+			"sha_title":      event.SHATitle,
+			"base_branch":    event.BaseBranch,
+			"head_branch":    event.HeadBranch,
+			"default_branch": event.DefaultBranch,
+
+			// Repository information
 			"organization": event.Organization,
 			"repository":   event.Repository,
+
+			// URLs (web URLs, not git URLs)
+			"url":      event.URL,
+			"sha_url":  event.SHAURL,
+			"base_url": event.BaseURL,
+			"head_url": event.HeadURL,
+
+			// User information
+			"sender": event.Sender,
+
+			// Webhook-specific
+			"target_pipelinerun": event.TargetPipelineRun,
 		}
 
+		// Pull/Merge Request specific fields (only populated for PR events)
 		if event.PullRequestNumber > 0 {
 			eventMap["pull_request_number"] = event.PullRequestNumber
 			eventMap["pull_request_title"] = event.PullRequestTitle
+			eventMap["pull_request_labels"] = event.PullRequestLabel
+		}
+
+		// Comment trigger field (only populated when triggered by comment)
+		if event.TriggerComment != "" {
+			eventMap["trigger_comment"] = event.TriggerComment
 		}
 
 		if bodyMap, ok := celData["body"].(map[string]any); ok {
