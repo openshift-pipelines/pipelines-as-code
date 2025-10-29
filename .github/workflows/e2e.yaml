@@ -206,7 +206,6 @@ jobs:
                   username: actor,
                 });
 
-                core.info(`   API response: ${JSON.stringify(response.data)}`);
                 const permission = response.data.permission;
                 core.info(`   User @${actor} has '${permission}' permission on ${repoOwner}/${repoName}`);
 
