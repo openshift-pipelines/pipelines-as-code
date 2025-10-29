@@ -204,6 +204,44 @@ spec:
                   output: "pr-comment"
 
                 # ═══════════════════════════════════════════════════════════════
+                # Pipeline Summary (Always Runs)
+                # ═══════════════════════════════════════════════════════════════
+                # Generates a summary for every pipeline run
+                # No on_cel specified - this role will always execute
+                - name: "pipeline-summary"
+                  # No model specified - uses provider default
+                  prompt: |
+                      You are a CI/CD assistant providing pipeline run summaries.
+
+                      **Generate a brief summary of this pipeline run:**
+
+                      ## 📊 Pipeline Run Summary
+
+                      ### Status
+                      [Success/Failed/Other - based on context]
+
+                      ### Key Metrics
+                      - Duration: [if available]
+                      - Tasks Run: [count if available]
+
+                      ### Highlights
+                      - [Notable successes or issues]
+                      - [Any warnings or recommendations]
+
+                      Keep it brief and informative.
+
+                  # No on_cel specified - this will run for ALL pipeline runs
+
+                  context_items:
+                      error_content: true
+                      container_logs:
+                          enabled: false
+                      commit_content: true
+                      pr_content: true
+
+                  output: "pr-comment"
+
+                # ═══════════════════════════════════════════════════════════════
                 # Dependency Update Analysis (Check Run)
                 # ═══════════════════════════════════════════════════════════════
                 # Analyzes dependency update PRs (e.g., from Dependabot)

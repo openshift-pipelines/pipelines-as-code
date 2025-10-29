@@ -87,7 +87,7 @@ Each role defines a specific analysis scenario:
 | `name` | string | Yes | Unique identifier for this role |
 | `prompt` | string | Yes | Prompt template for the LLM |
 | `model` | string | No | Model name (consult provider documentation for available models). Uses provider default if not specified. |
-| `on_cel` | string | No | CEL expression for conditional triggering |
+| `on_cel` | string | No | CEL expression for conditional triggering. If not specified, the role will always run. |
 | `output` | string | Yes | Output destination (currently only `pr-comment` is supported) |
 | `context_items` | object | No | Configuration for context inclusion |
 
@@ -146,7 +146,7 @@ settings:
 
 ## CEL Expressions for Triggers
 
-Use CEL expressions in `on_cel` to control when analysis runs:
+Use CEL expressions in `on_cel` to control when analysis runs. If `on_cel` is not specified, the role will always execute.
 
 ```yaml
 # Only on failures

@@ -395,7 +395,7 @@ spec:
                                   - Gemini: gemini-2.5-flash-lite
                                 type: string
                               on_cel:
-                                description: OnCEL is a CEL expression that determines when this role should be triggered
+                                description: OnCEL is a CEL expression that determines when this role should be triggered. If not specified, the role will always run.
                                 type: string
                               output:
                                 default: pr-comment
