@@ -14,12 +14,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// TestGiteaLLM tests the LLM analysis feature with a failing PipelineRun.
+// Note: The YAML file is a PipelineRun definition that will fail at runtime (exit 1).
+// The LLM analysis is triggered only after the PipelineRun executes and its status
+// condition becomes False (see pkg/reconciler/reconciler.go:243).
 func TestGiteaLLM(t *testing.T) {
 	llmRoleName := "make the failure a beautiful success"
 	topts := &tgitea.TestOpts{
 		ExpectEvents: false,
 		TargetEvent:  triggertype.PullRequest.String(),
 		YAMLFiles: map[string]string{
+			// This PipelineRun will fail at runtime due to 'exit 1', triggering LLM analysis
 			".tekton/pr.yaml": "testdata/failures/pipelinerun-exit-1.yaml",
 		},
 		CreateSecret: []corev1.Secret{
