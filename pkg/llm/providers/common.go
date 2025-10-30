@@ -2,9 +2,12 @@
 package providers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
+
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/llm/ltypes"
 )
 
 // CommonConfig represents the common configuration fields across all LLM providers.
@@ -89,4 +92,40 @@ func ValidateBaseURL(baseURL string) error {
 	}
 
 	return nil
+}
+
+// BuildPrompt combines the base prompt with context data.
+// This function is shared across all LLM providers to ensure consistent prompt formatting.
+func BuildPrompt(request *ltypes.AnalysisRequest) (string, error) {
+	var promptBuilder strings.Builder
+
+	// Start with the base prompt
+	promptBuilder.WriteString(request.Prompt)
+	promptBuilder.WriteString("\n\n")
+
+	// Add context sections
+	if len(request.Context) > 0 {
+		promptBuilder.WriteString("Context Information:\n")
+
+		for key, value := range request.Context {
+			promptBuilder.WriteString(fmt.Sprintf("=== %s ===\n", strings.ToUpper(key)))
+
+			switch v := value.(type) {
+			case string:
+				promptBuilder.WriteString(v)
+			case map[string]any, []any:
+				jsonData, err := json.MarshalIndent(v, "", "  ")
+				if err != nil {
+					return "", fmt.Errorf("failed to marshal context %s: %w", key, err)
+				}
+				promptBuilder.Write(jsonData)
+			default:
+				promptBuilder.WriteString(fmt.Sprintf("%v", v))
+			}
+
+			promptBuilder.WriteString("\n\n")
+		}
+	}
+
+	return promptBuilder.String(), nil
 }
