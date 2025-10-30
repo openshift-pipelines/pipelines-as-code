@@ -221,7 +221,7 @@ func (c *Client) Analyze(ctx context.Context, request *ltypes.AnalysisRequest) (
 
 // GetProviderName returns the provider name.
 func (c *Client) GetProviderName() string {
-	return "gemini"
+	return string(ltypes.LLMProviderGemini)
 }
 
 // ValidateConfig validates the client configuration.

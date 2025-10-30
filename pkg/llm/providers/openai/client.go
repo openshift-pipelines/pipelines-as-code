@@ -212,7 +212,7 @@ func (c *Client) Analyze(ctx context.Context, request *ltypes.AnalysisRequest) (
 
 // GetProviderName returns the provider name.
 func (c *Client) GetProviderName() string {
-	return "openai"
+	return string(ltypes.LLMProviderOpenAI)
 }
 
 // ValidateConfig validates the client configuration.
