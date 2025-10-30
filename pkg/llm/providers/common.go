@@ -3,6 +3,8 @@ package providers
 
 import (
 	"fmt"
+	"net/url"
+	"strings"
 )
 
 // CommonConfig represents the common configuration fields across all LLM providers.
@@ -57,6 +59,33 @@ func ApplyDefaults(config any) error {
 
 	if commonCfg.MaxTokens == 0 {
 		commonCfg.MaxTokens = 1000
+	}
+
+	return nil
+}
+
+// ValidateBaseURL validates that the provided baseURL is a valid HTTP/HTTPS URL.
+func ValidateBaseURL(baseURL string) error {
+	if baseURL == "" {
+		return fmt.Errorf("base URL is required")
+	}
+
+	parsedURL, err := url.Parse(baseURL)
+	if err != nil {
+		return fmt.Errorf("invalid base URL: %w", err)
+	}
+
+	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+		return fmt.Errorf("base URL must use http or https scheme, got: %s", parsedURL.Scheme)
+	}
+
+	if parsedURL.Host == "" {
+		return fmt.Errorf("base URL must have a valid host")
+	}
+
+	// Check for invalid characters that might cause issues
+	if strings.ContainsAny(baseURL, " \t\n\r") {
+		return fmt.Errorf("base URL contains invalid whitespace characters")
 	}
 
 	return nil

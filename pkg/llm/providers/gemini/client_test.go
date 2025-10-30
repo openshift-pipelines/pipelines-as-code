@@ -88,6 +88,7 @@ func TestValidateConfig(t *testing.T) {
 			name: "valid config",
 			config: &Config{
 				APIKey:         "valid-key",
+				BaseURL:        "https://api.example.com",
 				TimeoutSeconds: 30,
 				MaxTokens:      1000,
 			},
@@ -107,6 +108,7 @@ func TestValidateConfig(t *testing.T) {
 			name: "negative timeout",
 			config: &Config{
 				APIKey:         "valid-key",
+				BaseURL:        "https://api.example.com",
 				TimeoutSeconds: -1,
 				MaxTokens:      1000,
 			},
@@ -117,11 +119,56 @@ func TestValidateConfig(t *testing.T) {
 			name: "negative max tokens",
 			config: &Config{
 				APIKey:         "valid-key",
+				BaseURL:        "https://api.example.com",
 				TimeoutSeconds: 30,
 				MaxTokens:      -1,
 			},
 			wantError: true,
 			errMsg:    "max tokens must be non-negative",
+		},
+		{
+			name: "invalid URL - no scheme",
+			config: &Config{
+				APIKey:         "valid-key",
+				BaseURL:        "api.example.com",
+				TimeoutSeconds: 30,
+				MaxTokens:      1000,
+			},
+			wantError: true,
+			errMsg:    "base URL must use http or https scheme",
+		},
+		{
+			name: "invalid URL - wrong scheme",
+			config: &Config{
+				APIKey:         "valid-key",
+				BaseURL:        "ftp://api.example.com",
+				TimeoutSeconds: 30,
+				MaxTokens:      1000,
+			},
+			wantError: true,
+			errMsg:    "base URL must use http or https scheme",
+		},
+		{
+			name: "invalid URL - has whitespace",
+			config: &Config{
+				APIKey:         "valid-key",
+				BaseURL:        "https://api.example.com /path",
+				TimeoutSeconds: 30,
+				MaxTokens:      1000,
+			},
+			wantError: true,
+			errMsg:    "invalid base URL",
+		},
+		{
+			name: "invalid URL - no host",
+			config: &Config{
+				APIKey:         "valid-key",
+				BaseURL:        "https://",
+				TimeoutSeconds: 30,
+				MaxTokens:      1000,
+			},
+			wantError: true,
+			errMsg:    "base URL must have a valid host",
 		},
 	}
 

@@ -223,3 +223,89 @@ func TestValidateAndApplyDefaults(t *testing.T) {
 	assert.Equal(t, config.TimeoutSeconds, 30)
 	assert.Equal(t, config.MaxTokens, 1000)
 }
+
+func TestValidateBaseURL(t *testing.T) {
+	tests := []struct {
+		name    string
+		baseURL string
+		wantErr string
+	}{
+		{
+			name:    "empty URL",
+			baseURL: "",
+			wantErr: "base URL is required",
+		},
+		{
+			name:    "valid HTTPS URL",
+			baseURL: "https://api.example.com",
+			wantErr: "",
+		},
+		{
+			name:    "valid HTTP URL",
+			baseURL: "http://api.example.com",
+			wantErr: "",
+		},
+		{
+			name:    "valid URL with port",
+			baseURL: "https://api.example.com:8443",
+			wantErr: "",
+		},
+		{
+			name:    "valid URL with path",
+			baseURL: "https://api.example.com/v1",
+			wantErr: "",
+		},
+		{
+			name:    "invalid URL - no scheme",
+			baseURL: "api.example.com",
+			wantErr: "base URL must use http or https scheme",
+		},
+		{
+			name:    "invalid URL - wrong scheme (ftp)",
+			baseURL: "ftp://api.example.com",
+			wantErr: "base URL must use http or https scheme",
+		},
+		{
+			name:    "invalid URL - wrong scheme (ws)",
+			baseURL: "ws://api.example.com",
+			wantErr: "base URL must use http or https scheme",
+		},
+		{
+			name:    "invalid URL - no host",
+			baseURL: "https://",
+			wantErr: "base URL must have a valid host",
+		},
+		{
+			name:    "invalid URL - with whitespace",
+			baseURL: "https://api.example.com /path",
+			wantErr: "invalid base URL",
+		},
+		{
+			name:    "invalid URL - with tab",
+			baseURL: "https://api.example.com\t/path",
+			wantErr: "invalid base URL",
+		},
+		{
+			name:    "invalid URL - with newline",
+			baseURL: "https://api.example.com\n",
+			wantErr: "invalid base URL",
+		},
+		{
+			name:    "invalid URL - malformed",
+			baseURL: "ht!tp://api.example.com",
+			wantErr: "invalid base URL",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateBaseURL(tt.baseURL)
+			if tt.wantErr == "" {
+				assert.NilError(t, err)
+			} else {
+				assert.Assert(t, err != nil)
+				assert.ErrorContains(t, err, tt.wantErr)
+			}
+		})
+	}
+}

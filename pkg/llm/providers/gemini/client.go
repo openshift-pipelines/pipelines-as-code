@@ -240,7 +240,16 @@ func (c *Client) ValidateConfig() error {
 		TimeoutSeconds: c.config.TimeoutSeconds,
 		MaxTokens:      c.config.MaxTokens,
 	}
-	return providers.ValidateCommonConfig(commonCfg)
+	if err := providers.ValidateCommonConfig(commonCfg); err != nil {
+		return err
+	}
+
+	// Validate BaseURL
+	if err := providers.ValidateBaseURL(c.config.BaseURL); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // buildPrompt combines the base prompt with context data.
