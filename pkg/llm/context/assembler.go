@@ -277,8 +277,8 @@ func (a *Assembler) buildContainerLogs(ctx context.Context, pipelineRun *tektonv
 	}
 
 	return map[string]any{
-		"failed_tasks": logs,
-		"max_lines":    maxLines,
+		"failed_tasks_logs": logs,
+		"max_lines":         maxLines,
 	}
 }
 
