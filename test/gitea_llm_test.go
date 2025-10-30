@@ -20,7 +20,7 @@ func TestGiteaLLM(t *testing.T) {
 		ExpectEvents: false,
 		TargetEvent:  triggertype.PullRequest.String(),
 		YAMLFiles: map[string]string{
-			".tekton/pr.yaml": "testdata/pipelinerun.yaml",
+			".tekton/pr.yaml": "testdata/failures/pipelinerun-exit-1.yaml",
 		},
 		CreateSecret: []corev1.Secret{
 			{

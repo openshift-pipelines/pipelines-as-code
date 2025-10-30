@@ -168,15 +168,39 @@ settings:
 
 ## CEL Expressions for Triggers
 
-Use CEL expressions in `on_cel` to control when analysis runs. If `on_cel` is not specified, the role will always execute.
+**By default, LLM analysis only runs for failed pipeline runs.** Use CEL expressions in `on_cel` to further control when analysis runs or to enable it for successful runs.
+
+If `on_cel` is not specified, the role will execute for all failed pipeline runs.
+
+### Overriding the Default Behavior
+
+To run LLM analysis for **all pipeline runs** (both successful and failed), use `on_cel: 'true'`:
+
+```yaml
+roles:
+  - name: "pipeline-summary"
+    prompt: "Generate a summary of this pipeline run..."
+    on_cel: 'true'  # Runs for ALL pipeline runs, not just failures
+    output: "pr-comment"
+```
+
+This is useful for:
+
+- Generating summaries for all pipeline runs
+- Tracking metrics for successful runs
+- Celebrating successes with automated messages
+- Reporting on build performance
 
 ### Example CEL Expressions
 
 ```yaml
-# Only on failures
-on_cel: 'body.pipelineRun.status.conditions[0].reason == "Failed"'
+# Run on ALL pipeline runs (overrides default failed-only behavior)
+on_cel: 'true'
 
-# Only on pull requests
+# Only on successful runs (e.g., for generating success reports)
+on_cel: 'body.pipelineRun.status.conditions[0].reason == "Succeeded"'
+
+# Only on pull requests (in addition to default failed-only check)
 on_cel: 'body.event.event_type == "pull_request"'
 
 # Only on main branch
