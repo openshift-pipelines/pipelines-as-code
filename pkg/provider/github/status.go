@@ -42,6 +42,10 @@ const taskStatusTemplate = `
 
 func (v *Provider) getExistingCheckRunID(ctx context.Context, runevent *info.Event, status provider.StatusOpts) (*int64, error) {
 	opt := github.ListOptions{PerPage: v.PaginedNumber}
+	var expectedCheckName string
+	if v.pacInfo != nil {
+		expectedCheckName = provider.GetCheckName(status, v.pacInfo)
+	}
 	for {
 		res, resp, err := wrapAPI(v, "list_check_runs_for_ref", func() (*github.ListCheckRunsResults, *github.Response, error) {
 			return v.Client().Checks.ListCheckRunsForRef(ctx, runevent.Organization, runevent.Repository,
@@ -62,6 +66,9 @@ func (v *Provider) getExistingCheckRunID(ctx context.Context, runevent *info.Eve
 				}
 			}
 			if *checkrun.ExternalID == status.PipelineRunName {
+				return checkrun.ID, nil
+			}
+			if expectedCheckName != "" && checkrun.Name != nil && *checkrun.Name == expectedCheckName {
 				return checkrun.ID, nil
 			}
 		}
@@ -87,12 +94,17 @@ func isPendingApprovalCheckrun(run *github.CheckRun) bool {
 }
 
 func isFailedCheckrun(run *github.CheckRun) bool {
-	if run == nil || run.Output == nil {
+	if run == nil {
 		return false
 	}
-	if run.Output.Title != nil && strings.Contains(*run.Output.Title, "pipelinerun start failure") &&
-		run.Output.Summary != nil &&
-		strings.Contains(*run.Output.Summary, "failed") {
+
+	// Check if this is a completed check run with a failure conclusion
+	if run.Status != nil && *run.Status == "completed" &&
+		run.Conclusion != nil && *run.Conclusion == "failure" {
+		return true
+	}
+
+	if run.Output != nil && run.Output.Title != nil && strings.Contains(*run.Output.Title, "pipelinerun start failure") && run.Output.Summary != nil && strings.Contains(*run.Output.Summary, "failed") {
 		return true
 	}
 	return false
