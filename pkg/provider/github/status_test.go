@@ -207,6 +207,8 @@ func TestGetExistingFailedCheckRunID(t *testing.T) {
 				{
 					"id": %v,
 					"external_id": "%s",
+					"status": "completed",
+					"conclusion": "failure",
 					"output": {
 						"title": "Failed",
 						"summary": "CI is failed to run"
@@ -609,12 +611,15 @@ func TestGithubProvidercreateStatusCommit(t *testing.T) {
 
 func TestProviderGetExistingCheckRunID(t *testing.T) {
 	idd := int64(55555)
+	idd2 := int64(66666)
 	tests := []struct {
-		name       string
-		jsonret    string
-		expectedID *int64
-		wantErr    bool
-		prname     string
+		name                   string
+		jsonret                string
+		expectedID             *int64
+		wantErr                bool
+		prname                 string
+		originalPRName         string
+		pacInfoApplicationName string
 	}{
 		{
 			name: "has check runs",
@@ -641,6 +646,23 @@ func TestProviderGetExistingCheckRunID(t *testing.T) {
 			expectedID: nil,
 			wantErr:    true,
 		},
+		{
+			name: "match check run by name for retest",
+			jsonret: `{
+			"total_count": 1,
+			"check_runs": [
+				{
+					"id": 66666,
+					"name": "PAC / mypr",
+					"external_id": "mypr-old"
+				}
+			]
+		}`,
+			expectedID:             &idd2,
+			prname:                 "mypr-new",
+			originalPRName:         "mypr",
+			pacInfoApplicationName: "PAC",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -654,13 +676,19 @@ func TestProviderGetExistingCheckRunID(t *testing.T) {
 			}
 			v := &Provider{
 				ghClient: client,
+				pacInfo: &info.PacOpts{
+					Settings: settings.Settings{
+						ApplicationName: tt.pacInfoApplicationName,
+					},
+				},
 			}
 			mux.HandleFunc(fmt.Sprintf("/repos/%v/%v/commits/%v/check-runs", event.Organization, event.Repository, event.SHA), func(w http.ResponseWriter, _ *http.Request) {
 				_, _ = fmt.Fprintf(w, "%s", tt.jsonret)
 			})
 
 			got, err := v.getExistingCheckRunID(ctx, event, provider.StatusOpts{
-				PipelineRunName: tt.prname,
+				PipelineRunName:         tt.prname,
+				OriginalPipelineRunName: tt.originalPRName,
 			})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getExistingCheckRunID() error = %v, wantErr %v", err, tt.wantErr)
