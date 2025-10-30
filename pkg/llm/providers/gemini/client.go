@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/llm/ltypes"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/llm/providers"
 )
 
 const (
@@ -47,18 +48,26 @@ func NewClient(config *Config) (*Client, error) {
 		return nil, fmt.Errorf("API key is required")
 	}
 
-	// Set defaults
+	// Apply common defaults
+	commonCfg := &providers.CommonConfig{
+		APIKey:         config.APIKey,
+		TimeoutSeconds: config.TimeoutSeconds,
+		MaxTokens:      config.MaxTokens,
+	}
+	if err := providers.ApplyDefaults(commonCfg); err != nil {
+		return nil, err
+	}
+
+	// Set common config values back
+	config.TimeoutSeconds = commonCfg.TimeoutSeconds
+	config.MaxTokens = commonCfg.MaxTokens
+
+	// Set provider-specific defaults
 	if config.BaseURL == "" {
 		config.BaseURL = defaultBaseURL
 	}
 	if config.Model == "" {
 		config.Model = defaultModel
-	}
-	if config.TimeoutSeconds == 0 {
-		config.TimeoutSeconds = defaultTimeoutSeconds
-	}
-	if config.MaxTokens == 0 {
-		config.MaxTokens = defaultMaxTokens
 	}
 
 	client := &Client{
@@ -226,16 +235,12 @@ func (c *Client) GetProviderName() string {
 
 // ValidateConfig validates the client configuration.
 func (c *Client) ValidateConfig() error {
-	if c.config.APIKey == "" {
-		return fmt.Errorf("API key is required")
+	commonCfg := &providers.CommonConfig{
+		APIKey:         c.config.APIKey,
+		TimeoutSeconds: c.config.TimeoutSeconds,
+		MaxTokens:      c.config.MaxTokens,
 	}
-	if c.config.TimeoutSeconds < 0 {
-		return fmt.Errorf("timeout seconds must be non-negative")
-	}
-	if c.config.MaxTokens < 0 {
-		return fmt.Errorf("max tokens must be non-negative")
-	}
-	return nil
+	return providers.ValidateCommonConfig(commonCfg)
 }
 
 // buildPrompt combines the base prompt with context data.
