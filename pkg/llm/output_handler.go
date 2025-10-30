@@ -51,11 +51,11 @@ func (h *OutputHandler) HandleOutput(ctx context.Context, repo *v1alpha1.Reposit
 		return fmt.Errorf("unsupported output destination: %s (only 'pr-comment' is currently supported)", output)
 	}
 
-	return h.handlePRComment(ctx, result, event, prov)
+	return h.postPRComment(ctx, result, event, prov)
 }
 
-// handlePRComment posts LLM analysis as a PR comment.
-func (h *OutputHandler) handlePRComment(ctx context.Context, result AnalysisResult, event *info.Event, prov provider.Interface) error {
+// postPRComment posts LLM analysis as a PR comment.
+func (h *OutputHandler) postPRComment(ctx context.Context, result AnalysisResult, event *info.Event, prov provider.Interface) error {
 	if event.PullRequestNumber == 0 {
 		h.logger.Debug("No pull request associated with this event, skipping PR comment")
 		return nil
