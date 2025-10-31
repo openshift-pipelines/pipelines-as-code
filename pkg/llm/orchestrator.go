@@ -39,7 +39,6 @@ func (o *Orchestrator) ExecuteAnalysis(
 	event *info.Event,
 	prov provider.Interface,
 ) error {
-	// Check if AI analysis is configured and enabled
 	if repo.Spec.Settings == nil || repo.Spec.Settings.AIAnalysis == nil || !repo.Spec.Settings.AIAnalysis.Enabled {
 		o.logger.Debug("AI analysis not configured or disabled, skipping")
 		return nil
@@ -83,7 +82,6 @@ func (o *Orchestrator) ExecuteAnalysis(
 
 		o.logger.Infof("Processing LLM analysis result for role %s, tokens used: %d", result.Role, result.Response.TokensUsed)
 
-		// Handle output based on role configuration
 		if err := o.outputHandler.HandleOutput(ctx, repo, pr, result, event, prov); err != nil {
 			o.logger.Warnf("Failed to handle output for role %s: %v", result.Role, err)
 			// Continue processing other results even if one fails

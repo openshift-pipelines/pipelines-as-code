@@ -88,7 +88,6 @@ func (a *Analyzer) Analyze(ctx context.Context, request *AnalyzeRequest) ([]Anal
 
 	analysisLogger.Info("Starting LLM analysis")
 
-	// Validate configuration
 	if err := a.validateConfig(config); err != nil {
 		analysisLogger.With("error", err).Error("Invalid AI analysis configuration")
 		return nil, fmt.Errorf("invalid AI analysis configuration: %w", err)
@@ -111,7 +110,6 @@ func (a *Analyzer) Analyze(ctx context.Context, request *AnalyzeRequest) ([]Anal
 	for _, role := range config.Roles {
 		roleLogger := analysisLogger.With("role", role.Name)
 
-		// Check if role should be triggered
 		shouldTrigger, err := a.shouldTriggerRole(role, celContext)
 		if err != nil {
 			roleLogger.With("error", err, "cel_expression", role.OnCEL).Warn("Failed to evaluate CEL expression")
@@ -129,7 +127,6 @@ func (a *Analyzer) Analyze(ctx context.Context, request *AnalyzeRequest) ([]Anal
 
 		roleLogger.Info("Executing analysis role")
 
-		// Build context for this role, using cache if possible
 		contextKey := getContextCacheKey(role.ContextItems)
 		var roleContext map[string]any
 		var cached bool
@@ -190,11 +187,6 @@ func (a *Analyzer) Analyze(ctx context.Context, request *AnalyzeRequest) ([]Anal
 		var analysisErr error
 		analysisStart := time.Now()
 
-		// TODO: Consider in the future adding jitter to the retry delay to
-		// avoid the thundering herd problem where multiple requests retry at
-		// the same time, potentially overwhelming the LLM service.  This can
-		// improve the resilience of the analysis process.  For example, using a
-		// function like rand.Intn to add a random delay to the retryDelay.
 		const maxRetries = 3
 		const retryDelay = 2 * time.Second
 
@@ -305,12 +297,10 @@ func countFailedResults(results []AnalysisResult) int {
 
 // shouldTriggerRole evaluates the CEL expression to determine if a role should be triggered.
 func (a *Analyzer) shouldTriggerRole(role v1alpha1.AnalysisRole, celContext map[string]any) (bool, error) {
-	// If no CEL expression is specified, always trigger
 	if role.OnCEL == "" {
 		return true, nil
 	}
 
-	// Evaluate CEL expression
 	result, err := cel.Value(role.OnCEL, celContext["body"],
 		make(map[string]string), // headers - empty for pipeline context
 		make(map[string]string), // pac params - empty for now
@@ -319,7 +309,6 @@ func (a *Analyzer) shouldTriggerRole(role v1alpha1.AnalysisRole, celContext map[
 		return false, fmt.Errorf("failed to evaluate CEL expression '%s': %w", role.OnCEL, err)
 	}
 
-	// Check if result is boolean true
 	if boolVal, ok := result.Value().(bool); ok {
 		return boolVal, nil
 	}
@@ -341,7 +330,6 @@ func (a *Analyzer) validateConfig(config *v1alpha1.AIAnalysisConfig) error {
 		return fmt.Errorf("at least one analysis role is required")
 	}
 
-	// Validate each role
 	for i, role := range config.Roles {
 		if role.Name == "" {
 			return fmt.Errorf("role[%d]: name is required", i)
@@ -351,7 +339,6 @@ func (a *Analyzer) validateConfig(config *v1alpha1.AIAnalysisConfig) error {
 			return fmt.Errorf("role[%d]: prompt is required", i)
 		}
 
-		// Validate output destination (using default if not specified)
 		output := role.GetOutput()
 		if output != "pr-comment" {
 			return fmt.Errorf("role[%d]: invalid output destination '%s' (only 'pr-comment' is currently supported)", i, output)
@@ -365,8 +352,8 @@ func (a *Analyzer) validateConfig(config *v1alpha1.AIAnalysisConfig) error {
 func (a *Analyzer) createClient(ctx context.Context, config *v1alpha1.AIAnalysisConfig, namespace string, role *v1alpha1.AnalysisRole) (ltypes.Client, error) {
 	clientConfig := &ClientConfig{
 		Provider:       ltypes.AIProvider(config.Provider),
-		APIURL:         config.GetAPIURL(), // Use helper to get URL with provider defaults
-		Model:          role.GetModel(),    // Use role-specific model
+		APIURL:         config.GetAPIURL(),
+		Model:          role.GetModel(),
 		TokenSecretRef: config.TokenSecretRef,
 		TimeoutSeconds: config.TimeoutSeconds,
 		MaxTokens:      config.MaxTokens,

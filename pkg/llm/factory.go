@@ -44,30 +44,22 @@ func (f *Factory) CreateClient(ctx context.Context, config *ClientConfig, namesp
 		return nil, fmt.Errorf("client configuration is required")
 	}
 
-	// Validate configuration
 	if err := f.ValidateConfig(config); err != nil {
 		return nil, fmt.Errorf("invalid client configuration: %w", err)
 	}
 
-	// Retrieve the API token from the secret
 	token, err := f.getTokenFromSecret(ctx, config.TokenSecretRef, namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve LLM token: %w", err)
 	}
 
-	// Apply defaults
 	timeoutSeconds, maxTokens := f.applyDefaults(config.TimeoutSeconds, config.MaxTokens)
-
-	// Use APIURL from config (already validated)
 	baseURL := config.APIURL
-
-	// Use model from config or default
 	model := config.Model
 	if model == "" {
 		model = getDefaultModel(config.Provider)
 	}
 
-	// Create provider-specific client directly
 	baseClient, err := f.createProviderClient(config.Provider, token, baseURL, model, timeoutSeconds, maxTokens)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create %s client: %w", config.Provider, err)
@@ -93,19 +85,16 @@ func (f *Factory) ValidateConfig(config *ClientConfig) error {
 		return fmt.Errorf("token secret name is required")
 	}
 
-	// Validate APIURL format if provided
 	if config.APIURL != "" {
 		if err := f.validateURL(config.APIURL); err != nil {
 			return fmt.Errorf("invalid api_url: %w", err)
 		}
 	}
 
-	// Validate provider is supported
 	if !f.isProviderSupported(config.Provider) {
 		return fmt.Errorf("unsupported LLM provider: %s", config.Provider)
 	}
 
-	// Validate timeout and token limits
 	if config.TimeoutSeconds < 0 {
 		return fmt.Errorf("timeout seconds must be non-negative")
 	}
@@ -146,12 +135,10 @@ func (f *Factory) validateURL(urlStr string) error {
 		return fmt.Errorf("failed to parse URL '%s': %w", urlStr, err)
 	}
 
-	// Ensure scheme is http or https
 	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
 		return fmt.Errorf("URL scheme must be 'http' or 'https', got '%s'", parsedURL.Scheme)
 	}
 
-	// Ensure host is present
 	if parsedURL.Host == "" {
 		return fmt.Errorf("URL must contain a host")
 	}
@@ -165,7 +152,6 @@ func (f *Factory) getTokenFromSecret(ctx context.Context, secretRef *v1alpha1.Se
 		return "", fmt.Errorf("secret reference is nil")
 	}
 
-	// Use the default key if not specified
 	key := secretRef.Key
 	if key == "" {
 		key = "token"
@@ -177,7 +163,6 @@ func (f *Factory) getTokenFromSecret(ctx context.Context, secretRef *v1alpha1.Se
 		Key:       key,
 	}
 
-	// Retrieve the secret value using kubeinteraction
 	secretValue, err := f.kinteract.GetSecret(ctx, opt)
 	if err != nil {
 		return "", fmt.Errorf("failed to get secret %s/%s: %w", namespace, secretRef.Name, err)

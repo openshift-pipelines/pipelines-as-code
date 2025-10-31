@@ -49,11 +49,9 @@ func (a *Assembler) BuildContext(
 	contextData := make(map[string]any)
 
 	if contextConfig == nil {
-		// Return basic pipeline information if no specific context is requested
 		return a.buildBasicPipelineContext(pipelineRun, event), nil
 	}
 
-	// Add commit content if requested
 	if contextConfig.CommitContent {
 		if commitData, err := a.buildCommitContent(ctx, event, provider); err != nil {
 			a.logger.Warnf("we couldn't retrieve the commit details. this may limit the analysis, but we'll proceed with the available information. (error: %v)", err)
@@ -62,7 +60,6 @@ func (a *Assembler) BuildContext(
 		}
 	}
 
-	// Add PR content if requested
 	if contextConfig.PRContent {
 		if prData, err := a.buildPRContent(ctx, event, provider); err != nil {
 			a.logger.Warnf("Failed to build PR content: %v", err)
@@ -71,14 +68,12 @@ func (a *Assembler) BuildContext(
 		}
 	}
 
-	// Add error content if requested
 	if contextConfig.ErrorContent {
 		if errorData := a.buildErrorContent(ctx, pipelineRun); errorData != nil {
 			contextData["errors"] = errorData
 		}
 	}
 
-	// Add container logs if requested
 	if contextConfig.ContainerLogs != nil && contextConfig.ContainerLogs.Enabled {
 		maxLines := contextConfig.ContainerLogs.MaxLines
 		if maxLines == 0 {
@@ -103,7 +98,6 @@ func (a *Assembler) buildBasicPipelineContext(pipelineRun *tektonv1.PipelineRun,
 		"status":    "unknown",
 	}
 
-	// Add status information if available
 	if len(pipelineRun.Status.Conditions) > 0 {
 		condition := pipelineRun.Status.Conditions[0]
 		pipelineData["status"] = condition.Status
@@ -111,7 +105,6 @@ func (a *Assembler) buildBasicPipelineContext(pipelineRun *tektonv1.PipelineRun,
 		pipelineData["message"] = condition.Message
 	}
 
-	// Add timing information
 	if pipelineRun.Status.StartTime != nil {
 		pipelineData["start_time"] = pipelineRun.Status.StartTime.Time
 	}
@@ -119,7 +112,6 @@ func (a *Assembler) buildBasicPipelineContext(pipelineRun *tektonv1.PipelineRun,
 		pipelineData["completion_time"] = pipelineRun.Status.CompletionTime.Time
 	}
 
-	// Add event information
 	if event != nil {
 		pipelineData["event_type"] = event.EventType
 		pipelineData["sha"] = event.SHA
@@ -208,7 +200,6 @@ func (a *Assembler) buildPRContent(_ context.Context, event *info.Event, _ provi
 
 // buildErrorContent builds error and failure context information.
 func (a *Assembler) buildErrorContent(ctx context.Context, pipelineRun *tektonv1.PipelineRun) map[string]any {
-	// Check if pipeline failed
 	if len(pipelineRun.Status.Conditions) == 0 {
 		return nil
 	}

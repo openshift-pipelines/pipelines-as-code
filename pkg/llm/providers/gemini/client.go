@@ -48,7 +48,6 @@ func NewClient(config *Config) (*Client, error) {
 		return nil, fmt.Errorf("API key is required")
 	}
 
-	// Apply common defaults
 	commonCfg := &providers.CommonConfig{
 		APIKey:         config.APIKey,
 		TimeoutSeconds: config.TimeoutSeconds,
@@ -58,11 +57,9 @@ func NewClient(config *Config) (*Client, error) {
 		return nil, err
 	}
 
-	// Set common config values back
 	config.TimeoutSeconds = commonCfg.TimeoutSeconds
 	config.MaxTokens = commonCfg.MaxTokens
 
-	// Set provider-specific defaults
 	if config.BaseURL == "" {
 		config.BaseURL = defaultBaseURL
 	}
@@ -84,7 +81,6 @@ func NewClient(config *Config) (*Client, error) {
 func (c *Client) Analyze(ctx context.Context, request *ltypes.AnalysisRequest) (*ltypes.AnalysisResponse, error) {
 	startTime := time.Now()
 
-	// Build the prompt with context
 	fullPrompt, err := providers.BuildPrompt(request)
 	if err != nil {
 		return nil, &ltypes.AnalysisError{
@@ -95,7 +91,6 @@ func (c *Client) Analyze(ctx context.Context, request *ltypes.AnalysisRequest) (
 		}
 	}
 
-	// Create Gemini API request
 	apiRequest := &geminiRequest{
 		Contents: []geminiContent{
 			{
@@ -111,7 +106,6 @@ func (c *Client) Analyze(ctx context.Context, request *ltypes.AnalysisRequest) (
 		},
 	}
 
-	// Marshal request
 	requestBody, err := json.Marshal(apiRequest)
 	if err != nil {
 		return nil, &ltypes.AnalysisError{
@@ -122,7 +116,6 @@ func (c *Client) Analyze(ctx context.Context, request *ltypes.AnalysisRequest) (
 		}
 	}
 
-	// Create HTTP request
 	url := fmt.Sprintf("%s/models/%s:generateContent?key=%s", c.config.BaseURL, c.config.Model, c.config.APIKey)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(requestBody))
 	if err != nil {
@@ -134,10 +127,8 @@ func (c *Client) Analyze(ctx context.Context, request *ltypes.AnalysisRequest) (
 		}
 	}
 
-	// Set headers
 	httpReq.Header.Set("Content-Type", "application/json")
 
-	// Send request
 	resp, err := c.httpClient.Do(httpReq)
 	if err != nil {
 		return nil, &ltypes.AnalysisError{
@@ -149,7 +140,6 @@ func (c *Client) Analyze(ctx context.Context, request *ltypes.AnalysisRequest) (
 	}
 	defer resp.Body.Close()
 
-	// Parse response
 	var apiResponse geminiResponse
 	if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
 		return nil, &ltypes.AnalysisError{
@@ -160,7 +150,6 @@ func (c *Client) Analyze(ctx context.Context, request *ltypes.AnalysisRequest) (
 		}
 	}
 
-	// Handle API errors
 	if resp.StatusCode != http.StatusOK {
 		errorType := "api_error"
 		retryable := false
@@ -190,7 +179,6 @@ func (c *Client) Analyze(ctx context.Context, request *ltypes.AnalysisRequest) (
 		}
 	}
 
-	// Extract content
 	if len(apiResponse.Candidates) == 0 {
 		return nil, &ltypes.AnalysisError{
 			Provider:  c.GetProviderName(),
@@ -212,11 +200,8 @@ func (c *Client) Analyze(ctx context.Context, request *ltypes.AnalysisRequest) (
 
 	content := candidate.Content.Parts[0].Text
 
-	// Gemini doesn't provide token usage in the same way as OpenAI
-	// We estimate based on content length (rough approximation)
 	tokensUsed := len(strings.Fields(content + fullPrompt))
 
-	// Build response
 	response := &ltypes.AnalysisResponse{
 		Content:    content,
 		TokensUsed: tokensUsed,
@@ -244,7 +229,6 @@ func (c *Client) ValidateConfig() error {
 		return err
 	}
 
-	// Validate BaseURL
 	if err := providers.ValidateBaseURL(c.config.BaseURL); err != nil {
 		return err
 	}

@@ -45,7 +45,6 @@ func (h *OutputHandler) HandleOutput(ctx context.Context, repo *v1alpha1.Reposit
 		return fmt.Errorf("role configuration not found for %s", result.Role)
 	}
 
-	// Handle different output destinations (using default if not specified)
 	output := roleConfig.GetOutput()
 	if output != "pr-comment" {
 		return fmt.Errorf("unsupported output destination: %s (only 'pr-comment' is currently supported)", output)

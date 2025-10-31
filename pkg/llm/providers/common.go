@@ -86,7 +86,6 @@ func ValidateBaseURL(baseURL string) error {
 		return fmt.Errorf("base URL must have a valid host")
 	}
 
-	// Check for invalid characters that might cause issues
 	if strings.ContainsAny(baseURL, " \t\n\r") {
 		return fmt.Errorf("base URL contains invalid whitespace characters")
 	}
@@ -103,7 +102,6 @@ func BuildPrompt(request *ltypes.AnalysisRequest) (string, error) {
 	promptBuilder.WriteString(request.Prompt)
 	promptBuilder.WriteString("\n\n")
 
-	// Add context sections
 	if len(request.Context) > 0 {
 		promptBuilder.WriteString("Context Information:\n")
 
