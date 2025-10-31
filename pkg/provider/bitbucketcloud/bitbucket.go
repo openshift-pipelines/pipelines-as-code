@@ -251,6 +251,17 @@ func (v *Provider) GetCommitInfo(_ context.Context, event *info.Event) error {
 	event.SHAURL = commitinfo.Links.HTML.HRef
 	event.SHA = commitinfo.Hash
 
+	// Populate full commit information for LLM context
+	event.SHAMessage = commitinfo.Message
+	// Bitbucket Cloud API has limited commit author information
+	// Use display name or nickname if available
+	if commitinfo.Author.User.DisplayName != "" {
+		event.SHAAuthorName = commitinfo.Author.User.DisplayName
+	} else if commitinfo.Author.Nickname != "" {
+		event.SHAAuthorName = commitinfo.Author.Nickname
+	}
+	// Note: Bitbucket Cloud API doesn't provide author email or timestamps in the basic commit response
+
 	// now to get the default branch from repository.Get
 	repo, err := v.Client().Repositories.Repository.Get(&bitbucket.RepositoryOptions{
 		Owner:    event.Organization,

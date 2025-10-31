@@ -2,6 +2,7 @@ package info
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 )
@@ -38,6 +39,15 @@ type Event struct {
 	URL           string // WEB url not the git URL, which would match to the repo.spec
 	SHAURL        string // pretty URL for web browsing for UIs (cli/web)
 	SHATitle      string // commit title for UIs
+
+	// Full commit information populated by provider.GetCommitInfo()
+	SHAMessage        string    // full commit message (not just title)
+	SHAAuthorName     string    // commit author name
+	SHAAuthorEmail    string    // commit author email
+	SHAAuthorDate     time.Time // when the commit was authored
+	SHACommitterName  string    // committer name (may differ from author)
+	SHACommitterEmail string    // committer email
+	SHACommitterDate  time.Time // when the commit was committed
 
 	PullRequestNumber int      // Pull or Merge Request number
 	PullRequestTitle  string   // Title of the pull Request

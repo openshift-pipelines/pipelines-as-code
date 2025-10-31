@@ -10,6 +10,7 @@ import (
 	pipelinerunreconciler "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1/pipelinerun"
 	tektonv1lister "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1"
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
@@ -23,6 +24,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	pacapi "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/listers/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/llm"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -236,6 +238,16 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 		finalState = kubeinteraction.StateFailed
 	}
 
+	// Perform LLM analysis only for failed pipeline runs (best-effort, non-blocking)
+	// Users can use CEL expressions in role configurations for more fine-grained control
+	if len(newPr.Status.Conditions) > 0 && newPr.Status.Conditions[0].Status == corev1.ConditionFalse {
+		if err := r.performLLMAnalysis(ctx, logger, repo, newPr, event, provider); err != nil {
+			logger.Warnf("LLM analysis failed (non-blocking): %v", err)
+			r.eventEmitter.EmitMessage(repo, zap.WarnLevel, "LLMAnalysisFailed",
+				fmt.Sprintf("AI/LLM analysis failed for repository %s/%s and pipeline run %s: %v", repo.Namespace, repo.Name, newPr.Name, err))
+		}
+	}
+
 	if err := r.updateRepoRunStatus(ctx, logger, newPr, repo, event); err != nil {
 		return repo, fmt.Errorf("cannot update run status: %w", err)
 	}
@@ -383,4 +395,17 @@ func (r *Reconciler) updatePipelineRunState(ctx context.Context, logger *zap.Sug
 		return pr, fmt.Errorf("error patching the pipelinerun: %w", err)
 	}
 	return patchedPR, nil
+}
+
+// performLLMAnalysis executes LLM analysis on the completed pipeline if configured.
+func (r *Reconciler) performLLMAnalysis(
+	ctx context.Context,
+	logger *zap.SugaredLogger,
+	repo *v1alpha1.Repository,
+	pr *tektonv1.PipelineRun,
+	event *info.Event,
+	provider provider.Interface,
+) error {
+	orchestrator := llm.NewOrchestrator(r.run, r.kinteract, logger)
+	return orchestrator.ExecuteAnalysis(ctx, repo, pr, event, provider)
 }
