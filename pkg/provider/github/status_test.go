@@ -337,6 +337,20 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "validation failure",
+			args: args{
+				runevent:    runEvent,
+				status:      "completed",
+				conclusion:  "failure",
+				text:        "There was an error creating the PipelineRun: ```admission webhook \"validation.webhook.pipeline.tekton.dev\" denied the request: validation failed: invalid value: 0s```",
+				detailsURL:  "https://cireport.com",
+				titleSubstr: "Failed",
+				githubApps:  true,
+			},
+			want:    &github.CheckRun{ID: &resultid},
+			wantErr: false,
+		},
+		{
 			name: "failure from bot",
 			args: args{
 				runevent:     runEvent,
