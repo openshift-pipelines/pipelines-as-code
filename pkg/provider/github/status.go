@@ -112,12 +112,21 @@ func (v *Provider) canIUseCheckrunID(checkrunid *int64) bool {
 func (v *Provider) createCheckRunStatus(ctx context.Context, runevent *info.Event, status provider.StatusOpts) (*int64, error) {
 	now := github.Timestamp{Time: time.Now()}
 	checkrunoption := github.CreateCheckRunOptions{
-		Name:       provider.GetCheckName(status, v.pacInfo),
-		HeadSHA:    runevent.SHA,
-		Status:     github.Ptr("in_progress"),
+		Name:    provider.GetCheckName(status, v.pacInfo),
+		HeadSHA: runevent.SHA,
+		Status:  github.Ptr(status.Status), // take status from statusOpts because it can be in_progress, queued, or failure // same for conclusion as well
+		Output: &github.CheckRunOutput{
+			Title:   github.Ptr(status.Title),
+			Summary: github.Ptr(status.Summary),
+			Text:    github.Ptr(status.Text),
+		},
 		DetailsURL: github.Ptr(status.DetailsURL),
 		ExternalID: github.Ptr(status.PipelineRunName),
 		StartedAt:  &now,
+	}
+
+	if status.Status != "in_progress" && status.Status != "queued" {
+		checkrunoption.Conclusion = github.Ptr(status.Conclusion)
 	}
 
 	checkRun, _, err := wrapAPI(v, "create_check_run", func() (*github.CheckRun, *github.Response, error) {
@@ -232,7 +241,11 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, runevent *info
 				return err
 			}
 		}
-		if statusOpts.PipelineRun != nil {
+
+		// Patch the pipelineRun with the checkRunID and logURL only when the pipelineRun is not nil and has a name
+		// because on validation failed PipelineRun will provide PipelineRun struct but it is not a valid resource
+		// created in cluster so if its only validation error report then ignore patching the pipelineRun.
+		if statusOpts.PipelineRun != nil && (statusOpts.PipelineRun.GetName() != "" || statusOpts.PipelineRun.GetGenerateName() != "") {
 			if _, err := action.PatchPipelineRun(ctx, v.Logger, "checkRunID and logURL", v.Run.Clients.Tekton, statusOpts.PipelineRun, metadataPatch(checkRunID, statusOpts.DetailsURL)); err != nil {
 				return err
 			}
