@@ -264,6 +264,7 @@ func TestGithubPullRequestInvalidSpecValues(t *testing.T) {
 			break
 		}
 		time.Sleep(5 * time.Second)
+		counter++
 	}
 
 	assert.Equal(t, len(res.CheckRuns), 1)
