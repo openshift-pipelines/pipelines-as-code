@@ -31,7 +31,7 @@ func (e *EventEmitter) SetLogger(logger *zap.SugaredLogger) {
 }
 
 func (e *EventEmitter) EmitMessage(repo *v1alpha1.Repository, loggerLevel zapcore.Level, reason, message string) {
-	if repo != nil {
+	if repo != nil && e.client != nil {
 		event := makeEvent(repo, loggerLevel, reason, message)
 		if _, err := e.client.CoreV1().Events(event.Namespace).Create(context.Background(), event, metav1.CreateOptions{}); err != nil {
 			if e.logger != nil {
