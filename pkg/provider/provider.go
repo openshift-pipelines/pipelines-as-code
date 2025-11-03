@@ -214,3 +214,13 @@ func GetCheckName(status StatusOpts, pacopts *info.PacOpts) string {
 func IsZeroSHA(sha string) bool {
 	return sha == "0000000000000000000000000000000000000000"
 }
+
+// skipCIRegex is a compiled regular expression for detecting skip CI commands.
+// It matches [skip ci], [ci skip], [skip tkn], or [tkn skip].
+// Skip commands can be overridden by GitOps commands like /test, /retest.
+var skipCIRegex = regexp.MustCompile(`\[(skip ci|ci skip|skip tkn|tkn skip)\]`)
+
+// SkipCI returns true if the given commit message contains any skip command.
+func SkipCI(commitMessage string) bool {
+	return skipCIRegex.MatchString(commitMessage)
+}

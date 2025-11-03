@@ -604,6 +604,7 @@ func TestGithubGetCommitInfo(t *testing.T) {
 		committerName, committerEmail string
 		authorDate, committerDate     string
 		checkExtendedFields           bool
+		wantHasSkipCmd                bool
 	}{
 		{
 			name: "good with full commit info",
@@ -630,9 +631,58 @@ func TestGithubGetCommitInfo(t *testing.T) {
 				Repository:   "repository",
 				SHA:          "shacommitinfo",
 			},
-			shaurl:   "https://git.provider/commit/info",
-			shatitle: "Simple commit",
-			message:  "Simple commit",
+			shaurl:         "https://git.provider/commit/info",
+			shatitle:       "My beautiful pony",
+			message:        "My beautiful pony",
+			wantHasSkipCmd: false,
+		},
+		{
+			name: "commit with skip ci command",
+			event: &info.Event{
+				Organization: "owner",
+				Repository:   "repository",
+				SHA:          "shacommitinfo",
+			},
+			shaurl:         "https://git.provider/commit/info",
+			shatitle:       "fix: some bug",
+			message:        "fix: some bug\n\n[skip ci]",
+			wantHasSkipCmd: true,
+		},
+		{
+			name: "commit with ci skip command in title",
+			event: &info.Event{
+				Organization: "owner",
+				Repository:   "repository",
+				SHA:          "shacommitinfo",
+			},
+			shaurl:         "https://git.provider/commit/info",
+			shatitle:       "feat: new feature [ci skip]",
+			message:        "feat: new feature [ci skip]",
+			wantHasSkipCmd: true,
+		},
+		{
+			name: "commit with skip tkn command in title",
+			event: &info.Event{
+				Organization: "owner",
+				Repository:   "repository",
+				SHA:          "shacommitinfo",
+			},
+			shaurl:         "https://git.provider/commit/info",
+			shatitle:       "docs: update [skip tkn]",
+			message:        "docs: update [skip tkn]",
+			wantHasSkipCmd: true,
+		},
+		{
+			name: "commit with tkn skip command in body",
+			event: &info.Event{
+				Organization: "owner",
+				Repository:   "repository",
+				SHA:          "shacommitinfo",
+			},
+			shaurl:         "https://git.provider/commit/info",
+			shatitle:       "chore: deps",
+			message:        "chore: deps\n\n[tkn skip]",
+			wantHasSkipCmd: true,
 		},
 		{
 			name: "error",
@@ -678,10 +728,16 @@ func TestGithubGetCommitInfo(t *testing.T) {
 					} `json:"committer,omitempty"`
 				}
 
+				// Use message if provided, otherwise use shatitle as fallback
+				message := tt.message
+				if message == "" && tt.shatitle != "" {
+					message = tt.shatitle
+				}
+
 				resp := commitResponse{
 					SHA:     "shacommitinfo",
 					HTMLURL: tt.shaurl,
-					Message: tt.message,
+					Message: message,
 				}
 
 				if tt.checkExtendedFields {
@@ -735,6 +791,7 @@ func TestGithubGetCommitInfo(t *testing.T) {
 				expectedCommitterDate, _ := time.Parse(time.RFC3339, tt.committerDate)
 				assert.DeepEqual(t, expectedCommitterDate, tt.event.SHACommitterDate)
 			}
+			assert.Equal(t, tt.wantHasSkipCmd, tt.event.HasSkipCommand)
 		})
 	}
 }
