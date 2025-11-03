@@ -482,3 +482,94 @@ main and the branch called `release,nightly` you can do this:
 ```yaml
 pipelinesascode.tekton.dev/on-target-branch: [main, release&#44;nightly]
 ```
+
+## Skip CI Commands
+
+Pipelines-as-Code supports skip commands in commit messages that allow you to skip
+PipelineRun execution for specific commits. This is useful when making documentation
+changes, minor fixes, or work-in-progress commits where running the full CI pipeline
+is unnecessary.
+
+### Supported Skip Commands
+
+You can include any of the following commands anywhere in your commit message to skip
+PipelineRun execution:
+
+* `[skip ci]` - Skip continuous integration
+* `[ci skip]` - Alternative format for skipping CI
+* `[skip tkn]` - Skip Tekton PipelineRuns
+* `[tkn skip]` - Alternative format for skipping Tekton
+
+**Note:** Skip commands are **case-sensitive** and must be in lowercase with brackets.
+
+### Example Usage
+
+```text
+docs: update README with installation instructions [skip ci]
+```
+
+or
+
+```text
+WIP: refactor authentication module
+
+This is still in progress and not ready for testing yet.
+
+[ci skip]
+```
+
+### How Skip Commands Work
+
+When a commit message contains a skip command:
+
+1. **Pull Requests**: No PipelineRuns will be created when the PR is opened or updated and HEAD commit contains skip command.
+2. **Push Events**: No PipelineRuns will be created when pushing to a branch with that commit message
+
+### GitOps Commands Override Skip CI
+
+**Important:** Skip CI commands can be overridden by using GitOps commands. Even if
+a commit contains a skip command like `[skip ci]`, you can still manually trigger
+PipelineRuns using:
+
+* `/test` - Trigger all matching PipelineRuns
+* `/test <pipelinerun-name>` - Trigger a specific PipelineRun
+* `/retest` - Retrigger failed PipelineRuns
+* `/retest <pipelinerun-name>` - Retrigger a specific PipelineRun
+* `/ok-to-test` - Allow running CI for external contributors
+* `/custom-comment` - Trigger PipelineRun having on-comment annotation
+
+This allows you to skip automatic CI execution while still maintaining the ability
+to manually trigger builds when needed.
+
+### Example: Skipping CI Then Manually Triggering
+
+```bash
+# Initial commit with skip command
+git commit -m "docs: update contributing guide [skip ci]"
+git push origin my-feature-branch
+# No PipelineRuns are created automatically
+
+# Later, you can manually trigger CI by commenting on the PR:
+# /test
+# This will create PipelineRuns despite the [skip ci] command
+```
+
+### Examples of When to Use Skip Commands
+
+Skip commands are useful for:
+
+* Documentation-only changes
+* README updates
+* Comment or formatting changes
+* Work-in-progress commits
+* Minor typo fixes
+* Configuration file updates that don't affect code
+
+### Examples of When NOT to Use Skip Commands
+
+Avoid using skip commands for:
+
+* Code changes that affect functionality
+* Changes to CI/CD pipeline definitions
+* Dependency updates
+* Any changes that should be tested before merging

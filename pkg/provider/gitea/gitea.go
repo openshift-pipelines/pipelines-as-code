@@ -399,6 +399,7 @@ func (v *Provider) GetCommitInfo(_ context.Context, runevent *info.Event) error 
 			}
 		}
 	}
+	runevent.HasSkipCommand = provider.SkipCI(commit.RepoCommit.Message)
 
 	return nil
 }
