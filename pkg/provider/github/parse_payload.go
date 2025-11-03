@@ -187,29 +187,6 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 	processedEvent.GHEURL = event.Provider.URL
 	processedEvent.Provider.URL = event.Provider.URL
 
-	// regenerate token scoped to the repo IDs
-	if v.pacInfo.SecretGHAppRepoScoped && installationIDFrompayload != -1 && len(v.RepositoryIDs) > 0 {
-		repoLists := []string{}
-		if v.pacInfo.SecretGhAppTokenScopedExtraRepos != "" {
-			// this is going to show up a lot in the logs but i guess that
-			// would make people fix the value instead of being lost into
-			// the top of the logs at controller start.
-			for _, configValue := range strings.Split(v.pacInfo.SecretGhAppTokenScopedExtraRepos, ",") {
-				configValueS := strings.TrimSpace(configValue)
-				if configValueS == "" {
-					continue
-				}
-				repoLists = append(repoLists, configValueS)
-			}
-			v.Logger.Infof("Github token scope extended to %v keeping SecretGHAppRepoScoped to true", repoLists)
-		}
-		token, err := v.CreateToken(ctx, repoLists, processedEvent)
-		if err != nil {
-			return nil, err
-		}
-		processedEvent.Provider.Token = token
-	}
-
 	return processedEvent, nil
 }
 
