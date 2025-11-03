@@ -13,6 +13,7 @@ import (
 	"gotest.tools/v3/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -28,6 +29,7 @@ func TestEventEmitter_EmitMessage(t *testing.T) {
 		expectEvent  bool
 		expectedType string
 		useNilLogger bool
+		useNilClient bool
 	}{
 		{
 			name: "repo exists",
@@ -82,6 +84,21 @@ func TestEventEmitter_EmitMessage(t *testing.T) {
 			expectedType: v1.EventTypeWarning,
 			useNilLogger: true,
 		},
+		{
+			name: "nil client doesn't cause panic",
+			repo: &v1alpha1.Repository{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-repo",
+					Namespace: "test-ns",
+				},
+				Spec: v1alpha1.RepositorySpec{},
+			},
+			message:      "info-message",
+			logLevel:     zap.InfoLevel,
+			expectEvent:  false,
+			expectedType: v1.EventTypeNormal,
+			useNilClient: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -97,8 +114,16 @@ func TestEventEmitter_EmitMessage(t *testing.T) {
 				logger = fakelogger
 			}
 
-			// emit event - this should not panic even with nil logger
-			NewEventEmitter(stdata.Kube, logger).EmitMessage(tt.repo, tt.logLevel, tt.reason, tt.message)
+			// Use nil client for specific test case
+			var client kubernetes.Interface
+			if tt.useNilClient {
+				client = nil
+			} else {
+				client = stdata.Kube
+			}
+
+			// emit event - this should not panic even with nil logger or nil client
+			NewEventEmitter(client, logger).EmitMessage(tt.repo, tt.logLevel, tt.reason, tt.message)
 
 			if tt.expectEvent {
 				events, err := stdata.Kube.CoreV1().Events(tt.repo.Namespace).List(context.Background(), metav1.ListOptions{})
