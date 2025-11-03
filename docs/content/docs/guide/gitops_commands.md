@@ -109,6 +109,8 @@ spec:
 
 To issue a `GitOps` comment on a pushed commit, you can follow these steps:
 
+### For GitHub
+
 1. Go to your repository.
 2. Click on the **Commits** section.
 3. Choose one of the individual **Commit**.
@@ -116,7 +118,14 @@ To issue a `GitOps` comment on a pushed commit, you can follow these steps:
 
 ![GitOps Commits For Comments](/images/gitops-comments-on-commit.png)
 
-Please note that this feature is supported for the GitHub provider only.
+### For GitLab
+
+1. Go to your repository.
+2. Click on the **History**.
+3. Choose one of the individual **Commit**.
+4. Click on the line number where you want to add a `GitOps` comment, as shown in the image below:
+
+![GitOps Commits For Comments](/images/gitlab-gitops-comment-on-commit.png)
 
 ## GitOps Commands on Non-Matching PipelineRun
 
