@@ -19,7 +19,7 @@ import (
 // +kubebuilder:printcolumn:name="CompletionTime",type=date,JSONPath=`.pipelinerun_status[-1].completionTime`
 type Repository struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
 
 	Spec   RepositorySpec        `json:"spec"`
 	Status []RepositoryRunStatus `json:"pipelinerun_status,omitempty"`
@@ -160,6 +160,10 @@ type Settings struct {
 	Gitlab *GitlabSettings `json:"gitlab,omitempty"`
 
 	Github *GithubSettings `json:"github,omitempty"`
+
+	// AIAnalysis contains AI/LLM analysis configuration for automated CI/CD pipeline analysis.
+	// +optional
+	AIAnalysis *AIAnalysisConfig `json:"ai,omitempty"`
 }
 
 type GitlabSettings struct {
@@ -189,6 +193,9 @@ func (s *Settings) Merge(newSettings *Settings) {
 	}
 	if newSettings.GithubAppTokenScopeRepos != nil && s.GithubAppTokenScopeRepos == nil {
 		s.GithubAppTokenScopeRepos = newSettings.GithubAppTokenScopeRepos
+	}
+	if newSettings.AIAnalysis != nil && s.AIAnalysis == nil {
+		s.AIAnalysis = newSettings.AIAnalysis
 	}
 }
 
@@ -323,7 +330,7 @@ type Secret struct {
 // +kubebuilder:object:root=true
 type RepositoryList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata"`
 
 	Items []Repository `json:"items"`
 }

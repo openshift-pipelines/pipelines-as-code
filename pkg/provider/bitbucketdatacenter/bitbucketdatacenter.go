@@ -340,6 +340,19 @@ func (v *Provider) GetCommitInfo(_ context.Context, event *info.Event) error {
 	event.SHATitle = sanitizeTitle(commit.Message)
 	event.SHAURL = fmt.Sprintf("%s/projects/%s/repos/%s/commits/%s", v.baseURL, v.projectKey, event.Repository, event.SHA)
 
+	// Populate full commit information for LLM context
+	event.SHAMessage = commit.Message
+	event.SHAAuthorName = commit.Author.Name
+	event.SHAAuthorEmail = commit.Author.Email
+	if !commit.Author.Date.IsZero() {
+		event.SHAAuthorDate = commit.Author.Date
+	}
+	event.SHACommitterName = commit.Committer.Name
+	event.SHACommitterEmail = commit.Committer.Email
+	if !commit.Committer.Date.IsZero() {
+		event.SHACommitterDate = commit.Committer.Date
+	}
+
 	ref, _, err := v.Client().Git.GetDefaultBranch(context.Background(), OrgAndRepo)
 	if err != nil {
 		return err

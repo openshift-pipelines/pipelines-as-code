@@ -407,6 +407,23 @@ func (v *Provider) GetCommitInfo(ctx context.Context, runevent *info.Event) erro
 	runevent.SHATitle = strings.Split(commit.GetMessage(), "\n\n")[0]
 	runevent.SHA = commit.GetSHA()
 
+	// Populate full commit information for LLM context
+	runevent.SHAMessage = commit.GetMessage()
+	if commit.Author != nil {
+		runevent.SHAAuthorName = commit.Author.GetName()
+		runevent.SHAAuthorEmail = commit.Author.GetEmail()
+		if commit.Author.Date != nil {
+			runevent.SHAAuthorDate = commit.Author.Date.Time
+		}
+	}
+	if commit.Committer != nil {
+		runevent.SHACommitterName = commit.Committer.GetName()
+		runevent.SHACommitterEmail = commit.Committer.GetEmail()
+		if commit.Committer.Date != nil {
+			runevent.SHACommitterDate = commit.Committer.Date.Time
+		}
+	}
+
 	return nil
 }
 

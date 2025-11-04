@@ -174,6 +174,8 @@ function install_pac() {
       ${PAC_DEPLOY_SCRIPT}
     else
       env KO_DOCKER_REPO=localhost:${REG_PORT} $ko apply -f config --sbom=none -B >/dev/null
+      # Install nonoai for e2e test integration for LLM
+      env KO_DOCKER_REPO=localhost:${REG_PORT} $ko apply -f pkg/test/nonoai/deployment.yaml --sbom=none -B >/dev/null
     fi
     cd ${oldPwd}
   fi
