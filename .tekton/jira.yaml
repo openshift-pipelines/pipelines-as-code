@@ -21,7 +21,7 @@ spec:
     - name: repo_name
       value: "{{repo_name}}"
     - name: gemini_model
-      value: "gemini-2.5-flash-lite-preview-06-17"
+      value: "gemini-2.5-flash-lite"
     - name: jira_endpoint
       value: "https://issues.redhat.com"
     - name: jira_project

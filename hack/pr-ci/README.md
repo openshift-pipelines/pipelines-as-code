@@ -61,7 +61,7 @@ The following environment variables are required:
 
 #### Optional
 
-- `GEMINI_MODEL`: Gemini model to use (default: "gemini-2.5-flash-lite-preview-06-17")
+- `GEMINI_MODEL`: Gemini model to use (default: "gemini-2.5-flash-lite")
 - `MAX_LABELS`: Maximum number of labels to apply (default: unlimited)
 - `EXCLUDED_LABELS`: Comma-separated list of labels to exclude (default: "good-first-issue,help-wanted,wontfix,hack")
 
@@ -116,7 +116,7 @@ This package is designed to work with Tekton Pipelines as Code. Two PipelineRuns
 
 ## AI Model Configuration
 
-Both pipelines use Google Gemini AI for analysis. The model can be configured via the `GEMINI_MODEL` environment variable. The current default is `"gemini-2.5-flash-lite-preview-06-17"` which provides a good balance of speed and quality for PR analysis tasks.
+Both pipelines use Google Gemini AI for analysis. The model can be configured via the `GEMINI_MODEL` environment variable. The current default is `"gemini-2.5-flash-lite"` which provides a good balance of speed and quality for PR analysis tasks.
 
 ## Development
 
