@@ -595,21 +595,44 @@ func TestGetStringPullRequestComment(t *testing.T) {
 
 func TestGithubGetCommitInfo(t *testing.T) {
 	tests := []struct {
-		name              string
-		event             *info.Event
-		noclient          bool
-		apiReply, wantErr string
-		shaurl, shatitle  string
+		name                          string
+		event                         *info.Event
+		noclient                      bool
+		apiReply, wantErr             string
+		shaurl, shatitle, message     string
+		authorName, authorEmail       string
+		committerName, committerEmail string
+		authorDate, committerDate     string
+		checkExtendedFields           bool
 	}{
 		{
-			name: "good",
+			name: "good with full commit info",
+			event: &info.Event{
+				Organization: "owner",
+				Repository:   "repository",
+				SHA:          "shacommitinfo",
+			},
+			shaurl:              "https://git.provider/commit/info",
+			shatitle:            "My beautiful pony",
+			message:             "My beautiful pony\n\nThis is the full commit message with details.",
+			authorName:          "John Doe",
+			authorEmail:         "john@example.com",
+			committerName:       "GitHub",
+			committerEmail:      "noreply@github.com",
+			authorDate:          "2024-01-15T10:30:00Z",
+			committerDate:       "2024-01-15T10:31:00Z",
+			checkExtendedFields: true,
+		},
+		{
+			name: "basic fields only",
 			event: &info.Event{
 				Organization: "owner",
 				Repository:   "repository",
 				SHA:          "shacommitinfo",
 			},
 			shaurl:   "https://git.provider/commit/info",
-			shatitle: "My beautiful pony",
+			shatitle: "Simple commit",
+			message:  "Simple commit",
 		},
 		{
 			name: "error",
@@ -637,7 +660,53 @@ func TestGithubGetCommitInfo(t *testing.T) {
 					fmt.Fprintf(rw, "%s", tt.apiReply)
 					return
 				}
-				fmt.Fprintf(rw, `{"html_url": "%s", "message": "%s"}`, tt.shaurl, tt.shatitle)
+
+				// Build realistic GitHub commit API response
+				type commitResponse struct {
+					SHA     string `json:"sha"`
+					HTMLURL string `json:"html_url"`
+					Message string `json:"message"`
+					Author  *struct {
+						Name  string `json:"name"`
+						Email string `json:"email"`
+						Date  string `json:"date"`
+					} `json:"author,omitempty"`
+					Committer *struct {
+						Name  string `json:"name"`
+						Email string `json:"email"`
+						Date  string `json:"date"`
+					} `json:"committer,omitempty"`
+				}
+
+				resp := commitResponse{
+					SHA:     "shacommitinfo",
+					HTMLURL: tt.shaurl,
+					Message: tt.message,
+				}
+
+				if tt.checkExtendedFields {
+					resp.Author = &struct {
+						Name  string `json:"name"`
+						Email string `json:"email"`
+						Date  string `json:"date"`
+					}{
+						Name:  tt.authorName,
+						Email: tt.authorEmail,
+						Date:  tt.authorDate,
+					}
+					resp.Committer = &struct {
+						Name  string `json:"name"`
+						Email string `json:"email"`
+						Date  string `json:"date"`
+					}{
+						Name:  tt.committerName,
+						Email: tt.committerEmail,
+						Date:  tt.committerDate,
+					}
+				}
+
+				jsonData, _ := json.Marshal(resp)
+				fmt.Fprint(rw, string(jsonData))
 			})
 			ctx, _ := rtesting.SetupFakeContext(t)
 			provider := &Provider{ghClient: fakeclient}
@@ -651,6 +720,21 @@ func TestGithubGetCommitInfo(t *testing.T) {
 			}
 			assert.Equal(t, tt.shatitle, tt.event.SHATitle)
 			assert.Equal(t, tt.shaurl, tt.event.SHAURL)
+
+			// Verify new extended commit fields are populated
+			if tt.checkExtendedFields {
+				assert.Equal(t, tt.message, tt.event.SHAMessage, "SHAMessage should match")
+				assert.Equal(t, tt.authorName, tt.event.SHAAuthorName, "SHAAuthorName should match")
+				assert.Equal(t, tt.authorEmail, tt.event.SHAAuthorEmail, "SHAAuthorEmail should match")
+				assert.Equal(t, tt.committerName, tt.event.SHACommitterName, "SHACommitterName should match")
+				assert.Equal(t, tt.committerEmail, tt.event.SHACommitterEmail, "SHACommitterEmail should match")
+
+				// Verify dates are parsed correctly
+				expectedAuthorDate, _ := time.Parse(time.RFC3339, tt.authorDate)
+				assert.DeepEqual(t, expectedAuthorDate, tt.event.SHAAuthorDate)
+				expectedCommitterDate, _ := time.Parse(time.RFC3339, tt.committerDate)
+				assert.DeepEqual(t, expectedCommitterDate, tt.event.SHACommitterDate)
+			}
 		})
 	}
 }

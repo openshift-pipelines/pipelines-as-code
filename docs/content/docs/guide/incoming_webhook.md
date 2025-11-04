@@ -130,7 +130,7 @@ spec:
       params:
         - prod_env
       type: webhook-url
-    
+
     # Feature branches - checked second
     - targets:
         - "feature/*"
@@ -140,7 +140,7 @@ spec:
       params:
         - dev_env
       type: webhook-url
-    
+
     # Catch-all - checked last
     - targets:
         - "*"  # Matches any branch not caught above

@@ -1,0 +1,311 @@
+# Example Repository CRD showcasing various LLM Analysis scenarios
+# This demonstrates different use cases for AI-powered CI/CD analysis
+#
+# MODEL SELECTION:
+# Each role can specify a different model. You can use any model supported by your provider.
+# - Consult OpenAI docs: https://platform.openai.com/docs/models
+# - Consult Gemini docs: https://ai.google.dev/gemini-api/docs/models/gemini
+# If no model is specified, provider defaults are used (gpt-5-mini for OpenAI, gemini-2.5-flash-lite for Gemini)
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: scratch-my-back
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gemini-api-key
+  namespace: scratch-my-back
+type: Opaque
+stringData:
+  # Replace with your actual Gemini API key
+  api-key: "YOUR_GEMINI_API_KEY_HERE"
+---
+apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+kind: Repository
+metadata:
+  name: scratch-my-back
+  namespace: scratch-my-back
+spec:
+  url: "https://github.com/chmouel/scratchmyback"
+  git_provider:
+    type: github
+    secret:
+      name: "chmouel-github-token"
+      key: "token"
+  settings:
+    ai:
+      enabled: true
+      provider: gemini
+      # api_url: "https://custom-gemini.example.com/v1"  # Optional: override default API endpoint
+      timeout_seconds: 45
+      max_tokens: 2000
+      secret_ref:
+        name: gemini-api-key
+        key: api-key
+
+      roles:
+        # ═══════════════════════════════════════════════════════════════
+        # Security-Focused Failure Analysis (PR Comment)
+        # ═══════════════════════════════════════════════════════════════
+        # Only triggers on security-related failures in pull requests
+        # Posts detailed security analysis as PR comment
+        # Note: Analysis runs on failed pipelines by default. The on_cel
+        # expression below further restricts to pull requests only.
+        - name: "security-failure-analysis"
+          # Using the most capable model for security analysis
+          model: "gemini-2.5-pro"
+          prompt: |
+            You are a DevSecOps assistant specializing in security tooling analysis.
+
+            **Task:** Analyze the CI/CD failure and determine if it's **security-related**.
+
+            Security failures include:
+            - SAST/DAST tools: semgrep, sonarqube, checkmarx, fortify
+            - Dependency scanners: trivy, grype, snyk, dependabot
+            - Container scanners: trivy, clair, anchore
+            - Secret detection: trufflehog, gitleaks, detect-secrets
+            - Policy enforcement: OPA/conftest, kyverno, checkov
+            - Supply chain: cosign, sigstore, sbom validation
+            - Vulnerability DBs: osv-scanner, npm audit, pip-audit
+
+            **If NOT security-related:** Output nothing and stop.
+
+            **If security-related, provide:**
+
+            ## 🔒 Security Failure Analysis
+
+            ### Root Cause
+            [Explain what security check failed and why]
+
+            ### Severity
+            - **Level:** [Critical/High/Medium/Low]
+            - **CVE/CWE:** [If applicable]
+
+            ### Affected Components
+            - [List vulnerable packages, files, or configurations]
+
+            ### Remediation Steps
+            1. [Precise action to fix]
+            2. [Include commands or patches when possible]
+
+            ### Example Fix
+            ```[language]
+            [Minimal code/config fix if applicable]
+            ```
+
+            ### References
+            - [Link to CVE, security advisory, or documentation]
+
+            Use concise GitHub Markdown. Be specific and actionable.
+
+          on_cel: 'body.event.event_type == "pull_request"'
+
+          context_items:
+            error_content: true
+            container_logs:
+              enabled: true
+              max_lines: 200
+            commit_content: true
+            pr_content: true
+
+          output: "pr-comment"
+
+        # ═══════════════════════════════════════════════════════════════
+        # General Failure Root Cause Analysis (PR Comment)
+        # ═══════════════════════════════════════════════════════════════
+        # Provides quick diagnosis for any CI failure on PRs
+        # Note: Analysis runs on failed pipelines by default. The on_cel
+        # expression below further restricts to pull requests only.
+        - name: "quick-failure-diagnosis"
+          # Using a balanced model for quick feedback
+          model: "gemini-2.5-flash"
+          prompt: |
+            You are an expert DevOps engineer analyzing a Tekton/Pipelines-as-Code failure.
+
+            **Analyze the failure and provide:**
+
+            ## 🔍 Failure Analysis
+
+            ### Root Cause
+            [What failed and why - be specific]
+
+            ### Quick Fix
+            [Most likely solution in 2-3 steps]
+
+            ### Code/Config Change
+            ```[language]
+            [Minimal fix if applicable]
+            ```
+
+            ### Related Issues
+            [Common causes or similar problems]
+
+            **Style:** Concise bullets, GitHub Markdown, actionable.
+            **Context:** Tekton pipelines, Kubernetes environment.
+
+          on_cel: 'body.event.event_type == "pull_request"'
+
+          context_items:
+            error_content: true
+            container_logs:
+              enabled: true
+              max_lines: 150
+            commit_content: true
+            pr_content: true
+
+          output: "pr-comment"
+
+        # ═══════════════════════════════════════════════════════════════
+        # Test Failure Pattern Detection (PR Comment)
+        # ═══════════════════════════════════════════════════════════════
+        # Identifies flaky tests and patterns in test failures on PRs
+        # Note: Analysis runs on failed pipelines by default. The on_cel
+        # expression below further restricts to pull requests only.
+        - name: "test-failure-patterns"
+          # Using a balanced model
+          model: "gemini-2.5-flash"
+          prompt: |
+            You are a test reliability engineer analyzing test failures.
+
+            **Analyze test failures for patterns:**
+
+            ## 🧪 Test Failure Analysis
+
+            ### Failed Tests
+            [List specific tests that failed]
+
+            ### Pattern Detection
+            - **Flakiness Indicators:** [timeout, race condition, order-dependent]
+            - **Environment Issues:** [missing deps, config, resources]
+            - **Code Issues:** [logic errors, edge cases, regressions]
+
+            ### Classification
+            [X] Flaky Test (intermittent)
+            [X] Deterministic Failure (reproducible)
+            [X] Environment/Infrastructure
+            [X] Test Code Issue
+
+            ### Recommended Action
+            1. [Immediate fix or skip?]
+            2. [Code change needed?]
+            3. [Infrastructure adjustment?]
+
+            ### Debug Commands
+            ```bash
+            # Reproduce locally
+            [specific command to run the failing test]
+            ```
+
+            Be specific about which tests and why they failed.
+
+          on_cel: 'body.event.event_type == "pull_request"'
+
+          context_items:
+            error_content: true
+            container_logs:
+              enabled: true
+              max_lines: 200
+            commit_content: true
+            pr_content: true
+
+          output: "pr-comment"
+
+        # ═══════════════════════════════════════════════════════════════
+        # Pipeline Summary (Always Runs)
+        # ═══════════════════════════════════════════════════════════════
+        # Generates a summary for every pipeline run (both successful and failed)
+        # Uses on_cel: 'true' to override the default failed-only behavior
+        - name: "pipeline-summary"
+          # No model specified - uses provider default
+          prompt: |
+            You are a CI/CD assistant providing pipeline run summaries.
+
+            **Generate a brief summary of this pipeline run:**
+
+            ## 📊 Pipeline Run Summary
+
+            ### Status
+            [Success/Failed/Other - based on context]
+
+            ### Key Metrics
+            - Duration: [if available]
+            - Tasks Run: [count if available]
+
+            ### Highlights
+            - [Notable successes or issues]
+            - [Any warnings or recommendations]
+
+            Keep it brief and informative.
+
+          # Override default failed-only behavior to run for ALL pipeline runs
+          on_cel: "true"
+
+          context_items:
+            error_content: true
+            container_logs:
+              enabled: false
+            commit_content: true
+            pr_content: true
+
+          output: "pr-comment"
+
+        # ═══════════════════════════════════════════════════════════════
+        # Dependency Update Analysis (Check Run)
+        # ═══════════════════════════════════════════════════════════════
+        # Analyzes dependency update PRs (e.g., from Dependabot)
+        - name: "dependency-update-review"
+          # No model specified - uses provider default
+          prompt: |
+            You are a dependency management expert reviewing an automated dependency update.
+
+            **Analyze this dependency update PR:**
+
+            ## 📦 Dependency Update Review
+
+            ### Changes Detected
+            [List dependency updates from commit]
+
+            ### Risk Assessment
+            - **Semver Impact:** [major/minor/patch]
+            - **Breaking Changes:** [yes/no - explain]
+            - **Security Fixes:** [CVEs addressed if any]
+
+            ### Test Coverage
+            - Did tests pass? [yes/no]
+            - Are tests sufficient for changes? [assessment]
+
+            ### Recommendations
+            - [x] Safe to merge
+            - [ ] Needs additional testing
+            - [ ] Review breaking changes first
+            - [ ] Check for transitive dependency issues
+
+            ### Release Notes
+            [Key changes from dependency if available in logs]
+
+            Prioritize security and stability in assessment.
+
+          on_cel: 'body.event.event_type == "pull_request" && (body.event.head_branch.contains("dependabot") || body.event.head_branch.contains("renovate"))'
+
+          context_items:
+            error_content: false
+            container_logs:
+              enabled: true
+              max_lines: 50
+            commit_content: true
+            pr_content: true
+
+          output: "check-run"
+
+---
+# Additional secret for GitHub token (template - user must provide actual token)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: chmouel-github-token
+  namespace: scratch-my-back
+type: Opaque
+stringData:
+  token: "YOUR_GITHUB_TOKEN_HERE"

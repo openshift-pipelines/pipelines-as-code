@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -377,6 +378,28 @@ func (v *Provider) GetCommitInfo(_ context.Context, runevent *info.Event) error 
 	runevent.SHAURL = commit.HTMLURL
 	runevent.SHATitle = strings.Split(commit.RepoCommit.Message, "\n\n")[0]
 	runevent.SHA = commit.SHA
+
+	// Populate full commit information for LLM context
+	runevent.SHAMessage = commit.RepoCommit.Message
+	if commit.RepoCommit.Author != nil {
+		runevent.SHAAuthorName = commit.RepoCommit.Author.Name
+		runevent.SHAAuthorEmail = commit.RepoCommit.Author.Email
+		if commit.RepoCommit.Author.Date != "" {
+			if authorDate, err := time.Parse(time.RFC3339, commit.RepoCommit.Author.Date); err == nil {
+				runevent.SHAAuthorDate = authorDate
+			}
+		}
+	}
+	if commit.RepoCommit.Committer != nil {
+		runevent.SHACommitterName = commit.RepoCommit.Committer.Name
+		runevent.SHACommitterEmail = commit.RepoCommit.Committer.Email
+		if commit.RepoCommit.Committer.Date != "" {
+			if committerDate, err := time.Parse(time.RFC3339, commit.RepoCommit.Committer.Date); err == nil {
+				runevent.SHACommitterDate = committerDate
+			}
+		}
+	}
+
 	return nil
 }
 
