@@ -191,23 +191,16 @@ or `GitLab` raw URL like this:
 
 The GitLab token as provider in the Repository CR will be used to fetch the file.
 
-### Tasks or Pipelines inside the repository
+### Tasks inside the repository
 
-Additionally, you can as well have a reference to a task or pipeline from a YAML file inside
-your repository if you specify the relative path to it, for example :
+Additionally, you can also reference a task or pipeline from a YAML file inside
+your repository if you specify the path to it. For example:
 
 ```yaml
 pipelinesascode.tekton.dev/task: "[share/tasks/git-clone.yaml]"
 ```
 
-This will grab the file `share/tasks/git-clone.yaml` from the current
-repository on the `SHA` where the event come from (i.e: the current pull
-request or the current branch push).
-
-If there is any error fetching those resources, `Pipelines-as-Code` will error
-out and not process the pipeline.
-
-If the object fetched cannot be parsed as a Tekton `Task` it will error out.
+See [Tasks and Pipelines inside the repository](#tasks-or-pipelines-inside-the-repository) for details.
 
 ### Relative Tasks
 
@@ -286,11 +279,16 @@ An annotation to a remote pipeline looks like this, using a remote URL:
 pipelinesascode.tekton.dev/pipeline: "https://git.provider/raw/pipeline.yaml
 ```
 
-or from a relative path inside the repository:
+### Pipelines inside the repository
+
+Additionally, you can also reference a Task or Pipeline from a YAML file inside
+your repository if you specify the path to it. For example:
 
 ```yaml
-pipelinesascode.tekton.dev/pipeline: "./tasks/pipeline.yaml
+pipelinesascode.tekton.dev/pipeline: "pipelines/my-pipeline.yaml
 ```
+
+See [Tasks and Pipelines inside the repository](#tasks-or-pipelines-inside-the-repository) for details.
 
 ### Hub Support for Pipelines
 
@@ -372,7 +370,7 @@ to a `Name`, no override is done on `Tasks` embedded with a `taskSpec`. See
 [Tekton documentation](https://tekton.dev/docs/pipelines/pipelines/#adding-tasks-to-the-pipeline) for the differences between `taskRef` and `taskSpec`:
 {{< /hint >}}
 
-### Tasks or Pipelines Precedence
+## Tasks or Pipelines Precedence
 
 From where tasks or pipelines of the same name takes precedence?
 
@@ -389,3 +387,34 @@ pipeline in this order:
 1. The Pipeline from the PipelineRun annotations
 2. The Pipeline from the Tekton directory (pipelines are automatically fetched from
   the `.tekton` directory and its sub-directories)
+
+## Tasks or Pipelines inside the repository
+
+You can also reference a task or pipeline from a YAML file inside
+your repository by specifying the path to the file.
+For example:
+
+To reference a Task yaml file in the repository
+
+```yaml
+pipelinesascode.tekton.dev/task: "[share/tasks/git-clone.yaml]"
+```
+
+To reference a Pipeline yaml file in the repository
+
+```yaml
+pipelinesascode.tekton.dev/pipeline: "share/pipelines/build.yaml"
+```
+
+This will grab the specified file(s) from the current
+repository on the `SHA` where the event comes from (i.e: the current pull
+request or the current branch push).
+
+If there is any error fetching those resources, or if the fetched yaml
+cannot be parsed as the appropriate Tekton type , `Pipelines-as-Code`
+will error out and not process the pipeline.
+
+it will error out.
+
+Remote Pipelines may also reference Tasks in their repository using a relative path.
+See [Relative Tasks](#relative-tasks) for details.
