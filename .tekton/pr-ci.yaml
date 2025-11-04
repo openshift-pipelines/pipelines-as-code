@@ -28,7 +28,7 @@ spec:
     - name: repo_name
       value: "{{repo_name}}"
     - name: gemini_model
-      value: "gemini-2.5-flash-lite-preview-06-17"
+      value: "gemini-2.5-flash-lite"
     - name: excluded_labels
       value: "good-first-issue,help-wanted,wontfix,hack"
     - name: max_labels
