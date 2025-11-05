@@ -12,7 +12,6 @@ import (
 	tgitlab "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitlab"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"github.com/tektoncd/pipeline/pkg/names"
-	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"gotest.tools/v3/assert"
 )
 
@@ -47,8 +46,9 @@ func TestGitlabDeleteTagEvent(t *testing.T) {
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("Deleted Tag %s in %s repository", tagName, projectinfo.Name)
 
+	logLinesToCheck := int64(100)
 	reg := regexp.MustCompile("event Delete Tag Push Hook is not supported*")
-	err = twait.RegexpMatchingInControllerLog(ctx, runcnx, *reg, 10, "controller", gitlab.Ptr(int64(20)))
+	err = twait.RegexpMatchingInControllerLog(ctx, runcnx, *reg, 10, "controller", &logLinesToCheck)
 	assert.NilError(t, err)
 }
 
