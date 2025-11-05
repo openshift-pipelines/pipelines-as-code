@@ -22,11 +22,14 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	bbtest "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketdatacenter/test"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/metrics"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
+	"knative.dev/pkg/metrics/metricstest"
+	_ "knative.dev/pkg/metrics/testing"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -796,6 +799,7 @@ func TestGetFiles(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			client, mux, tearDown, tURL := bbtest.SetupBBDataCenterClient()
 			defer tearDown()
+			metrics.ResetMetrics()
 
 			stats := &bbtest.DiffStats{
 				Values: tt.changeFiles,
@@ -821,13 +825,17 @@ func TestGetFiles(t *testing.T) {
 					}
 				})
 			}
-			v := &Provider{client: client, baseURL: tURL}
+
+			metricsTags := map[string]string{"provider": "bitbucket-datacenter", "event-type": string(tt.event.TriggerTarget)}
+			metricstest.CheckStatsNotReported(t, "pipelines_as_code_git_provider_api_request_count")
+
+			v := &Provider{client: client, baseURL: tURL, triggerEvent: string(tt.event.TriggerTarget)}
 			changedFiles, err := v.GetFiles(ctx, tt.event)
 			if tt.wantError {
 				assert.Equal(t, err.Error(), tt.errMsg)
-				return
+			} else {
+				assert.NilError(t, err, nil)
 			}
-			assert.NilError(t, err, nil)
 			assert.Equal(t, tt.wantAddedFilesCount, len(changedFiles.Added))
 			assert.Equal(t, tt.wantDeletedFilesCount, len(changedFiles.Deleted))
 			assert.Equal(t, tt.wantModifiedFilesCount, len(changedFiles.Modified))
@@ -843,6 +851,17 @@ func TestGetFiles(t *testing.T) {
 				for i := range changedFiles.All {
 					assert.Equal(t, tt.changeFiles[i].Path.ToString, changedFiles.All[i])
 				}
+			}
+
+			// Check caching
+			metricstest.CheckCountData(t, "pipelines_as_code_git_provider_api_request_count", metricsTags, 1)
+			_, _ = v.GetFiles(ctx, tt.event)
+			if tt.wantError {
+				// No caching on error
+				metricstest.CheckCountData(t, "pipelines_as_code_git_provider_api_request_count", metricsTags, 2)
+			} else {
+				// Cache API results on success
+				metricstest.CheckCountData(t, "pipelines_as_code_git_provider_api_request_count", metricsTags, 1)
 			}
 		})
 	}

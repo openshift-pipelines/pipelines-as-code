@@ -64,7 +64,8 @@ type Provider struct {
 	triggerEvent      string
 	// memberCache caches membership/permission checks by user ID within the
 	// current provider instance lifecycle to avoid repeated API calls.
-	memberCache map[int]bool
+	memberCache        map[int]bool
+	cachedChangedFiles *changedfiles.ChangedFiles
 }
 
 func (v *Provider) Client() *gitlab.Client {
@@ -496,12 +497,28 @@ func (v *Provider) GetCommitInfo(_ context.Context, runevent *info.Event) error 
 	return nil
 }
 
-func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) (changedfiles.ChangedFiles, error) {
+// GetFiles gets and caches the list of files changed by a given event.
+func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) (changedfiles.ChangedFiles, error) {
+	if v.cachedChangedFiles == nil {
+		changes, err := v.fetchChangedFiles(ctx, runevent)
+		if err != nil {
+			return changedfiles.ChangedFiles{}, err
+		}
+		v.cachedChangedFiles = &changes
+	}
+	return *v.cachedChangedFiles, nil
+}
+
+func (v *Provider) fetchChangedFiles(_ context.Context, runevent *info.Event) (changedfiles.ChangedFiles, error) {
 	if v.gitlabClient == nil {
 		return changedfiles.ChangedFiles{}, fmt.Errorf("no gitlab client has been initialized, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
-	if runevent.TriggerTarget == triggertype.PullRequest {
+
+	changedFiles := changedfiles.ChangedFiles{}
+
+	switch runevent.TriggerTarget {
+	case triggertype.PullRequest:
 		opt := &gitlab.ListMergeRequestDiffsOptions{
 			ListOptions: gitlab.ListOptions{
 				OrderBy:    "id",
@@ -511,11 +528,11 @@ func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) (changedfil
 			},
 		}
 		options := []gitlab.RequestOptionFunc{}
-		changedFiles := changedfiles.ChangedFiles{}
 
 		for {
 			mrchanges, resp, err := v.Client().MergeRequests.ListMergeRequestDiffs(v.targetProjectID, runevent.PullRequestNumber, opt, options...)
 			if err != nil {
+				// TODO: Should this return the files found so far?
 				return changedfiles.ChangedFiles{}, err
 			}
 
@@ -545,15 +562,11 @@ func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) (changedfil
 				gitlab.WithKeysetPaginationParameters(resp.NextLink),
 			}
 		}
-		return changedFiles, nil
-	}
-
-	if runevent.TriggerTarget == "push" {
+	case triggertype.Push:
 		pushChanges, _, err := v.Client().Commits.GetCommitDiff(v.sourceProjectID, runevent.SHA, &gitlab.GetCommitDiffOptions{})
 		if err != nil {
 			return changedfiles.ChangedFiles{}, err
 		}
-		changedFiles := changedfiles.ChangedFiles{}
 		for _, change := range pushChanges {
 			changedFiles.All = append(changedFiles.All, change.NewPath)
 			if change.NewFile {
@@ -569,9 +582,10 @@ func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) (changedfil
 				changedFiles.Renamed = append(changedFiles.Renamed, change.NewPath)
 			}
 		}
-		return changedFiles, nil
+	default:
+		// No action necessary
 	}
-	return changedfiles.ChangedFiles{}, nil
+	return changedFiles, nil
 }
 
 func (v *Provider) CreateToken(_ context.Context, _ []string, _ *info.Event) (string, error) {
