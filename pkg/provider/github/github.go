@@ -56,6 +56,7 @@ type Provider struct {
 	userType      string // The type of user i.e bot or not
 	skippedRun
 	triggerEvent string
+	changedFiles *changedfiles.ChangedFiles
 }
 
 type skippedRun struct {
@@ -517,67 +518,70 @@ func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event) (*i
 	return runevent, nil
 }
 
-// GetFiles get a files from pull request.
+// GetFiles gets the files changed by a given event.
 func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) (changedfiles.ChangedFiles, error) {
-	if runevent.TriggerTarget == triggertype.PullRequest {
-		opt := &github.ListOptions{PerPage: v.PaginedNumber}
-		changedFiles := changedfiles.ChangedFiles{}
-		for {
-			repoCommit, resp, err := wrapAPI(v, "list_pull_request_files", func() ([]*github.CommitFile, *github.Response, error) {
-				return v.Client().PullRequests.ListFiles(ctx, runevent.Organization, runevent.Repository, runevent.PullRequestNumber, opt)
+	if v.changedFiles == nil {
+		switch runevent.TriggerTarget {
+		case triggertype.PullRequest:
+			opt := &github.ListOptions{PerPage: v.PaginedNumber}
+			changedFiles := changedfiles.ChangedFiles{}
+			for {
+				repoCommit, resp, err := wrapAPI(v, "list_pull_request_files", func() ([]*github.CommitFile, *github.Response, error) {
+					return v.Client().PullRequests.ListFiles(ctx, runevent.Organization, runevent.Repository, runevent.PullRequestNumber, opt)
+				})
+				if err != nil {
+					return changedfiles.ChangedFiles{}, err
+				}
+				for j := range repoCommit {
+					changedFiles.All = append(changedFiles.All, *repoCommit[j].Filename)
+					if *repoCommit[j].Status == "added" {
+						changedFiles.Added = append(changedFiles.Added, *repoCommit[j].Filename)
+					}
+					if *repoCommit[j].Status == "removed" {
+						changedFiles.Deleted = append(changedFiles.Deleted, *repoCommit[j].Filename)
+					}
+					if *repoCommit[j].Status == "modified" {
+						changedFiles.Modified = append(changedFiles.Modified, *repoCommit[j].Filename)
+					}
+					if *repoCommit[j].Status == "renamed" {
+						changedFiles.Renamed = append(changedFiles.Renamed, *repoCommit[j].Filename)
+					}
+				}
+				if resp.NextPage == 0 {
+					break
+				}
+				opt.Page = resp.NextPage
+			}
+			v.changedFiles = &changedFiles
+		case triggertype.Push:
+			changedFiles := changedfiles.ChangedFiles{}
+			rC, _, err := wrapAPI(v, "get_commit_files", func() (*github.RepositoryCommit, *github.Response, error) {
+				return v.Client().Repositories.GetCommit(ctx, runevent.Organization, runevent.Repository, runevent.SHA, &github.ListOptions{})
 			})
 			if err != nil {
 				return changedfiles.ChangedFiles{}, err
 			}
-			for j := range repoCommit {
-				changedFiles.All = append(changedFiles.All, *repoCommit[j].Filename)
-				if *repoCommit[j].Status == "added" {
-					changedFiles.Added = append(changedFiles.Added, *repoCommit[j].Filename)
+			for i := range rC.Files {
+				changedFiles.All = append(changedFiles.All, *rC.Files[i].Filename)
+				if *rC.Files[i].Status == "added" {
+					changedFiles.Added = append(changedFiles.Added, *rC.Files[i].Filename)
 				}
-				if *repoCommit[j].Status == "removed" {
-					changedFiles.Deleted = append(changedFiles.Deleted, *repoCommit[j].Filename)
+				if *rC.Files[i].Status == "removed" {
+					changedFiles.Deleted = append(changedFiles.Deleted, *rC.Files[i].Filename)
 				}
-				if *repoCommit[j].Status == "modified" {
-					changedFiles.Modified = append(changedFiles.Modified, *repoCommit[j].Filename)
+				if *rC.Files[i].Status == "modified" {
+					changedFiles.Modified = append(changedFiles.Modified, *rC.Files[i].Filename)
 				}
-				if *repoCommit[j].Status == "renamed" {
-					changedFiles.Renamed = append(changedFiles.Renamed, *repoCommit[j].Filename)
+				if *rC.Files[i].Status == "renamed" {
+					changedFiles.Renamed = append(changedFiles.Renamed, *rC.Files[i].Filename)
 				}
 			}
-			if resp.NextPage == 0 {
-				break
-			}
-			opt.Page = resp.NextPage
+			v.changedFiles = &changedFiles
+		default:
+			v.changedFiles = &changedfiles.ChangedFiles{}
 		}
-		return changedFiles, nil
 	}
-
-	if runevent.TriggerTarget == "push" {
-		changedFiles := changedfiles.ChangedFiles{}
-		rC, _, err := wrapAPI(v, "get_commit_files", func() (*github.RepositoryCommit, *github.Response, error) {
-			return v.Client().Repositories.GetCommit(ctx, runevent.Organization, runevent.Repository, runevent.SHA, &github.ListOptions{})
-		})
-		if err != nil {
-			return changedfiles.ChangedFiles{}, err
-		}
-		for i := range rC.Files {
-			changedFiles.All = append(changedFiles.All, *rC.Files[i].Filename)
-			if *rC.Files[i].Status == "added" {
-				changedFiles.Added = append(changedFiles.Added, *rC.Files[i].Filename)
-			}
-			if *rC.Files[i].Status == "removed" {
-				changedFiles.Deleted = append(changedFiles.Deleted, *rC.Files[i].Filename)
-			}
-			if *rC.Files[i].Status == "modified" {
-				changedFiles.Modified = append(changedFiles.Modified, *rC.Files[i].Filename)
-			}
-			if *rC.Files[i].Status == "renamed" {
-				changedFiles.Renamed = append(changedFiles.Renamed, *rC.Files[i].Filename)
-			}
-		}
-		return changedFiles, nil
-	}
-	return changedfiles.ChangedFiles{}, nil
+	return *v.changedFiles, nil
 }
 
 // getObject Get an object from a repository.
