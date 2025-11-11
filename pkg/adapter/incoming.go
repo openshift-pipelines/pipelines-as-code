@@ -4,8 +4,10 @@ import (
 	"context"
 	"crypto/subtle"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 
 	apincoming "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/incoming"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -23,6 +25,70 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	defaultIncomingWebhookSecretKey = "secret"
+)
+
+var errMissingFields = errors.New("missing required fields")
+
+func errMissingSpecificFields(fields []string) error {
+	return fmt.Errorf("%w: %s", errMissingFields, fields)
+}
+
+type incomingPayload struct {
+	legacyMode bool // indicates the request was made using the deprecated queryparams method
+
+	RepoName    string         `json:"repository"`
+	Namespace   string         `json:"namespace,omitempty"` // Optional unless Repository name is not unique
+	Branch      string         `json:"branch"`
+	PipelineRun string         `json:"pipelinerun"`
+	Secret      string         `json:"secret"`
+	Params      map[string]any `json:"params"`
+}
+
+func (payload *incomingPayload) validate() error {
+	missingFields := []string{}
+
+	for field, value := range map[string]string{
+		"repository":  payload.RepoName,
+		"branch":      payload.Branch,
+		"pipelinerun": payload.PipelineRun,
+		"secret":      payload.Secret,
+	} {
+		if value == "" {
+			missingFields = append(missingFields, field)
+		}
+	}
+
+	if len(missingFields) > 0 {
+		return errMissingSpecificFields(missingFields)
+	}
+	return nil
+}
+
+// parseIncomingPayload parses and validates the incoming payload.
+func parseIncomingPayload(request *http.Request, payloadBody []byte) (incomingPayload, error) {
+	parsedPayload := incomingPayload{
+		RepoName:    request.URL.Query().Get("repository"),
+		Branch:      request.URL.Query().Get("branch"),
+		PipelineRun: request.URL.Query().Get("pipelinerun"),
+		Secret:      request.URL.Query().Get("secret"),
+		Namespace:   request.URL.Query().Get("namespace"),
+		legacyMode:  true,
+	}
+
+	if parsedPayload.validate() != nil {
+		if request.Method == http.MethodPost && request.Header.Get("Content-Type") == "application/json" && len(payloadBody) > 0 {
+			parsedPayload = incomingPayload{legacyMode: false}
+			if err := json.Unmarshal(payloadBody, &parsedPayload); err != nil {
+				return parsedPayload, fmt.Errorf("invalid JSON body for incoming webhook: %w", err)
+			}
+		}
+	}
+
+	return parsedPayload, parsedPayload.validate()
+}
+
 func compareSecret(incomingSecret, secretValue string) bool {
 	return subtle.ConstantTimeCompare([]byte(incomingSecret), []byte(secretValue)) != 0
 }
@@ -36,92 +102,64 @@ func applyIncomingParams(req *http.Request, payloadBody []byte, params []string)
 		return apincoming.Payload{}, fmt.Errorf("error parsing incoming payload, not the expected format?: %w", err)
 	}
 	for k := range payload.Params {
-		allowed := false
-		for _, allowedP := range params {
-			if k == allowedP {
-				allowed = true
-				break
-			}
-		}
-		if !allowed {
+		if !slices.Contains(params, k) {
 			return apincoming.Payload{}, fmt.Errorf("param %s is not allowed in incoming webhook CR", k)
 		}
 	}
 	return payload, nil
 }
 
+// detectIncoming checks if the request is for an "incoming" webhook request.
+// If the request is for an "incoming" webhook request the request is parsed and matched to the expected
+// repository.
 func (l *listener) detectIncoming(ctx context.Context, req *http.Request, payloadBody []byte) (bool, *v1alpha1.Repository, error) {
-	// Support both legacy (URL query) and new (POST body) secret passing
-	repository := req.URL.Query().Get("repository")
-	branch := req.URL.Query().Get("branch")
-	pipelineRun := req.URL.Query().Get("pipelinerun")
-	querySecret := req.URL.Query().Get("secret")
-	legacyMode := false
-
 	if req.URL.Path != "/incoming" {
 		return false, nil, nil
 	}
 
-	// If not all required query params are present, try to parse from JSON body
-	if repository == "" || branch == "" || pipelineRun == "" || querySecret == "" {
-		if req.Method == http.MethodPost && req.Header.Get("Content-Type") == "application/json" && len(payloadBody) > 0 {
-			var body struct {
-				Repository  string         `json:"repository"`
-				Branch      string         `json:"branch"`
-				PipelineRun string         `json:"pipelinerun"`
-				Secret      string         `json:"secret"`
-				Params      map[string]any `json:"params"`
-			}
-			if err := json.Unmarshal(payloadBody, &body); err == nil {
-				repository = body.Repository
-				branch = body.Branch
-				pipelineRun = body.PipelineRun
-				querySecret = body.Secret
-			} else {
-				return false, nil, fmt.Errorf("invalid JSON body for incoming webhook: %w", err)
-			}
-		} else {
-			return false, nil, fmt.Errorf("missing query URL argument: pipelinerun, branch, repository, secret: '%s' '%s' '%s' '%s'", pipelineRun, branch, repository, querySecret)
-		}
-	} else {
-		legacyMode = true
-	}
-
-	if legacyMode {
+	l.logger.Infof("incoming request has been requested: %v", req.URL)
+	payload, err := parseIncomingPayload(req, payloadBody)
+	if payload.legacyMode {
+		// Log this, even if the request is invalid
 		l.logger.Warnf("[SECURITY] Incoming webhook used legacy URL-based secret passing. This is insecure and will be deprecated. Please use POST body instead.")
 	}
-
-	l.logger.Infof("incoming request has been requested: %v", req.URL)
-	if pipelineRun == "" || repository == "" || querySecret == "" || branch == "" {
-		err := fmt.Errorf("missing query URL argument: pipelinerun, branch, repository, secret: '%s' '%s' '%s' '%s'", pipelineRun, branch, repository, querySecret)
+	if err != nil {
 		return false, nil, err
 	}
 
-	repo, err := matcher.GetRepo(ctx, l.run, repository)
+	repo, err := matcher.GetRepoByName(ctx, l.run, payload.RepoName, payload.Namespace)
 	if err != nil {
+		if errors.Is(err, matcher.ErrRepositoryNameConflict) {
+			return false, nil, fmt.Errorf("%w: %w", err, errMissingSpecificFields([]string{"namespace"}))
+		}
 		return false, nil, fmt.Errorf("error getting repo: %w", err)
 	}
 	if repo == nil {
-		return false, nil, fmt.Errorf("cannot find repository %s", repository)
+		return false, nil, fmt.Errorf("cannot find repository %s", payload.RepoName)
 	}
 
 	if repo.Spec.Incomings == nil {
-		return false, nil, fmt.Errorf("you need to have incoming webhooks rules in your repo spec, repo: %s", repository)
+		return false, nil, fmt.Errorf("you need to have incoming webhooks rules in your repo spec, repo: %s", payload.RepoName)
 	}
 
-	hook := matcher.IncomingWebhookRule(branch, *repo.Spec.Incomings)
+	hook := matcher.IncomingWebhookRule(payload.Branch, *repo.Spec.Incomings)
 	if hook == nil {
-		return false, nil, fmt.Errorf("branch '%s' has not matched any rules in repo incoming webhooks spec: %+v", branch, *repo.Spec.Incomings)
+		return false, nil, fmt.Errorf("branch '%s' has not matched any rules in repo incoming webhooks spec: %+v", payload.Branch, *repo.Spec.Incomings)
 	}
 
 	// log incoming request
-	l.logger.Infof("incoming request targeting pipelinerun %s on branch %s for repository %s has been accepted", pipelineRun, branch, repository)
+	l.logger.Infof("incoming request targeting pipelinerun %s on branch %s for repository %s has been accepted", payload.PipelineRun, payload.Branch, payload.RepoName)
 
 	secretOpts := ktypes.GetSecretOpt{
 		Namespace: repo.Namespace,
 		Name:      hook.Secret.Name,
 		Key:       hook.Secret.Key,
 	}
+
+	if secretOpts.Key == "" {
+		secretOpts.Key = defaultIncomingWebhookSecretKey
+	}
+
 	secretValue, err := l.kint.GetSecret(ctx, secretOpts)
 	if err != nil {
 		return false, nil, fmt.Errorf("error getting secret referenced in incoming-webhook: %w", err)
@@ -131,7 +169,7 @@ func (l *listener) detectIncoming(ctx context.Context, req *http.Request, payloa
 	}
 
 	// TODO: move to somewhere common to share between gitlab and here
-	if !compareSecret(querySecret, secretValue) {
+	if !compareSecret(payload.Secret, secretValue) {
 		return false, nil, fmt.Errorf("secret passed to the webhook does not match the incoming webhook secret set on repository CR in secret %s", hook.Secret.Name)
 	}
 
@@ -164,14 +202,15 @@ func (l *listener) detectIncoming(ctx context.Context, req *http.Request, payloa
 	// eventType and vice versa, but keeping as is for now.
 	l.event.EventType = "incoming"
 	l.event.TriggerTarget = "push"
-	l.event.TargetPipelineRun = pipelineRun
-	l.event.HeadBranch = branch
-	l.event.BaseBranch = branch
+	l.event.TargetPipelineRun = payload.PipelineRun
+	l.event.HeadBranch = payload.Branch
+	l.event.BaseBranch = payload.Branch
 	l.event.Request.Header = req.Header
 	l.event.Request.Payload = payloadBody
 	l.event.URL = repo.Spec.URL
 	l.event.Sender = "incoming"
-	return true, repo, nil
+
+	return true, repo, err
 }
 
 func (l *listener) processIncoming(targetRepo *v1alpha1.Repository) (provider.Interface, *zap.SugaredLogger, error) {

@@ -1,5 +1,4 @@
 //go:build e2e
-// +build e2e
 
 package test
 
@@ -9,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/google/go-github/v71/github"
+	"github.com/google/go-github/v74/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
@@ -122,8 +121,8 @@ func TestGithubSecondPullRequestGitopsCommentCancel(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, len(pruns.Items), 3)
 
-	// go over all pruns check that at least one is canceled and the other two are succeeded
-	canceledCount := 0
+	// go over all pruns check that at least one is cancelled and the other two are succeeded
+	cancelledCount := 0
 	succeededCount := 0
 	unknownCount := 0
 	for _, prun := range pruns.Items {
@@ -131,7 +130,7 @@ func TestGithubSecondPullRequestGitopsCommentCancel(t *testing.T) {
 			if condition.Type == "Succeeded" {
 				switch condition.Status {
 				case corev1.ConditionFalse:
-					canceledCount++
+					cancelledCount++
 				case corev1.ConditionTrue:
 					succeededCount++
 				case corev1.ConditionUnknown:
@@ -140,7 +139,7 @@ func TestGithubSecondPullRequestGitopsCommentCancel(t *testing.T) {
 			}
 		}
 	}
-	assert.Equal(t, canceledCount, 1, "should have one canceled PipelineRun")
+	assert.Equal(t, cancelledCount, 1, "should have one cancelled PipelineRun")
 	assert.Equal(t, succeededCount, 2, "should have two succeeded PipelineRuns")
 	assert.Equal(t, unknownCount, 0, "should have zero unknown PipelineRuns: %+v", pruns.Items)
 }

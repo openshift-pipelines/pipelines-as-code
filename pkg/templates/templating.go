@@ -53,7 +53,18 @@ func ReplacePlaceHoldersVariables(template string, dico map[string]string, rawEv
 		parts := keys.ParamsRe.FindStringSubmatch(s)
 		key := strings.TrimSpace(parts[1])
 		if strings.HasPrefix(key, "body") || strings.HasPrefix(key, "headers") || strings.HasPrefix(key, "files") {
-			if rawEvent != nil && headers != nil {
+			// Check specific requirements for each prefix
+			canEvaluate := false
+			switch {
+			case strings.HasPrefix(key, "body") && rawEvent != nil:
+				canEvaluate = true
+			case strings.HasPrefix(key, "headers") && headers != nil:
+				canEvaluate = true
+			case strings.HasPrefix(key, "files"):
+				canEvaluate = true // files evaluation doesn't depend on rawEvent or headers
+			}
+
+			if canEvaluate {
 				// convert headers to map[string]string
 				headerMap := make(map[string]string)
 				for k, v := range headers {

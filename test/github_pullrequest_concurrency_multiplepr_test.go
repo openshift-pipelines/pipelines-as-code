@@ -1,5 +1,4 @@
 //go:build e2e
-// +build e2e
 
 package test
 
@@ -12,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v71/github"
+	"github.com/google/go-github/v74/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/random"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"

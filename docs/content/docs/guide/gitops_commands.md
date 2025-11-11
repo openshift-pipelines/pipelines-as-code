@@ -11,21 +11,38 @@ The advantage of using a `GitOps command` is that it provides a journal of all t
 
 ## GitOps Commands on Pull Requests
 
-For example, when you are on a Pull Request, you may want to restart all your PipelineRuns. To do so, you can add a comment on your Pull Request starting with `/retest`, and all PipelineRuns attached to that Pull Request will be restarted.
+For example, when you are on a Pull Request, you may want to restart failed PipelineRuns. To do so, you can add a comment on your Pull Request starting with `/retest`, and all **failed** PipelineRuns attached to that Pull Request will be restarted. If all previous PipelineRuns for the same commit were successful, no new PipelineRuns will be created to avoid unnecessary duplication.
 
 Example:
 
 ```text
-Thanks for contributing. This is a much-needed bugfix, and we love it ❤️ The
+Thanks for contributing. This is a much-needed bugfix, and we appreciate it ❤️ The
 failure is not with your PR but seems to be an infrastructure issue.
 
 /retest
 ```
 
+The `/retest` command will only create new PipelineRuns if:
+
+- Previously **failed** PipelineRuns for the same commit, OR
+- No PipelineRun has been run for the same commit yet
+
+If a successful PipelineRun already exists for the same commit, `/retest` will **skip** triggering a new PipelineRun to avoid unnecessary duplication.
+
+**To force a rerun regardless of previous status**, use:
+
+```text
+/retest <pipelinerun-name>
+```
+
+This will always trigger a new PipelineRun, even if previous runs were successful.
+
+Similar to `/retest`, the `/ok-to-test` command will only trigger new PipelineRuns if no successful PipelineRun already exists for the same commit. This prevents duplicate runs when repository owners repeatedly test the same commit by `/test` and `/retest` command.
+
 If you have multiple `PipelineRun` and you want to target a specific `PipelineRun`, you can use the `/test` command followed by the specific PipelineRun name to restart it. Example:
 
 ```text
-Roses are red, violets are blue. Pipelines are bound to flake by design.
+Pipeline execution appears to be unstable due to external factors. Retesting this specific pipeline.
 
 /test <pipelinerun-name>
 ```
@@ -92,6 +109,8 @@ spec:
 
 To issue a `GitOps` comment on a pushed commit, you can follow these steps:
 
+### For GitHub
+
 1. Go to your repository.
 2. Click on the **Commits** section.
 3. Choose one of the individual **Commit**.
@@ -99,7 +118,14 @@ To issue a `GitOps` comment on a pushed commit, you can follow these steps:
 
 ![GitOps Commits For Comments](/images/gitops-comments-on-commit.png)
 
-Please note that this feature is supported for the GitHub provider only.
+### For GitLab
+
+1. Go to your repository.
+2. Click on the **History**.
+3. Choose one of the individual **Commit**.
+4. Click on the line number where you want to add a `GitOps` comment, as shown in the image below:
+
+![GitOps Commits For Comments](/images/gitlab-gitops-comment-on-commit.png)
 
 ## GitOps Commands on Non-Matching PipelineRun
 
@@ -107,7 +133,7 @@ The PipelineRun will be restarted regardless of the annotations if the comment `
 
 ### Triggering PipelineRun on Git tags
 
-{{< support_matrix github_app="true" github_webhook="true" gitea="false" gitlab="false" bitbucket_cloud="false" bitbucket_server="false" >}}
+{{< support_matrix github_app="true" github_webhook="true" gitea="false" gitlab="true" bitbucket_cloud="false" bitbucket_server="false" >}}
 
 You can retrigger a PipelineRun against a specific Git tag by commenting on
 the tagged commit using a GitOps command. Pipelines-as-Code will resolve the
@@ -245,7 +271,7 @@ For example, if you want to cancel all your PipelineRuns, you can add a comment 
 Example:
 
 ```text
-It seems the infrastructure is down, so cancelling the PipelineRuns.
+The infrastructure appears to be experiencing issues. Cancelling the current PipelineRuns.
 
 /cancel
 ```
@@ -255,7 +281,7 @@ If you have multiple `PipelineRun` and you want to target a specific `PipelineRu
 Example:
 
 ```text
-Roses are red, violets are blue. Why run the pipeline when the infrastructure is down.
+The infrastructure appears to be experiencing issues, cancelling this specific pipeline.
 
 /cancel <pipelinerun-name>
 ```
@@ -335,12 +361,12 @@ Here are the possible event types:
 
 - `test-all-comment`: The event is a single `/test` that would test every matched PipelineRun.
 - `test-comment`: The event is a `/test <PipelineRun>` comment that would test a specific PipelineRun.
-- `retest-all-comment`: The event is a single `/retest` that would retest every matched PipelineRun.
+- `retest-all-comment`: The event is a single `/retest` that would retest every matched **failed** PipelineRun. If a successful PipelineRun already exists for the same commit, no new PipelineRun will be created.
 - `retest-comment`: The event is a `/retest <PipelineRun>` that would retest a specific PipelineRun.
 - `on-comment`: The event is coming from a custom comment that would trigger a PipelineRun.
 - `cancel-all-comment`: The event is a single `/cancel` that would cancel every matched PipelineRun.
 - `cancel-comment`: The event is a `/cancel <PipelineRun>` that would cancel a specific PipelineRun.
-- `ok-to-test-comment`: The event is a `/ok-to-test` that would allow running the CI for an unauthorized user.
+- `ok-to-test-comment`: The event is a `/ok-to-test` that would allow running the CI for an unauthorized user. If a successful PipelineRun already exists for the same commit, no new PipelineRun will be created.
 
 If a repository owner comments `/ok-to-test` on a pull request from an external contributor but no PipelineRun **matches** the `pull_request` event (or the repository has no `.tekton` directory), Pipelines-as-Code sets a **neutral** commit status. This indicates that no PipelineRun was matched, allowing other workflows—such as auto-merge—to proceed without being blocked.
 

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-github/v71/github"
+	"github.com/google/go-github/v74/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
@@ -329,6 +329,20 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 				status:      "completed",
 				conclusion:  "failure",
 				text:        "Nay",
+				detailsURL:  "https://cireport.com",
+				titleSubstr: "Failed",
+				githubApps:  true,
+			},
+			want:    &github.CheckRun{ID: &resultid},
+			wantErr: false,
+		},
+		{
+			name: "validation failure",
+			args: args{
+				runevent:    runEvent,
+				status:      "completed",
+				conclusion:  "failure",
+				text:        "There was an error creating the PipelineRun: ```admission webhook \"validation.webhook.pipeline.tekton.dev\" denied the request: validation failed: invalid value: 0s```",
 				detailsURL:  "https://cireport.com",
 				titleSubstr: "Failed",
 				githubApps:  true,

@@ -1,0 +1,145 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: pr-ci
+  annotations:
+    pipelinesascode.tekton.dev/max-keep-runs: "2"
+    pipelinesascode.tekton.dev/cancel-in-progress: "true"
+    pipelinesascode.tekton.dev/on-event: "pull_request"
+    pipelinesascode.tekton.dev/on-target-branch: "[main]"
+spec:
+  description: |
+    Runs PR linting and updates:
+      • Clone the repository revision under test
+      • Lint the pull-request title against Conventional Commits
+      • Ensure the PR body is filled out (custom text + Jira reference)
+      • Check commits for AI attribution footers when AI tools were used
+      • Apply AI-suggested labels via Gemini respecting repo label rules
+  params:
+    - name: repo_url
+      value: "{{repo_url}}"
+    - name: revision
+      value: "{{revision}}"
+    - name: pull_request_number
+      value: "{{pull_request_number}}"
+    - name: repo_owner
+      value: "{{repo_owner}}"
+    - name: repo_name
+      value: "{{repo_name}}"
+    - name: gemini_model
+      value: "gemini-2.5-flash-lite"
+    - name: excluded_labels
+      value: "good-first-issue,help-wanted,wontfix,hack"
+    - name: max_labels
+      value: "3"
+  pipelineSpec:
+    params:
+      - name: repo_url
+      - name: revision
+      - name: pull_request_number
+      - name: repo_owner
+      - name: repo_name
+      - name: gemini_model
+      - name: excluded_labels
+      - name: max_labels
+    tasks:
+      - name: pr-labeler
+        taskSpec:
+          params:
+            - name: repo_url
+            - name: revision
+            - name: pull_request_number
+            - name: repo_owner
+            - name: repo_name
+            - name: gemini_model
+            - name: excluded_labels
+            - name: max_labels
+          workspaces:
+            - name: source
+          steps:
+            - name: fetch-repo
+              ref:
+                resolver: http
+                params:
+                  - name: url
+                    value: https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/refs/heads/main/.tekton/stepactions/git-clone.yaml
+              params:
+                - name: output-path
+                  value: $(workspaces.source.path)
+                - name: url
+                  value: "$(params.repo_url)"
+                - name: revision
+                  value: "$(params.revision)"
+            - name: lint-pr
+              image: ghcr.io/astral-sh/uv:debian
+              workingDir: $(workspaces.source.path)
+              env:
+                - name: GITHUB_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: "{{ git_auth_secret }}"
+                      key: "git-provider-token"
+                - name: REPO_OWNER
+                  value: "$(params.repo_owner)"
+                - name: REPO_NAME
+                  value: "$(params.repo_name)"
+                - name: PR_NUMBER
+                  value: "$(params.pull_request_number)"
+              script: |
+                uv run --directory ./hack/pr-ci pr-ci lint
+            - name: analyze-and-label
+              image: ghcr.io/astral-sh/uv:debian
+              workingDir: $(workspaces.source.path)
+              env:
+                - name: GITHUB_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: "{{ git_auth_secret }}"
+                      key: "git-provider-token"
+                - name: GEMINI_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: "gemini-api-key"
+                      key: "api-key"
+                - name: REPO_OWNER
+                  value: "$(params.repo_owner)"
+                - name: REPO_NAME
+                  value: "$(params.repo_name)"
+                - name: PR_NUMBER
+                  value: "$(params.pull_request_number)"
+                - name: REVISION
+                  value: "$(params.revision)"
+                - name: GEMINI_MODEL
+                  value: "$(params.gemini_model)"
+                - name: EXCLUDED_LABELS
+                  value: "$(params.excluded_labels)"
+                - name: MAX_LABELS
+                  value: "$(params.max_labels)"
+              script: |
+                uv run --directory ./hack/pr-ci pr-ci update
+        params:
+          - name: repo_url
+            value: "$(params.repo_url)"
+          - name: revision
+            value: "$(params.revision)"
+          - name: pull_request_number
+            value: "$(params.pull_request_number)"
+          - name: repo_owner
+            value: "$(params.repo_owner)"
+          - name: repo_name
+            value: "$(params.repo_name)"
+          - name: gemini_model
+            value: "$(params.gemini_model)"
+          - name: excluded_labels
+            value: "$(params.excluded_labels)"
+          - name: max_labels
+            value: "$(params.max_labels)"
+        workspaces:
+          - name: source
+            workspace: source
+    workspaces:
+      - name: source
+  workspaces:
+    - name: source
+      emptyDir: {}

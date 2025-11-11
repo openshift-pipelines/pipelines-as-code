@@ -104,6 +104,7 @@ func Test_listener_detectIncoming(t *testing.T) {
 		querySecret      string
 		queryBranch      string
 		queryHeaders     http.Header
+		queryNamespace   string
 		incomingBody     string
 		secretResult     map[string]string
 	}
@@ -148,6 +149,64 @@ func Test_listener_detectIncoming(t *testing.T) {
 				querySecret:      "verysecrete",
 				queryPipelineRun: "pipelinerun1",
 				queryBranch:      "main",
+			},
+		},
+		{
+			name: "good/incoming with namespace",
+			want: true,
+			args: args{
+				secretResult: map[string]string{"good-secret": "verysecrete"},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      "test-good",
+								Namespace: "bad-namespace",
+							},
+							Spec: v1alpha1.RepositorySpec{
+								URL: goodURL,
+								Incomings: &[]v1alpha1.Incoming{
+									{
+										Targets: []string{"main"},
+										Secret: v1alpha1.Secret{
+											Name: "good-secret",
+										},
+									},
+								},
+								GitProvider: &v1alpha1.GitProvider{
+									Type: "github",
+								},
+							},
+						},
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      "test-good",
+								Namespace: "good-namespace",
+							},
+							Spec: v1alpha1.RepositorySpec{
+								URL: goodURL,
+								Incomings: &[]v1alpha1.Incoming{
+									{
+										Targets: []string{"main"},
+										Secret: v1alpha1.Secret{
+											Name: "good-secret",
+										},
+									},
+								},
+								GitProvider: &v1alpha1.GitProvider{
+									Type: "github",
+								},
+							},
+						},
+					},
+				},
+				method:           "GET",
+				queryURL:         "/incoming",
+				queryRepository:  "test-good",
+				querySecret:      "verysecrete",
+				queryPipelineRun: "pipelinerun1",
+				queryBranch:      "main",
+				queryNamespace:   "good-namespace",
 			},
 		},
 		{
@@ -233,6 +292,43 @@ func Test_listener_detectIncoming(t *testing.T) {
 			},
 		},
 		{
+			name: "good/incoming with default secret key",
+			want: true,
+			args: args{
+				secretResult: map[string]string{"incoming-secret": "verysecrete"},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "test-default-key",
+							},
+							Spec: v1alpha1.RepositorySpec{
+								URL: goodURL,
+								Incomings: &[]v1alpha1.Incoming{
+									{
+										Targets: []string{"main"},
+										Secret: v1alpha1.Secret{
+											Name: "incoming-secret",
+											// Key is not specified, should default to "secret"
+										},
+									},
+								},
+								GitProvider: &v1alpha1.GitProvider{
+									Type: "github",
+								},
+							},
+						},
+					},
+				},
+				method:           http.MethodPost,
+				queryURL:         "/incoming",
+				queryRepository:  "test-default-key",
+				querySecret:      "verysecrete",
+				queryPipelineRun: "pipelinerun1",
+				queryBranch:      "main",
+			},
+		},
+		{
 			name: "invalid incoming body",
 			args: args{
 				method:           http.MethodPost,
@@ -315,6 +411,61 @@ func Test_listener_detectIncoming(t *testing.T) {
 				queryPipelineRun: "pr",
 				querySecret:      "secret",
 				queryBranch:      "branch",
+			},
+			wantErr: true,
+		},
+		{
+			name: "bad/multiple repos with name",
+			args: args{
+				queryURL:         "/incoming",
+				queryRepository:  "repo",
+				queryPipelineRun: "pr",
+				querySecret:      "secret",
+				queryBranch:      "main",
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      "repo",
+								Namespace: "bad-namespace",
+							},
+							Spec: v1alpha1.RepositorySpec{
+								URL: goodURL,
+								Incomings: &[]v1alpha1.Incoming{
+									{
+										Targets: []string{"main"},
+										Secret: v1alpha1.Secret{
+											Name: "good-secret",
+										},
+									},
+								},
+								GitProvider: &v1alpha1.GitProvider{
+									Type: "github",
+								},
+							},
+						},
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      "repo",
+								Namespace: "good-namespace",
+							},
+							Spec: v1alpha1.RepositorySpec{
+								URL: goodURL,
+								Incomings: &[]v1alpha1.Incoming{
+									{
+										Targets: []string{"main"},
+										Secret: v1alpha1.Secret{
+											Name: "good-secret",
+										},
+									},
+								},
+								GitProvider: &v1alpha1.GitProvider{
+									Type: "github",
+								},
+							},
+						},
+					},
+				},
 			},
 			wantErr: true,
 		},
@@ -683,8 +834,8 @@ func Test_listener_detectIncoming(t *testing.T) {
 
 			// make a new request
 			req := httptest.NewRequest(tt.args.method,
-				fmt.Sprintf("http://localhost%s?repository=%s&secret=%s&pipelinerun=%s&branch=%s", tt.args.queryURL,
-					tt.args.queryRepository, tt.args.querySecret, tt.args.queryPipelineRun, tt.args.queryBranch),
+				fmt.Sprintf("http://localhost%s?repository=%s&secret=%s&pipelinerun=%s&branch=%s&namespace=%s", tt.args.queryURL,
+					tt.args.queryRepository, tt.args.querySecret, tt.args.queryPipelineRun, tt.args.queryBranch, tt.args.queryNamespace),
 				strings.NewReader(tt.args.incomingBody))
 			req.Header = tt.args.queryHeaders
 			got, _, err := l.detectIncoming(ctx, req, []byte(tt.args.incomingBody))

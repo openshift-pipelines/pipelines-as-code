@@ -71,12 +71,12 @@ const indexTmpl = `
 `
 
 var successTmpl = fmt.Sprintf(`
-<html><body>You have <span style=\"color: green\">successfully</span> created a new GitHub application, go back to the %s pac cli to finish the installation.</body></html>
+<html><body>You have <span style=\"color: green\">successfully</span> created a new GitHub application. Return to the %s pac CLI to finish the installation.</body></html>
 `, settings.TknBinaryName)
 
 func install(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 	if !opts.forceInstall {
-		fmt.Fprintln(opts.ioStreams.Out, "=> Checking if Pipelines as Code is installed.")
+		fmt.Fprintln(opts.ioStreams.Out, "=> Checking if Pipelines-as-Code is installed.")
 	}
 	tektonInstalled, err := checkPipelinesInstalled(run)
 	if err != nil {
@@ -111,7 +111,7 @@ func install(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 func createSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 	var err error
 
-	if opts.RouteName == "" {
+	if opts.RouteName == "" && !opts.forceInstallGosmee {
 		opts.RouteName, _ = DetectOpenShiftRoute(ctx, run, opts.targetNamespace)
 		if opts.RouteName != "" {
 			opts.autoDetectedRoute = true

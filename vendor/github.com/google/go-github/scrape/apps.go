@@ -18,7 +18,7 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/google/go-github/v71/github"
+	"github.com/google/go-github/v74/github"
 )
 
 // AppRestrictionsEnabled returns whether the specified organization has
@@ -53,7 +53,7 @@ func (c *Client) ListOAuthApps(org string) ([]*OAuthApp, error) {
 	}
 
 	var apps []*OAuthApp
-	doc.Find(".oauth-application-allowlist ul > li").Each(func(i int, s *goquery.Selection) {
+	doc.Find(".oauth-application-allowlist ul > li").Each(func(_ int, s *goquery.Selection) {
 		var app OAuthApp
 		app.Name = s.Find(".request-info strong").First().Text()
 		app.Description = s.Find(".request-info .application-description").Text()

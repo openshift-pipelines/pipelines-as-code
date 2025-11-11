@@ -5,9 +5,10 @@ weight: 50
 
 # Incoming webhook
 
-Pipelines-as-Code support the concept of incoming webhook URL. It let you
-trigger PipelineRun in a Repository using a shared secret and URL,
-instead of creating a new code iteration.
+Pipelines-as-Code supports the concept of incoming webhook URL. It lets you
+trigger PipelineRuns in a Repository using a shared secret and URL,
+instead of creating a new code iteration. This allows users to trigger
+PipelineRuns using an HTTP request, e.g. with `curl` or from a webservice.
 
 ## Incoming Webhook URL
 
@@ -19,23 +20,37 @@ your `.tekton` directory if the `on-event` annotation of the targeted PipelineRu
 targeting a push or incoming event.
 
 {{< hint info >}}
-If you are not using the github app provider (ie: webhook based provider) you
+If you are not using the GitHub app provider (i.e., webhook based provider) you
 will need to have a `git_provider` spec to specify a token.
 
-Additionally since we are not able to detect automatically the type of provider
-on URL. You will need to add it to the `git_provider.type` spec. Supported
+Additionally, since we are not able to detect automatically the type of provider
+on URL, you will need to add it to the `git_provider.type` spec. Supported
 values are:
 
 - github
 - gitlab
 - bitbucket-cloud
 
-Whereas for `github-apps` this doesn't need to be added.
+Whereas for `github-apps` this does not need to be added.
 {{< /hint >}}
 
-### GithubApp
+### Required Parameters
 
-The example below illustrates the use of GithubApp to trigger a PipelineRun
+Whether using the recommended POST request body or deprecated QueryParams,
+the `/incoming` request accepts the following parameters:
+
+| Parameter   | Type   | Description                                                                          | Required                                          |
+|-------------|--------|--------------------------------------------------------------------------------------|---------------------------------------------------|
+|`repository` |`string`| Name of Repository CR                                                                | `true`                                            |
+|`namespace`  |`string`| Namespace with the Repository CR                                                     | When Repository name is not unique in the cluster |
+|`branch`     |`string`| Branch configured for incoming webhook                                               | `true`                                            |
+|`pipelinerun`|`string`| Name (or generateName) of PipelineRun, used to match PipelineRun definition          | `true`                                            |
+|`secret`     |`string`| Secret key referenced by the Repository CR in desired incoming webhook configuration | `true`                                            |
+|`params`     |`json`  | Parameters to override in PipelineRun context                                        | `false`                                           |
+
+### GitHub App
+
+The example below illustrates the use of GitHub App to trigger a PipelineRun
 based on an incoming webhook URL.
 
 The Repository Custom Resource (CR) specifies the target branch as
@@ -58,6 +73,116 @@ spec:
         name: repo-incoming-secret
       type: webhook-url
 ```
+
+**Note:** If no secret key is specified in the Repository CR, the default key `secret` will be used to retrieve the secret value from the `repo-incoming-secret` Secret resource.
+
+### Glob Pattern Matching in Targets
+
+The `targets` field supports both exact string matching and glob patterns, allowing you to match multiple branches with a single rule.
+
+**Glob patterns:** Use shell-style patterns:
+
+- `*` - matches any characters (e.g., `feature/*` matches `feature/login`, `feature/api`)
+- `?` - matches exactly one character (e.g., `v?` matches `v1`, `v2`)
+- `[abc]` - matches one character from set (e.g., `[A-Z]*` matches any uppercase letter)
+- `[0-9]` - matches digits (e.g., `v[0-9]*.[0-9]*` matches `v1.2`, `v10.5`)
+- `{a,b,c}` - matches alternatives (e.g., `{dev,staging}/*` matches `dev/test` or `staging/test`)
+
+**First-match-wins:** If multiple incoming webhooks match the same branch, the first matching webhook in the YAML order is used. Place more specific webhooks before general catch-all webhooks.
+
+#### Examples
+
+**Match feature branches with glob:**
+
+```yaml
+apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+kind: Repository
+metadata:
+  name: repo
+  namespace: ns
+spec:
+  url: "https://github.com/owner/repo"
+  incoming:
+    - targets:
+        - "feature/*"  # Matches any branch starting with "feature/"
+      secret:
+        name: feature-webhook-secret
+      type: webhook-url
+```
+
+**Multiple webhooks with first-match-wins:**
+
+```yaml
+apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+kind: Repository
+metadata:
+  name: repo
+  namespace: ns
+spec:
+  url: "https://github.com/owner/repo"
+  incoming:
+    # Production - checked first (most specific)
+    - targets:
+        - main
+        - "v[0-9]*.[0-9]*.[0-9]*"  # Semver tags like v1.2.3
+      secret:
+        name: prod-webhook-secret
+      params:
+        - prod_env
+      type: webhook-url
+
+    # Feature branches - checked second
+    - targets:
+        - "feature/*"
+        - "bugfix/*"
+      secret:
+        name: feature-webhook-secret
+      params:
+        - dev_env
+      type: webhook-url
+
+    # Catch-all - checked last
+    - targets:
+        - "*"  # Matches any branch not caught above
+      secret:
+        name: default-webhook-secret
+      type: webhook-url
+```
+
+**Mix exact matches and glob patterns:**
+
+```yaml
+incoming:
+  - targets:
+      - main                            # Exact match
+      - staging                         # Exact match
+      - "release/v[0-9]*.[0-9]*.[0-9]*" # Semver releases
+      - "hotfix/[A-Z]*-[0-9]*"          # JIRA tickets (e.g., JIRA-123, PROJ-456)
+      - "{dev,test,qa}/*"               # Alternation pattern
+    secret:
+      name: repo-incoming-secret
+    type: webhook-url
+```
+
+**Glob Pattern Syntax:**
+
+- `*` - matches any characters (zero or more)
+- `?` - matches exactly one character
+- `[abc]` - matches one character: a, b, or c
+- `[a-z]` - matches one character in range a to z
+- `[0-9]` - matches one digit
+- `{a,b,c}` - matches any of the alternatives (alternation)
+
+**Best Practices:**
+
+- Place production/sensitive webhooks first in the list
+- Use exact matches for known branches when possible (faster than glob patterns)
+- Use character classes `[0-9]`, `[A-Z]` for more precise matching
+- Glob patterns match the entire branch name (no partial matches unless you use `*` prefix/suffix)
+- Test your patterns: branch `feature-login` matches `feature-*` but not `*feature*`
+- [Test your glob patterns online](https://www.digitalocean.com/community/tools/glob) before deploying to ensure they match only intended branches
+
+### Using Incoming Webhooks
 
 A PipelineRun is then annotated to target the incoming event and the main branch:
 
@@ -110,8 +235,7 @@ curl -H "Content-Type: application/json" -X POST "https://control.pac.url/incomi
 
 In both cases, the `"/incoming"` path to the controller URL and the `"POST"` method will remain unchanged.
 
-It is important to note that when the PipelineRun is triggered, Pipelines as
-Code will treat it as a push event and will have the capability to report the
+It is important to note that when the PipelineRun is triggered, Pipelines-as-Code will treat it as a push event and will have the capability to report the
 status of the PipelineRuns. To obtain a report or a notification, a finally
 task can be added directly to the Pipeline, or the Repo CRD can be inspected
 using the tkn pac CLI. The [statuses](/docs/guide/statuses) documentation
@@ -171,7 +295,7 @@ curl -H "X-GitHub-Enterprise-Host: github.example.com" -X POST "https://control.
 
 ### Using incoming webhook with webhook based providers
 
-Webhook based providers (i.e: GitHub Webhook, GitLab, Bitbucket etc..) supports
+Webhook based providers (i.e., GitHub Webhook, GitLab, Bitbucket etc..) support
 incoming webhook, using the token provided in the git_provider section.
 
 Here is an example of a Repository CRD matching the target branch main with a GitHub webhook provider:
@@ -196,5 +320,5 @@ spec:
       type: webhook-url
 ```
 
-As noted in the section above, you need to specify a incoming secret inside
+As noted in the section above, you need to specify an incoming secret inside
 the `repo-incoming-secret` Secret.

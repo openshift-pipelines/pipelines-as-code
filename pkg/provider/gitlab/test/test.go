@@ -66,6 +66,18 @@ func MuxDisallowUserID(mux *http.ServeMux, projectID, userID int) {
 	})
 }
 
+// MuxAllowUserIDCounting registers a handler that returns an allowed member and increments
+// the provided counter each time it is called. Useful to assert caching behavior.
+func MuxAllowUserIDCounting(mux *http.ServeMux, projectID, userID int, counter *int) {
+	path := fmt.Sprintf("/projects/%d/members/all/%d", projectID, userID)
+	mux.HandleFunc(path, func(rw http.ResponseWriter, _ *http.Request) {
+		if counter != nil {
+			*counter++
+		}
+		fmt.Fprintf(rw, `{"id": %d}`, userID)
+	})
+}
+
 func MuxListTektonDir(_ *testing.T, mux *http.ServeMux, pid int, ref, prs string, wantTreeAPIErr, wantFilesAPIErr bool) {
 	mux.HandleFunc(fmt.Sprintf("/projects/%d/repository/tree", pid), func(rw http.ResponseWriter, r *http.Request) {
 		if wantTreeAPIErr {
@@ -121,6 +133,29 @@ func MuxDiscussionsNote(mux *http.ServeMux, pid, mrID int, author string, author
             }]
         }]
         `, notecontent, author, authorID)
+	})
+}
+
+// MuxDiscussionsNoteWithReply returns a single discussion where the first note
+// does not contain the trigger but a subsequent reply does. This simulates
+// /ok-to-test being posted in a thread reply.
+func MuxDiscussionsNoteWithReply(mux *http.ServeMux, pid, mrID int, firstAuthor string, firstAuthorID int, firstContent, okAuthor string, okAuthorID int, okContent string) {
+	path := fmt.Sprintf("/projects/%d/merge_requests/%d/discussions", pid, mrID)
+	mux.HandleFunc(path, func(rw http.ResponseWriter, _ *http.Request) {
+		fmt.Fprintf(rw, `[
+            {
+                "notes": [
+                    {
+                        "body": %q,
+                        "author": {"username": %q, "id": %d}
+                    },
+                    {
+                        "body": %q,
+                        "author": {"username": %q, "id": %d}
+                    }
+                ]
+            }
+        ]`, firstContent, firstAuthor, firstAuthorID, okContent, okAuthor, okAuthorID)
 	})
 }
 

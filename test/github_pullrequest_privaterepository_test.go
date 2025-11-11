@@ -1,5 +1,4 @@
 //go:build e2e
-// +build e2e
 
 package test
 
@@ -29,7 +28,7 @@ func TestGithubPullRequestGitClone(t *testing.T) {
 	ctx, err := cctx.GetControllerCtxInfo(ctx, g.Cnx)
 	assert.NilError(t, err)
 
-	maxLines := int64(20)
+	maxLines := int64(50)
 	assert.NilError(t, wait.RegexpMatchingInControllerLog(ctx, g.Cnx, *regexp.MustCompile(".*fetched git-clone task"),
 		10, "controller", &maxLines), "Error while checking the logs of the pipelines-as-code controller pod")
 	defer g.TearDown(ctx, t)

@@ -15,8 +15,8 @@ Pipelines-as-Code provides a powerful CLI designed to work as a plug-in to the [
 * `list`: list Pipelines-as-Code Repositories.
 * `logs`: show the logs of a PipelineRun from a Repository CRD.
 * `describe`: describe a Pipelines-as-Code Repository and the runs associated with it.
-* `resolve`: Resolve a PipelineRun as if it were executed by pipelines as code on service.
-* `webhook`: Updates webhook secret.
+* `resolve`: Resolve a PipelineRun as if it were executed by Pipelines-as-Code on service.
+* `webhook`: Update webhook secret.
 * `info`: Show information (currently only about your installation with `info install`).
 
 ## Install
@@ -101,7 +101,7 @@ configuring Pipelines as code. It currently supports the following providers:
 * GitHub Application on public GitHub
 * GitHub Application on GitHub Enterprise
 
-It will start checking if you have installed Pipelines-as-Code and if not it
+It will start by checking whether you have installed Pipelines-as-Code and if not it
 will ask you if you want to install (with `kubectl`) the latest stable
 release. If you add the flag `--nightly` it will install the latest code ci
 release.
@@ -124,11 +124,16 @@ option to install a webhook forwarder called
 [gosmee](https://github.com/chmouel/gosmee). This forwarder enables connectivity
 between the Pipelines-as-Code controller and GitHub without requiring an
 internet connection. In this scenario, it will set up a forwarding URL on
-<https://hook.pipelinesascode.com> and set it up on GitHub. For OpenShift, it
-will not prompt you unless you explicitly specify the `--force-gosmee` flag
-(which can be useful if you are running [OpenShift Local](https://developers.redhat.com/products/openshift-local/overview) for instance).
+<https://hook.pipelinesascode.com> and set it up on GitHub.
 
-gosmee is by no means to be used in production, but it can be useful for
+On OpenShift, the bootstrap command automatically detects and uses OpenShift
+Routes (as described above), and will not prompt you to use gosmee. If you need
+to use gosmee instead (for example, when running [OpenShift
+Local](https://developers.redhat.com/products/openshift-local/overview)), you
+can explicitly specify the `--force-gosmee` flag to bypass the OpenShift Route
+detection and force the use of gosmee.
+
+gosmee should not be used in production environments, but it can be useful for
 testing.
 
 {{< /details >}}
@@ -149,8 +154,8 @@ GitHub application and the secret with all the information needed in the
 
 ### Repository Creation
 
-`tkn pac create repo` -- Creates a new Pipelines-as-Code `Repository` custom resource definition,
-With a Git repository to execute PipelineRuns based on Git events. It
+`tkn pac create repo` -- Creates a new Pipelines-as-Code `Repository` custom resource definition
+with a Git repository to execute PipelineRuns based on Git events. It
 will also generate a sample file with a [PipelineRun](/docs/guide/authoringprs)
 in the `.tekton` directory called `pipelinerun.yaml` targeting the `main` branch
 and the `pull_request` and `push` events. You can customize this by editing the
@@ -269,10 +274,7 @@ you can run the command `tkn-pac resolve` to see it running:
 tkn pac resolve -f .tekton/pull-request.yaml -o /tmp/pull-request-resolved.yaml && kubectl create -f /tmp/pull-request-resolved.yaml
 ```
 
-Combined with a Kubernetes install running on your local machine (like[Code
-Ready
-Containers](https://developers.redhat.com/products/codeready-containers/overview)
-or [Kubernetes Kind](https://kind.sigs.k8s.io/docs/user/quick-start/) ) you can
+Combined with a Kubernetes install running on your local machine (like [CodeReady Containers](https://developers.redhat.com/products/codeready-containers/overview) or [Kubernetes Kind](https://kind.sigs.k8s.io/docs/user/quick-start/)) you can
 see your run in action without having to generate a new commit.
 
 If you run the command from your source code repository it will try to detect
@@ -461,7 +463,7 @@ tkn pac cel -b <body.json> -H <headers.txt>
 If run in a terminal, you'll get a prompt:
 
 ```console
-CEL expression> 
+CEL expression>
 ```
 
 * Use ↑/↓ arrows to navigate history.
@@ -488,7 +490,7 @@ echo 'event == "pull_request"' | tkn pac cel -b body.json -H headers.txt
 
 * **Webhook payload** (`body.*`): All fields from the webhook JSON.
 * **HTTP headers** (`headers.*`): All HTTP headers.
-* **Files** (`files.*`): Always empty in CLI mode.  
+* **Files** (`files.*`): Always empty in CLI mode.
   **Note:** `fileChanged`, `fileDeleted`, `fileModified` and similar functions are **not implemented yet** in the CLI.
 * **PAC Parameters** (`pac.*`): All variables for backward compatibility.
 

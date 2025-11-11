@@ -47,33 +47,33 @@ tasks according to the annotations in the pipelineRun, apply the parameters
 substitutions with -p flags. Output on the standard output or to a file with the
 -o flag with the complete PipelineRun resolved.
 
-A simple example that would parse the .tekton/pull-request.yaml with all the
-remote task embedded into it applying the parameters substitutions:
+A simple example that would parse .tekton/pull-request.yaml with all
+remote tasks embedded, applying parameter substitutions:
 
 %s pac resolve \
 		-f .tekton/pull-request.yaml -o output-file.yaml \
 		-p revision=main -p repo_url=https://repo_url/
 
-You can specify multiple template files to combine :
+You can specify multiple template files to combine:
 
 %s pac resolve -f .tekton/pull-request.yaml -f task/referenced.yaml
 
-or a directory where it will get all the files ending by .yaml  :
+or a directory where it will get all files ending with .yaml:
 
 %s pac resolve -f .tekton/
 
-If it detect a {{ git_auth_secret }} in the template it will ask you if you want
+If it detects a {{ git_auth_secret }} in the template, it will ask if you want
 to provide a token. You can set the environment variable PAC_PROVIDER_TOKEN to
-not have to ask about it.
+avoid being prompted.
 
-*It does not support task from local directory referenced in annotations at the
+*It does not support tasks from local directories referenced in annotations at the
  moment*.`, settings.TknBinaryName, settings.TknBinaryName, settings.TknBinaryName)
 
 func Command(run *params.Run, streams *cli.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "resolve",
 		Long:  longhelp,
-		Short: "Resolve PipelineRun the same way its run on CI",
+		Short: "Resolve PipelineRun the same way it runs on CI",
 		RunE: func(_ *cobra.Command, _ []string) error {
 			ctx := context.Background()
 

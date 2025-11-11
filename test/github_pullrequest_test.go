@@ -1,3 +1,5 @@
+//go:build e2e
+
 package test
 
 import (
@@ -21,8 +23,9 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 
-	"github.com/google/go-github/v71/github"
+	"github.com/google/go-github/v74/github"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	"github.com/tektoncd/pipeline/pkg/names"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 	"gotest.tools/v3/golden"
@@ -264,6 +267,7 @@ func TestGithubPullRequestInvalidSpecValues(t *testing.T) {
 			break
 		}
 		time.Sleep(5 * time.Second)
+		counter++
 	}
 
 	assert.Equal(t, len(res.CheckRuns), 1)
@@ -323,9 +327,9 @@ func TestGithubSecondCancelInProgress(t *testing.T) {
 	assert.NilError(t, err)
 	time.Sleep(10 * time.Second)
 
-	g.Cnx.Clients.Log.Infof("Creating /retest on PullRequest")
+	g.Cnx.Clients.Log.Infof("Creating /test on PullRequest to create a second run")
 	_, _, err = g.Provider.Client().Issues.CreateComment(ctx, g.Options.Organization, g.Options.Repo, g.PRNumber,
-		&github.IssueComment{Body: github.Ptr("/retest")})
+		&github.IssueComment{Body: github.Ptr("/test")})
 	assert.NilError(t, err)
 
 	g.Cnx.Clients.Log.Infof("Waiting for the two pipelinerun to be created")
@@ -339,7 +343,7 @@ func TestGithubSecondCancelInProgress(t *testing.T) {
 	err = twait.UntilPipelineRunCreated(ctx, g.Cnx.Clients, waitOpts)
 	assert.NilError(t, err)
 
-	g.Cnx.Clients.Log.Infof("Sleeping for 10 seconds to let the pipelinerun to be canceled")
+	g.Cnx.Clients.Log.Infof("Sleeping for 10 seconds to let the pipelinerun to be cancelled")
 
 	i := 0
 	foundCancelled := false
@@ -357,7 +361,7 @@ func TestGithubSecondCancelInProgress(t *testing.T) {
 				continue
 			}
 			if pr.Status.Conditions[0].Reason == "Cancelled" {
-				g.Cnx.Clients.Log.Infof("PipelineRun %s has been canceled", pr.Name)
+				g.Cnx.Clients.Log.Infof("PipelineRun %s has been cancelled", pr.Name)
 				foundCancelled = true
 				break
 			}
@@ -400,16 +404,16 @@ func TestGithubSecondCancelInProgressPRClosed(t *testing.T) {
 	})
 	assert.NilError(t, err)
 
-	g.Cnx.Clients.Log.Infof("Sleeping for 10 seconds to let the pipelinerun to be canceled")
+	g.Cnx.Clients.Log.Infof("Sleeping for 10 seconds to let the pipelinerun to be cancelled")
 	time.Sleep(10 * time.Second)
 
-	g.Cnx.Clients.Log.Infof("Checking that the pipelinerun has been canceled")
+	g.Cnx.Clients.Log.Infof("Checking that the pipelinerun has been cancelled")
 
 	prs, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(context.Background(), metav1.ListOptions{})
 	assert.NilError(t, err)
 	assert.Equal(t, len(prs.Items), 1, "should have only one pipelinerun, but we have: %d", len(prs.Items))
 
-	assert.Equal(t, prs.Items[0].GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason(), "Cancelled", "should have been canceled")
+	assert.Equal(t, prs.Items[0].GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason(), "Cancelled", "should have been cancelled")
 
 	res, resp, err := g.Provider.Client().Checks.ListCheckRunsForRef(ctx, g.Options.Organization, g.Options.Repo, g.SHA, &github.ListCheckRunsOptions{
 		AppID:       g.Provider.ApplicationID,
@@ -529,7 +533,7 @@ func TestGithubCancelInProgressSettingFromConfigMapOnPR(t *testing.T) {
 	_, _, err = g.Provider.Client().Issues.CreateComment(ctx,
 		g.Options.Organization,
 		g.Options.Repo, g.PRNumber,
-		&github.IssueComment{Body: github.Ptr("/retest")})
+		&github.IssueComment{Body: github.Ptr("/test")})
 	assert.NilError(t, err)
 
 	g.Cnx.Clients.Log.Infof("Waiting for the two pipelinerun to be created")
@@ -648,6 +652,37 @@ func TestGithubDisableCommentsOnPR(t *testing.T) {
 		}
 	}
 	assert.Equal(t, 0, successCommentsPost)
+}
+
+func TestGithubIgnoreTagPushCommitsFromSkipPushEventsSetting(t *testing.T) {
+	ctx := context.Background()
+	g := &tgithub.PRTest{
+		Label:         "Github PullRequest",
+		YamlFiles:     []string{"testdata/pipelinerun.yaml"},
+		NoStatusCheck: true,
+	}
+	g.RunPullRequest(ctx, t)
+	defer g.TearDown(ctx, t)
+
+	tag := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("v1.0")
+
+	_, err := tgithub.CreateTag(ctx, t, g.Cnx, g.Provider, g.Options, g.SHA, tag)
+	assert.NilError(t, err)
+	defer tgithub.DeleteTag(ctx, g.Provider, g.Options, tag) //nolint:errcheck
+
+	globalNs, _, err := params.GetInstallLocation(ctx, g.Cnx)
+	assert.NilError(t, err)
+	ctx = info.StoreNS(ctx, globalNs)
+
+	reg := regexp.MustCompile(fmt.Sprintf("Processing tag push event for commit %s despite skip-push-events-for-pr-commits being enabled.*", g.SHA))
+	maxLines := int64(100)
+	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 20, "controller", &maxLines)
+	assert.NilError(t, err)
+
+	g.Cnx.Clients.Log.Infof("Deleting tag %s", tag)
+	err = tgithub.DeleteTag(ctx, g.Provider, g.Options, tag)
+	assert.NilError(t, err)
+	g.Cnx.Clients.Log.Infof("Tag %s has been deleted", tag)
 }
 
 // Local Variables:

@@ -58,7 +58,7 @@ annotations:
 This will match the pipeline `pipeline-push-on-1.0-tags` when you push the 1.0
 tags into your repository.
 
-Matching annotations are currently required; otherwise, `Pipelines-as-Code` will not
+Matching annotations are currently required; otherwise, Pipelines-as-Code will not
 match your `PipelineRun`.
 
 When multiple PipelineRuns match an event, it will run them in parallel
@@ -312,12 +312,12 @@ The fields available are:
 
 CEL expressions let you do more complex filtering compared to the simple `on-target` annotation matching and enable more advanced scenarios.
 
-For example, if I want to have a `PipelineRun` targeting a `pull_request` but
+For example, if you want to have a `PipelineRun` targeting a `pull_request` but
 not the `experimental` branch you could have:
 
 ```yaml
 pipelinesascode.tekton.dev/on-cel-expression: |
-  event == "pull_request" && target_branch != experimental"
+  event == "pull_request" && target_branch != "experimental"
 ```
 
 {{< hint info >}}
@@ -375,13 +375,38 @@ This example will match modified files with the name of test.go:
       files.modified.exists(x, x.matches('test.go'))
 ```
 
+### Filtering PipelineRuns to exclude non-code changes
+
+This example demonstrates how to filter `pull_request` events to exclude changes that only affect documentation, configuration files, or other non-code files. This is useful when you want to run tests only when actual code changes occur:
+
+```yaml
+pipelinesascode.tekton.dev/on-cel-expression: |
+  event == "pull_request"
+  && target_branch == "main"
+  && !files.all.all(x, x.matches('^docs/') || x.matches('\\.md$') || x.matches('(\\.gitignore|OWNERS|PROJECT|LICENSE)$'))
+```
+
+This expression will:
+
+* Only match `pull_request` events targeting the `main` branch
+* **Exclude** the PipelineRun if all changed files match any of the following patterns:
+  * Files in the `docs/` directory (`^docs/`)
+  * Markdown files (`\\.md$`)
+  * Common repository metadata files (`\\.gitignore`, `OWNERS`, `PROJECT`, `LICENSE`)
+
+The `!files.all.all(x, x.matches('pattern1') || x.matches('pattern2') || ...)` syntax means "not all files match any of these patterns", which effectively means "trigger only if at least one file doesn't match the exclusion patterns" (i.e., there are meaningful code changes).
+
+{{< hint warning >}}
+**Important**: When using regex patterns in CEL expressions, remember to properly escape special characters. The backslash (`\`) needs to be doubled (`\\`) to escape properly within the CEL string context. Using logical OR (`||`) operators within the `matches()` function is more reliable than combining patterns with pipe (`|`) characters in a single regex.
+{{< /hint >}}
+
 ### Matching PipelineRun to an event (commit, pull_request) title
 
 This example will match all pull requests starting with the title `[DOWNSTREAM]`:
 
 ```yaml
 pipelinesascode.tekton.dev/on-cel-expression: |
-  event == "pull_request && event_title.startsWith("[DOWNSTREAM]")
+  event == "pull_request" && event_title.startsWith("[DOWNSTREAM]")
 ```
 
 The event title will be the pull request title on `pull_request` and the

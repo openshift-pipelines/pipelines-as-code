@@ -5,11 +5,11 @@ weight: 6
 
 # Status
 
-## GitHub apps
+## GitHub Apps
 
 After the `PipelineRun` has finished, its status will be
 shown in the GitHub Check tabs, along with a concise overview
-of the status the name and the duration of each task in the pipeline. If the task has a
+of the status, the name, and the duration of each task in the pipeline. If the task has a
 [displayName](https://tekton.dev/docs/pipelines/tasks/#specifying-a-display-name)
 it will use it as the description of the task or otherwise just the task
 name.
@@ -42,12 +42,12 @@ the last three lines from the task breakdown is displayed. However, the API has
 a character limit that restricts us to output only the output of the first
 failed task.
 
-To prevent exposing secrets, Pipelines-as-Code analyze the PipelineRun and
-replace secret values with hidden characters. This is achieved by retrieving
+To prevent exposing secrets, Pipelines-as-Code analyzes the PipelineRun and
+replaces secret values with hidden characters. This is achieved by retrieving
 all secrets from the environment variables associated with tasks and steps, and
 searching for matches of these values in the output snippet.
 
-These matches are first sorted by the longest and then replaced with a
+These matches are first sorted by length and then replaced with a
 `"*****"` placeholder in the output snippet. This ensures that the output
 will not contain any leaked secrets.
 
@@ -61,7 +61,7 @@ sources.
 ### Error detection from containers logs as GitHub Annotation
 
 If you enable the `error-detection-from-container-logs` option in the
-pipeline-as-code configuration map, Pipelines-as-Code will attempt to detect
+pipelines-as-code ConfigMap, Pipelines-as-Code will attempt to detect
 errors from the container logs and add them as annotations on the corresponding
 Pull Request where the error occurred.
 

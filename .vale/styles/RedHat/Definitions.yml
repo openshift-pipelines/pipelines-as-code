@@ -15,6 +15,8 @@ exceptions:
   - 'CVEs?'
   - 'DVDs?'
   - 'GIDs?'
+  - 'GPUs?'
+  - 'LLMs?'
   - 'NULL'
   - 'PIDs?'
   - 'ROMs?'
@@ -23,10 +25,12 @@ exceptions:
   - 'URIs?'
   - 'URLs?'
   - ACPI
+  - AIDC
   - AIX
   - ARM
   - ASCII
   - ASP
+  - AWQ
   - AWS
   - BIND
   - BIOS
@@ -60,14 +64,16 @@ exceptions:
   - GCJ
   - GDB
   - GET
+  - GGUF
   - GIF
   - GIMP
   - GNOME
   - GNU
   - GNUPro
   - GPL
-  - GPU
+  - GPTQ
   - GRUB
+  - GSAI
   - GTK+
   - GUI
   - GUID
@@ -94,6 +100,7 @@ exceptions:
   - LAN
   - LDAP
   - LESS
+  - LGAI
   - LLDB
   - LPAR
   - LUKS
@@ -102,12 +109,15 @@ exceptions:
   - MB
   - MBR
   - MDS
+  - MLP
+  - MLX
   - mTLS
   - NAT
   - NET
   - NFS
   - NGINX
   - NIC
+  - NLP
   - NOTE
   - NTP
   - NVDA
@@ -149,6 +159,7 @@ exceptions:
   - SCSI
   - SCSS
   - SDK
+  - SEED
   - SFTP
   - SHA
   - SOCKS

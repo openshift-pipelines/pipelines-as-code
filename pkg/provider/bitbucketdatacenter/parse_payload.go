@@ -88,7 +88,7 @@ func sanitizeOwner(owner string) string {
 }
 
 // ParsePayload parses the payload from the event.
-func (v *Provider) ParsePayload(_ context.Context, run *params.Run, request *http.Request,
+func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.Request,
 	payload string,
 ) (*info.Event, error) {
 	processedEvent := info.NewEvent()
@@ -176,27 +176,6 @@ func (v *Provider) ParsePayload(_ context.Context, run *params.Run, request *htt
 		}
 
 		processedEvent.SHA = e.Changes[0].ToHash
-
-		// In Bitbucket Data Center, when a pull request is merged, it creates two commits in the repository:
-		// 1. A merge commit, which is represented by `changes[0].ToHash`.
-		// 2. The actual commit containing the changes from the source branch.
-		//
-		// However, the merge commit often does not contain any file changes itself,
-		// which can cause issues when determining whether file modifications should trigger PipelineRuns.
-		//
-		// Typically, a regular (non-merge) commit has a single parent, but a merge commit has two parents:
-		// - The first parent is the previous HEAD of the destination branch (the branch into which the PR was merged).
-		// - The second parent is the HEAD of the source branch (the branch being merged).
-		//
-		// To correctly identify the actual commit that contains the changes (i.e., the source branch's HEAD),
-		// we inspect `e.Commits[0]`, and if it has more than one parent, we take the second parent.
-		// This helps ensure we reference the correct commit.
-		if len(e.Commits) > 1 && len(e.Commits[0].Parents) > 1 {
-			processedEvent.SHA = e.Commits[0].Parents[1].ID
-			run.Clients.Log.Infof("Detected a merge commit as HEAD; "+
-				"using second parent commit SHA %s (source branch HEAD) to target push event", e.Commits[0].Parents[1].ID)
-		}
-
 		processedEvent.URL = e.Repository.Links.Self[0].Href
 		processedEvent.BaseBranch = e.Changes[0].RefID
 		processedEvent.HeadBranch = e.Changes[0].RefID

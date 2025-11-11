@@ -19,7 +19,7 @@ func (t *TektonDashboard) GetName() string {
 }
 
 func (t *TektonDashboard) DetailURL(pr *tektonv1.PipelineRun) string {
-	return fmt.Sprintf("%s/#/namespaces/%s/pipelineruns/%s", t.BaseURL, pr.GetNamespace(), pr.GetName())
+	return fmt.Sprintf("%s/#/namespaces/%s/pipelineruns/%s", t.URL(), pr.GetNamespace(), pr.GetName())
 }
 
 func (t *TektonDashboard) NamespaceURL(pr *tektonv1.PipelineRun) string {
@@ -31,6 +31,10 @@ func (t *TektonDashboard) TaskLogURL(pr *tektonv1.PipelineRun, taskRunStatus *te
 }
 
 func (t *TektonDashboard) URL() string {
+	// if BaseURL is not provided, return fake URL
+	if t.BaseURL == "" || t.BaseURL == "http://" || t.BaseURL == "https://" {
+		return "https://dashboard.url.is.not.configured"
+	}
 	return t.BaseURL
 }
 

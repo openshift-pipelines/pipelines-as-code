@@ -57,6 +57,12 @@ linters:
     - whitespace
     - zerologlint
   settings:
+    misspell:
+      ignore-words:
+        - cancelled
+      extra-words:
+        - typo: "canceled"
+          correction: "cancelled"
     errcheck:
       exclude-functions:
         - (*github.com/tektoncd/pipeline/vendor/go.uber.org/zap.SugaredLogger).Sync

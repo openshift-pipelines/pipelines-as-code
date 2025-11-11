@@ -34,6 +34,7 @@ exceptions:
   - CheckTree
   - ClassLoader
   - CloudForms
+  - CodeLlama
   - CodeReady
   - ConfigMaps?
   - ConnectX
@@ -41,14 +42,18 @@ exceptions:
   - CoreOS
   - DaemonSet
   - DDoS
+  - DeepSeek
   - DevOps
   - DevWorkspace
+  - DialoGPT
   - DNSSec
+  - EleutherAI
   - eServer
   - eXpress
   - eXtenSion
   - FaaS
   - FCoE
+  - FFmpeg
   - FileStore
   - FireWire
   - FreeRADIUS
@@ -67,6 +72,7 @@ exceptions:
   - HashBase
   - HdrHistogram
   - Helm
+  - HyperCLOVAX
   - HyperShift
   - IaaS
   - IBoE
@@ -81,12 +87,14 @@ exceptions:
   - IPsec
   - IPv
   - ISeries
+  - JackFram
   - JavaScript
   - JBoss
   - JetBrains
   - JUnit
   - kBps
   - KiB
+  - KTLim
   - LangTags
   - LGPLv
   - libOSMesa
@@ -95,12 +103,15 @@ exceptions:
   - LightPulse
   - LinuxONE
   - LiquidIO
+  - LLaDA
   - ManageIQ
   - MariaDB
+  - MaziyarPanahi
   - MBps
   - MegaRAID
   - MiB
   - MicroProfile
+  - MoE
   - MongoDB
   - MoreUtils
   - MySQL
@@ -112,14 +123,16 @@ exceptions:
   - NetXtreme
   - NFSv
   - NMState
+  - NousResearch
   - NuGet
-  - NVidia
   - NVMe
   - OAuth
   - objectClass
   - OmniSharp
   - OneConnect
+  - OpenELM
   - OpenEXR
+  - OpenHermes
   - OpenID
   - OpenIPMI
   - OpenJDK
@@ -162,13 +175,16 @@ exceptions:
   - SmallRye
   - SmartNIC
   - SmartState
+  - SmolLM
   - SQLite
   - StarOffice
   - STMicroelectronics
   - SuperLU
   - SysV
   - TBps
+  - TheBloke
   - TiB
+  - TinyLlama
   - TuneD
   - TypeScript
   - UltraSPARC
@@ -179,6 +195,7 @@ exceptions:
   - VMware
   - vSphere
   - vSwitch
+  - vLLM
   - WebAuthn
   - WebSocket
   - WireGuard

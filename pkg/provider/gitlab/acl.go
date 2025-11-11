@@ -27,12 +27,30 @@ func (v *Provider) IsAllowedOwnersFile(_ context.Context, event *info.Event) (bo
 }
 
 func (v *Provider) checkMembership(ctx context.Context, event *info.Event, userid int) bool {
+	// Initialize cache lazily
+	if v.memberCache == nil {
+		v.memberCache = map[int]bool{}
+	}
+
+	if allowed, ok := v.memberCache[userid]; ok {
+		return allowed
+	}
+
 	member, _, err := v.Client().ProjectMembers.GetInheritedProjectMember(v.targetProjectID, userid)
-	if err == nil && member.ID != 0 && member.ID == userid {
+	if err != nil {
+		// If the API call fails, fall back without caching the result so a
+		// transient failure can be retried on the next invocation.
+		isAllowed, _ := v.IsAllowedOwnersFile(ctx, event)
+		return isAllowed
+	}
+
+	if member.ID != 0 && member.ID == userid {
+		v.memberCache[userid] = true
 		return true
 	}
 
 	isAllowed, _ := v.IsAllowedOwnersFile(ctx, event)
+	v.memberCache[userid] = isAllowed
 	return isAllowed
 }
 
@@ -47,19 +65,22 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(ctx context.Context, e
 		nextPage = resp.NextPage
 	}
 
-	for _, comment := range discussions {
-		// TODO: maybe we do threads in the future but for now we just check the top thread for ops related comments
-		topthread := comment.Notes[0]
-		if acl.MatchRegexp(acl.OKToTestCommentRegexp, topthread.Body) {
-			commenterEvent := info.NewEvent()
-			commenterEvent.Event = event.Event
-			commenterEvent.Sender = topthread.Author.Username
-			commenterEvent.BaseBranch = event.BaseBranch
-			commenterEvent.HeadBranch = event.HeadBranch
-			commenterEvent.DefaultBranch = event.DefaultBranch
-			// TODO: we could probably do with caching when checking all issues?
-			if v.checkMembership(ctx, commenterEvent, topthread.Author.ID) {
-				return true, nil
+	for _, discussion := range discussions {
+		// Iterate through every note in the discussion thread and evaluate them.
+		// If a note contains an OK-to-test command, verify the commenter's permission
+		// (either project membership or presence in OWNERS/OWNERS_ALIASES).
+		for _, note := range discussion.Notes {
+			if acl.MatchRegexp(acl.OKToTestCommentRegexp, note.Body) {
+				commenterEvent := info.NewEvent()
+				commenterEvent.Event = event.Event
+				commenterEvent.Sender = note.Author.Username
+				commenterEvent.BaseBranch = event.BaseBranch
+				commenterEvent.HeadBranch = event.HeadBranch
+				commenterEvent.DefaultBranch = event.DefaultBranch
+				// We could add caching for membership checks in the future.
+				if v.checkMembership(ctx, commenterEvent, note.Author.ID) {
+					return true, nil
+				}
 			}
 		}
 	}

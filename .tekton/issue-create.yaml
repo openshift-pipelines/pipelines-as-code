@@ -1,0 +1,105 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: issue-create
+  annotations:
+    pipelinesascode.tekton.dev/max-keep-runs: "2"
+    pipelinesascode.tekton.dev/on-comment: "^/issue-create"
+spec:
+  description: |
+    Generate a GitHub issue from a pull request using Gemini AI.
+    Triggered by commenting `/issue-create` on a PR.
+  params:
+    - name: repo_url
+      value: "{{repo_url}}"
+    - name: revision
+      value: "{{revision}}"
+    - name: pull_request_number
+      value: "{{pull_request_number}}"
+    - name: repo_owner
+      value: "{{repo_owner}}"
+    - name: repo_name
+      value: "{{repo_name}}"
+    - name: gemini_model
+      value: "gemini-2.5-flash-lite"
+  pipelineSpec:
+    params:
+      - name: repo_url
+      - name: revision
+      - name: pull_request_number
+      - name: repo_owner
+      - name: repo_name
+      - name: gemini_model
+    tasks:
+      - name: generate-issue
+        taskSpec:
+          params:
+            - name: repo_url
+            - name: revision
+            - name: pull_request_number
+            - name: repo_owner
+            - name: repo_name
+            - name: gemini_model
+          workspaces:
+            - name: source
+          steps:
+            - name: fetch-repo
+              ref:
+                resolver: http
+                params:
+                  - name: url
+                    value: https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/refs/heads/main/.tekton/stepactions/git-clone.yaml
+              params:
+                - name: output-path
+                  value: $(workspaces.source.path)
+                - name: url
+                  value: "$(params.repo_url)"
+                - name: revision
+                  value: "$(params.revision)"
+            - name: generate-issue-content
+              image: ghcr.io/astral-sh/uv:debian
+              workingDir: $(workspaces.source.path)
+              env:
+                - name: GITHUB_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: "{{ git_auth_secret }}"
+                      key: "git-provider-token"
+                - name: GEMINI_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: "gemini-api-key"
+                      key: "api-key"
+                - name: REPO_OWNER
+                  value: "$(params.repo_owner)"
+                - name: REPO_NAME
+                  value: "$(params.repo_name)"
+                - name: PR_NUMBER
+                  value: "$(params.pull_request_number)"
+                - name: REVISION
+                  value: "$(params.revision)"
+                - name: GEMINI_MODEL
+                  value: "$(params.gemini_model)"
+              script: |
+                uv run --directory ./hack/pr-ci pr-ci issue-create
+        params:
+          - name: repo_url
+            value: "$(params.repo_url)"
+          - name: revision
+            value: "$(params.revision)"
+          - name: pull_request_number
+            value: "$(params.pull_request_number)"
+          - name: repo_owner
+            value: "$(params.repo_owner)"
+          - name: repo_name
+            value: "$(params.repo_name)"
+          - name: gemini_model
+            value: "$(params.gemini_model)"
+        workspaces:
+          - name: source
+            workspace: source
+    workspaces:
+      - name: source
+  workspaces:
+    - name: source
+      emptyDir: {}

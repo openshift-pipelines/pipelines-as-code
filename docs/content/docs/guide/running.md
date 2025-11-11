@@ -42,9 +42,7 @@ Pipelines-as-Code will not be triggered.
 
 ## ACL Permissions for triggering PipelineRuns
 
-The rules for determining whether a submitter is allowed to run a PipelineRun
-on CI are as follows. Any of the following conditions will allow a submitter to
-run a PipelineRun on CI:
+A submitter is allowed to run a PipelineRun on CI if any of the following conditions are met:
 
 - The author of the pull request is the owner of the repository.
 - The author of the pull request is a collaborator on the repository.
@@ -62,7 +60,7 @@ execution and post a `'Pending'` status check. This check will inform the user
 that they lack the necessary permissions. Only authorized users can initiate the
 PipelineRun by commenting `/ok-to-test` on the pull request.
 
-GitHub bot users, identified through the GitHub API, are generally exempt from
+GitHub bot users, as identified through the GitHub API, are exempt from
 the `Pending` status check that would otherwise block a pull request. This
 means the status check is silently ignored for bots unless they have been
 explicitly authorized (using [OWNERS](#owners-file) file,
@@ -124,7 +122,7 @@ click on it and follow the pipeline execution directly there.
 
 ## Errors When Parsing PipelineRun YAML
 
-If Pipelines-As-Code encounters an issue with the YAML formatting of Tekton resources in the repository, it will create a comment on
+If Pipelines-as-Code encounters an issue with the YAML formatting of Tekton resources in the repository, it will create a comment on
 the pull request describing the error. The error will also be logged in the user namespace events log and in the Pipelines-as-Code controller log.
 
 Despite validation errors, Pipelines-as-Code continues to run other correctly parsed and matched PipelineRuns.
@@ -160,11 +158,11 @@ This feature is effective only when the `PipelineRun` is in progress. If the
 have no effect. (see the [max-keep-run annotation]({{< relref
 "/docs/guide/cleanups.md" >}}) instead to clean old `PipelineRuns`.)
 
-The cancellation only applies to `PipelineRuns` within the scope of the current
-`PullRequest` or the targeted branch for Push events. For example, if two
-`PullRequests` each have a `PipelineRun` with the same name and the
-cancel-in-progress annotation, only the `PipelineRun` in the specific PullRequest
-will be cancelled. This prevents interference between separate PullRequests.
+The cancellation only applies to PipelineRuns within the scope of the current
+Pull Request or the targeted branch for Push events. For example, if two
+Pull Requests each have a PipelineRun with the same name and the
+cancel-in-progress annotation, only the PipelineRun in the specific Pull Request
+will be cancelled. This prevents interference between separate Pull Requests.
 
 Older `PipelineRuns` are canceled only after the latest `PipelineRun` is
 successfully created and started. This annotation does not guarantee that only

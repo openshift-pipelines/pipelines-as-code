@@ -57,7 +57,7 @@ spec:
                 - name: workingdir
                   value: $(workspaces.source.path)
             - name: unittest
-              image: golang:1.23
+              image: golang:1.24
               workingDir: $(workspaces.source.path)
               env:
                 - name: GOCACHE
@@ -70,7 +70,7 @@ spec:
                     GO_TEST_FLAGS="-v -coverprofile=coverage.txt -covermode=atomic"
             - name: codecov
               # Has everything we need in there and we already fetched it!
-              image: golang:1.23
+              image: golang:1.24
               workingDir: $(workspaces.source.path)
               env:
                 - name: CODECOV_TOKEN
@@ -88,7 +88,7 @@ spec:
                 chmod +x ./codecov
                 ./codecov -C {{revision}} -v
             - name: upload-release
-              image: golang:1.23
+              image: golang:1.24
               workingDir: $(workspaces.source.path)
               env:
                 - name: HUB_TOKEN

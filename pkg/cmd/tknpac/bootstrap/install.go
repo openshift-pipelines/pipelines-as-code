@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/google/go-github/v71/github"
+	"github.com/google/go-github/v74/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/random"
@@ -181,7 +181,7 @@ func installPac(ctx context.Context, run *params.Run, opts *bootstrapOpts) error
 
 	fmt.Fprintf(opts.ioStreams.Out, "✓ Pipelines-as-Code %s has been installed\n", latestVersion)
 
-	if (!isOpenShift && opts.RouteName == "") || opts.forceInstallGosmee {
+	if opts.forceInstallGosmee {
 		if err := installGosmeeForwarder(ctx, opts); err != nil {
 			return err
 		}

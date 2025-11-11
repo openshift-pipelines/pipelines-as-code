@@ -50,3 +50,58 @@ func TestKubeOptsWithEnv(t *testing.T) {
 		})
 	}
 }
+
+func TestKubeOptsFlags(t *testing.T) {
+	t.Setenv("HOME", "/home/user")
+	t.Setenv("KUBECONFIG", "")
+	defaultKubeconfigPath := "/home/user/.kube/config"
+	customKubeconfigPath := "/custom/kube/config"
+
+	testcases := []struct {
+		name      string
+		flags     []string
+		expectNS  string
+		expectCfg string
+	}{
+		{
+			name:      "namespace flag only",
+			flags:     []string{"--namespace", "test-ns"},
+			expectNS:  "test-ns",
+			expectCfg: defaultKubeconfigPath,
+		},
+		{
+			name:      "namespace flag short form",
+			flags:     []string{"-n", "test-ns"},
+			expectNS:  "test-ns",
+			expectCfg: defaultKubeconfigPath,
+		},
+		{
+			name:      "kubeconfig flag only",
+			flags:     []string{"--kubeconfig", customKubeconfigPath},
+			expectNS:  "",
+			expectCfg: customKubeconfigPath,
+		},
+		{
+			name:      "both flags together",
+			flags:     []string{"--namespace", "test-ns", "--kubeconfig", customKubeconfigPath},
+			expectNS:  "test-ns",
+			expectCfg: customKubeconfigPath,
+		},
+		{
+			name:      "both flags short form",
+			flags:     []string{"-n", "test-ns", "-k", customKubeconfigPath},
+			expectNS:  "test-ns",
+			expectCfg: customKubeconfigPath,
+		},
+	}
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			k := &KubeOpts{}
+			cmd := &cobra.Command{}
+			k.AddFlags(cmd)
+			assert.NilError(t, cmd.ParseFlags(tc.flags))
+			assert.Equal(t, k.Namespace, tc.expectNS, "namespace mismatch")
+			assert.Equal(t, k.ConfigPath, tc.expectCfg, "config path mismatch")
+		})
+	}
+}

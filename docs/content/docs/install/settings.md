@@ -5,52 +5,52 @@ weight: 3
 
 ## Pipelines-as-Code configuration settings
 
-There is a few things you can configure through the config map
+There are a few things you can configure through the ConfigMap
 `pipelines-as-code` in the `pipelines-as-code` namespace.
 
 * `application-name`
 
-  The name of the application for example when showing the results of the
-  PipelineRun. If you're using the GitHub App you will
-  need to customize the label on the github app setting as well. .  Default to
-  `Pipelines-as-Code CI`
+  The name of the application, for example when showing the results of the
+  PipelineRun. If you're using the GitHub App, you will
+  need to customize the label in the GitHub app settings as well. Defaults to
+  `Pipelines-as-Code CI`.
 
 * `secret-auto-create`
 
-  Whether to auto create a secret with the token generated through the GitHub
+  Whether to auto-create a secret with the token generated through the GitHub
   application to be used with private repositories. This feature is enabled by
   default.
 
 * `secret-github-app-token-scoped`
 
-  When using a GitHub app, `Pipelines-as-Code` will generate a temporary
+  When using a GitHub app, Pipelines-as-Code will generate a temporary
   installation token for every allowed event coming through the controller.
 
-  The generated token will be scoped to the repository from the repository where
-  the payload come from and not to every repositories the app installation has
+  The generated token will be scoped to the repository from where
+  the payload comes from and not to every repository the app installation has
   access to.
 
-  Having access to every repositories the app has access to is a problem when
-  you install the `Pipelines-as-Code` application into an organization that has
-  a mixed between public and private repositories where every users in the
-  organization is not trusted to have access to the private repositories. Since
-  the scoping of the token only allow the user do operations and access on the
-  repository where the payload come from, it will not be able to access the private repos.
+  Having access to every repository the app has access to is a problem when
+  you install the Pipelines-as-Code application into an organization that has
+  a mix of public and private repositories where not every user in the
+  organization is trusted to have access to the private repositories. Since
+  the scoping of the token only allows the user to do operations and access on the
+  repository where the payload comes from, it will not be able to access the private repositories.
 
-  However, if you trust every users of your organization to access any repositories or
+  However, if you trust every user in your organization to access any repository or
   you are not planning to install your GitHub app globally on a GitHub
   organization, then you can safely set this option to false.
 
 * `secret-github-app-scope-extra-repos`
 
   If you don't want to completely disable the scoping of the token, but still
-  wants some other repos available (as long you have installed the GitHub app on
+  want some other repositories available (as long as you have installed the GitHub app on
   it), then you can add an extra owner/repo here.
 
-  This let you able fetch remote url on GitHub from extra private repositories
-  in an organisation if you need it.
+  This lets you fetch remote URLs on GitHub from extra private repositories
+  in an organization if you need it.
 
-  This only works when all the repos are added from the same installation IDs.
+  This only works when all the repositories are added from the same installation IDs.
 
   You can have multiple owner/repository separated by commas:
 
@@ -65,39 +65,39 @@ There is a few things you can configure through the config map
 
 * `bitbucket-cloud-check-source-ip`
 
-  Public bitbucket doesn't have the concept of Secret, we need to be
+  Public Bitbucket doesn't have the concept of Secret; we need to be
   able to secure the request by querying
-  [atlassian ip ranges](https://ip-ranges.atlassian.com/),
-  this only happen for public bitbucket (ie: when provider URL is not set in
+  [Atlassian IP ranges](https://ip-ranges.atlassian.com/),
+  this only happens for public Bitbucket (i.e., when provider URL is not set in
   repository spec). If you want to override this, you need to bear in mind
-  this could be a security issue, a malicious user can send a PR to your repo
+  this could be a security issue. A malicious user can send a PR to your repository
   with a modification to your PipelineRun that would grab secrets, tunnel or
   others and then send a malicious webhook payload to the controller which
-  look like a authorized owner has send the PR to run it.
+  looks like an authorized owner has sent the PR to run it.
   This feature is enabled by default.
 
 * `bitbucket-cloud-additional-source-ip`
 
-  Let you add extra IPS to allow bitbucket clouds, you can do a specific IP:
-  `127.0.0.1` or a networks `127.0.0.0/16`. Multiple of them can be specified
+  Let you add extra IPs to allow Bitbucket clouds. You can do a specific IP:
+  `127.0.0.1` or a network `127.0.0.0/16`. Multiple IPs can be specified
   separated by commas.
 
 * `max-keep-run-upper-limit`
 
-  This let the user define a max limit for the max-keep-run value. When the user
-  has defined a max-keep-run annotation on a PipelineRun then its value should
-  be less than or equal to the upper limit, otherwise upper limit will be used
+  This lets the user define a max limit for the max-keep-run value. When the user
+  has defined a max-keep-run annotation on a PipelineRun, then its value should
+  be less than or equal to the upper limit; otherwise the upper limit will be used
   for cleanup.
 
 * `default-max-keep-runs`
 
-  This let the user define a default limit for the `max-keep-run` value.
-  When defined it will applied to all the PipelineRun without a `max-keep-runs`
+  This lets the user define a default limit for the `max-keep-run` value.
+  When defined, it will be applied to all PipelineRuns without a `max-keep-runs`
   annotation.
 
 * `auto-configure-new-github-repo`
 
-  This setting let you autoconfigure newly created GitHub repositories. When
+  This setting lets you auto-configure newly created GitHub repositories. When
   Pipelines-as-Code sees a new repository URL from a payload, It will set
   up a namespace for your repository and create a Repository CR.
 
@@ -158,11 +158,14 @@ There is a few things you can configure through the config map
   both a push event and a pull request. If a push event comes from a commit that is
   part of an open pull request, the push event will be skipped as it would create
   a duplicate PipelineRun.
-  
+
   This feature works by checking if a pushed commit SHA exists in any open pull request,
   and if so, skipping the push event processing.
 
   Default: `true`
+
+  **Note:** This setting does not apply to git tag push events. Tag push events will always trigger
+  pipeline runs regardless of whether the tagged commit is part of an open pull request.
 
 {{< support_matrix github_app="true" github_webhook="true" gitea="false" gitlab="false" bitbucket_cloud="false" bitbucket_datacenter="false" >}}
 
@@ -207,12 +210,12 @@ Pipelines-as-Code supports fetching tasks and pipelines with its remote annotati
 * `hub-catalog-type`
 
   The type of hub catalog. Supported values are:
-  
+
   * `artifacthub` - For Artifact Hub (default if not specified)
   * `tektonhub` - For Tekton Hub
 
 * By default, both Artifact Hub and Tekton Hub are configured:
-  
+
   * Artifact Hub is the default catalog (no prefix needed, but `artifact://` can be used explicitly)
   * Tekton Hub is available using the `tektonhub://` prefix
 
@@ -223,7 +226,7 @@ Pipelines-as-Code supports fetching tasks and pipelines with its remote annotati
   catalog-1-name: "tekton"
   catalog-1-url: "https://api.custom.hub/v1"
   catalog-1-type: "tektonhub"
-  
+
   catalog-2-id: "artifact"
   catalog-2-name: "tekton-catalog-tasks"
   catalog-2-url: "https://artifacthub.io"
@@ -254,12 +257,21 @@ A few settings are available to configure this feature:
   Enable or disable the feature to show a log snippet of the failed task when
   there is an error in a PipelineRun.
 
-  Due to the constraints of the different GIT provider APIs, it will show the last
-  3 lines of the first container from the first task that has exited with an
-  error in the PipelineRun.
+  Due to the constraints of the different GIT provider APIs, it will show a
+  configurable number of lines of the first container from the first task that
+  has exited with an error in the PipelineRun. The number of lines is controlled
+  by the `error-log-snippet-number-of-lines` setting (see below).
 
-  If it find any strings matching the values of secrets attached to the
+  If it finds any strings matching the values of secrets attached to the
   PipelineRun it will replace it with the placeholder `******`
+
+* `error-log-snippet-number-of-lines`
+
+  default: `3`
+
+  How many lines to show in the error log snippets when `error-log-snippet` is set to `"true"`.
+  When using GitHub APP the GitHub Check interface [has a limit of 65535 characters](https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#create-a-check-run),
+  so you may want to be conservative with this setting.
 
 * `error-detection-from-container-logs`
 
@@ -391,8 +403,8 @@ A few settings are available to configure this feature:
 
 ## Pipelines-as-Code Info
 
-  There are a settings exposed through a config map for which any authenticated
-  user can access to know about the Pipelines-as-Code status. This Configmap
+  There are settings exposed through a ConfigMap for which any authenticated
+  user can access to know about the pipelines-as-code status. This ConfigMap
   will be automatically created with the [OpenShift Pipelines Operator](https://docs.openshift.com/container-platform/latest/cicd/pipelines/understanding-openshift-pipelines.html)
   or when installing with [tkn pac bootstrap](../../guide/cli/#bootstrap) command.
 
@@ -403,7 +415,7 @@ A few settings are available to configure this feature:
 * `controller-url`
 
   The controller URL as set by the `tkn pac bootstrap` command while setting up
-  the GitHub App or if Pipelines as code is installed
+  the GitHub App or if Pipelines-as-Code is installed
 
   The OpenShift Pipelines Operator will automatically set the route created
   for the controller.

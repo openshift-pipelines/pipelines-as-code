@@ -13,7 +13,7 @@ On the OpenShift Pipelines Operator, the default namespace is `openshift-pipelin
 When Pipelines-as-Code is installed through the [Tekton Operator](https://github.com/tektoncd/operator) the configuration of Pipelines-as-Code is
 controlled by [TektonConfig Custom Resource](https://github.com/tektoncd/operator/blob/main/docs/TektonConfig.md#openshiftpipelinesascode).
 That means Tekton Operator will revert the configuration changes done directly
-on `pipeline-as-code` configmap or `OpenShiftPipelinesAsCode` custom resource.
+on `pipelines-as-code` ConfigMap or `OpenShiftPipelinesAsCode` custom resource.
 
 The default configurations for Pipelines-as-Code in `TektonConfig` looks like
 below.
@@ -53,7 +53,7 @@ spec:
           remember-ok-to-test: 'true'
 ```
 
-You can add or update all supported configuration keys for Pipelines-as-Code under `settings`. After you change the `TektonConfig` custom resource, the operator updates the configuration of your `pipelines-as-code` configmap automatically.
+You can add or update all supported configuration keys for Pipelines-as-Code under `settings`. After you change the `TektonConfig` custom resource, the operator updates the configuration of your `pipelines-as-code` ConfigMap automatically.
 
 **Note:**
 

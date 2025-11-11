@@ -62,6 +62,9 @@ type Provider struct {
 	eventEmitter      *events.EventEmitter
 	repo              *v1alpha1.Repository
 	triggerEvent      string
+	// memberCache caches membership/permission checks by user ID within the
+	// current provider instance lifecycle to avoid repeated API calls.
+	memberCache map[int]bool
 }
 
 func (v *Provider) Client() *gitlab.Client {
@@ -195,9 +198,11 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.
 	}
 	v.apiURL = apiURL
 
-	v.gitlabClient, err = gitlab.NewClient(runevent.Provider.Token, gitlab.WithBaseURL(apiURL))
-	if err != nil {
-		return err
+	if v.gitlabClient == nil {
+		v.gitlabClient, err = gitlab.NewClient(runevent.Provider.Token, gitlab.WithBaseURL(apiURL))
+		if err != nil {
+			return err
+		}
 	}
 	v.Token = &runevent.Provider.Token
 
@@ -209,6 +214,19 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.
 	// the ID from runevent.SourceProjectID when v.sourceProject is 0 (nil).
 	if v.sourceProjectID == 0 && runevent.SourceProjectID > 0 {
 		v.sourceProjectID = runevent.SourceProjectID
+	}
+
+	// check that we have access to the source project if it's a private repo, this should only occur on Merge Requests
+	if runevent.TriggerTarget == triggertype.PullRequest {
+		_, resp, err := v.Client().Projects.GetProject(runevent.SourceProjectID, &gitlab.GetProjectOptions{})
+		errmsg := fmt.Sprintf("failed to access GitLab source repository ID %d: please ensure token has 'read_repository' scope on that repository",
+			runevent.SourceProjectID)
+		if resp != nil && resp.StatusCode == http.StatusNotFound {
+			return fmt.Errorf("%s", errmsg)
+		}
+		if err != nil {
+			return fmt.Errorf("%s: %w", errmsg, err)
+		}
 	}
 
 	// if we don't have sourceProjectID (ie: incoming-webhook) then try to set
@@ -234,6 +252,7 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.
 	return nil
 }
 
+//nolint:misspell
 func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts provider.StatusOpts,
 ) error {
 	var detailsURL string
@@ -248,6 +267,9 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	case "neutral":
 		statusOpts.Conclusion = "canceled"
 		statusOpts.Title = "stopped"
+	case "cancelled":
+		statusOpts.Conclusion = "canceled"
+		statusOpts.Title = "cancelled validating this commit"
 	case "failure":
 		statusOpts.Conclusion = "failed"
 		statusOpts.Title = "failed"
@@ -287,10 +309,28 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	// a status comment on it.
 	// This would work on a push or an MR from a branch within the same repo.
 	// Ignoring errors because of the write access issues,
-	if _, _, err := v.Client().Commits.SetCommitStatus(event.SourceProjectID, event.SHA, opt); err != nil {
-		v.eventEmitter.EmitMessage(v.repo, zap.ErrorLevel, "FailedToSetCommitStatus",
-			"cannot set status with the GitLab token because of: "+err.Error())
+	_, _, err := v.Client().Commits.SetCommitStatus(event.SourceProjectID, event.SHA, opt)
+	if err != nil {
+		v.Logger.Debugf("cannot set status with the GitLab token on the source project: %v", err)
+	} else {
+		// we managed to set the status on the source repo, all good we are done
+		v.Logger.Debugf("created commit status on source project ID %d", event.TargetProjectID)
+		return nil
 	}
+	if _, _, err2 := v.Client().Commits.SetCommitStatus(event.TargetProjectID, event.SHA, opt); err2 == nil {
+		v.Logger.Debugf("created commit status on target project ID %d", event.TargetProjectID)
+		// we managed to set the status on the target repo, all good we are done
+		return nil
+	}
+	v.Logger.Debugf("cannot set status with the GitLab token on the target project: %v", err)
+	// we only show the first error as it's likely something the user has more control to fix
+	// the second err is cryptic as it needs a dummy gitlab pipeline to start
+	// with and will only give more confusion in the event namespace
+	v.eventEmitter.EmitMessage(v.repo, zap.InfoLevel, "FailedToSetCommitStatus",
+		fmt.Sprintf("failed to create commit status: source project ID %d, target project ID %d. "+
+			"If you want Gitlab Pipeline Status update, ensure your GitLab token giving it access "+
+			"to the source repository. %v",
+			event.SourceProjectID, event.TargetProjectID, err))
 
 	eventType := triggertype.IsPullRequestType(event.EventType)
 	// When a GitOps command is sent on a pushed commit, it mistakenly treats it as a pull_request
@@ -437,6 +477,19 @@ func (v *Provider) GetCommitInfo(_ context.Context, runevent *info.Event) error 
 		runevent.SHA = branchinfo.ID
 		runevent.SHATitle = branchinfo.Title
 		runevent.SHAURL = branchinfo.WebURL
+
+		// Populate full commit information for LLM context
+		runevent.SHAMessage = branchinfo.Message
+		runevent.SHAAuthorName = branchinfo.AuthorName
+		runevent.SHAAuthorEmail = branchinfo.AuthorEmail
+		if branchinfo.AuthoredDate != nil {
+			runevent.SHAAuthorDate = *branchinfo.AuthoredDate
+		}
+		runevent.SHACommitterName = branchinfo.CommitterName
+		runevent.SHACommitterEmail = branchinfo.CommitterEmail
+		if branchinfo.CommittedDate != nil {
+			runevent.SHACommitterDate = *branchinfo.CommittedDate
+		}
 	}
 
 	return nil

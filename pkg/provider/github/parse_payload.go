@@ -12,7 +12,8 @@ import (
 	"strings"
 
 	ghinstallation "github.com/bradleyfalzon/ghinstallation/v2"
-	"github.com/google/go-github/v71/github"
+	ogithub "github.com/google/go-github/v72/github"
+	"github.com/google/go-github/v74/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -55,7 +56,7 @@ func (v *Provider) GetAppToken(ctx context.Context, kube kubernetes.Interface, g
 	if err != nil {
 		return "", err
 	}
-	itr.InstallationTokenOptions = &github.InstallationTokenOptions{
+	itr.InstallationTokenOptions = &ogithub.InstallationTokenOptions{
 		RepositoryIDs: v.RepositoryIDs,
 	}
 
@@ -345,8 +346,14 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 			v.Logger.Warnf("Error getting pull requests associated with the commit in this push event: %v", err)
 		}
 
-		// Only check if the flag is enabled and there are pull requests associated with this commit.
-		if v.pacInfo.SkipPushEventForPRCommits && len(prs) > 0 {
+		isGitTagEvent := strings.HasPrefix(gitEvent.GetRef(), "refs/tags/")
+
+		if v.pacInfo.SkipPushEventForPRCommits && isGitTagEvent {
+			v.Logger.Infof("Processing tag push event for commit %s despite skip-push-events-for-pr-commits being enabled (tag events are excluded from this setting)", sha)
+		}
+
+		// Only check if the flag is enabled, and there are pull requests associated with this commit, and it's not a tag push event.
+		if v.pacInfo.SkipPushEventForPRCommits && len(prs) > 0 && !isGitTagEvent {
 			isPartOfPR, prNumber := v.isCommitPartOfPullRequest(sha, org, repoName, prs)
 
 			// If the commit is part of a PR, skip processing the push event

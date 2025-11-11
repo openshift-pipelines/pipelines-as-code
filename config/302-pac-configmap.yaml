@@ -80,13 +80,17 @@ data:
   tekton-dashboard-url: ""
 
   # Enable or disable the feature to show a log snippet of the failed task when there is
-  # an error in a Pipeline
+  # an error in a Pipeline. The number of lines shown is controlled by the
+  # error-log-snippet-number-of-lines setting below.
   #
-  # It will show the last 3 lines of the first container of the first task
-  # that has error in the pipeline.
-  #
-  # you may want to disable this if you think your pipeline may leak some value
+  # You may want to disable this if you think your pipeline may leak sensitive values.
   error-log-snippet: "true"
+
+  # The number of lines to display in error log snippets, when `error-log-snippet` is
+  # set to "true".
+  # The GitHub Check interface (via the GitHub App) has a 65,535 character limit,
+  # so consider using a conservative value for this setting.
+  error-log-snippet-number-of-lines: "3"
 
   # Enable or disable the inspection of container logs to detect error message
   # and expose them as annotations on Pull Request. Only Github apps is supported

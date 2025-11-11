@@ -5,9 +5,9 @@ weight: 13
 
 # Use Pipelines-as-Code with GitLab Webhook
 
-Pipelines-As-Code supports on [GitLab](https://www.gitlab.com) through a webhook.
+Pipelines-as-Code supports [GitLab](https://www.gitlab.com) through a webhook.
 
-Follow the pipelines-as-code [installation](/docs/install/installation) according to your Kubernetes cluster.
+Follow the Pipelines-as-Code [installation](/docs/install/installation) according to your Kubernetes cluster.
 
 ## Create GitLab Personal Access Token
 
@@ -16,10 +16,10 @@ Follow the pipelines-as-code [installation](/docs/install/installation) accordin
   <https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html>
 
   **Note**: You can create a token scoped only to the project. Since the
-  token needs to be able to have `api` access to the forked repository from where
-  the MR come from, it will fail to do it with a project scoped token. We try
-  to fallback nicely by showing the status of the pipeline directly as comment
-  of the Merge Request.
+  token needs to have `api` access to the forked repository from where
+  the MR comes from, it will fail to do so with a project-scoped token. We try
+  to fall back nicely by showing the status of the pipeline directly as a comment
+  on the Merge Request.
 
 ## Create a `Repository` and configure webhook
 
@@ -30,10 +30,10 @@ There are two ways to create the `Repository` and configure the webhook:
 * Use the [`tkn pac create repo`](/docs/guide/cli) command to
 configure a webhook and create the `Repository` CR.
 
-  You need to have a personal access token created with `api` scope. `tkn pac` will use this token to configure the webhook, and add it in a secret
-in the cluster which will be used by Pipelines-As-Code controller for accessing the `Repository`.
+  You need to have a personal access token created with the `api` scope. `tkn pac` will use this token to configure the webhook, and add it to a secret
+in the cluster which will be used by the Pipelines-as-Code controller for accessing the `Repository`.
 
-Below is the sample format for `tkn pac create repo`
+Below is the sample format for `tkn pac create repo`:
 
 ```shell script
 $ tkn pac create repo
@@ -49,8 +49,8 @@ $ tkn pac create repo
 👀 I have detected a controller url: https://pipelines-as-code-controller-openshift-pipelines.apps.awscl2.aws.ospqa.com
 ? Do you want me to use it? Yes
 ? Please enter the secret to configure the webhook for payload validation (default: lFjHIEcaGFlF):  lFjHIEcaGFlF
-ℹ ️You now need to create a GitLab personal access token with `api` scope
-ℹ ️Go to this URL to generate one https://gitlab.com/-/profile/personal_access_tokens, see https://is.gd/rOEo9B for documentation
+ℹ️ You now need to create a GitLab personal access token with `api` scope
+ℹ️ Go to this URL to generate one https://gitlab.com/-/profile/personal_access_tokens, see https://is.gd/rOEo9B for documentation
 ? Please enter the GitLab access token:  **************************
 ? Please enter your GitLab API URL:  https://gitlab.com
 ✓ Webhook has been created on your repository
@@ -63,19 +63,19 @@ $ tkn pac create repo
 
 ### Create a `Repository` and configure webhook manually
 
-* From the left navigation pane of your GitLab repository, go to **settings** -->
+* From the left navigation pane of your GitLab repository, go to **Settings** -->
   **Webhooks** tab.
 
-* Go to your project and click on *Settings* and *"Webhooks"* from the sidebar on the left.
+* Go to your project and click on **Settings** and **Webhooks** from the sidebar on the left.
 
-  * Set the **URL** to Pipelines-as-Code controller public URL. On OpenShift, you can get the public URL of the
-  Pipelines-as-Code controller like this :
+  * Set the **URL** to the Pipelines-as-Code controller public URL. On OpenShift, you can get the public URL of the
+  Pipelines-as-Code controller like this:
 
     ```shell
     echo https://$(oc get route -n pipelines-as-code pipelines-as-code-controller -o jsonpath='{.spec.host}')
     ```
 
-  * Add a secret or generate a random one with this command  :
+  * Add a secret or generate a random one with this command:
 
     ```shell
     head -c 30 /dev/random | base64
@@ -83,7 +83,7 @@ $ tkn pac create repo
 
   * [Refer to this screenshot](/images/gitlab-add-webhook.png) on how to configure the Webhook.
 
-    The individual  events to select are :
+    The individual events to select are:
 
     * Merge request Events
     * Push Events
@@ -134,19 +134,19 @@ $ tkn pac create repo
 
 * Private instances are not automatically detected for GitLab yet, so you will need to specify the API URL under the spec `git_provider.url`.
 
-* If you want to override the API URL then you can simply add it to the spec`.git_provider.url` field.
+* If you want to override the API URL, then you can simply add it to the `spec.git_provider.url` field.
 
-* The `git_provider.secret` key cannot reference to a secret in another namespace.
-  Pipelines as code always assumes that it will be in the same namespace where the
+* The `git_provider.secret` key cannot reference a secret in another namespace.
+  Pipelines-as-Code always assumes that it will be in the same namespace where the
   `Repository` has been created.
 
-## Add webhook secret
+## Add Webhook Secret
 
-* For an existing `Repository`, if webhook secret has been deleted (or you want to add a new webhook to project settings) for Bitbucket Cloud,
-  use `tkn pac webhook add` command to add a webhook to project repository settings, as well as update the `webhook.secret`
-  key in the existing `Secret` object without updating `Repository`.
+* For an existing `Repository`, if the webhook secret has been deleted (or you want to add a new webhook to project settings) for GitLab,
+  use the `tkn pac webhook add` command to add a webhook to project repository settings, as well as update the `webhook.secret`
+  key in the existing `Secret` object without updating the `Repository`.
 
-Below is the sample format for `tkn pac webhook add`
+Below is the sample format for `tkn pac webhook add`:
 
 ```shell script
 $ tkn pac webhook add -n project-pipelines
@@ -162,20 +162,20 @@ $ tkn pac webhook add -n project-pipelines
 
 ```
 
-**Note:** If `Repository` exist in a namespace other than the `default` namespace, use `tkn pac webhook add [-n namespace]`.
-  In the above example, `Repository` exist in the `project-pipelines` namespace rather than the `default` namespace; therefore
+**Note:** If `Repository` exists in a namespace other than the `default` namespace, use `tkn pac webhook add [-n namespace]`.
+  In the above example, `Repository` exists in the `project-pipelines` namespace rather than the `default` namespace; therefore
   the webhook was added in the `project-pipelines` namespace.
 
-## Update token
+## Update Token
 
 There are two ways to update the provider token for the existing `Repository`:
 
 ### Update using tkn pac CLI
 
 * Use the [`tkn pac webhook update-token`](/docs/guide/cli) command which
-  will update provider token for the existing Repository CR.
+  will update the provider token for the existing Repository CR.
 
-Below is the sample format for `tkn pac webhook update-token`
+Below is the sample format for `tkn pac webhook update-token`:
 
 ```shell script
 $ tkn pac webhook update-token -n repo-pipelines
@@ -184,8 +184,8 @@ $ tkn pac webhook update-token -n repo-pipelines
 🔑 Secret repositories-project has been updated with new personal access token in the project-pipelines namespace.
 ```
 
-**Note:** If `Repository` exist in a namespace other than the `default` namespace, use `tkn pac webhook add [-n namespace]`.
-  In the above example, `Repository` exist in the `project-pipelines` namespace rather than the `default` namespace; therefore
+**Note:** If `Repository` exists in a namespace other than the `default` namespace, use `tkn pac webhook add [-n namespace]`.
+  In the above example, `Repository` exists in the `project-pipelines` namespace rather than the `default` namespace; therefore
   the webhook was added in the `project-pipelines` namespace.
 
 ### Update by changing `Repository` YAML or using `kubectl patch` command
