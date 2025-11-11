@@ -614,7 +614,7 @@ func TestGithubPullandPushMatchTriggerOnlyPull(t *testing.T) {
 	assert.NilError(t, err)
 	ctx = info.StoreNS(ctx, globalNs)
 
-	reg := regexp.MustCompile(fmt.Sprintf("commit.*is part of pull request #%d.*skipping push event", g.PRNumber))
+	reg := regexp.MustCompile(fmt.Sprintf("Skipping push event for commit.*as it belongs to pull request #%d", g.PRNumber))
 	maxLines := int64(100)
 	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 20, "controller", &maxLines)
 	assert.NilError(t, err)

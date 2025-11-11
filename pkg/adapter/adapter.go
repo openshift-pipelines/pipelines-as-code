@@ -209,7 +209,9 @@ func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 		go func() {
 			err := s.processEvent(ctx, localRequest)
 			if err != nil {
-				logger.Errorf("an error occurred: %v", err)
+				if !strings.Contains(err.Error(), "skipping push event") {
+					logger.Errorf("an error occurred: %v", err)
+				}
 			}
 		}()
 

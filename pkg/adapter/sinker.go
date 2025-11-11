@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
@@ -29,7 +30,9 @@ func (s *sinker) processEventPayload(ctx context.Context, request *http.Request)
 	var err error
 	s.event, err = s.vcx.ParsePayload(ctx, s.run, request, string(s.payload))
 	if err != nil {
-		s.logger.Errorf("failed to parse event: %v", err)
+		if !strings.Contains(err.Error(), "skipping push event") {
+			s.logger.Errorf("failed to parse event: %v", err)
+		}
 		return err
 	}
 
