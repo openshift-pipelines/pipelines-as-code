@@ -1518,8 +1518,8 @@ func TestSkipPushEventForPRCommits(t *testing.T) {
 				},
 			},
 			isPartOfPR:      true,
-			wantErr:         true,
-			wantErrContains: "commit abc123 is part of pull request #42, skipping push event",
+			wantErr:         false,
+			wantErrContains: "",
 		},
 		{
 			name:           "continue processing push event when commit is not part of PR",
@@ -1645,15 +1645,20 @@ func TestSkipPushEventForPRCommits(t *testing.T) {
 
 			// If no error expected, check the result
 			assert.NilError(t, err)
+
+			// If push event was skipped (commit is part of PR), result should be nil
+			if tt.pacInfoEnabled && tt.isPartOfPR {
+				assert.Assert(t, result == nil, "Expected nil result when push event is skipped for PR commit")
+				return
+			}
+
 			assert.Assert(t, result != nil, "Expected non-nil result when no error occurs")
 
 			// Check event fields were properly processed
-			if !tt.pacInfoEnabled || !tt.isPartOfPR {
-				assert.Equal(t, result.Organization, tt.pushEvent.GetRepo().GetOwner().GetLogin())
-				assert.Equal(t, result.Repository, tt.pushEvent.GetRepo().GetName())
-				assert.Equal(t, result.SHA, tt.pushEvent.GetHeadCommit().GetID())
-				assert.Equal(t, result.Sender, tt.pushEvent.GetSender().GetLogin())
-			}
+			assert.Equal(t, result.Organization, tt.pushEvent.GetRepo().GetOwner().GetLogin())
+			assert.Equal(t, result.Repository, tt.pushEvent.GetRepo().GetName())
+			assert.Equal(t, result.SHA, tt.pushEvent.GetHeadCommit().GetID())
+			assert.Equal(t, result.Sender, tt.pushEvent.GetSender().GetLogin())
 
 			// Check for warning logs if applicable
 			if tt.skipWarnLogContains != "" {

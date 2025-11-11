@@ -923,10 +923,10 @@ func TestParsePayLoad(t *testing.T) {
 				},
 				HeadCommit: &github.HeadCommit{ID: github.Ptr("SHAPush")},
 			},
-			shaRet:                    "SHAPush",
+			shaRet:                    "",
 			skipPushEventForPRCommits: true,
 			muxReplies:                map[string]any{"/repos/owner/pushRepo/commits/SHAPush/pulls": sampleGhPRs},
-			wantErrString:             "commit SHAPush is part of pull request #42, skipping push event",
+			wantErrString:             "",
 		},
 		{
 			name:          "good/skip tag push event for skip-pr-commits setting",
@@ -1035,6 +1035,12 @@ func TestParsePayLoad(t *testing.T) {
 				return
 			}
 			assert.NilError(t, err)
+			// If shaRet is empty, this is a skip case (push event for PR commit)
+			// In this case, ret should be nil
+			if tt.shaRet == "" {
+				assert.Assert(t, ret == nil, "Expected nil result for skipped push event")
+				return
+			}
 			assert.Assert(t, ret != nil)
 			assert.Equal(t, tt.shaRet, ret.SHA)
 			if tt.eventType == triggertype.PullRequest.String() {
