@@ -9,9 +9,11 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/customparams"
 	pacerrors "github.com/openshift-pipelines/pipelines-as-code/pkg/errors"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -210,6 +212,9 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 	}
 	logger.Info(infomsg)
 
+	// Cache for custom params resolution per repository (to avoid repeated resolution)
+	customParamsCache := make(map[string]map[string]string)
+
 	celValidationErrors := []*pacerrors.PacYamlValidations{}
 	for _, prun := range pruns {
 		prMatch := Match{
@@ -280,7 +285,30 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 		if celExpr, ok := prun.GetObjectMeta().GetAnnotations()[keys.OnCelExpression]; ok {
 			checkPipelineRunAnnotation(prun, eventEmitter, repo)
 
-			out, err := celEvaluate(ctx, celExpr, event, vcx)
+			// Determine the effective repository for this PipelineRun
+			effectiveRepo := repo
+			if prMatch.Repo != nil {
+				effectiveRepo = prMatch.Repo
+			}
+
+			// Resolve custom params for the effective repository (with caching)
+			var customParams map[string]string
+			if effectiveRepo != nil {
+				cacheKey := effectiveRepo.GetNamespace() + "/" + effectiveRepo.GetName()
+				if cached, found := customParamsCache[cacheKey]; found {
+					customParams = cached
+				} else {
+					customParams = resolveCustomParamsForCEL(ctx, effectiveRepo, event, cs, vcx, eventEmitter, logger)
+					customParamsCache[cacheKey] = customParams
+					if len(customParams) > 0 {
+						logger.Debugf("resolved %d custom params from repo %s for CEL", len(customParams), cacheKey)
+					}
+				}
+			} else {
+				customParams = map[string]string{}
+			}
+
+			out, err := celEvaluate(ctx, celExpr, event, vcx, customParams)
 			if err != nil {
 				logger.Errorf("there was an error evaluating the CEL expression, skipping: %v", err)
 				if checkIfCELEvaluateError(err) {
@@ -507,4 +535,39 @@ func MatchRunningPipelineRunForIncomingWebhook(eventType, incomingPipelineRun st
 		}
 	}
 	return nil
+}
+
+// resolveCustomParamsForCEL resolves custom parameters from the Repository CR for use in CEL expressions.
+// It returns a map of parameter names to values, excluding reserved keywords.
+// All parameters are returned as strings, including those from secret_ref.
+func resolveCustomParamsForCEL(ctx context.Context, repo *apipac.Repository, event *info.Event, cs *params.Run, vcx provider.Interface, eventEmitter *events.EventEmitter, logger *zap.SugaredLogger) map[string]string {
+	if repo == nil || repo.Spec.Params == nil {
+		return map[string]string{}
+	}
+
+	// Create kubeinteraction interface
+	kinteract, err := kubeinteraction.NewKubernetesInteraction(cs)
+	if err != nil {
+		logger.Warnf("failed to create kubernetes interaction for custom params: %s", err.Error())
+		return map[string]string{}
+	}
+
+	// Use existing customparams package to resolve all params
+	cp := customparams.NewCustomParams(event, repo, cs, kinteract, eventEmitter, vcx)
+	allParams, _, err := cp.GetParams(ctx)
+	if err != nil {
+		eventEmitter.EmitMessage(repo, zap.WarnLevel, "CustomParamsCELError",
+			fmt.Sprintf("failed to resolve custom params for CEL: %s", err.Error()))
+		return map[string]string{}
+	}
+
+	// Filter to only include params defined in repo.Spec.Params (not standard PAC params)
+	result := make(map[string]string)
+	for _, param := range *repo.Spec.Params {
+		if value, ok := allParams[param.Name]; ok {
+			result[param.Name] = value
+		}
+	}
+
+	return result
 }

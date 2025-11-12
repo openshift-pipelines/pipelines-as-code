@@ -22,7 +22,7 @@ const (
 	reChangedFilesTags = `files\.`
 )
 
-func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provider.Interface) (ref.Val, error) {
+func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provider.Interface, customParams map[string]string) (ref.Val, error) {
 	eventTitle := event.PullRequestTitle
 	if event.TriggerTarget == triggertype.Push {
 		eventTitle = event.SHATitle
@@ -72,6 +72,7 @@ func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provid
 
 	data := map[string]any{
 		"event":         event.TriggerTarget.String(),
+		"event_type":    event.EventType,
 		"event_title":   eventTitle,
 		"target_branch": event.BaseBranch,
 		"source_branch": event.HeadBranch,
@@ -87,10 +88,20 @@ func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provid
 			"renamed":  changedFiles.Renamed,
 		},
 	}
-	env, err := cel.NewEnv(
-		cel.Lib(celPac{vcx, ctx, event}),
+	conflictingVar := make(map[string]bool)
+	for k, v := range customParams {
+		// Don't overwrite standard params
+		if _, ok := data[k]; !ok {
+			data[k] = v
+		} else {
+			conflictingVar[k] = true
+		}
+	}
+
+	varDecls := []cel.EnvOption{
 		cel.VariableDecls(
 			decls.NewVariable("event", types.StringType),
+			decls.NewVariable("event_type", types.StringType),
 			decls.NewVariable("headers", types.NewMapType(types.StringType, types.DynType)),
 			decls.NewVariable("body", types.NewMapType(types.StringType, types.DynType)),
 			decls.NewVariable("event_title", types.StringType),
@@ -99,7 +110,24 @@ func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provid
 			decls.NewVariable("target_url", types.StringType),
 			decls.NewVariable("source_url", types.StringType),
 			decls.NewVariable("files", types.NewMapType(types.StringType, types.DynType)),
-		))
+		),
+	}
+	// Add declarations for custom params (all as strings)
+	customParamDecls := make([]*decls.VariableDecl, 0, len(customParams))
+	for k := range customParams {
+		// Don't overwrite standard params
+		if _, ok := conflictingVar[k]; !ok {
+			customParamDecls = append(customParamDecls, decls.NewVariable(k, types.StringType))
+		}
+	}
+	if len(customParamDecls) > 0 {
+		varDecls = append(varDecls, cel.VariableDecls(customParamDecls...))
+	}
+
+	envOpts := []cel.EnvOption{cel.Lib(celPac{vcx, ctx, event})}
+	envOpts = append(envOpts, varDecls...)
+
+	env, err := cel.NewEnv(envOpts...)
 	if err != nil {
 		return nil, err
 	}
