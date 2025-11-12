@@ -23,6 +23,26 @@ func TestRegexp(t *testing.T) {
 			matched: true,
 		},
 		{
+			name:    "good/match regexp with short sha",
+			text:    "/ok-to-test 1234567",
+			matched: true,
+		},
+		{
+			name:    "good/match regexp with uppercase sha",
+			text:    "/ok-to-test ABCDEF1",
+			matched: true,
+		},
+		{
+			name:    "good/match regexp with full sha",
+			text:    "/ok-to-test 1234567890123456789012345678901234567890",
+			matched: true,
+		},
+		{
+			name:    "bad/match regexp with invalid sha",
+			text:    "/ok-to-test GGGGGGG",
+			matched: false,
+		},
+		{
 			name:    "good/match regexp newline",
 			text:    "\n/ok-to-test",
 			matched: true,
@@ -31,6 +51,11 @@ func TestRegexp(t *testing.T) {
 			name:    "bad/match regexp newline space",
 			text:    "\n /ok-to-test",
 			matched: false,
+		},
+		{
+			name:    "good/match regexp trailing spaces",
+			text:    "/ok-to-test   \n",
+			matched: true,
 		},
 		{
 			name:    "good/in the middle",

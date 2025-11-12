@@ -39,6 +39,41 @@ This will always trigger a new PipelineRun, even if previous runs were successfu
 
 Similar to `/retest`, the `/ok-to-test` command will only trigger new PipelineRuns if no successful PipelineRun already exists for the same commit. This prevents duplicate runs when repository owners repeatedly test the same commit by `/test` and `/retest` command.
 
+### Requiring a SHA with `/ok-to-test`
+
+{{< tech_preview "Requiring a SHA argument to `/ok-to-test`" >}}
+{{< support_matrix github_app="true" github_webhook="false" gitea="false" gitlab="false" bitbucket_cloud="false" bitbucket_datacenter="false" >}}
+
+Cluster administrators can enforce SHA validation on `/ok-to-test` by setting
+`require-ok-to-test-sha: "true"` in the Pipelines-as-Code ConfigMap. This
+feature currently applies only to GitHub, as its `issue_comment` event does not
+include the pull request’s HEAD SHA (unlike other providers that do).
+
+Without this SHA, a small timing window exists where an attacker could push a
+new commit immediately after an owner comments `/ok-to-test`, causing CI to run
+on unintended code. Requiring the reviewer to include the commit ID eliminates
+this risk until GitHub includes the SHA in its webhook payload.
+
+When enabled, repository owners and collaborators must append a 7–40 character
+Git SHA (in lowercase or uppercase hexadecimal) to the command, for example:
+
+```text
+/ok-to-test 1A2B3C4
+```
+
+Pipelines-as-Code verifies the provided SHA against the pull request’s current HEAD:
+
+- Short SHAs must match the HEAD commit’s prefix.
+- Full SHAs must match exactly.
+
+If the SHA is missing or invalid, the comment is rejected, and the bot replies
+with instructions to retry using the correct value. This mechanism protects
+GitHub repositories from the time-of-check/time-of-use vulnerability,
+a risk that other providers avoid by including the commit SHA directly in the
+webhook payload.
+
+### Targeting Specific PipelineRuns
+
 If you have multiple `PipelineRun` and you want to target a specific `PipelineRun`, you can use the `/test` command followed by the specific PipelineRun name to restart it. Example:
 
 ```text

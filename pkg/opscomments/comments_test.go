@@ -306,9 +306,9 @@ func TestIsOkToTestComment(t *testing.T) {
 			want:    false,
 		},
 		{
-			name:    "invalid comment",
-			comment: "/ok-to-test abc",
-			want:    false,
+			name:    "valid comment with sha",
+			comment: "/ok-to-test 1234567",
+			want:    true,
 		},
 	}
 
@@ -675,6 +675,41 @@ func TestGetPipelineRunAndBranchNameFromCancelComment(t *testing.T) {
 			assert.Equal(t, tt.wantError, err != nil)
 			assert.Equal(t, tt.branchName, branchName)
 			assert.Equal(t, tt.prName, prName)
+		})
+	}
+}
+
+func TestGetSHAFromOkToTestComment(t *testing.T) {
+	tests := []struct {
+		name    string
+		comment string
+		want    string
+	}{
+		{
+			name:    "no sha",
+			comment: "/ok-to-test",
+			want:    "",
+		},
+		{
+			name:    "short sha",
+			comment: "/ok-to-test 1234567",
+			want:    "1234567",
+		},
+		{
+			name:    "full sha",
+			comment: "/ok-to-test 1234567890123456789012345678901234567890",
+			want:    "1234567890123456789012345678901234567890",
+		},
+		{
+			name:    "sha with surrounding text",
+			comment: "lgtm\n/ok-to-test 1234567\napproved",
+			want:    "1234567",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := GetSHAFromOkToTestComment(tt.comment)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
