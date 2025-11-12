@@ -77,6 +77,7 @@ func TestSyncConfig(t *testing.T) {
 				"custom-console-url-namespace":            "https://custom-console-namespace",
 				"remember-ok-to-test":                     "false",
 				"skip-push-event-for-pr-commits":          "true",
+				"require-ok-to-test-sha":                  "true",
 			},
 			expectedStruct: Settings{
 				ApplicationName:                      "pac-pac",
@@ -107,6 +108,7 @@ func TestSyncConfig(t *testing.T) {
 				CustomConsolePRTaskLog:               "https://custom-console-pr-tasklog",
 				CustomConsoleNamespaceURL:            "https://custom-console-namespace",
 				RememberOKToTest:                     false,
+				RequireOkToTestSHA:                   true,
 			},
 		},
 		{
