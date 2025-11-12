@@ -22,7 +22,7 @@ const (
 	reChangedFilesTags = `files\.`
 )
 
-func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provider.Interface) (ref.Val, error) {
+func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provider.Interface, customParams map[string]string) (ref.Val, error) {
 	eventTitle := event.PullRequestTitle
 	if event.TriggerTarget == triggertype.Push {
 		eventTitle = event.SHATitle
@@ -72,6 +72,7 @@ func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provid
 
 	data := map[string]any{
 		"event":         event.TriggerTarget.String(),
+		"event_type":    event.EventType,
 		"event_title":   eventTitle,
 		"target_branch": event.BaseBranch,
 		"source_branch": event.HeadBranch,
@@ -87,10 +88,12 @@ func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provid
 			"renamed":  changedFiles.Renamed,
 		},
 	}
-	env, err := cel.NewEnv(
+
+	varDecls := []cel.EnvOption{
 		cel.Lib(celPac{vcx, ctx, event}),
 		cel.VariableDecls(
 			decls.NewVariable("event", types.StringType),
+			decls.NewVariable("event_type", types.StringType),
 			decls.NewVariable("headers", types.NewMapType(types.StringType, types.DynType)),
 			decls.NewVariable("body", types.NewMapType(types.StringType, types.DynType)),
 			decls.NewVariable("event_title", types.StringType),
@@ -99,7 +102,18 @@ func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provid
 			decls.NewVariable("target_url", types.StringType),
 			decls.NewVariable("source_url", types.StringType),
 			decls.NewVariable("files", types.NewMapType(types.StringType, types.DynType)),
-		))
+		),
+	}
+	// Add declarations for custom params (all as strings)
+	for k, v := range customParams {
+		// Don't overwrite standard params
+		if _, ok := data[k]; !ok {
+			data[k] = v
+			varDecls = append(varDecls, cel.VariableDecls(decls.NewVariable(k, types.StringType)))
+		}
+	}
+
+	env, err := cel.NewEnv(varDecls...)
 	if err != nil {
 		return nil, err
 	}

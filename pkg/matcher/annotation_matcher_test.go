@@ -1346,6 +1346,274 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "cel/custom-params-simple",
+			args: annotationTestArgs{
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								keys.OnCelExpression: "test_enabled == \"true\"",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:           targetURL,
+					TriggerTarget: "push",
+					BaseBranch:    mainBranch,
+					EventType:     "push",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+								Params: &[]v1alpha1.Params{
+									{
+										Name:  "test_enabled",
+										Value: "true",
+									},
+								},
+							},
+						),
+					},
+				},
+			},
+			wantPRName: pipelineTargetNSName,
+			wantErr:    false,
+		},
+		{
+			name: "cel/custom-params-multiple",
+			args: annotationTestArgs{
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								keys.OnCelExpression: "environment == \"production\" && deploy_enabled == \"true\"",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:           targetURL,
+					TriggerTarget: "push",
+					BaseBranch:    mainBranch,
+					EventType:     "push",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+								Params: &[]v1alpha1.Params{
+									{
+										Name:  "environment",
+										Value: "production",
+									},
+									{
+										Name:  "deploy_enabled",
+										Value: "true",
+									},
+								},
+							},
+						),
+					},
+				},
+			},
+			wantPRName: pipelineTargetNSName,
+			wantErr:    false,
+		},
+		{
+			name: "cel/custom-params-not-matching",
+			args: annotationTestArgs{
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								keys.OnCelExpression: "deploy_enabled == \"true\"",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:           targetURL,
+					TriggerTarget: "push",
+					BaseBranch:    mainBranch,
+					EventType:     "push",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+								Params: &[]v1alpha1.Params{
+									{
+										Name:  "deploy_enabled",
+										Value: "false",
+									},
+								},
+							},
+						),
+					},
+				},
+			},
+			wantPRName: "",
+			wantErr:    true,
+		},
+		{
+			name: "cel/custom-params-with-reserved-keyword",
+			args: annotationTestArgs{
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								keys.OnCelExpression: "event == \"push\"",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:           targetURL,
+					TriggerTarget: "push",
+					BaseBranch:    mainBranch,
+					EventType:     "push",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+								Params: &[]v1alpha1.Params{
+									{
+										Name:  "event", // Reserved keyword - should be ignored
+										Value: "invalid",
+									},
+								},
+							},
+						),
+					},
+				},
+			},
+			wantPRName: pipelineTargetNSName,
+			wantErr:    false,
+		},
+		{
+			name: "cel/custom-params-combined-with-builtin",
+			args: annotationTestArgs{
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								keys.OnCelExpression: "event == \"pull_request\" && target_branch == \"" + mainBranch + "\" && run_tests == \"true\"",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:               targetURL,
+					TriggerTarget:     "pull_request",
+					BaseBranch:        mainBranch,
+					HeadBranch:        "feature-branch",
+					EventType:         "pull_request",
+					PullRequestNumber: 123,
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+								Params: &[]v1alpha1.Params{
+									{
+										Name:  "run_tests",
+										Value: "true",
+									},
+								},
+							},
+						),
+					},
+				},
+			},
+			wantPRName: pipelineTargetNSName,
+			wantErr:    false,
+		},
+		{
+			name: "cel/custom-params-from-secret",
+			args: annotationTestArgs{
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								keys.OnCelExpression: "event == \"push\" && api_key != \"\" && api_token == \"secret-token-value\"",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:           targetURL,
+					TriggerTarget: "push",
+					BaseBranch:    mainBranch,
+					EventType:     "push",
+				},
+				data: testclient.Data{
+					Secret: []*corev1.Secret{
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      "my-secret",
+								Namespace: targetNamespace,
+							},
+							Data: map[string][]byte{
+								"key":   []byte("secret-key-value"),
+								"token": []byte("secret-token-value"),
+							},
+						},
+					},
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+								Params: &[]v1alpha1.Params{
+									{
+										Name: "api_key",
+										SecretRef: &v1alpha1.Secret{
+											Name: "my-secret",
+											Key:  "key",
+										},
+									},
+									{
+										Name: "api_token",
+										SecretRef: &v1alpha1.Secret{
+											Name: "my-secret",
+											Key:  "token",
+										},
+									},
+								},
+							},
+						),
+					},
+				},
+			},
+			wantPRName: pipelineTargetNSName,
+			wantErr:    false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -1414,14 +1682,24 @@ func runTest(ctx context.Context, t *testing.T, tt annotationTest, vcx provider.
 	logger := zap.New(observer).Sugar()
 	vcx.SetLogger(logger)
 	client := &params.Run{
-		Clients: clients.Clients{PipelineAsCode: cs.PipelineAsCode},
-		Info:    info.Info{},
+		Clients: clients.Clients{
+			PipelineAsCode: cs.PipelineAsCode,
+			Kube:           cs.Kube,
+		},
+		Info: info.Info{},
 	}
 
 	eventEmitter := events.NewEventEmitter(cs.Kube, logger)
+
+	// Get the repository for custom params resolution
+	var repo *v1alpha1.Repository
+	if len(tt.args.data.Repositories) > 0 {
+		repo = tt.args.data.Repositories[0]
+	}
+
 	matches, err := MatchPipelinerunByAnnotation(ctx, logger,
 		tt.args.pruns,
-		client, &tt.args.runevent, vcx, eventEmitter, nil,
+		client, &tt.args.runevent, vcx, eventEmitter, repo,
 	)
 
 	if tt.wantLog != "" {
