@@ -301,18 +301,20 @@ pipelinesascode.tekton.dev/on-cel-expression: |
 
 The fields available are:
 
-| **Field**           | **Description**                                                                                                                                                                                                          |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `event`             | `push`, `pull_request` or `incoming`.                                                                                                                                                                                    |
-| `target_branch`     | The branch we are targeting.                                                                                                                                                                                             |
-| `source_branch`     | The branch where this pull_request comes from. (On `push`, this is the same as `target_branch`.)                                                                                                                         |
-| `target_url`        | The URL of the repository we are targeting.                                                                                                                                                                              |
-| `source_url`        | The URL of the repository where this pull_request comes from. (On `push`, this is the same as `target_url`.)                                                                                                             |
-| `event_title`       | Matches the title of the event. For `push`, it matches the commit title. For PR, it matches the Pull/Merge Request title. (Only supported for `GitHub`, `GitLab`, and `BitbucketCloud` providers.)                       |
-| `body`              | The full body as passed by the Git provider. Example: `body.pull_request.number` retrieves the pull request number on GitHub.                                                                                            |
-| `headers`           | The full set of headers as passed by the Git provider. Example: `headers['x-github-event']` retrieves the event type on GitHub.                                                                                          |
-| `.pathChanged`      | A suffix function to a string that can be a glob of a path to check if changed. (Supported only for `GitHub` and `GitLab` providers.)                                                                                    |
-| `files`             | The list of files that changed in the event (`all`, `added`, `deleted`, `modified`, and `renamed`). Example: `files.all` or `files.deleted`. For pull requests, every file belonging to the pull request will be listed. |
+| **Field** | **Description** |
+| --- | --- |
+| `event` | `push`, `pull_request` or `incoming`. |
+| `event_type` | The event type from the webhook payload header. Provider-specific (e.g., GitHub sends `pull_request`, GitLab is `Merge Request`, etc). |
+| `target_branch` | The branch we are targeting. |
+| `source_branch` | The branch where this pull_request comes from. (On `push`, this is the same as `target_branch`.) |
+| `target_url` | The URL of the repository we are targeting. |
+| `source_url` | The URL of the repository where this pull_request comes from. (On `push`, this is the same as `target_url`.) |
+| `event_title` | Matches the title of the event. For `push`, it matches the commit title. For PR, it matches the Pull/Merge Request title. (Only supported for `GitHub`, `GitLab`, and `BitbucketCloud` providers.) |
+| `body` | The full body as passed by the Git provider. Example: `body.pull_request.number` retrieves the pull request number on GitHub. |
+| `headers` | The full set of headers as passed by the Git provider. Example: `headers['x-github-event']` retrieves the event type on GitHub. |
+| `.pathChanged` | A suffix function to a string that can be a glob of a path to check if changed. (Supported only for `GitHub` and `GitLab` providers.) |
+| `files` | The list of files that changed in the event (`all`, `added`, `deleted`, `modified`, and `renamed`). Example: `files.all` or `files.deleted`. For pull requests, every file belonging to the pull request will be listed. |
+| Custom params | Any [custom parameters]({{< relref "/docs/guide/customparams" >}}) provided from the Repository CR `spec.params` are available as CEL variables. Example: `enable_ci == "true"`. See [Using custom parameters in CEL expressions: limitations](#using-custom-parameters-in-cel-expressions-limitations) below for important details. |
 
 CEL expressions let you do more complex filtering compared to the simple `on-target` annotation matching and enable more advanced scenarios.
 
@@ -329,6 +331,66 @@ You can find more information about the CEL language spec here:
 
 <https://github.com/google/cel-spec/blob/master/doc/langdef.md>
 {{< /hint >}}
+
+### Using custom parameters in CEL expressions: limitations
+
+#### Filtered custom parameters and CEL evaluation
+
+When using a custom parameter with a `filter` in a CEL expression, be aware that if the filter condition
+is **not met**, the parameter will be **undefined**, causing a CEL evaluation error rather than evaluating to false.
+
+For example, consider this Repository CR:
+
+```yaml
+apiVersion: pipelinesascode.tekton.dev/v1alpha1
+kind: Repository
+metadata:
+  name: my-repo
+spec:
+  url: "https://github.com/owner/repo"
+  params:
+    - name: docker_registry
+      value: "registry.staging.example.com"
+      filter: pac.event_type == "pull_request"
+```
+
+And this PipelineRun:
+
+```yaml
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: my-pipeline
+  annotations:
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      docker_registry == "registry.staging.example.com"
+spec:
+  # ... pipeline spec
+```
+
+On a **push event**, the `docker_registry` parameter will not be defined (since the filter only matches pull
+requests), and the CEL expression will produce an **error**, not `false`. The PipelineRun will not be
+evaluated and an error will be reported.
+
+To avoid undefined parameter errors, ensure your CEL expressions only reference custom parameters when their
+filter conditions match, or use parameters without filters for CEL matching. We recommend testing your CEL
+expressions with different event types using the [tkn pac cel]({{< relref "/docs/guide/cli#tkn-pac-cel" >}})
+command to verify they work correctly across all scenarios
+
+#### Custom parameters do not override standard CEL variables
+
+Custom parameters defined in the Repository CR cannot override the built-in CEL variables provided by
+Pipelines-as-Code, such as:
+
+* `event` (or `event_type`)
+* `target_branch`
+* `source_branch`
+* `trigger_target`
+* And other default variables documented in the table above
+
+If you define a custom parameter with the same name as a standard CEL variable, the standard variable will
+take precedence in CEL expressions. Custom parameters should use unique names that don't conflict with
+built-in variables.
 
 ### Matching a PipelineRun to a branch with a regex
 
