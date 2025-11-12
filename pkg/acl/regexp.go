@@ -4,7 +4,7 @@ import (
 	"regexp"
 )
 
-const OKToTestCommentRegexp = `(^|\n)\/ok-to-test(\r\n|\r|\n|$)`
+const OKToTestCommentRegexp = `(^|\n)\/ok-to-test(?:\s+([a-fA-F0-9]{7,40}))?\s*(\r\n|\r|\n|$)`
 
 // MatchRegexp Match a regexp to a string.
 func MatchRegexp(reg, comment string) bool {
