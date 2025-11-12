@@ -1,0 +1,21 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: "\\ .PipelineName //"
+  annotations:
+    pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      event == "pull_request" && enable_ci == "true" && environment != ""
+spec:
+  pipelineSpec:
+    tasks:
+      - name: custom-params-cel-test
+        taskSpec:
+          steps:
+            - name: test-custom-params-cel
+              image: registry.access.redhat.com/ubi9/ubi-micro
+              script: |
+                cat <<EOF
+                Custom params: enable_ci={{ enable_ci }} environment={{ environment }}
+                EOF
