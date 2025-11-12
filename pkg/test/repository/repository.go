@@ -20,6 +20,7 @@ type RepoTestcreationOpts struct {
 	RepoStatus        []v1alpha1.RepositoryRunStatus
 	ConcurrencyLimit  int
 	Settings          *v1alpha1.Settings
+	Params            *[]v1alpha1.Params
 }
 
 func NewRepo(opts RepoTestcreationOpts) *v1alpha1.Repository {
@@ -97,5 +98,10 @@ func NewRepo(opts RepoTestcreationOpts) *v1alpha1.Repository {
 			Name: opts.WebhookSecretName,
 		}
 	}
+
+	if opts.Params != nil {
+		repo.Spec.Params = opts.Params
+	}
+
 	return repo
 }
