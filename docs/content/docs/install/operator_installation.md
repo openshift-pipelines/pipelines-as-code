@@ -45,6 +45,7 @@ spec:
           hub-url: 'https://artifacthub.io'
           hub-catalog-type: 'artifacthub'
           error-detection-max-number-of-lines: '50'
+          # Single pattern example. For multiple patterns, use multi-line format (see settings docs)
           error-detection-simple-regexp: >-
             ^(?P<filename>[^:]*):(?P<line>[0-9]+):(?P<column>[0-9]+):([
             ]*)?(?P<error>.*)

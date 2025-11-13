@@ -140,64 +140,98 @@ func (v *Provider) createCheckRunStatus(ctx context.Context, runevent *info.Even
 
 func (v *Provider) getFailuresMessageAsAnnotations(ctx context.Context, pr *tektonv1.PipelineRun, pacopts *info.PacOpts) []*github.CheckRunAnnotation {
 	annotations := []*github.CheckRunAnnotation{}
-	r, err := regexp.Compile(pacopts.ErrorDetectionSimpleRegexp)
-	if err != nil {
-		v.Logger.Errorf("invalid regexp for filtering failure messages: %v", pacopts.ErrorDetectionSimpleRegexp)
+	var patterns []string
+	maxNumberOfLines := pacopts.ErrorDetectionNumberOfLines
+
+	// Check if repository has custom error detection settings
+	if v.repo != nil && v.repo.Spec.Settings != nil && v.repo.Spec.Settings.ErrorDetection != nil {
+		repoErrorDetection := v.repo.Spec.Settings.ErrorDetection
+		// Use repository-specific patterns if provided
+		if repoErrorDetection.Patterns != nil {
+			patterns = repoErrorDetection.Patterns
+		}
+		// Use repository-specific max number of lines if provided
+		if repoErrorDetection.MaxNumberOfLines != nil {
+			maxNumberOfLines = *repoErrorDetection.MaxNumberOfLines
+		}
+	}
+
+	patterns = append(patterns, pacopts.ErrorDetectionSimpleRegexp...)
+
+	compiledPatterns := make([]*regexp.Regexp, 0, len(patterns))
+	for _, pattern := range patterns {
+		r, err := regexp.Compile(pattern)
+		if err != nil {
+			v.Logger.Errorf("invalid regexp for filtering failure messages: %v", pattern)
+			continue
+		}
+		compiledPatterns = append(compiledPatterns, r)
+	}
+
+	if len(compiledPatterns) == 0 {
+		v.Logger.Error("no valid error detection patterns available")
 		return annotations
 	}
+
 	intf, err := kubeinteraction.NewKubernetesInteraction(v.Run)
 	if err != nil {
 		v.Logger.Errorf("failed to create kubeinteraction: %v", err)
 		return annotations
 	}
-	taskinfos := kstatus.CollectFailedTasksLogSnippet(ctx, v.Run, intf, pr, int64(pacopts.ErrorDetectionNumberOfLines))
+
+	taskinfos := kstatus.CollectFailedTasksLogSnippet(ctx, v.Run, intf, pr, int64(maxNumberOfLines))
 	for _, taskinfo := range taskinfos {
 		for _, errline := range strings.Split(taskinfo.LogSnippet, "\n") {
-			results := map[string]string{}
-			if !r.MatchString(errline) {
-				continue
-			}
-			matches := r.FindStringSubmatch(errline)
-			for i, name := range r.SubexpNames() {
-				if i != 0 && name != "" {
-					results[name] = matches[i]
+			// Try each pattern until we find a match
+			for _, r := range compiledPatterns {
+				results := map[string]string{}
+				if !r.MatchString(errline) {
+					continue
 				}
-			}
+				matches := r.FindStringSubmatch(errline)
+				for i, name := range r.SubexpNames() {
+					if i != 0 && name != "" {
+						results[name] = matches[i]
+					}
+				}
 
-			// check if we  have file in results
-			var linenumber, errmsg, filename string
-			var ok bool
+				// check if we have file in results
+				var linenumber, errmsg, filename string
+				var ok bool
 
-			if filename, ok = results["filename"]; !ok {
-				v.Logger.Errorf("regexp for filtering failure messages does not contain a filename regexp group: %v", pacopts.ErrorDetectionSimpleRegexp)
-				continue
-			}
-			// remove ./ cause it would bug github otherwise
-			filename = strings.TrimPrefix(filename, "./")
+				if filename, ok = results["filename"]; !ok {
+					v.Logger.Errorf("regexp for filtering failure messages does not contain a filename regexp group: %v", r.String())
+					continue
+				}
+				// remove ./ cause it would bug github otherwise
+				filename = strings.TrimPrefix(filename, "./")
 
-			if linenumber, ok = results["line"]; !ok {
-				v.Logger.Errorf("regexp for filtering failure messages does not contain a line regexp group: %v", pacopts.ErrorDetectionSimpleRegexp)
-				continue
-			}
+				if linenumber, ok = results["line"]; !ok {
+					v.Logger.Errorf("regexp for filtering failure messages does not contain a line regexp group: %v", r.String())
+					continue
+				}
 
-			if errmsg, ok = results["error"]; !ok {
-				v.Logger.Errorf("regexp for filtering failure messages does not contain a error regexp group: %v", pacopts.ErrorDetectionSimpleRegexp)
-				continue
-			}
+				if errmsg, ok = results["error"]; !ok {
+					v.Logger.Errorf("regexp for filtering failure messages does not contain a error regexp group: %v", r.String())
+					continue
+				}
 
-			ilinenumber, err := strconv.Atoi(linenumber)
-			if err != nil {
-				// can't do much regexp has probably failed to detect
-				v.Logger.Errorf("cannot convert %s as integer: %v", linenumber, err)
-				continue
+				ilinenumber, err := strconv.Atoi(linenumber)
+				if err != nil {
+					// can't do much regexp has probably failed to detect
+					v.Logger.Errorf("cannot convert %s as integer: %v", linenumber, err)
+					continue
+				}
+				annotations = append(annotations, &github.CheckRunAnnotation{
+					Path:            github.Ptr(filename),
+					StartLine:       github.Ptr(ilinenumber),
+					EndLine:         github.Ptr(ilinenumber),
+					AnnotationLevel: github.Ptr("failure"),
+					Message:         github.Ptr(errmsg),
+				})
+				// Pattern matched, no need to try other patterns for this line
+				break
 			}
-			annotations = append(annotations, &github.CheckRunAnnotation{
-				Path:            github.Ptr(filename),
-				StartLine:       github.Ptr(ilinenumber),
-				EndLine:         github.Ptr(ilinenumber),
-				AnnotationLevel: github.Ptr("failure"),
-				Message:         github.Ptr(errmsg),
-			})
 		}
 	}
 	return annotations
@@ -259,7 +293,14 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, runevent *info
 	}
 
 	if statusOpts.PipelineRun != nil {
-		if pacopts.ErrorDetection {
+		// Check if error detection should be enabled
+		// Repo-level setting takes precedence, fall back to global if not specified
+		errorDetectionEnabled := pacopts.ErrorDetection
+		if v.repo != nil && v.repo.Spec.Settings != nil && v.repo.Spec.Settings.ErrorDetection != nil {
+			// Repo has explicit error detection settings, use its Enabled flag
+			errorDetectionEnabled = v.repo.Spec.Settings.ErrorDetection.Enabled
+		}
+		if errorDetectionEnabled {
 			checkRunOutput.Annotations = v.getFailuresMessageAsAnnotations(ctx, statusOpts.PipelineRun, pacopts)
 		}
 	}

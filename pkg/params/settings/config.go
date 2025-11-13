@@ -62,11 +62,11 @@ type Settings struct {
 	SecretGHAppRepoScoped            bool   `default:"true"                             json:"secret-github-app-token-scoped"`
 	SecretGhAppTokenScopedExtraRepos string `json:"secret-github-app-scope-extra-repos"`
 
-	ErrorLogSnippet              bool   `default:"true"                                                                          json:"error-log-snippet"`
-	ErrorLogSnippetNumberOfLines int    `default:"3"                                                                             json:"error-log-snippet-number-of-lines"`
-	ErrorDetection               bool   `default:"true"                                                                          json:"error-detection-from-container-logs"`
-	ErrorDetectionNumberOfLines  int    `default:"50"                                                                            json:"error-detection-max-number-of-lines"`
-	ErrorDetectionSimpleRegexp   string `default:"^(?P<filename>[^:]*):(?P<line>[0-9]+):(?P<column>[0-9]+)?([ ]*)?(?P<error>.*)" json:"error-detection-simple-regexp"`
+	ErrorLogSnippet              bool     `default:"true"                                                                          json:"error-log-snippet"`
+	ErrorLogSnippetNumberOfLines int      `default:"3"                                                                             json:"error-log-snippet-number-of-lines"`
+	ErrorDetection               bool     `default:"true"                                                                          json:"error-detection-from-container-logs"`
+	ErrorDetectionNumberOfLines  int      `default:"50"                                                                            json:"error-detection-max-number-of-lines"`
+	ErrorDetectionSimpleRegexp   []string `default:"^(?P<filename>[^:]*):(?P<line>[0-9]+):(?P<column>[0-9]+)?([ ]*)?(?P<error>.*)"` // Note: no json tag, handled specially
 
 	EnableCancelInProgressOnPullRequests bool `json:"enable-cancel-in-progress-on-pull-requests"`
 	EnableCancelInProgressOnPush         bool `json:"enable-cancel-in-progress-on-push"`
@@ -104,11 +104,10 @@ func DefaultSettings() Settings {
 
 func DefaultValidators() map[string]func(string) error {
 	return map[string]func(string) error{
-		"ErrorDetectionSimpleRegexp": isValidRegex,
-		"TektonDashboardURL":         isValidURL,
-		"CustomConsoleURL":           isValidURL,
-		"CustomConsolePRTaskLog":     startWithHTTPorHTTPS,
-		"CustomConsolePRDetail":      startWithHTTPorHTTPS,
+		"TektonDashboardURL":     isValidURL,
+		"CustomConsoleURL":       isValidURL,
+		"CustomConsolePRTaskLog": startWithHTTPorHTTPS,
+		"CustomConsolePRDetail":  startWithHTTPorHTTPS,
 	}
 }
 
@@ -118,6 +117,13 @@ func SyncConfig(logger *zap.SugaredLogger, setting *Settings, config map[string]
 	err := configutil.ValidateAndAssignValues(logger, config, setting, validators, true)
 	if err != nil {
 		return fmt.Errorf("failed to validate and assign values: %w", err)
+	}
+
+	// Parse error detection patterns (supports backward compatibility)
+	// Handling error detection specially as we want to keep backward compatibility while
+	// allowing []string as a valid input value.
+	if err := parseErrorDetectionPatterns(setting, config); err != nil {
+		return fmt.Errorf("failed to parse error detection patterns: %w", err)
 	}
 
 	value, _ := setting.HubCatalogs.Load("default")
@@ -156,5 +162,47 @@ func startWithHTTPorHTTPS(url string) error {
 	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
 		return fmt.Errorf("invalid value, must start with http:// or https://")
 	}
+	return nil
+}
+
+// parseErrorDetectionPatterns parses the error-detection-simple-regexp from ConfigMap
+// and populates ErrorDetectionSimpleRegexp as []string. It supports:
+// 1. Single string pattern (backward compatible)
+// 2. Newline-separated patterns (YAML multi-line)..
+func parseErrorDetectionPatterns(setting *Settings, config map[string]string) error {
+	regexpValue := config["error-detection-simple-regexp"]
+
+	// If not in config, use default
+	if regexpValue == "" {
+		regexpValue = "^(?P<filename>[^:]*):(?P<line>[0-9]+):(?P<column>[0-9]+)?([ ]*)?(?P<error>.*)"
+	}
+
+	regexpValue = strings.TrimSpace(regexpValue)
+
+	// Check if it contains newlines (multi-line YAML format)
+	if strings.Contains(regexpValue, "\n") {
+		lines := strings.Split(regexpValue, "\n")
+		var patterns []string
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if line == "" {
+				continue
+			}
+			if err := isValidRegex(line); err != nil {
+				return fmt.Errorf("invalid regex in multi-line format: %w", err)
+			}
+			patterns = append(patterns, line)
+		}
+		if len(patterns) > 0 {
+			setting.ErrorDetectionSimpleRegexp = patterns
+			return nil
+		}
+	}
+
+	// Single pattern (backward compatible)
+	if err := isValidRegex(regexpValue); err != nil {
+		return err
+	}
+	setting.ErrorDetectionSimpleRegexp = []string{regexpValue}
 	return nil
 }
