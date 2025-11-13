@@ -58,7 +58,11 @@ annotations:
 This will match the pipeline `pipeline-push-on-1.0-tags` when you push the 1.0
 tags into your repository.
 
-Matching annotations are currently required; otherwise, `Pipelines-as-Code` will not
+{{< hint warning >}}
+GitHub does not send webhook events when more than three tags are pushed simultaneously (e.g., with `git push origin --tags`). To ensure pipeline runs are triggered for all tags, push them in batches of three or fewer. [See GitHub's docs here](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#create).
+{{< /hint >}}
+
+Matching annotations are currently required; otherwise, Pipelines-as-Code will not
 match your `PipelineRun`.
 
 When multiple PipelineRuns match an event, it will run them in parallel
