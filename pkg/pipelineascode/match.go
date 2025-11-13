@@ -396,9 +396,14 @@ func filterRunningPipelineRunOnTargetTest(testPipeline string, prs []*tektonv1.P
 // - the template variable with the one from the event (this includes the remote pipeline that has template variables).
 func (p *PacRun) changePipelineRun(ctx context.Context, repo *v1alpha1.Repository, prs []*tektonv1.PipelineRun) error {
 	for k, pr := range prs {
+		prName := pr.GetName()
+		if prName == "" {
+			prName = pr.GetGenerateName()
+		}
+
 		b, err := json.Marshal(pr)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to marshal PipelineRun %s: %w", prName, err)
 		}
 
 		name := secrets.GenerateBasicAuthSecretName()
@@ -410,7 +415,7 @@ func (p *PacRun) changePipelineRun(ctx context.Context, repo *v1alpha1.Repositor
 		var np *tektonv1.PipelineRun
 		err = json.Unmarshal([]byte(processed), &np)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to unmarshal PipelineRun %s: %w", prName, err)
 		}
 		// don't crash when we don't have any annotations
 		if np.Annotations == nil {
