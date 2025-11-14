@@ -14,7 +14,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/secrets"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/templates"
@@ -58,80 +57,25 @@ func (p *PacRun) verifyRepoAndUser(ctx context.Context) (*v1alpha1.Repository, e
 		return nil, nil
 	}
 
-	secretNS := repo.GetNamespace()
-	if repo.Spec.GitProvider != nil && repo.Spec.GitProvider.Secret == nil && p.globalRepo.Spec.GitProvider != nil && p.globalRepo.Spec.GitProvider.Secret != nil {
-		secretNS = p.globalRepo.GetNamespace()
-	}
-	if p.globalRepo != nil {
-		repo.Spec.Merge(p.globalRepo.Spec)
-	}
-
 	p.logger = p.logger.With("namespace", repo.Namespace)
 	p.vcx.SetLogger(p.logger)
 	p.eventEmitter.SetLogger(p.logger)
-	// If we have a git_provider field in repository spec, then get all the
-	// information from there, including the webhook secret.
-	// otherwise get the secret from the current ns (i.e: pipelines-as-code/openshift-pipelines.)
-	//
-	// TODO: there is going to be some improvements later we may want to do if
-	// they are use cases for it :
-	// allow webhook providers users to have a global webhook secret to be used,
-	// so instead of having to specify their in Repo each time, they use a
-	// shared one from pac.
-	if p.event.InstallationID > 0 {
-		p.event.Provider.WebhookSecret, _ = GetCurrentNSWebhookSecret(ctx, p.k8int, p.run)
-	} else {
-		scm := SecretFromRepository{
-			K8int:       p.k8int,
-			Config:      p.vcx.GetConfig(),
-			Event:       p.event,
-			Repo:        repo,
-			WebhookType: p.pacInfo.WebhookType,
-			Logger:      p.logger,
-			Namespace:   secretNS,
-		}
-		if err := scm.Get(ctx); err != nil {
-			return repo, fmt.Errorf("cannot get secret from repository: %w", err)
-		}
-	}
 
-	// validate payload  for webhook secret
-	// we don't need to validate it in incoming since we already do this
-	if p.event.EventType != "incoming" {
-		if err := p.vcx.Validate(ctx, p.run, p.event); err != nil {
-			// check that webhook secret has no /n or space into it
-			if strings.ContainsAny(p.event.Provider.WebhookSecret, "\n ") {
-				msg := `we have failed to validate the payload with the webhook secret,
-it seems that we have detected a \n or a space at the end of your webhook secret, 
-is that what you want? make sure you use -n when generating the secret, eg: echo -n secret|base64`
-				p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositorySecretValidation", msg)
-			}
-			return repo, fmt.Errorf("could not validate payload, check your webhook secret?: %w", err)
-		}
-	}
-
-	// Set the client, we should error out if there is a problem with
-	// token or secret or we won't be able to do much.
-	err = p.vcx.SetClient(ctx, p.run, p.event, repo, p.eventEmitter)
+	// Set up authenticated client with proper token scoping
+	// NOTE: This is typically already done in sinker.processEvent() for all event types,
+	// but we call it here as a safety net for edge cases (e.g., tests calling Run() directly,
+	// or if the early setup in sinker failed/was skipped). The call is idempotent.
+	// SetupAuthenticatedClient will merge global repo settings after determining secret namespace.
+	err = SetupAuthenticatedClient(ctx, p.vcx, p.k8int, p.run, p.event, repo, p.globalRepo, p.pacInfo, p.logger)
 	if err != nil {
 		return repo, err
 	}
 
-	if p.event.InstallationID > 0 {
-		token, err := github.ScopeTokenToListOfRepos(ctx, p.vcx, p.pacInfo, repo, p.run, p.event, p.eventEmitter, p.logger)
-		if err != nil {
-			return nil, err
-		}
-		// If Global and Repo level configurations are not provided then lets not override the provider token.
-		if token != "" {
-			p.event.Provider.Token = token
-		}
-	}
-
 	// Get the SHA commit info, we want to get the URL and commit title
-	err = p.vcx.GetCommitInfo(ctx, p.event)
-	if err != nil {
-		return repo, fmt.Errorf("could not find commit info: %w", err)
+	if p.event.SHA == "" || p.event.SHATitle == "" || p.event.SHAURL == "" {
+		if err = p.vcx.GetCommitInfo(ctx, p.event); err != nil {
+			return repo, fmt.Errorf("could not find commit info: %w", err)
+		}
 	}
 
 	// Verify whether the sender of the GitOps command (e.g., /test) has the appropriate permissions to
