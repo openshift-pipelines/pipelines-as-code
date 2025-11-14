@@ -313,6 +313,7 @@ The fields available are:
 | `headers`         | The full set of headers as passed by the Git provider. Example: `headers['x-github-event']` retrieves the event type on GitHub.  |
 | `.pathChanged`    | A suffix function to a string that can be a glob of a path to check if changed. (Supported only for `GitHub` and `GitLab` providers.) |
 | `files`           | The list of files that changed in the event (`all`, `added`, `deleted`, `modified`, and `renamed`). Example: `files.all` or `files.deleted`. For pull requests, every file belonging to the pull request will be listed. |
+| Custom params     | Any [custom parameters]({{< relref "/docs/guide/customparams" >}}) defined in the Repository CR `spec.params` are available as CEL variables. Example: `enable_ci == "true"`. See [Using custom parameters in CEL matching expressions]({{< relref "/docs/guide/customparams#using-custom-parameters-in-cel-matching-expressions" >}}) for details. |
 
 CEL expressions let you do more complex filtering compared to the simple `on-target` annotation matching and enable more advanced scenarios.
 
