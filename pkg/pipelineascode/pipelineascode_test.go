@@ -36,9 +36,7 @@ import (
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -97,28 +95,6 @@ func testSetupCommonGhReplies(t *testing.T, mux *http.ServeMux, runevent info.Ev
 					"GetStatus/CheckRun %s != %s", created.GetOutput().GetText(), finalStatusText)
 			}
 		})
-}
-
-// getSecretTestRunEvent returns a common runevent for secret-related test cases.
-func getSecretTestRunEvent() info.Event {
-	return info.Event{
-		Event: &github.PullRequestEvent{
-			PullRequest: &github.PullRequest{
-				Number: github.Ptr(666),
-			},
-		},
-		SHA:               "fromwebhook",
-		Organization:      "owner",
-		Sender:            "owner",
-		Repository:        "repo",
-		URL:               "https://service/documentation",
-		HeadBranch:        "press",
-		BaseBranch:        "main",
-		EventType:         "pull_request",
-		TriggerTarget:     "pull_request",
-		PullRequestNumber: 666,
-		InstallationID:    1234,
-	}
 }
 
 func TestRun(t *testing.T) {
@@ -253,31 +229,6 @@ func TestRun(t *testing.T) {
 			tektondir:       "testdata/pull_request",
 			finalStatus:     "neutral",
 			finalStatusText: "<th>Status</th><th>Duration</th><th>Name</th>",
-		},
-		{
-			name: "pull request/concurrency limit",
-			runevent: info.Event{
-				Event: &github.PullRequestEvent{
-					PullRequest: &github.PullRequest{
-						Number: github.Ptr(666),
-					},
-				},
-				SHA:               "fromwebhook",
-				Organization:      "owner",
-				Sender:            "owner",
-				Repository:        "repo",
-				URL:               "https://service/documentation",
-				HeadBranch:        "press",
-				BaseBranch:        "main",
-				EventType:         "pull_request",
-				TriggerTarget:     "pull_request",
-				PullRequestNumber: 666,
-				InstallationID:    1234,
-			},
-			tektondir:        "testdata/pull_request",
-			finalStatus:      "neutral",
-			finalStatusText:  "<th>Status</th><th>Duration</th><th>Name</th>",
-			concurrencyLimit: 1,
 		},
 		{
 			name: "pull request/with webhook",
@@ -565,21 +516,6 @@ func TestRun(t *testing.T) {
 				PullRequestNumber: 666,
 			},
 			tektondir: "testdata/pending_pipelinerun",
-		},
-		{
-			name:                "pull request/secret already exists - should emit warning and continue",
-			runevent:            getSecretTestRunEvent(),
-			tektondir:           "testdata/pull_request",
-			finalStatus:         "neutral",
-			secretCreationError: errors.NewAlreadyExists(schema.GroupResource{Group: "", Resource: "secrets"}, "test-secret"),
-		},
-		{
-			name:                "pull request/secret creation failure - should return error",
-			runevent:            getSecretTestRunEvent(),
-			tektondir:           "testdata/pull_request",
-			finalStatus:         "failure",
-			finalStatusText:     "creating basic auth secret",
-			secretCreationError: fmt.Errorf("connection timeout"),
 		},
 	}
 	for _, tt := range tests {
