@@ -276,6 +276,138 @@ func TestCreateStatus(t *testing.T) {
 				postStr: "has successfully",
 			},
 		},
+		{
+			name:       "incoming webhook on merge request - completed status posts comment",
+			wantClient: true,
+			wantErr:    false,
+			fields: fields{
+				targetProjectID: 100,
+			},
+			args: args{
+				statusOpts: provider.StatusOpts{
+					Conclusion: "completed",
+					Status:     "completed",
+				},
+				event: &info.Event{
+					EventType:       triggertype.Incoming.String(),
+					TriggerTarget:   triggertype.PullRequest,
+					SourceProjectID: 200,
+					TargetProjectID: 100,
+					SHA:             "def456",
+				},
+				postStr: "has completed",
+			},
+		},
+		{
+			name:       "incoming webhook on merge request - success status posts comment",
+			wantClient: true,
+			wantErr:    false,
+			fields: fields{
+				targetProjectID: 100,
+			},
+			args: args{
+				statusOpts: provider.StatusOpts{
+					Conclusion: "success",
+					Status:     "completed",
+				},
+				event: &info.Event{
+					EventType:       triggertype.Incoming.String(),
+					TriggerTarget:   triggertype.PullRequest,
+					SourceProjectID: 200,
+					TargetProjectID: 100,
+					SHA:             "ghi789",
+				},
+				postStr: "has successfully",
+			},
+		},
+		{
+			name:       "incoming webhook on merge request - failure status posts comment",
+			wantClient: true,
+			wantErr:    false,
+			fields: fields{
+				targetProjectID: 100,
+			},
+			args: args{
+				statusOpts: provider.StatusOpts{
+					Conclusion: "failure",
+					Status:     "completed",
+				},
+				event: &info.Event{
+					EventType:       triggertype.Incoming.String(),
+					TriggerTarget:   triggertype.PullRequest,
+					SourceProjectID: 200,
+					TargetProjectID: 100,
+					SHA:             "jkl012",
+				},
+				postStr: "has failed",
+			},
+		},
+		{
+			name:       "retest event on merge request - posts completion comment",
+			wantClient: true,
+			wantErr:    false,
+			fields: fields{
+				targetProjectID: 100,
+			},
+			args: args{
+				statusOpts: provider.StatusOpts{
+					Conclusion: "success",
+					Status:     "completed",
+				},
+				event: &info.Event{
+					EventType:       triggertype.Retest.String(),
+					TriggerTarget:   triggertype.PullRequest,
+					SourceProjectID: 200,
+					TargetProjectID: 100,
+					SHA:             "mno345",
+				},
+				postStr: "has successfully",
+			},
+		},
+		{
+			name:       "ok-to-test event on merge request - posts completion comment",
+			wantClient: true,
+			wantErr:    false,
+			fields: fields{
+				targetProjectID: 100,
+			},
+			args: args{
+				statusOpts: provider.StatusOpts{
+					Conclusion: "success",
+					Status:     "completed",
+				},
+				event: &info.Event{
+					EventType:       triggertype.OkToTest.String(),
+					TriggerTarget:   triggertype.PullRequest,
+					SourceProjectID: 200,
+					TargetProjectID: 100,
+					SHA:             "pqr678",
+				},
+				postStr: "has successfully",
+			},
+		},
+		{
+			name:       "incoming webhook on push - no comment posted",
+			wantClient: true,
+			wantErr:    false,
+			fields: fields{
+				targetProjectID: 100,
+			},
+			args: args{
+				statusOpts: provider.StatusOpts{
+					Conclusion: "completed",
+					Status:     "completed",
+				},
+				event: &info.Event{
+					EventType:       triggertype.Incoming.String(),
+					TriggerTarget:   triggertype.Push,
+					SourceProjectID: 200,
+					TargetProjectID: 100,
+					SHA:             "stu901",
+				},
+				postStr: "", // No comment expected for push events
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

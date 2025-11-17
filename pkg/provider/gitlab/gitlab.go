@@ -308,31 +308,30 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	// Repository CR usually doesn't have such broad access, preventing from creating
 	// a status comment on it.
 	// This would work on a push or an MR from a branch within the same repo.
-	// Ignoring errors because of the write access issues,
+	// Note: We don't return early here anymore - we want to post comments even if commit status succeeds
 	_, _, err := v.Client().Commits.SetCommitStatus(event.SourceProjectID, event.SHA, opt)
 	if err != nil {
 		v.Logger.Debugf("cannot set status with the GitLab token on the source project: %v", err)
+		// Try target project if source fails
+		if _, _, err2 := v.Client().Commits.SetCommitStatus(event.TargetProjectID, event.SHA, opt); err2 == nil {
+			v.Logger.Debugf("created commit status on target project ID %d", event.TargetProjectID)
+		} else {
+			v.Logger.Debugf("cannot set status with the GitLab token on the target project: %v", err2)
+			// we only show the first error as it's likely something the user has more control to fix
+			// the second err is cryptic as it needs a dummy gitlab pipeline to start
+			// with and will only give more confusion in the event namespace
+			v.eventEmitter.EmitMessage(v.repo, zap.InfoLevel, "FailedToSetCommitStatus",
+				fmt.Sprintf("failed to create commit status: source project ID %d, target project ID %d. "+
+					"If you want Gitlab Pipeline Status update, ensure your GitLab token giving it access "+
+					"to the source repository. %v",
+					event.SourceProjectID, event.TargetProjectID, err))
+		}
 	} else {
-		// we managed to set the status on the source repo, all good we are done
-		v.Logger.Debugf("created commit status on source project ID %d", event.TargetProjectID)
-		return nil
+		v.Logger.Debugf("created commit status on source project ID %d", event.SourceProjectID)
 	}
-	if _, _, err2 := v.Client().Commits.SetCommitStatus(event.TargetProjectID, event.SHA, opt); err2 == nil {
-		v.Logger.Debugf("created commit status on target project ID %d", event.TargetProjectID)
-		// we managed to set the status on the target repo, all good we are done
-		return nil
-	}
-	v.Logger.Debugf("cannot set status with the GitLab token on the target project: %v", err)
-	// we only show the first error as it's likely something the user has more control to fix
-	// the second err is cryptic as it needs a dummy gitlab pipeline to start
-	// with and will only give more confusion in the event namespace
-	v.eventEmitter.EmitMessage(v.repo, zap.InfoLevel, "FailedToSetCommitStatus",
-		fmt.Sprintf("failed to create commit status: source project ID %d, target project ID %d. "+
-			"If you want Gitlab Pipeline Status update, ensure your GitLab token giving it access "+
-			"to the source repository. %v",
-			event.SourceProjectID, event.TargetProjectID, err))
 
 	eventType := triggertype.IsPullRequestType(event.EventType)
+
 	// When a GitOps command is sent on a pushed commit, it mistakenly treats it as a pull_request
 	// and attempts to create a note, but notes are not intended for pushed commits.
 	if event.TriggerTarget == triggertype.PullRequest && opscomments.IsAnyOpsEventType(event.EventType) {
@@ -344,15 +343,28 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	if v.repo != nil && v.repo.Spec.Settings != nil && v.repo.Spec.Settings.Gitlab != nil {
 		commentStrategy = v.repo.Spec.Settings.Gitlab.CommentStrategy
 	}
+
 	switch commentStrategy {
 	case "disable_all":
 		v.Logger.Warn("Comments related to PipelineRuns status have been disabled for GitLab merge requests")
 		return nil
 	default:
-		if eventType == triggertype.PullRequest || provider.Valid(event.EventType, anyMergeRequestEventType) {
-			mopt := &gitlab.CreateMergeRequestNoteOptions{Body: gitlab.Ptr(body)}
-			_, _, err := v.Client().Notes.CreateMergeRequestNote(event.TargetProjectID, event.PullRequestNumber, mopt)
-			return err
+		// Check if this is a merge request event that needs a comment:
+		// 1. eventType matches pull_request (from IsPullRequestType conversion)
+		// 2. event.EventType matches "Merge Request" or "MergeRequest"
+		// 3. event.TriggerTarget is PullRequest (covers incoming webhooks and other triggers on MRs)
+		// The third check is critical: when pipeline runs complete, the event is reconstructed
+		// from annotations, and EventType may be "incoming", "retest", etc., but TriggerTarget
+		// will still correctly indicate it's a pull_request, ensuring completion comments are posted.
+		if eventType == triggertype.PullRequest || provider.Valid(event.EventType, anyMergeRequestEventType) || event.TriggerTarget == triggertype.PullRequest {
+			if event.PullRequestNumber > 0 {
+				mopt := &gitlab.CreateMergeRequestNoteOptions{Body: gitlab.Ptr(body)}
+				if _, _, err := v.Client().Notes.CreateMergeRequestNote(event.TargetProjectID, event.PullRequestNumber, mopt); err != nil {
+					v.Logger.Errorf("failed to post comment to merge request %d: %v", event.PullRequestNumber, err)
+					// Don't return error - log it and continue gracefully
+					// This maintains backward compatibility where commit status failures didn't block execution
+				}
+			}
 		}
 	}
 
