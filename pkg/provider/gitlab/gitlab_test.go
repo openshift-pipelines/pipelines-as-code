@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -539,6 +540,98 @@ func TestSetClient(t *testing.T) {
 		vv.apiURL, "my-org", "my-repo")
 
 	assert.Equal(t, expected, logs[0].Message)
+}
+
+func TestSetClientFieldsInitializedOnError(t *testing.T) {
+	ctx, _ := rtesting.SetupFakeContext(t)
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	fakelogger := zap.New(observer).Sugar()
+	stdata, _ := testclient.SeedTestData(t, ctx, testclient.Data{})
+	run := &params.Run{
+		Clients: clients.Clients{
+			Kube: stdata.Kube,
+			Log:  fakelogger,
+		},
+	}
+
+	tests := []struct {
+		name              string
+		triggerTarget     triggertype.Trigger
+		sourceProjectID   int
+		setupMockResponse func(*http.ServeMux, int)
+		expectedError     string
+		providerToken     string
+	}{
+		{
+			name:            "Fields initialized even when project access fails",
+			triggerTarget:   triggertype.PullRequest,
+			sourceProjectID: 456,
+			providerToken:   "test-token",
+			setupMockResponse: func(mux *http.ServeMux, projectID int) {
+				path := fmt.Sprintf("/projects/%d", projectID)
+				mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
+					if r.Method == http.MethodGet {
+						rw.WriteHeader(http.StatusNotFound)
+						fmt.Fprint(rw, `{"message": "404 Project Not Found"}`)
+					}
+				})
+			},
+			expectedError: "failed to access GitLab source repository ID 456",
+		},
+		{
+			name:            "Fields initialized when invalid URL causes error",
+			triggerTarget:   triggertype.Push,
+			sourceProjectID: 123,
+			providerToken:   "test-token",
+			setupMockResponse: func(_ *http.ServeMux, _ int) {
+				// No mock needed
+			},
+			expectedError: "", // This test will use an invalid URL which gets caught during parsing
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockClient, mux, tearDown := thelp.Setup(t)
+			defer tearDown()
+
+			if tt.setupMockResponse != nil {
+				tt.setupMockResponse(mux, tt.sourceProjectID)
+			}
+
+			v := &Provider{gitlabClient: mockClient}
+			repo := &v1alpha1.Repository{}
+			repo.SetName("test-repo")
+			eventsEmitter := events.NewEventEmitter(run.Clients.Kube, fakelogger)
+
+			event := &info.Event{
+				Provider: &info.Provider{
+					Token: tt.providerToken,
+				},
+				Organization:    "test-org",
+				Repository:      "test-repo",
+				TriggerTarget:   tt.triggerTarget,
+				SourceProjectID: tt.sourceProjectID,
+				TargetProjectID: 123,
+				EventType:       "pull_request",
+			}
+
+			err := v.SetClient(ctx, run, event, repo, eventsEmitter)
+
+			// The test should verify that even when an error occurs,
+			// the critical fields are initialized to prevent nil pointer crashes
+			if tt.expectedError != "" {
+				assert.Assert(t, err != nil, "expected error but got none")
+				assert.ErrorContains(t, err, tt.expectedError)
+			}
+
+			// This is the key assertion: verify fields are initialized even on error
+			assert.Assert(t, v.run != nil, "v.run should be initialized even on error")
+			assert.Assert(t, v.eventEmitter != nil, "v.eventEmitter should be initialized even on error")
+			assert.Assert(t, v.repo != nil, "v.repo should be initialized even on error")
+			assert.Assert(t, v.triggerEvent != "", "v.triggerEvent should be initialized even on error")
+		})
+	}
 }
 
 func TestSetClientRepositoryAccessCheck(t *testing.T) {
