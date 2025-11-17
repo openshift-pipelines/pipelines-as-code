@@ -174,6 +174,11 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.
 		return fmt.Errorf("no git_provider.secret has been set in the repo crd")
 	}
 
+	v.run = run
+	v.eventEmitter = eventsEmitter
+	v.repo = repo
+	v.triggerEvent = runevent.EventType
+
 	// Try to detect automatically the API url if url is not coming from public
 	// gitlab. Unless user has set a spec.provider.url in its repo crd
 	apiURL := ""
@@ -244,10 +249,6 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.
 		runevent.TargetProjectID = projectinfo.ID
 		runevent.DefaultBranch = projectinfo.DefaultBranch
 	}
-	v.run = run
-	v.eventEmitter = eventsEmitter
-	v.repo = repo
-	v.triggerEvent = runevent.EventType
 
 	return nil
 }
