@@ -501,6 +501,13 @@ func convertPullRequestURLtoNumber(pullRequest string) (int, error) {
 	return prNumber, nil
 }
 
+const (
+	errSHANotProvided        = "a SHA is required in `/ok-to-test` comments, but none was provided"
+	errSHANotProvidedComment = "The `/ok-to-test` needs to be followed by a SHA to verify which commit to test. Try again with:\n\n`/ok-to-test %s`"
+	errSHAPrefixMismatch     = "the SHA provided in the `/ok-to-test` comment (`%s`) is not a prefix of the pull request's HEAD SHA (`%s`)"
+	errSHANotMatch           = "the SHA provided in the `/ok-to-test` comment (`%s`) does not match the pull request's HEAD SHA (`%s`)"
+)
+
 func (v *Provider) handleIssueCommentEvent(ctx context.Context, event *github.IssueCommentEvent) (*info.Event, error) {
 	action := "recheck"
 	runevent := info.NewEvent()
@@ -514,8 +521,9 @@ func (v *Provider) handleIssueCommentEvent(ctx context.Context, event *github.Is
 	}
 	v.userType = event.GetSender().GetType()
 	opscomments.SetEventTypeAndTargetPR(runevent, event.GetComment().GetBody())
+
 	// We are getting the full URL so we have to get the last part to get the PR number,
-	// we don't have to care about URL query string/hash and other stuff because
+	// we don\'t have to care about URL query string/hash and other stuff because
 	// that comes up from the API.
 	var err error
 	runevent.PullRequestNumber, err = convertPullRequestURLtoNumber(event.GetIssue().GetPullRequestLinks().GetHTMLURL())
@@ -524,7 +532,52 @@ func (v *Provider) handleIssueCommentEvent(ctx context.Context, event *github.Is
 	}
 
 	v.Logger.Infof("issue_comment: pipelinerun %s on %s/%s#%d has been requested", action, runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
-	return v.getPullRequest(ctx, runevent)
+	pr, err := v.getPullRequest(ctx, runevent)
+	if err != nil {
+		return nil, err
+	}
+
+	commentBody := event.GetComment().GetBody()
+	if opscomments.IsOkToTestComment(commentBody) && v.pacInfo.RequireOkToTestSHA {
+		shaFromCommentRaw := opscomments.GetSHAFromOkToTestComment(commentBody)
+		if shaFromCommentRaw == "" {
+			v.Logger.Errorf(errSHANotProvided)
+			if err := v.CreateComment(ctx, runevent, fmt.Sprintf(errSHANotProvidedComment, pr.SHA), ""); err != nil {
+				v.Logger.Errorf("failed to create comment: %v", err)
+			}
+			return info.NewEvent(), errors.New(errSHANotProvided)
+		}
+		shaFromComment := strings.ToLower(shaFromCommentRaw)
+		prSHALower := strings.ToLower(pr.SHA)
+		shaLen := len(shaFromCommentRaw)
+
+		// Validate SHA-1 based on length:
+		// - Short SHAs (< 40 chars): must be a prefix of PR HEAD SHA
+		// - Full SHA-1 (40 chars): must match exactly
+		if shaLen < 40 {
+			// Short SHA: verify it's a valid prefix
+			if !strings.HasPrefix(prSHALower, shaFromComment) {
+				msg := fmt.Sprintf(errSHAPrefixMismatch, shaFromCommentRaw, pr.SHA)
+				v.Logger.Errorf(msg)
+				if err := v.CreateComment(ctx, runevent, msg, ""); err != nil {
+					v.Logger.Errorf("failed to create comment: %v", err)
+				}
+				return info.NewEvent(), fmt.Errorf(errSHAPrefixMismatch, shaFromCommentRaw, pr.SHA)
+			}
+		} else if shaLen == 40 {
+			// Full SHA-1: verify exact match
+			if prSHALower != shaFromComment {
+				msg := fmt.Sprintf(errSHANotMatch, shaFromCommentRaw, pr.SHA)
+				v.Logger.Errorf(msg)
+				if err := v.CreateComment(ctx, runevent, msg, ""); err != nil {
+					v.Logger.Errorf("failed to create comment: %v", err)
+				}
+				return info.NewEvent(), fmt.Errorf(errSHANotMatch, shaFromCommentRaw, pr.SHA)
+			}
+		}
+	}
+
+	return pr, nil
 }
 
 func (v *Provider) handleCommitCommentEvent(ctx context.Context, event *github.CommitCommentEvent) (*info.Event, error) {

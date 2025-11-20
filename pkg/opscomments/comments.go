@@ -7,6 +7,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/acl"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -18,7 +19,7 @@ var (
 	retestAllRegex    = regexp.MustCompile(`(?m)^/retest\s*$`)
 	testSingleRegex   = regexp.MustCompile(`(?m)^/test[ \t]+\S+`)
 	retestSingleRegex = regexp.MustCompile(`(?m)^/retest[ \t]+\S+`)
-	oktotestRegex     = regexp.MustCompile(`(?m)^/ok-to-test\s*$`)
+	oktotestRegex     = regexp.MustCompile(acl.OKToTestCommentRegexp)
 	cancelAllRegex    = regexp.MustCompile(`(?m)^(/cancel)\s*$`)
 	cancelSingleRegex = regexp.MustCompile(`(?m)^(/cancel)[ \t]+\S+`)
 )
@@ -86,6 +87,15 @@ func SetEventTypeAndTargetPR(event *info.Event, comment string) {
 
 func IsOkToTestComment(comment string) bool {
 	return oktotestRegex.MatchString(comment)
+}
+
+// GetSHAFromOkToTestComment extracts the optional SHA from an /ok-to-test comment.
+func GetSHAFromOkToTestComment(comment string) string {
+	matches := oktotestRegex.FindStringSubmatch(comment)
+	if len(matches) > 2 {
+		return strings.TrimSpace(matches[2])
+	}
+	return ""
 }
 
 // EventTypeBackwardCompat handle the backward compatibility we need to keep until
