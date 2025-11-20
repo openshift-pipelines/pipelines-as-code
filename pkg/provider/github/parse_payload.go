@@ -178,6 +178,10 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		return nil, err
 	}
 
+	if processedEvent == nil {
+		return nil, nil
+	}
+
 	processedEvent.Event = eventInt
 	processedEvent.InstallationID = installationIDFrompayload
 	processedEvent.GHEURL = event.Provider.URL
@@ -359,7 +363,7 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 			// If the commit is part of a PR, skip processing the push event
 			if isPartOfPR {
 				v.Logger.Infof("Skipping push event for commit %s as it belongs to pull request #%d", sha, prNumber)
-				return nil, fmt.Errorf("commit %s is part of pull request #%d, skipping push event", sha, prNumber)
+				return nil, nil
 			}
 		}
 

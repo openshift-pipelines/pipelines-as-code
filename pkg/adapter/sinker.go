@@ -32,6 +32,10 @@ func (s *sinker) processEventPayload(ctx context.Context, request *http.Request)
 		s.logger.Errorf("failed to parse event: %v", err)
 		return err
 	}
+	// If ParsePayload returned nil event (intentional skip), exit early
+	if s.event == nil {
+		return nil
+	}
 
 	// Enhanced structured logging with source repository context for operators
 	logFields := []interface{}{
@@ -68,6 +72,9 @@ func (s *sinker) processEvent(ctx context.Context, request *http.Request) error 
 	} else {
 		if err := s.processEventPayload(ctx, request); err != nil {
 			return err
+		}
+		if s.event == nil {
+			return nil
 		}
 	}
 
