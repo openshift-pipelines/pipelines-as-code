@@ -58,7 +58,7 @@ linters:
     - zerologlint
   settings:
     misspell:
-      ignore-words:
+      ignore-rules:
         - cancelled
       extra-words:
         - typo: "canceled"
@@ -72,6 +72,8 @@ linters:
         - fmt.Fprintln
         - (io.Closer).Close
         - updateConfigMap
+    exhaustive:
+      default-signifies-exhaustive: true
     gocritic:
       disabled-checks:
         - unlambda
