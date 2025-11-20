@@ -68,55 +68,55 @@ spec:
 
 ### Top-Level Settings
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `enabled` | boolean | Yes | Enable/disable LLM analysis |
-| `provider` | string | Yes | LLM provider: `openai` or `gemini` |
-| `api_url` | string | No | Custom API endpoint URL (overrides provider default) |
-| `timeout_seconds` | integer | No | Request timeout (1-300, default: 30) |
-| `max_tokens` | integer | No | Maximum response tokens (1-4000, default: 1000) |
-| `secret_ref` | object | Yes | Reference to Kubernetes secret with API key |
-| `roles` | array | Yes | List of analysis scenarios (minimum 1) |
+| Field             | Type    | Required   | Description                                          |
+| ----------------- | ------- | ---------- | ---------------------------------------------------- |
+| `enabled`         | boolean | Yes        | Enable/disable LLM analysis                          |
+| `provider`        | string  | Yes        | LLM provider: `openai` or `gemini`                   |
+| `api_url`         | string  | No         | Custom API endpoint URL (overrides provider default) |
+| `timeout_seconds` | integer | No         | Request timeout (1-300, default: 30)                 |
+| `max_tokens`      | integer | No         | Maximum response tokens (1-4000, default: 1000)      |
+| `secret_ref`      | object  | Yes        | Reference to Kubernetes secret with API key          |
+| `roles`           | array   | Yes        | List of analysis scenarios (minimum 1)               |
 
 ### Analysis Roles
 
 Each role defines a specific analysis scenario:
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | string | Yes | Unique identifier for this role |
-| `prompt` | string | Yes | Prompt template for the LLM |
-| `model` | string | No | Model name (consult provider documentation for available models). Uses provider default if not specified. |
-| `on_cel` | string | No | CEL expression for conditional triggering. If not specified, the role will always run. |
-| `output` | string | Yes | Output destination (currently only `pr-comment` is supported) |
-| `context_items` | object | No | Configuration for context inclusion |
+| Field           | Type   | Required   | Description                                                                                               |
+| --------------- | ------ | ---------- | --------------------------------------------------------------------------------------------------------- |
+| `name`          | string | Yes        | Unique identifier for this role                                                                           |
+| `prompt`        | string | Yes        | Prompt template for the LLM                                                                               |
+| `model`         | string | No         | Model name (consult provider documentation for available models). Uses provider default if not specified. |
+| `on_cel`        | string | No         | CEL expression for conditional triggering. If not specified, the role will always run.                    |
+| `output`        | string | Yes        | Output destination (currently only `pr-comment` is supported)                                             |
+| `context_items` | object | No         | Configuration for context inclusion                                                                       |
 
 ### Context Items
 
 Control what information is sent to the LLM:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `commit_content` | boolean | Include commit information (see Commit Fields below) |
-| `pr_content` | boolean | Include PR title, description, metadata |
-| `error_content` | boolean | Include error messages and failures |
-| `container_logs.enabled` | boolean | Include container/task logs |
+| Field                      | Type    | Description                                                                  |
+| -------------------------- | ------- | ---------------------------------------------------------------------------- |
+| `commit_content`           | boolean | Include commit information (see Commit Fields below)                         |
+| `pr_content`               | boolean | Include PR title, description, metadata                                      |
+| `error_content`            | boolean | Include error messages and failures                                          |
+| `container_logs.enabled`   | boolean | Include container/task logs                                                  |
 | `container_logs.max_lines` | integer | Limit log lines (1-1000, default: 50). ⚠️ High values may impact performance |
 
 #### Commit Fields
 
 When `commit_content: true` is enabled, the following fields are included in the LLM context:
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| `commit.sha` | string | Commit SHA hash | `"abc123def456..."` |
-| `commit.message` | string | Commit title (first line/paragraph) | `"feat: add new feature"` |
-| `commit.url` | string | Web URL to view the commit | `"https://github.com/org/repo/commit/abc123"` |
-| `commit.full_message` | string | Complete commit message (if different from title) | `"feat: add new feature\n\nDetailed description..."` |
-| `commit.author.name` | string | Author's name | `"John Doe"` |
-| `commit.author.date` | timestamp | When the commit was authored | `"2024-01-15T10:30:00Z"` |
-| `commit.committer.name` | string | Committer's name (may differ from author) | `"GitHub"` |
-| `commit.committer.date` | timestamp | When the commit was committed | `"2024-01-15T10:31:00Z"` |
+| Field                   | Type      | Description                                       | Example                                              |
+| ----------------------- | --------- | ------------------------------------------------- | ---------------------------------------------------- |
+| `commit.sha`            | string    | Commit SHA hash                                   | `"abc123def456..."`                                  |
+| `commit.message`        | string    | Commit title (first line/paragraph)               | `"feat: add new feature"`                            |
+| `commit.url`            | string    | Web URL to view the commit                        | `"https://github.com/org/repo/commit/abc123"`        |
+| `commit.full_message`   | string    | Complete commit message (if different from title) | `"feat: add new feature\n\nDetailed description..."` |
+| `commit.author.name`    | string    | Author's name                                     | `"John Doe"`                                         |
+| `commit.author.date`    | timestamp | When the commit was authored                      | `"2024-01-15T10:30:00Z"`                             |
+| `commit.committer.name` | string    | Committer's name (may differ from author)         | `"GitHub"`                                           |
+| `commit.committer.date` | timestamp | When the commit was committed                     | `"2024-01-15T10:31:00Z"`                             |
 
 **Privacy & Security Notes:**
 
@@ -226,72 +226,72 @@ on_cel: 'body.pipelineRun.status.conditions[0].reason == "Failed" && body.event.
 
 #### Top-Level Context
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `body.pipelineRun` | object | Full PipelineRun object with status and metadata |
-| `body.repository` | object | Full Repository CRD object |
-| `body.event` | object | Event information (see Event Fields below) |
-| `pac` | map[string]string | PAC parameters map |
+| Field              | Type              | Description                                      |
+| ------------------ | ----------------- | ------------------------------------------------ |
+| `body.pipelineRun` | object            | Full PipelineRun object with status and metadata |
+| `body.repository`  | object            | Full Repository CRD object                       |
+| `body.event`       | object            | Event information (see Event Fields below)       |
+| `pac`              | map[string]string | PAC parameters map                               |
 
 #### Event Fields (`body.event.*`)
 
 **Event Type and Trigger:**
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| `event_type` | string | Event type from provider | `"pull_request"`, `"push"`, `"Merge Request Hook"` |
-| `trigger_target` | string | Normalized trigger type across providers | `"pull_request"`, `"push"` |
+| Field            | Type   | Description                              | Example                                            |
+| ---------------- | ------ | ---------------------------------------- | -------------------------------------------------- |
+| `event_type`     | string | Event type from provider                 | `"pull_request"`, `"push"`, `"Merge Request Hook"` |
+| `trigger_target` | string | Normalized trigger type across providers | `"pull_request"`, `"push"`                         |
 
 **Branch and Commit Information:**
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| `sha` | string | Commit SHA | `"abc123def456..."` |
-| `sha_title` | string | Commit title/message | `"feat: add new feature"` |
-| `base_branch` | string | Target branch for PR (or branch for push) | `"main"` |
-| `head_branch` | string | Source branch for PR (or branch for push) | `"feature-branch"` |
-| `default_branch` | string | Default branch of the repository | `"main"` or `"master"` |
+| Field            | Type   | Description                               | Example                   |
+| ---------------- | ------ | ----------------------------------------- | ------------------------- |
+| `sha`            | string | Commit SHA                                | `"abc123def456..."`       |
+| `sha_title`      | string | Commit title/message                      | `"feat: add new feature"` |
+| `base_branch`    | string | Target branch for PR (or branch for push) | `"main"`                  |
+| `head_branch`    | string | Source branch for PR (or branch for push) | `"feature-branch"`        |
+| `default_branch` | string | Default branch of the repository          | `"main"` or `"master"`    |
 
 **Repository Information:**
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| `organization` | string | Organization/owner name | `"my-org"` |
-| `repository` | string | Repository name | `"my-repo"` |
+| Field          | Type   | Description             | Example     |
+| -------------- | ------ | ----------------------- | ----------- |
+| `organization` | string | Organization/owner name | `"my-org"`  |
+| `repository`   | string | Repository name         | `"my-repo"` |
 
 **URLs:**
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| `url` | string | Web URL to repository | `"https://github.com/org/repo"` |
-| `sha_url` | string | Web URL to commit | `"https://github.com/org/repo/commit/abc123"` |
-| `base_url` | string | Web URL to base branch | `"https://github.com/org/repo/tree/main"` |
-| `head_url` | string | Web URL to head branch | `"https://github.com/org/repo/tree/feature"` |
+| Field      | Type   | Description            | Example                                       |
+| ---------- | ------ | ---------------------- | --------------------------------------------- |
+| `url`      | string | Web URL to repository  | `"https://github.com/org/repo"`               |
+| `sha_url`  | string | Web URL to commit      | `"https://github.com/org/repo/commit/abc123"` |
+| `base_url` | string | Web URL to base branch | `"https://github.com/org/repo/tree/main"`     |
+| `head_url` | string | Web URL to head branch | `"https://github.com/org/repo/tree/feature"`  |
 
 **User Information:**
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
+| Field    | Type   | Description                  | Example                          |
+| -------- | ------ | ---------------------------- | -------------------------------- |
 | `sender` | string | User who triggered the event | `"user123"`, `"dependabot[bot]"` |
 
 **Pull Request Fields (only populated for PR events):**
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| `pull_request_number` | int | PR/MR number | `42` |
-| `pull_request_title` | string | PR/MR title | `"Add new feature"` |
+| Field                 | Type     | Description          | Example                           |
+| --------------------- | -------- | -------------------- | --------------------------------- |
+| `pull_request_number` | int      | PR/MR number         | `42`                              |
+| `pull_request_title`  | string   | PR/MR title          | `"Add new feature"`               |
 | `pull_request_labels` | []string | List of PR/MR labels | `["enhancement", "needs-review"]` |
 
 **Comment Trigger Fields (only when triggered by comment):**
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
+| Field             | Type   | Description                    | Example                |
+| ----------------- | ------ | ------------------------------ | ---------------------- |
 | `trigger_comment` | string | Comment that triggered the run | `"/test"`, `"/retest"` |
 
 **Webhook Fields:**
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
+| Field                | Type   | Description                              | Example             |
+| -------------------- | ------ | ---------------------------------------- | ------------------- |
 | `target_pipelinerun` | string | Target PipelineRun for incoming webhooks | `"my-pipeline-run"` |
 
 ### Excluded Fields
