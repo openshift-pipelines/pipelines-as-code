@@ -296,18 +296,18 @@ pipelinesascode.tekton.dev/on-cel-expression: |
 
 The fields available are:
 
-| **Field**         | **Description**                                                                                                                  |
-|-------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| `event`           | `push`, `pull_request` or `incoming`.                                                                                            |
-| `target_branch`   | The branch we are targeting.                                                                                                     |
-| `source_branch`   | The branch where this pull_request comes from. (On `push`, this is the same as `target_branch`.)                                 |
-| `target_url`      | The URL of the repository we are targeting.                                                                                      |
-| `source_url`      | The URL of the repository where this pull_request comes from. (On `push`, this is the same as `target_url`.)                     |
-| `event_title`     | Matches the title of the event. For `push`, it matches the commit title. For PR, it matches the Pull/Merge Request title. (Only supported for `GitHub`, `GitLab`, and `BitbucketCloud` providers.) |
-| `body`            | The full body as passed by the Git provider. Example: `body.pull_request.number` retrieves the pull request number on GitHub.    |
-| `headers`         | The full set of headers as passed by the Git provider. Example: `headers['x-github-event']` retrieves the event type on GitHub.  |
-| `.pathChanged`    | A suffix function to a string that can be a glob of a path to check if changed. (Supported only for `GitHub` and `GitLab` providers.) |
-| `files`           | The list of files that changed in the event (`all`, `added`, `deleted`, `modified`, and `renamed`). Example: `files.all` or `files.deleted`. For pull requests, every file belonging to the pull request will be listed. |
+| **Field**           | **Description**                                                                                                                                                                                                          |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `event`             | `push`, `pull_request` or `incoming`.                                                                                                                                                                                    |
+| `target_branch`     | The branch we are targeting.                                                                                                                                                                                             |
+| `source_branch`     | The branch where this pull_request comes from. (On `push`, this is the same as `target_branch`.)                                                                                                                         |
+| `target_url`        | The URL of the repository we are targeting.                                                                                                                                                                              |
+| `source_url`        | The URL of the repository where this pull_request comes from. (On `push`, this is the same as `target_url`.)                                                                                                             |
+| `event_title`       | Matches the title of the event. For `push`, it matches the commit title. For PR, it matches the Pull/Merge Request title. (Only supported for `GitHub`, `GitLab`, and `BitbucketCloud` providers.)                       |
+| `body`              | The full body as passed by the Git provider. Example: `body.pull_request.number` retrieves the pull request number on GitHub.                                                                                            |
+| `headers`           | The full set of headers as passed by the Git provider. Example: `headers['x-github-event']` retrieves the event type on GitHub.                                                                                          |
+| `.pathChanged`      | A suffix function to a string that can be a glob of a path to check if changed. (Supported only for `GitHub` and `GitLab` providers.)                                                                                    |
+| `files`             | The list of files that changed in the event (`all`, `added`, `deleted`, `modified`, and `renamed`). Example: `files.all` or `files.deleted`. For pull requests, every file belonging to the pull request will be listed. |
 
 CEL expressions let you do more complex filtering compared to the simple `on-target` annotation matching and enable more advanced scenarios.
 
