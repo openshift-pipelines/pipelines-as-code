@@ -23,11 +23,11 @@ Each GitHub application requires:
 
 ## Controller Configuration Parameters
 
-| Environment Variable       | Description                                      | Example          |
-|----------------------------|--------------------------------------------------|------------------|
-| `PAC_CONTROLLER_LABEL`     | Unique identifier for the controller instance    | `github-enterprise` |
-| `PAC_CONTROLLER_SECRET`    | Secret containing GitHub App credentials         | `gh-enterprise-secret` |
-| `PAC_CONTROLLER_CONFIGMAP` | ConfigMap with application settings              | `gh-enterprise-config` |
+| Environment Variable         | Description                                        | Example                |
+| ---------------------------- | -------------------------------------------------- | ---------------------- |
+| `PAC_CONTROLLER_LABEL`       | Unique identifier for the controller instance      | `github-enterprise`    |
+| `PAC_CONTROLLER_SECRET`      | Secret containing GitHub App credentials           | `gh-enterprise-secret` |
+| `PAC_CONTROLLER_CONFIGMAP`   | ConfigMap with application settings                | `gh-enterprise-config` |
 
 {{< hint info >}}
 **Note:** While each GitHub application requires its own controller, only one
@@ -61,15 +61,15 @@ Usage: second-controller.py [-h] [--configmap CONFIGMAP]
 
 #### Key Options
 
-| Option                   | Description                                                                 |
-|--------------------------|-----------------------------------------------------------------------------|
-| `--configmap`            | ConfigMap name (default: `<LABEL>-configmap`)                              |
-| `--secret`               | Secret name (default: `<LABEL>-secret`)                                    |
-| `--ingress-domain`       | Create Ingress with specified domain (Kubernetes)                          |
-| `--openshift-route`      | Create OpenShift Route instead of Ingress                                  |
-| `--controller-image`     | Custom controller image (use `ko` for local builds)                        |
-| `--smee-url`             | Deploy Gosmee sidecar for webhook tunneling                                |
-| `--namespace`            | Target namespace (default: `pipelines-as-code`)                            |
+| Option                     | Description                                                                   |
+| -------------------------- | ----------------------------------------------------------------------------- |
+| `--configmap`              | ConfigMap name (default: `<LABEL>-configmap`)                                 |
+| `--secret`                 | Secret name (default: `<LABEL>-secret`)                                       |
+| `--ingress-domain`         | Create Ingress with specified domain (Kubernetes)                             |
+| `--openshift-route`        | Create OpenShift Route instead of Ingress                                     |
+| `--controller-image`       | Custom controller image (use `ko` for local builds)                           |
+| `--smee-url`               | Deploy Gosmee sidecar for webhook tunneling                                   |
+| `--namespace`              | Target namespace (default: `pipelines-as-code`)                               |
 
 ### Example Scenarios
 
