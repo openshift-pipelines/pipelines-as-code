@@ -55,6 +55,22 @@ func (v *Provider) checkMembership(ctx context.Context, event *info.Event, useri
 }
 
 func (v *Provider) checkOkToTestCommentFromApprovedMember(ctx context.Context, event *info.Event, page int) (bool, error) {
+	switch gitEvent := event.Event.(type) {
+	case *gitlab.MergeEvent:
+		if !v.pacInfo.RememberOKToTest {
+			v.Logger.Debug("RememberOKToTest is disabled, skipping MergeRequest notes check as it is not needed")
+			return false, nil
+		}
+	case *gitlab.MergeCommentEvent:
+		if !v.pacInfo.RememberOKToTest {
+			v.Logger.Debug("Event is a MergeCommentEvent and RememberOKToTest is disabled, checking current comment only")
+			return v.aclAllowedOkToTestCurrentComment(ctx, event, gitEvent.ObjectAttributes.ID)
+		}
+	default:
+		v.Logger.Debug("Event is not a MergeEvent or MergeCommentEvent, skipping merge request notes check")
+		return false, nil
+	}
+
 	var nextPage int
 	opt := &gitlab.ListMergeRequestDiscussionsOptions{Page: page}
 	discussions, resp, err := v.Client().Discussions.ListMergeRequestDiscussions(v.targetProjectID, event.PullRequestNumber, opt)
@@ -89,6 +105,26 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(ctx context.Context, e
 		return v.checkOkToTestCommentFromApprovedMember(ctx, event, nextPage)
 	}
 
+	return false, nil
+}
+
+func (v *Provider) aclAllowedOkToTestCurrentComment(ctx context.Context, event *info.Event, commentID int) (bool, error) {
+	comment, _, err := v.Client().Notes.GetMergeRequestNote(v.targetProjectID, event.PullRequestNumber, commentID)
+	if err != nil {
+		return false, err
+	}
+
+	if acl.MatchRegexp(acl.OKToTestCommentRegexp, comment.Body) {
+		commenterEvent := info.NewEvent()
+		commenterEvent.Event = event.Event
+		commenterEvent.Sender = comment.Author.Username
+		commenterEvent.BaseBranch = event.BaseBranch
+		commenterEvent.HeadBranch = event.HeadBranch
+		commenterEvent.DefaultBranch = event.DefaultBranch
+		if v.checkMembership(ctx, commenterEvent, comment.Author.ID) {
+			return true, nil
+		}
+	}
 	return false, nil
 }
 
