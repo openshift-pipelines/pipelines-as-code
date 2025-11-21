@@ -54,6 +54,13 @@ type Event struct {
 	PullRequestLabel  []string // Labels of the pull Request
 	TriggerComment    string   // The comment triggering the pipelinerun when using on-comment annotation
 
+	// HasSkipCommand indicates whether the commit message contains a skip CI command
+	// (e.g., [skip ci], [ci skip], [skip tkn], [tkn skip]). When true, PipelineRun
+	// execution will be skipped unless overridden by a GitOps command (e.g., /test, /retest).
+	// This allows users to bypass CI for documentation changes or minor fixes while still
+	// maintaining the ability to manually trigger builds when needed.
+	HasSkipCommand bool
+
 	// TODO: move forge specifics to each driver
 	// Github
 	Organization   string
