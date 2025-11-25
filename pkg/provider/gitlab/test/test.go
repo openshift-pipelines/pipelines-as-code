@@ -114,6 +114,13 @@ func MuxDiscussionsNoteEmpty(mux *http.ServeMux, pid, mrID int) {
 	})
 }
 
+func MuxMergeRequestNote(mux *http.ServeMux, pid, mrID, noteID, userID int, commentContent, username string) {
+	path := fmt.Sprintf("/projects/%d/merge_requests/%d/notes/%d", pid, mrID, noteID)
+	mux.HandleFunc(path, func(rw http.ResponseWriter, _ *http.Request) {
+		fmt.Fprintf(rw, `{"body": "%s", "author": {"username": "%s", "id": %d}}`, commentContent, username, userID)
+	})
+}
+
 func MuxDiscussionsNote(mux *http.ServeMux, pid, mrID int, author string, authorID int, notecontent string) {
 	path := fmt.Sprintf("/projects/%d/merge_requests/%d/discussions", pid, mrID)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
@@ -171,7 +178,7 @@ func MuxGetFile(mux *http.ServeMux, pid int, fname, content string, wantErr bool
 
 type TEvent struct {
 	Username, DefaultBranch, URL, SHA, SHAurl, SHAtitle, Headbranch, Basebranch, HeadURL, BaseURL string
-	UserID, MRID, TargetProjectID, SourceProjectID                                                int
+	UserID, MRID, TargetProjectID, SourceProjectID, NoteID                                        int
 	PathWithNameSpace, Comment                                                                    string
 }
 
@@ -309,4 +316,30 @@ func (t TEvent) CommitNoteEventAsJSON(comment, action, repository string) string
         "title": "test title"
     }
 }`, t.SHA, comment, action, t.UserID, t.Username, t.SourceProjectID, t.DefaultBranch, t.URL, t.PathWithNameSpace, repository)
+}
+
+func (t TEvent) MergeCommentEventAsJSON(comment string) string {
+	return fmt.Sprintf(`{
+	"object_kind": "note",
+	"event_type": "note",
+	"object_attributes": {
+		"id": %d,
+		"note": "%s"
+	},
+	"user": {
+		"id": %d,
+		"username": "%s"
+	},
+	"project": {
+		"id": %d,
+		"web_url": "%s"
+	},
+	"merge_request": {
+		"iid": %d,
+		"target_project_id": %d,
+		"source_project_id": %d,
+		"target_branch": "%s",
+		"source_branch": "%s"
+	}
+}`, t.NoteID, comment, t.UserID, t.Username, t.TargetProjectID, t.URL, t.MRID, t.TargetProjectID, t.SourceProjectID, t.Basebranch, t.Headbranch)
 }

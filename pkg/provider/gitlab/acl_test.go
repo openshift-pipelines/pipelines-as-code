@@ -1,12 +1,16 @@
 package gitlab
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	thelp "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab/test"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -19,19 +23,38 @@ func TestIsAllowed(t *testing.T) {
 	type args struct {
 		event *info.Event
 	}
+
+	testEvent := thelp.TEvent{
+		UserID:          1111,
+		TargetProjectID: 2525,
+		NoteID:          1111,
+		Username:        "admin",
+		DefaultBranch:   "main",
+		URL:             "https://gitlab.com/admin/testrepo",
+		SHA:             "sha",
+		SHAurl:          "https://url",
+		SHAtitle:        "commit it",
+		Headbranch:      "branch",
+		Basebranch:      "main",
+		HeadURL:         "https://url",
+		BaseURL:         "https://url",
+	}
+
 	tests := []struct {
-		name            string
-		fields          fields
-		args            args
-		allowed         bool
-		wantErr         bool
-		wantClient      bool
-		allowMemberID   int
-		ownerFile       string
-		commentContent  string
-		commentAuthor   string
-		commentAuthorID int
-		threadFirstNote string
+		name             string
+		fields           fields
+		args             args
+		allowed          bool
+		wantErr          bool
+		wantClient       bool
+		allowMemberID    int
+		ownerFile        string
+		commentContent   string
+		commentAuthor    string
+		commentAuthorID  int
+		threadFirstNote  string
+		rememberOKToTest bool
+		wantEventStruct  bool
 	}{
 		{
 			name:    "check client has been set",
@@ -64,7 +87,7 @@ func TestIsAllowed(t *testing.T) {
 			ownerFile: "---\n approvers:\n  - allowmeplease\n",
 		},
 		{
-			name:       "allowed from ok-to-test",
+			name:       "allowed from ok-to-test with RememberOKToTest enabled",
 			allowed:    true,
 			wantClient: true,
 			fields: fields{
@@ -74,10 +97,30 @@ func TestIsAllowed(t *testing.T) {
 			args: args{
 				event: &info.Event{Sender: "noowner", PullRequestNumber: 1},
 			},
-			allowMemberID:   1111,
-			commentContent:  "/ok-to-test",
-			commentAuthor:   "admin",
-			commentAuthorID: 1111,
+			allowMemberID:    1111,
+			commentContent:   "/ok-to-test",
+			commentAuthor:    "admin",
+			commentAuthorID:  1111,
+			wantEventStruct:  true,
+			rememberOKToTest: true,
+		},
+		{
+			name:       "allowed from ok-to-test with RememberOKToTest disabled",
+			allowed:    true,
+			wantClient: true,
+			fields: fields{
+				userID:          6666,
+				targetProjectID: 2525,
+			},
+			args: args{
+				event: &info.Event{Sender: "noowner", PullRequestNumber: 1},
+			},
+			allowMemberID:    1111,
+			commentContent:   "/ok-to-test",
+			commentAuthor:    "admin",
+			commentAuthorID:  1111,
+			wantEventStruct:  true,
+			rememberOKToTest: false, // make it disabled explicitly to indicate what we're testing 🙃
 		},
 		{
 			name:       "allowed when /ok-to-test is in a reply note",
@@ -90,11 +133,13 @@ func TestIsAllowed(t *testing.T) {
 			args: args{
 				event: &info.Event{Sender: "noowner", PullRequestNumber: 2},
 			},
-			allowMemberID:   1111,
-			threadFirstNote: "random comment",
-			commentContent:  "/ok-to-test",
-			commentAuthor:   "admin",
-			commentAuthorID: 1111,
+			allowMemberID:    1111,
+			threadFirstNote:  "random comment",
+			commentContent:   "/ok-to-test",
+			commentAuthor:    "admin",
+			commentAuthorID:  1111,
+			wantEventStruct:  true,
+			rememberOKToTest: true,
 		},
 		{
 			name:       "disallowed from non authorized note",
@@ -113,16 +158,20 @@ func TestIsAllowed(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
+			logger, _ := logger.GetLogger()
 
 			v := &Provider{
 				targetProjectID: tt.fields.targetProjectID,
 				sourceProjectID: tt.fields.sourceProjectID,
 				userID:          tt.fields.userID,
+				Logger:          logger,
+				pacInfo:         &info.PacOpts{Settings: settings.Settings{RememberOKToTest: tt.rememberOKToTest}},
 			}
 			if tt.wantClient {
 				client, mux, tearDown := thelp.Setup(t)
 				v.gitlabClient = client
 				if tt.allowMemberID != 0 {
+					v.userID = tt.allowMemberID
 					thelp.MuxAllowUserID(mux, tt.fields.targetProjectID, tt.allowMemberID)
 				} else {
 					thelp.MuxDisallowUserID(mux, tt.fields.targetProjectID, tt.allowMemberID)
@@ -143,9 +192,22 @@ func TestIsAllowed(t *testing.T) {
 				} else {
 					thelp.MuxDiscussionsNoteEmpty(mux, tt.fields.targetProjectID, tt.args.event.PullRequestNumber)
 				}
+				if tt.commentContent != "" {
+					thelp.MuxMergeRequestNote(mux, tt.fields.targetProjectID, tt.args.event.PullRequestNumber, testEvent.NoteID, testEvent.UserID, tt.commentContent, testEvent.Username)
+				}
 
 				defer tearDown()
 			}
+
+			if tt.wantEventStruct {
+				glEvent := &gitlab.MergeCommentEvent{}
+				err := json.Unmarshal([]byte(testEvent.MergeCommentEventAsJSON(tt.commentContent)), glEvent)
+				if err != nil {
+					t.Fatalf("failed to unmarshal event: %v", err)
+				}
+				tt.args.event.Event = glEvent
+			}
+
 			got, err := v.IsAllowed(ctx, tt.args.event)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("IsAllowed() error = %v, wantErr %v", err, tt.wantErr)
@@ -203,10 +265,12 @@ func TestMembershipCaching(t *testing.T) {
 
 func TestMembershipAPIFailureDoesNotCacheApiError(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
+	logger, _ := logger.GetLogger()
 
 	v := &Provider{
 		targetProjectID: 3030,
 		userID:          4242,
+		Logger:          logger,
 	}
 
 	client, mux, tearDown := thelp.Setup(t)
