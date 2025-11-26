@@ -92,6 +92,12 @@ func (v *Provider) SetPacInfo(pacInfo *info.PacOpts) {
 	v.pacInfo = pacInfo
 }
 
+// EnrichEvent completes event parsing. For GitLab, no additional enrichment is needed
+// as all data comes from the webhook payload.
+func (v *Provider) EnrichEvent(_ context.Context, event *info.Event) (*info.Event, error) {
+	return event, nil
+}
+
 func (v *Provider) CreateComment(_ context.Context, event *info.Event, commit, updateMarker string) error {
 	if v.gitlabClient == nil {
 		return fmt.Errorf("no gitlab client has been initialized")

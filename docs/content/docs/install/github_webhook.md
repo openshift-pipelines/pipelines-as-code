@@ -13,14 +13,17 @@ API](https://docs.github.com/en/rest/guides/getting-started-with-the-checks-api)
 therefore the status of
 the tasks will be added as a Comment on the PullRequest and not through the **Checks** Tab.
 
-GitOps comments (i.e., /retest /ok-to-test) with GitHub webhook are
-not supported. If you need to restart the CI, you will need to generate a new
-commit. You can make it quick with this command line snippet (adjust branchname to the name of
-the branch):
+## GitOps Comments Support
 
-```console
-git commit --amend -a --no-edit && git push --force-with-lease origin branchname
-```
+GitOps comments (such as `/retest`, `/test`, `/ok-to-test`, `/cancel`) are now supported with GitHub webhooks!
+You can trigger pipelines manually by commenting on Pull Requests with these commands:
+
+- `/retest` - Reruns all failed PipelineRuns
+- `/test <pipelinerun-name>` - Runs a specific PipelineRun
+- `/ok-to-test` - Allows testing PRs from external contributors (for maintainers)
+- `/cancel` - Cancels running PipelineRuns
+
+See the [GitOps Commands documentation](/docs/guide/gitops_commands) for more details on available commands.
 
 ## Create GitHub Personal Access Token
 
@@ -53,11 +56,11 @@ The permissions needed are:
 Depending on the Repository access scope, the token will need different
 permissions. For public repositories, the scope needed is:
 
-* `public_repo` scope
+- `public_repo` scope
 
 For private repositories, the scope needed is:
 
-* The whole `repo` scope
+- The whole `repo` scope
 
 {{< hint info >}}
 You can click directly on this link to prefill the permissions needed:
@@ -78,7 +81,7 @@ There are two ways to create the `Repository` and configure the webhook:
 
 ### Create a `Repository` and configure webhook using the `tkn pac` tool
 
-* Use the [`tkn pac create repo`](/docs/guide/cli) command to
+- Use the [`tkn pac create repo`](/docs/guide/cli) command to
   configure a webhook and create the `Repository` CR.
 
   You need to have a personal access token created with the `admin:repo_hook` scope. `tkn pac` will use this token to configure the
@@ -113,38 +116,38 @@ $ tkn pac create repo
 
 ### Create a `Repository` and configure webhook manually
 
-* Go to your repository or organization **Settings** --> **Webhooks** and click on the **Add webhook** button.
+- Go to your repository or organization **Settings** --> **Webhooks** and click on the **Add webhook** button.
 
-  * Set the **Payload URL** to the Pipelines-as-Code controller public URL. On OpenShift, you can get the public URL of the Pipelines-as-Code controller like this:
+  - Set the **Payload URL** to the Pipelines-as-Code controller public URL. On OpenShift, you can get the public URL of the Pipelines-as-Code controller like this:
 
     ```shell
     echo https://$(oc get route -n pipelines-as-code pipelines-as-code-controller -o jsonpath='{.spec.host}')
     ```
 
-  * Choose Content type as **application/json**
+  - Choose Content type as **application/json**
 
-  * Add a Webhook secret or generate a random one with this command (and note it; we will need it later):
+  - Add a Webhook secret or generate a random one with this command (and note it; we will need it later):
 
     ```shell
     head -c 30 /dev/random | base64
     ```
 
-  * Click "Let me select individual events" and select these events:
-    * Commit comments
-    * Issue comments
-    * Pull request
-    * Pushes
+  - Click "Let me select individual events" and select these events:
+    - Commit comments
+    - Issue comments
+    - Pull request
+    - Pushes
 
     [Refer to this screenshot](/images/pac-direct-webhook-create.png) to verify you have properly configured the webhook.
 
-  * Click on **Add webhook**
+  - Click on **Add webhook**
 
-* You can now create a [`Repository CRD`](/docs/guide/repositorycrd).
+- You can now create a [`Repository CRD`](/docs/guide/repositorycrd).
   It will have:
 
   A reference to a Kubernetes **Secret** containing the Personal token as generated previously and another reference to a Kubernetes **Secret** to validate the webhook payload as set previously in your webhook configuration.
 
-* Create the `Secret` with the personal token and webhook secret in the `target-namespace` (where you are planning to run your pipeline CI):
+- Create the `Secret` with the personal token and webhook secret in the `target-namespace` (where you are planning to run your pipeline CI):
 
   ```shell
   kubectl -n target-namespace create secret generic github-webhook-config \
@@ -152,7 +155,7 @@ $ tkn pac create repo
     --from-literal webhook.secret="SECRET_AS_SET_IN_WEBHOOK_CONFIGURATION"
   ```
 
-* Create the `Repository CRD` referencing everything:
+- Create the `Repository CRD` referencing everything:
 
   ```yaml
   ---
@@ -176,11 +179,11 @@ $ tkn pac create repo
 
 ## GitHub Webhook Notes
 
-* Pipelines-as-Code always assumes that the `Secret` is in the same namespace where the `Repository` has been created.
+- Pipelines-as-Code always assumes that the `Secret` is in the same namespace where the `Repository` has been created.
 
 ## Add Webhook Secret
 
-* For an existing `Repository`, if the webhook secret has been deleted (or you want to add a new webhook to project settings) for GitHub,
+- For an existing `Repository`, if the webhook secret has been deleted (or you want to add a new webhook to project settings) for GitHub,
   use the `tkn pac webhook add` command to add a webhook to project repository settings, as well as update the `webhook.secret`
   key in the existing `Secret` object without updating the `Repository`.
 
@@ -208,7 +211,7 @@ There are two ways to update the provider token for the existing `Repository`:
 
 ### Update using tkn pac CLI
 
-* Use the [`tkn pac webhook update-token`](/docs/guide/cli) command which
+- Use the [`tkn pac webhook update-token`](/docs/guide/cli) command which
   will update provider token for the existing `Repository` CR.
 
 Below is the sample format for `tkn pac webhook update-token`:

@@ -141,3 +141,7 @@ func (v *TestProviderImp) CreateToken(_ context.Context, _ []string, _ *info.Eve
 func (v *TestProviderImp) GetTemplate(commentType provider.CommentType) string {
 	return provider.GetHTMLTemplate(commentType)
 }
+
+func (v *TestProviderImp) EnrichEvent(_ context.Context, _ *info.Event) (*info.Event, error) {
+	return &info.Event{}, nil
+}

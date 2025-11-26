@@ -14,6 +14,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/secrets"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/templates"
@@ -69,6 +70,29 @@ func (p *PacRun) verifyRepoAndUser(ctx context.Context) (*v1alpha1.Repository, e
 	err = SetupAuthenticatedClient(ctx, p.vcx, p.k8int, p.run, p.event, repo, p.globalRepo, p.pacInfo, p.logger)
 	if err != nil {
 		return repo, err
+	}
+
+	// Enrich event if needed (for webhook mode where initial parsing was done without API access)
+	// At the moment, this only helps IssueCommentEvent to add all required information needed for
+	// processing the event for app installation as well as webhook integration.
+	if p.event.NeedsEnrichment {
+		p.logger.Info("Enriching event with API calls now that client is initialized")
+		enrichedEvent, err := p.vcx.EnrichEvent(ctx, p.event)
+		if err != nil {
+			return repo, fmt.Errorf("failed to enrich event: %w", err)
+		}
+		p.event = enrichedEvent
+	}
+
+	if p.event.InstallationID > 0 {
+		token, err := github.ScopeTokenToListOfRepos(ctx, p.vcx, p.pacInfo, repo, p.run, p.event, p.eventEmitter, p.logger)
+		if err != nil {
+			return nil, err
+		}
+		// If Global and Repo level configurations are not provided then lets not override the provider token.
+		if token != "" {
+			p.event.Provider.Token = token
+		}
 	}
 
 	// Get the SHA commit info, we want to get the URL and commit title

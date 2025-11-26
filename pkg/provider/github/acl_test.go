@@ -488,7 +488,15 @@ func TestOkToTestCommentSHA(t *testing.T) {
 
 			payload := fmt.Sprintf(`{"action": "created", "repository": {"name": "repo", "owner": {"login": "owner"}}, "sender": {"login": %q}, "issue": {"pull_request": {"html_url": "https://github.com/owner/repo/pull/1"}}, "comment": {"body": %q}}`,
 				tt.runevent.Sender, tt.commentBody)
-			_, err := gprovider.ParsePayload(ctx, gprovider.Run, &http.Request{Header: http.Header{"X-Github-Event": []string{"issue_comment"}}}, payload)
+			event, err := gprovider.ParsePayload(ctx, gprovider.Run, &http.Request{Header: http.Header{"X-Github-Event": []string{"issue_comment"}}}, payload)
+			if err != nil && !tt.wantErr {
+				t.Errorf("ParsePayload() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			// For issue comments, we need to enrich the event to complete validation
+			if err == nil && event != nil && event.NeedsEnrichment {
+				_, err = gprovider.EnrichEvent(ctx, event)
+			}
 			if (err != nil) != tt.wantErr {
 				t.Errorf("aclCheck() error = %v, wantErr %v", err, tt.wantErr)
 				return

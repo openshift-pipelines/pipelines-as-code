@@ -113,6 +113,12 @@ func (v *Provider) SetPacInfo(pacInfo *info.PacOpts) {
 	v.pacInfo = pacInfo
 }
 
+// EnrichEvent completes event parsing.
+// For Gitea, no additional enrichment is needed as all data comes from the webhook payload.
+func (v *Provider) EnrichEvent(_ context.Context, event *info.Event) (*info.Event, error) {
+	return event, nil
+}
+
 // GetTaskURI TODO: Implement ME.
 func (v *Provider) GetTaskURI(_ context.Context, _ *info.Event, _ string) (bool, string, error) {
 	return false, "", nil

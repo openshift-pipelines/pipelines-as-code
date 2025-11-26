@@ -63,6 +63,12 @@ func (v *Provider) SetPacInfo(pacInfo *info.PacOpts) {
 	v.pacInfo = pacInfo
 }
 
+// EnrichEvent completes event parsing.
+// For Bitbucket Datacenter, no additional enrichment is needed as all data comes from the webhook payload.
+func (v *Provider) EnrichEvent(_ context.Context, event *info.Event) (*info.Event, error) {
+	return event, nil
+}
+
 func (v *Provider) CheckPolicyAllowing(_ context.Context, _ *info.Event, _ []string) (bool, string) {
 	return false, ""
 }
