@@ -285,14 +285,6 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 			continue
 		}
 
-		// If the event is a pull_request and the event type is label_update, but the PipelineRun
-		// does not contain an 'on-label' annotation, do not match this PipelineRun, as it is not intended for this event.
-		_, ok := prun.GetObjectMeta().GetAnnotations()[keys.OnLabel]
-		if event.TriggerTarget == triggertype.PullRequest && event.EventType == string(triggertype.PullRequestLabeled) && !ok {
-			logger.Infof("label update event, PipelineRun %s does not have a on-label for any of those labels: %s", prName, strings.Join(event.PullRequestLabel, "|"))
-			continue
-		}
-
 		if celExpr, ok := prun.GetObjectMeta().GetAnnotations()[keys.OnCelExpression]; ok {
 			checkPipelineRunAnnotation(prun, eventEmitter, repo)
 
@@ -313,6 +305,15 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 			}
 			logger.Infof("CEL expression has been evaluated and matched")
 		} else {
+			// If the event is a pull_request and the event type is label_update, but the PipelineRun
+			// does not contain an 'on-label' annotation, do not match this PipelineRun, as it is not intended for this event.
+			// Check this early to avoid any unnecessary processing.
+			_, hasOnLabel := prun.GetObjectMeta().GetAnnotations()[keys.OnLabel]
+			if event.TriggerTarget == triggertype.PullRequest && event.EventType == string(triggertype.PullRequestLabeled) && !hasOnLabel {
+				logger.Infof("label update event, PipelineRun %s does not have a on-label for any of those labels: %s", prName, strings.Join(event.PullRequestLabel, "|"))
+				continue
+			}
+
 			matched, targetEvent, targetBranch, err := getTargetBranch(prun, event)
 			if err != nil {
 				return matchedPRs, err

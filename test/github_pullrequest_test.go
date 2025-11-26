@@ -451,6 +451,68 @@ func TestGithubPullRequestNoOnLabelAnnotation(t *testing.T) {
 	}
 }
 
+func TestGithubPullRequestCELLabelEvent(t *testing.T) {
+	ctx := context.Background()
+	g := &tgithub.PRTest{
+		Label:         "Github CEL Label Event",
+		YamlFiles:     []string{"testdata/pipelinerun-cel-label-event.yaml"},
+		NoStatusCheck: true,
+	}
+	g.RunPullRequest(ctx, t)
+	defer g.TearDown(ctx, t)
+
+	g.Cnx.Clients.Log.Infof("Verifying no PipelineRun created on PR creation")
+	prs, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{})
+	assert.NilError(t, err)
+	assert.Equal(t, len(prs.Items), 0, "No PipelineRun should be created on PR creation")
+
+	// wait a bit that GitHub processed or we will get double events
+	time.Sleep(5 * time.Second)
+
+	g.Cnx.Clients.Log.Infof("Creating a label 'bug' on PullRequest")
+	_, _, err = g.Provider.Client().Issues.AddLabelsToIssue(ctx,
+		g.Options.Organization,
+		g.Options.Repo, g.PRNumber,
+		[]string{"bug"})
+	assert.NilError(t, err)
+
+	sopt := twait.SuccessOpt{
+		Title:           g.CommitTitle,
+		OnEvent:         triggertype.PullRequestLabeled.String(),
+		TargetNS:        g.TargetNamespace,
+		NumberofPRMatch: len(g.YamlFiles),
+		SHA:             g.SHA,
+	}
+	twait.Succeeded(ctx, t, g.Cnx, g.Options, sopt)
+
+	opt := github.ListOptions{}
+	res := &github.ListCheckRunsResults{}
+	resp := &github.Response{}
+	counter := 0
+	for {
+		res, resp, err = g.Provider.Client().Checks.ListCheckRunsForRef(ctx, g.Options.Organization, g.Options.Repo, g.SHA, &github.ListCheckRunsOptions{
+			AppID:       g.Provider.ApplicationID,
+			ListOptions: opt,
+		})
+		assert.NilError(t, err)
+		assert.Equal(t, resp.StatusCode, 200)
+		if len(res.CheckRuns) > 0 {
+			break
+		}
+		g.Cnx.Clients.Log.Infof("Waiting for the check run to be created")
+		if counter > 10 {
+			t.Errorf("Check run not created after 10 tries")
+			break
+		}
+		time.Sleep(5 * time.Second)
+		counter++
+	}
+	assert.Equal(t, len(res.CheckRuns), 1)
+	expected := fmt.Sprintf("%s / %s", settings.PACApplicationNameDefaultValue, "pipelinerun-cel-label-event-")
+	checkName := res.CheckRuns[0].GetName()
+	assert.Assert(t, strings.HasPrefix(checkName, expected), "checkName %s != expected %s", checkName, expected)
+}
+
 func TestGithubPullRequestNoPipelineRunCancelledOnPRClosed(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
