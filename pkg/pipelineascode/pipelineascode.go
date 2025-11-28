@@ -301,6 +301,14 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 		return pr, fmt.Errorf("cannot use the API on the provider platform to create a in_progress status: %w", err)
 	}
 
+	// Also update the parent status (without pipeline name) to reflect pipeline is now running.
+	// This updates the initial "Pipelines as Code CI" status that was set when waiting for /ok-to-test.
+	parentStatus := status
+	parentStatus.OriginalPipelineRunName = ""
+	if err := p.vcx.CreateStatus(ctx, p.event, parentStatus); err != nil {
+		p.logger.Warnf("failed to update parent status: %v", err)
+	}
+
 	// Patch pipelineRun with logURL annotation, skips for GitHub App as we patch logURL while patching CheckrunID
 	if _, ok := pr.Annotations[keys.InstallationID]; !ok {
 		patchAnnotations[keys.LogURL] = p.run.Clients.ConsoleUI().DetailURL(pr)
