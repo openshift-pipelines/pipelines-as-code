@@ -360,6 +360,9 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 		return nil
 	}
 
+	// Also update the parent status (without pipeline name) to reflect pipeline is running.
+	updateParentStatus(ctx, logger, detectedProvider, event, status)
+
 	logger.Info("updated in_progress status on provider platform for pipelineRun ", pr.GetName())
 	return nil
 }
