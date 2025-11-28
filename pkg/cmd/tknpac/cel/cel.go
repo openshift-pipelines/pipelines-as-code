@@ -736,9 +736,13 @@ that would be used in PipelineRun configurations.`,
 		Annotations: map[string]string{"commandType": "main"},
 	}
 
-	cmd.Flags().StringVarP(&bodyFile, bodyFileFlag, "b", "", "path to JSON body file")
-	cmd.Flags().StringVarP(&headersFile, headersFileFlag, "H", "", "path to headers file (JSON, HTTP format, or gosmee-generated shell script)")
+	cmd.Flags().StringVarP(&bodyFile, bodyFileFlag, "b", "", "path to JSON body file (required)")
+	cmd.Flags().StringVarP(&headersFile, headersFileFlag, "H", "", "path to headers file (required, JSON, HTTP format, or gosmee-generated shell script)")
 	cmd.Flags().StringVarP(&provider, providerFlag, "p", "auto", "payload provider (auto, github, gitlab, bitbucket-cloud, bitbucket-datacenter, gitea)")
 	cmd.Flags().StringVarP(&githubToken, githubTokenFlag, "t", "", "GitHub personal access token for API enrichment (enables full event processing)")
+	// Mark body and headers flags as required.
+	// These errors are safe to ignore as the flags are defined above.
+	_ = cmd.MarkFlagRequired(bodyFileFlag)
+	_ = cmd.MarkFlagRequired(headersFileFlag)
 	return cmd
 }

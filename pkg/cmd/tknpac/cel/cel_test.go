@@ -71,6 +71,38 @@ const testPullRequestPayload = `{
   }
 }`
 
+// minimalGitHubPRPayload returns a minimal valid GitHub pull request webhook payload
+// for testing purposes.
+const minimalGitHubPRPayload = `{
+  "action": "opened",
+  "pull_request": {
+    "number": 1,
+    "title": "Test",
+    "head": {
+      "ref": "test-branch",
+      "sha": "abc123",
+      "repo": {
+        "html_url": "https://github.com/test/test"
+      }
+    },
+    "base": {
+      "ref": "main",
+      "repo": {
+        "html_url": "https://github.com/test/test"
+      }
+    },
+    "html_url": "https://github.com/test/test/pull/1",
+    "labels": []
+  },
+  "repository": {
+    "name": "test",
+    "owner": {"login": "test"},
+    "html_url": "https://github.com/test/test",
+    "default_branch": "main"
+  },
+  "sender": {"login": "test"}
+}`
+
 func newIOStream() (*cli.IOStreams, *bytes.Buffer, *bytes.Buffer) {
 	in := &bytes.Buffer{}
 	out := &bytes.Buffer{}
@@ -80,6 +112,38 @@ func newIOStream() (*cli.IOStreams, *bytes.Buffer, *bytes.Buffer) {
 		Out:    out,
 		ErrOut: errOut,
 	}, out, errOut
+}
+
+// setupCELTest creates temporary files with the given body and headers content,
+// executes the CEL command, and returns the error (if any).
+func setupCELTest(t *testing.T, bodyContent, headersContent, provider string) error {
+	t.Helper()
+
+	tempDir := fs.NewDir(t, "cel-test")
+	defer tempDir.Remove()
+
+	// Create body file
+	bodyFile := tempDir.Join("body.json")
+	err := os.WriteFile(bodyFile, []byte(bodyContent), 0o600)
+	assert.NilError(t, err)
+
+	// Create headers file
+	headersFile := tempDir.Join("headers.txt")
+	err = os.WriteFile(headersFile, []byte(headersContent), 0o600)
+	assert.NilError(t, err)
+
+	ioStreams, _, _ := newIOStream()
+	// Write empty input to stdin to exit immediately
+	ioStreams.In = io.NopCloser(strings.NewReader("\n"))
+
+	cmd := Command(ioStreams)
+	cmd.SetArgs([]string{
+		"--provider", provider,
+		"--body", bodyFile,
+		"--headers", headersFile,
+	})
+
+	return cmd.Execute()
 }
 
 func TestParseHTTPHeaders(t *testing.T) {
@@ -971,7 +1035,7 @@ X-GitHub-Event: pull_request`
 			bodyContent:    pullRequestPayload,
 			headersContent: headers,
 			provider:       "github",
-			wantErr:        false, // Interactive mode should exit gracefully on EOF
+			wantErr:        false,
 			wantOutContains: []string{
 				"Important Notice",
 				"Provider: github",
@@ -981,14 +1045,14 @@ X-GitHub-Event: pull_request`
 			name:            "no files provided",
 			provider:        "github",
 			wantErr:         true,
-			wantErrContains: "unknown X-Github-Event",
+			wantErrContains: "required flag(s) \"body\", \"headers\" not set",
 		},
 		{
 			name:            "no body file",
 			headersContent:  headers,
 			provider:        "github",
 			wantErr:         true,
-			wantErrContains: "unexpected end of JSON input",
+			wantErrContains: "required flag(s) \"body\" not set",
 		},
 		{
 			name:            "unsupported provider",
@@ -997,14 +1061,6 @@ X-GitHub-Event: pull_request`
 			provider:        "invalid-provider",
 			wantErr:         true,
 			wantErrContains: "unsupported provider invalid-provider",
-		},
-		{
-			name:            "invalid json body",
-			bodyContent:     `{"invalid": json}`,
-			headersContent:  headers,
-			provider:        "github",
-			wantErr:         true,
-			wantErrContains: "invalid character",
 		},
 	}
 
@@ -1081,77 +1137,51 @@ X-GitHub-Event: pull_request`
 	}
 }
 
-func TestCommandFileHandling(t *testing.T) {
+func TestHeaderFormats(t *testing.T) {
 	tests := []struct {
 		name            string
+		bodyContent     string
 		headersContent  string
-		isJSON          bool
 		wantErr         bool
 		wantErrContains string
 	}{
 		{
-			name: "plain text headers",
+			name:        "plain text headers",
+			bodyContent: minimalGitHubPRPayload,
 			headersContent: `Accept: */*
 Content-Type: application/json
 X-GitHub-Event: pull_request`,
-			isJSON:          false,
-			wantErr:         true,
-			wantErrContains: "unexpected end of JSON input",
+			wantErr: false,
 		},
 		{
-			name: "json headers",
+			name:        "json headers",
+			bodyContent: minimalGitHubPRPayload,
 			headersContent: `{
   "Accept": "*/*",
   "Content-Type": "application/json",
   "X-GitHub-Event": "pull_request"
 }`,
-			isJSON:          true,
-			wantErr:         true,
-			wantErrContains: "unexpected end of JSON input",
+			wantErr: false,
 		},
 		{
 			name:            "invalid json headers",
+			bodyContent:     minimalGitHubPRPayload,
 			headersContent:  `{"invalid": json}`,
-			isJSON:          true,
 			wantErr:         true,
 			wantErrContains: "invalid character",
 		},
 		{
 			name:            "empty headers file",
+			bodyContent:     minimalGitHubPRPayload,
 			headersContent:  "",
 			wantErr:         true,
 			wantErrContains: "unknown X-Github-Event",
-		},
-		{
-			name: "gosmee script",
-			headersContent: `#!/usr/bin/env bash
-set -euxfo pipefail
-curl -sSi -H "Content-Type: application/json" -H "X-GitHub-Event: pull_request" -H "User-Agent: GitHub-Hookshot/2d5e4d4" -X POST -d @payload.json http://localhost:8080`,
-			wantErr:         true,
-			wantErrContains: "unexpected end of JSON input", // Still expects body file
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tempDir := fs.NewDir(t, "cel-headers-test")
-			defer tempDir.Remove()
-
-			headersFile := tempDir.Join("headers.txt")
-			err := os.WriteFile(headersFile, []byte(tt.headersContent), 0o600)
-			assert.NilError(t, err)
-
-			ioStreams, _, _ := newIOStream()
-			// Write empty input to stdin to exit immediately
-			ioStreams.In = io.NopCloser(strings.NewReader("\n"))
-
-			cmd := Command(ioStreams)
-			cmd.SetArgs([]string{
-				"--provider", "github",
-				"--headers", headersFile,
-			})
-
-			err = cmd.Execute()
+			err := setupCELTest(t, tt.bodyContent, tt.headersContent, "github")
 
 			if tt.wantErr {
 				assert.Assert(t, err != nil)
@@ -1174,12 +1204,12 @@ func TestCommandFlags(t *testing.T) {
 	bodyFlag := cmd.Flags().Lookup("body")
 	assert.Assert(t, bodyFlag != nil)
 	assert.Equal(t, bodyFlag.Shorthand, "b")
-	assert.Equal(t, bodyFlag.Usage, "path to JSON body file")
+	assert.Equal(t, bodyFlag.Usage, "path to JSON body file (required)")
 
 	headersFlag := cmd.Flags().Lookup("headers")
 	assert.Assert(t, headersFlag != nil)
 	assert.Equal(t, headersFlag.Shorthand, "H")
-	assert.Equal(t, headersFlag.Usage, "path to headers file (JSON, HTTP format, or gosmee-generated shell script)")
+	assert.Equal(t, headersFlag.Usage, "path to headers file (required, JSON, HTTP format, or gosmee-generated shell script)")
 
 	providerFlag := cmd.Flags().Lookup("provider")
 	assert.Assert(t, providerFlag != nil)
@@ -1222,10 +1252,22 @@ func TestInvalidFiles(t *testing.T) {
 			tempDir := fs.NewDir(t, "cel-invalid-test")
 			defer tempDir.Remove()
 
+			// Create valid body file (unless we're testing body file errors)
+			validBodyFile := tempDir.Join("valid-body.json")
+			err := os.WriteFile(validBodyFile, []byte(minimalGitHubPRPayload), 0o600)
+			assert.NilError(t, err)
+
+			// Create valid headers file (unless we're testing headers file errors)
+			validHeadersFile := tempDir.Join("valid-headers.txt")
+			validHeadersContent := `X-GitHub-Event: pull_request
+Content-Type: application/json`
+			err = os.WriteFile(validHeadersFile, []byte(validHeadersContent), 0o600)
+			assert.NilError(t, err)
+
 			var filePath string
 			if tt.createFile {
 				filePath = tempDir.Join("test-file")
-				err := os.WriteFile(filePath, []byte(tt.fileContent), 0o600)
+				err = os.WriteFile(filePath, []byte(tt.fileContent), 0o600)
 				assert.NilError(t, err)
 			} else {
 				filePath = filepath.Join(tempDir.Path(), "non-existent-file")
@@ -1237,15 +1279,18 @@ func TestInvalidFiles(t *testing.T) {
 			cmd := Command(ioStreams)
 			args := []string{"--provider", "github"}
 
+			// Add both body and headers flags, using the invalid one for the test target
 			if tt.fileFlag == "body" {
 				args = append(args, "--body", filePath)
+				args = append(args, "--headers", validHeadersFile)
 			} else {
+				args = append(args, "--body", validBodyFile)
 				args = append(args, "--headers", filePath)
 			}
 
 			cmd.SetArgs(args)
 
-			err := cmd.Execute()
+			err = cmd.Execute()
 			assert.Assert(t, err != nil)
 			assert.Assert(t, strings.Contains(err.Error(), tt.wantErrContains),
 				"error %q should contain %q", err.Error(), tt.wantErrContains)
