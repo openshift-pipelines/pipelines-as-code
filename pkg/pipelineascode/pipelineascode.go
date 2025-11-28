@@ -13,6 +13,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
@@ -88,6 +89,15 @@ func (p *PacRun) Run(ctx context.Context) error {
 	}
 	if repo.Spec.ConcurrencyLimit != nil && *repo.Spec.ConcurrencyLimit != 0 {
 		p.manager.Enable()
+	}
+
+	// Defensive skip-CI check: this is a safety net in case events bypass the early check in sinker.
+	// Primary skip detection happens in sinker.processEvent() for performance, but this ensures
+	// nothing slips through (e.g., tests that call Run() directly, or edge cases).
+	// Skip only for non-GitOps events (GitOps commands can override skip-CI).
+	if p.event.HasSkipCommand && !opscomments.IsAnyOpsEventType(p.event.EventType) {
+		p.logger.Infof("CI skipped: commit contains skip command in message (secondary check)")
+		return nil
 	}
 
 	// set params for the console driver, only used for the custom console ones

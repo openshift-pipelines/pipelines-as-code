@@ -262,6 +262,7 @@ func (v *Provider) GetCommitInfo(_ context.Context, event *info.Event) error {
 	}
 	// Note: Bitbucket Cloud API doesn't provide author email or timestamps in the basic commit response
 
+	event.HasSkipCommand = provider.SkipCI(commitinfo.Message)
 	// now to get the default branch from repository.Get
 	repo, err := v.Client().Repositories.Repository.Get(&bitbucket.RepositoryOptions{
 		Owner:    event.Organization,

@@ -340,6 +340,7 @@ func (v *Provider) GetCommitInfo(_ context.Context, event *info.Event) error {
 	}
 	event.SHATitle = sanitizeTitle(commit.Message)
 	event.SHAURL = fmt.Sprintf("%s/projects/%s/repos/%s/commits/%s", v.baseURL, v.projectKey, event.Repository, event.SHA)
+	event.HasSkipCommand = provider.SkipCI(commit.Message)
 
 	// Populate full commit information for LLM context
 	event.SHAMessage = commit.Message

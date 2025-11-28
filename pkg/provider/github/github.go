@@ -407,6 +407,7 @@ func (v *Provider) GetCommitInfo(ctx context.Context, runevent *info.Event) erro
 	runevent.SHAURL = commit.GetHTMLURL()
 	runevent.SHATitle = strings.Split(commit.GetMessage(), "\n\n")[0]
 	runevent.SHA = commit.GetSHA()
+	runevent.HasSkipCommand = provider.SkipCI(commit.GetMessage())
 
 	// Populate full commit information for LLM context
 	runevent.SHAMessage = commit.GetMessage()

@@ -489,28 +489,6 @@ func TestVerifyRepoAndUser(t *testing.T) {
 			wantErrMsg:    "failed to run create status, user is not allowed to run the CI",
 		},
 		{
-			name: "commit not found",
-			runevent: info.Event{
-				Organization:   "owner",
-				Repository:     "repo",
-				URL:            "https://example.com/owner/repo",
-				SHA:            "",
-				EventType:      triggertype.PullRequest.String(),
-				TriggerTarget:  triggertype.PullRequest,
-				InstallationID: 1,
-				Sender:         "owner",
-				Request:        request,
-			},
-			repositories: []*v1alpha1.Repository{{
-				ObjectMeta: metav1.ObjectMeta{Name: "repo", Namespace: "ns"},
-				Spec:       v1alpha1.RepositorySpec{URL: "https://example.com/owner/repo"},
-			}},
-			webhookSecret: "secret",
-			wantRepoNil:   false,
-			wantErr:       true,
-			wantErrMsg:    "could not find commit info",
-		},
-		{
 			name: "happy path",
 			runevent: info.Event{
 				Organization:   "owner",

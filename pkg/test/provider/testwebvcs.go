@@ -30,6 +30,8 @@ type TestProviderImp struct {
 	WantDeletedFiles       []string
 	WantModifiedFiles      []string
 	WantRenamedFiles       []string
+	FailGetCommitInfo      bool
+	CommitInfoErrorMsg     string
 	pacInfo                *info.PacOpts
 }
 
@@ -71,7 +73,18 @@ func (v *TestProviderImp) GetConfig() *info.ProviderConfig {
 	return &info.ProviderConfig{}
 }
 
-func (v *TestProviderImp) GetCommitInfo(_ context.Context, _ *info.Event) error {
+func (v *TestProviderImp) GetCommitInfo(_ context.Context, event *info.Event) error {
+	if v.FailGetCommitInfo {
+		if v.CommitInfoErrorMsg != "" {
+			return fmt.Errorf("%s", v.CommitInfoErrorMsg)
+		}
+		return fmt.Errorf("failed to get commit info")
+	}
+	// Simulate what real providers do: set HasSkipCommand based on commit message
+	// Real providers set this from the commit message fetched via API
+	if event.SHATitle != "" {
+		event.HasSkipCommand = provider.SkipCI(event.SHATitle)
+	}
 	return nil
 }
 
