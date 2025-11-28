@@ -765,31 +765,29 @@ func TestStartPR_PatchBehavior(t *testing.T) {
 		patchErrorMsg       string
 		expectError         bool
 		expectErrorContains []string
+		expectedLogSnippet  string
 		verifyAnnotations   bool // whether to verify annotations were set correctly
 	}{
 		{
-			name:               "successful patch - all annotations set",
-			simulatePatchError: false,
-			expectError:        false,
-			verifyAnnotations:  true,
+			name:              "successful patch - all annotations set",
+			verifyAnnotations: true,
 		},
 		{
-			name:                "patch failure - PR still returned with error",
-			simulatePatchError:  true,
-			patchErrorMsg:       "etcd unavailable",
-			expectError:         true,
-			expectErrorContains: []string{"cannot patch pipelinerun", "etcd unavailable"},
-			verifyAnnotations:   false,
+			name:               "patch failure - PR still returned with error",
+			simulatePatchError: true,
+			patchErrorMsg:      "etcd unavailable",
+			expectedLogSnippet: "cannot patch pipelinerun",
+			verifyAnnotations:  false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			observer, log := zapobserver.New(zap.InfoLevel)
+			logger := zap.New(observer).Sugar()
 			if tt.simulatePatchError {
 				// Need custom reactor to simulate patch failure
 				ctx, _ := rtesting.SetupFakeContext(t)
-				observer, _ := zapobserver.New(zap.InfoLevel)
-				logger := zap.New(observer).Sugar()
 
 				stdata, _ := testclient.SeedTestData(t, ctx, testclient.Data{
 					Namespaces: []*corev1.Namespace{
@@ -888,6 +886,11 @@ func TestStartPR_PatchBehavior(t *testing.T) {
 
 				assert.NilError(t, err)
 				assert.Assert(t, pr != nil, "PipelineRun should be returned")
+
+				if tt.expectedLogSnippet != "" {
+					logmsg := log.FilterMessageSnippet(tt.expectedLogSnippet).TakeAll()
+					assert.Assert(t, len(logmsg) > 0, "log messages", logmsg, tt.expectedLogSnippet)
+				}
 
 				if tt.verifyAnnotations {
 					state, hasState := pr.GetAnnotations()[keys.State]

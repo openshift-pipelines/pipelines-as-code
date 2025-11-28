@@ -310,9 +310,11 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 	if len(patchAnnotations) > 0 || len(patchLabels) > 0 {
 		pr, err = action.PatchPipelineRun(ctx, p.logger, whatPatching, p.run.Clients.Tekton, pr, getMergePatch(patchAnnotations, patchLabels))
 		if err != nil {
-			// we still return the created PR with error, and allow caller to decide what to do with the PR, and avoid
-			// unneeded SIGSEGV's
-			return pr, fmt.Errorf("cannot patch pipelinerun %s: %w", pr.GetGenerateName(), err)
+			// if PipelineRun patch is failed then do not return error, just log the error
+			// because its a false negative and on startPR return a failed check is being created
+			// due to this.
+			p.logger.Errorf("cannot patch pipelinerun %s: %w", pr.GetGenerateName(), err)
+			return pr, nil
 		}
 		currentReason := ""
 		if len(pr.Status.GetConditions()) > 0 {
