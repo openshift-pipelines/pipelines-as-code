@@ -22,11 +22,14 @@ import (
 	thelp "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab/test"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/metrics"
 
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
+	"knative.dev/pkg/metrics/metricstest"
+	_ "knative.dev/pkg/metrics/testing"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -1245,60 +1248,30 @@ func TestGetFiles(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
+			metrics.ResetMetrics()
 			fakeclient, mux, teardown := thelp.Setup(t)
 			defer teardown()
-			mergeFileChanges := []*gitlab.MergeRequestDiff{
-				{
-					NewPath: "modified.yaml",
-				},
-				{
-					NewPath: "added.doc",
-					NewFile: true,
-				},
-				{
-					NewPath:     "removed.yaml",
-					DeletedFile: true,
-				},
-				{
-					NewPath:     "renamed.doc",
-					RenamedFile: true,
-				},
-			}
 			if tt.event.TriggerTarget == "pull_request" {
 				mux.HandleFunc(fmt.Sprintf("/projects/10/merge_requests/%d/diffs",
 					tt.event.PullRequestNumber), func(rw http.ResponseWriter, _ *http.Request) {
-					jeez, err := json.Marshal(mergeFileChanges)
+					jeez, err := json.Marshal(tt.mrchanges)
 					assert.NilError(t, err)
 					_, _ = rw.Write(jeez)
 				})
 			}
-			pushFileChanges := []*gitlab.Diff{
-				{
-					NewPath: "modified.yaml",
-				},
-				{
-					NewPath: "added.doc",
-					NewFile: true,
-				},
-				{
-					NewPath:     "removed.yaml",
-					DeletedFile: true,
-				},
-				{
-					NewPath:     "renamed.doc",
-					RenamedFile: true,
-				},
-			}
 			if tt.event.TriggerTarget == "push" {
 				mux.HandleFunc(fmt.Sprintf("/projects/0/repository/commits/%s/diff", tt.event.SHA),
 					func(rw http.ResponseWriter, _ *http.Request) {
-						jeez, err := json.Marshal(pushFileChanges)
+						jeez, err := json.Marshal(tt.pushChanges)
 						assert.NilError(t, err)
 						_, _ = rw.Write(jeez)
 					})
 			}
 
-			providerInfo := &Provider{gitlabClient: fakeclient, sourceProjectID: tt.sourceProjectID, targetProjectID: tt.targetProjectID}
+			metricsTags := map[string]string{"provider": "api.gitlab.com", "event-type": string(tt.event.TriggerTarget)}
+			metricstest.CheckStatsNotReported(t, "pipelines_as_code_git_provider_api_request_count")
+
+			providerInfo := &Provider{gitlabClient: fakeclient, sourceProjectID: tt.sourceProjectID, targetProjectID: tt.targetProjectID, triggerEvent: string(tt.event.TriggerTarget), apiURL: "api.gitlab.com"}
 			changedFiles, err := providerInfo.GetFiles(ctx, tt.event)
 			if tt.wantError != true {
 				assert.NilError(t, err, nil)
@@ -1317,6 +1290,17 @@ func TestGetFiles(t *testing.T) {
 				for i := range changedFiles.All {
 					assert.Equal(t, tt.pushChanges[i].NewPath, changedFiles.All[i])
 				}
+			}
+
+			// Check caching
+			metricstest.CheckCountData(t, "pipelines_as_code_git_provider_api_request_count", metricsTags, 1)
+			_, _ = providerInfo.GetFiles(ctx, tt.event)
+			if tt.wantError {
+				// No caching on error
+				metricstest.CheckCountData(t, "pipelines_as_code_git_provider_api_request_count", metricsTags, 2)
+			} else {
+				// Cache API results on success
+				metricstest.CheckCountData(t, "pipelines_as_code_git_provider_api_request_count", metricsTags, 1)
 			}
 		})
 	}
