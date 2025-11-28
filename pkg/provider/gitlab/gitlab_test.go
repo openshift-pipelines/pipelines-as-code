@@ -261,7 +261,7 @@ func TestCreateStatus(t *testing.T) {
 			},
 		},
 		{
-			name:       "commit status fails on both projects but continues",
+			name:       "commit status fails on both projects with non-permission error skips MR comment",
 			wantClient: true,
 			wantErr:    false,
 			fields: fields{
@@ -273,9 +273,49 @@ func TestCreateStatus(t *testing.T) {
 				},
 				event: &info.Event{
 					TriggerTarget:   "pull_request",
-					SourceProjectID: 404, // Will fail
-					TargetProjectID: 405, // Will fail
+					SourceProjectID: 400, // Will fail with 400 (not permission error)
+					TargetProjectID: 405, // Will fail with 400 (not permission error)
 					SHA:             "abc123",
+				},
+				postStr: "", // No MR comment expected for non-permission errors
+			},
+		},
+		{
+			name:       "permission error 403 on source creates MR comment",
+			wantClient: true,
+			wantErr:    false,
+			fields: fields{
+				targetProjectID: 100,
+			},
+			args: args{
+				statusOpts: provider.StatusOpts{
+					Conclusion: "success",
+				},
+				event: &info.Event{
+					TriggerTarget:   "pull_request",
+					SourceProjectID: 403, // Will fail with 403 Forbidden
+					TargetProjectID: 400, // Will fail with 400 (not permission error)
+					SHA:             "abc123def",
+				},
+				postStr: "has successfully",
+			},
+		},
+		{
+			name:       "permission error 401 on source creates MR comment",
+			wantClient: true,
+			wantErr:    false,
+			fields: fields{
+				targetProjectID: 100,
+			},
+			args: args{
+				statusOpts: provider.StatusOpts{
+					Conclusion: "success",
+				},
+				event: &info.Event{
+					TriggerTarget:   "pull_request",
+					SourceProjectID: 401, // Will fail with 401 Unauthorized
+					TargetProjectID: 400, // Will fail with 400 (not permission error)
+					SHA:             "abc123ghi",
 				},
 				postStr: "has successfully",
 			},
@@ -318,15 +358,23 @@ func TestCreateStatus(t *testing.T) {
 					// Mock source project commit status endpoint
 					sourceStatusPath := fmt.Sprintf("/projects/%d/statuses/%s", tt.args.event.SourceProjectID, tt.args.event.SHA)
 					mux.HandleFunc(sourceStatusPath, func(rw http.ResponseWriter, _ *http.Request) {
-						if tt.args.event.SourceProjectID == 404 {
-							// Simulate failure on source project
+						switch tt.args.event.SourceProjectID {
+						case 400:
+							rw.WriteHeader(http.StatusBadRequest)
+							fmt.Fprint(rw, `{"message": "400 Bad Request"}`)
+						case 401:
+							rw.WriteHeader(http.StatusUnauthorized)
+							fmt.Fprint(rw, `{"message": "401 Unauthorized"}`)
+						case 403:
+							rw.WriteHeader(http.StatusForbidden)
+							fmt.Fprint(rw, `{"message": "403 Forbidden"}`)
+						case 404:
 							rw.WriteHeader(http.StatusNotFound)
 							fmt.Fprint(rw, `{"message": "404 Project Not Found"}`)
-							return
+						default:
+							rw.WriteHeader(http.StatusCreated)
+							fmt.Fprint(rw, `{}`)
 						}
-						// Success on source project
-						rw.WriteHeader(http.StatusCreated)
-						fmt.Fprint(rw, `{}`)
 					})
 				}
 
@@ -334,15 +382,23 @@ func TestCreateStatus(t *testing.T) {
 					// Mock target project commit status endpoint
 					targetStatusPath := fmt.Sprintf("/projects/%d/statuses/%s", tt.args.event.TargetProjectID, tt.args.event.SHA)
 					mux.HandleFunc(targetStatusPath, func(rw http.ResponseWriter, _ *http.Request) {
-						if tt.args.event.TargetProjectID == 404 {
-							// Simulate failure on target project
+						switch tt.args.event.TargetProjectID {
+						case 400, 405:
+							rw.WriteHeader(http.StatusBadRequest)
+							fmt.Fprint(rw, `{"message": "400 Bad Request"}`)
+						case 401:
+							rw.WriteHeader(http.StatusUnauthorized)
+							fmt.Fprint(rw, `{"message": "401 Unauthorized"}`)
+						case 403:
+							rw.WriteHeader(http.StatusForbidden)
+							fmt.Fprint(rw, `{"message": "403 Forbidden"}`)
+						case 404:
 							rw.WriteHeader(http.StatusNotFound)
 							fmt.Fprint(rw, `{"message": "404 Project Not Found"}`)
-							return
+						default:
+							rw.WriteHeader(http.StatusCreated)
+							fmt.Fprint(rw, `{}`)
 						}
-						// Success on target project
-						rw.WriteHeader(http.StatusCreated)
-						fmt.Fprint(rw, `{}`)
 					})
 				}
 
