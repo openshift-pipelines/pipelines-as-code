@@ -9,7 +9,7 @@ import (
 	"knative.dev/pkg/metrics/metricstest"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
+	metricsutils "github.com/openshift-pipelines/pipelines-as-code/pkg/test/metrics"
 
 	_ "knative.dev/pkg/metrics/testing"
 )
@@ -47,15 +47,7 @@ func TestRecordAPIUsage(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.desc, func(t *testing.T) {
-			defer func() {
-				metricstest.Unregister(
-					"pipelines_as_code_pipelinerun_count",
-					"pipelines_as_code_pipelinerun_duration_seconds_sum",
-					"pipelines_as_code_running_pipelineruns_count",
-					"pipelines_as_code_git_provider_api_request_count",
-				)
-				metrics.ResetRecorder()
-			}()
+			defer metricsutils.ResetMetrics()
 
 			observer, _ := zapobserver.New(zap.InfoLevel)
 			fakelogger := zap.New(observer).Sugar()

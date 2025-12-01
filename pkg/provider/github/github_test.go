@@ -20,7 +20,6 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -29,6 +28,8 @@ import (
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/metrics"
+
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -347,7 +348,7 @@ func TestGetTektonDir(t *testing.T) {
 	}
 	for _, tt := range testGetTektonDir {
 		t.Run(tt.name, func(t *testing.T) {
-			resetMetrics()
+			metrics.ResetMetrics()
 			observer, exporter := zapobserver.New(zap.InfoLevel)
 			fakelogger := zap.New(observer).Sugar()
 			ctx, _ := rtesting.SetupFakeContext(t)
@@ -949,6 +950,7 @@ func TestGetFiles(t *testing.T) {
 		wantDeletedFilesCount  int
 		wantModifiedFilesCount int
 		wantRenamedFilesCount  int
+		wantAPIRequestCount    int64
 	}{
 		{
 			name: "pull-request",
@@ -977,6 +979,7 @@ func TestGetFiles(t *testing.T) {
 			wantDeletedFilesCount:  1,
 			wantModifiedFilesCount: 1,
 			wantRenamedFilesCount:  1,
+			wantAPIRequestCount:    2,
 		},
 		{
 			name: "push",
@@ -1007,43 +1010,15 @@ func TestGetFiles(t *testing.T) {
 			wantDeletedFilesCount:  1,
 			wantModifiedFilesCount: 1,
 			wantRenamedFilesCount:  1,
+			wantAPIRequestCount:    1,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 			defer teardown()
-			prCommitFiles := []*github.CommitFile{
-				{
-					Filename: ptr.String("modified.yaml"),
-					Status:   ptr.String("modified"),
-				}, {
-					Filename: ptr.String("added.doc"),
-					Status:   ptr.String("added"),
-				}, {
-					Filename: ptr.String("removed.yaml"),
-					Status:   ptr.String("removed"),
-				}, {
-					Filename: ptr.String("renamed.doc"),
-					Status:   ptr.String("renamed"),
-				},
-			}
+			metrics.ResetMetrics()
 
-			pushCommitFiles := []*github.CommitFile{
-				{
-					Filename: ptr.String("modified.yaml"),
-					Status:   ptr.String("modified"),
-				}, {
-					Filename: ptr.String("added.doc"),
-					Status:   ptr.String("added"),
-				}, {
-					Filename: ptr.String("removed.yaml"),
-					Status:   ptr.String("removed"),
-				}, {
-					Filename: ptr.String("renamed.doc"),
-					Status:   ptr.String("renamed"),
-				},
-			}
 			if tt.event.TriggerTarget == "pull_request" {
 				mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/pulls/%d/files",
 					tt.event.Organization, tt.event.Repository, tt.event.PullRequestNumber), func(rw http.ResponseWriter, r *http.Request) {
@@ -1051,7 +1026,7 @@ func TestGetFiles(t *testing.T) {
 						rw.Header().Add("Link", fmt.Sprintf("<https://api.github.com/repos/%s/%s/pulls/%d/files?page=2>; rel=\"next\"", tt.event.Organization, tt.event.Repository, tt.event.PullRequestNumber))
 						fmt.Fprint(rw, "[]")
 					} else {
-						b, _ := json.Marshal(prCommitFiles)
+						b, _ := json.Marshal(tt.commitFiles)
 						fmt.Fprint(rw, string(b))
 					}
 				})
@@ -1060,17 +1035,26 @@ func TestGetFiles(t *testing.T) {
 				mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/commits/%s",
 					tt.event.Organization, tt.event.Repository, tt.event.SHA), func(rw http.ResponseWriter, _ *http.Request) {
 					c := &github.RepositoryCommit{
-						Files: pushCommitFiles,
+						Files: tt.commit.Files,
 					}
 					b, _ := json.Marshal(c)
 					fmt.Fprint(rw, string(b))
 				})
 			}
 
+			metricsTags := map[string]string{"provider": "github", "event-type": string(tt.event.TriggerTarget)}
+			metricstest.CheckStatsNotReported(t, "pipelines_as_code_git_provider_api_request_count")
+
+			log, _ := logger.GetLogger()
 			ctx, _ := rtesting.SetupFakeContext(t)
 			provider := &Provider{
 				ghClient:      fakeclient,
 				PaginedNumber: 1,
+
+				// necessary for metrics
+				providerName: "github",
+				triggerEvent: string(tt.event.TriggerTarget),
+				Logger:       log,
 			}
 			changedFiles, err := provider.GetFiles(ctx, tt.event)
 			assert.NilError(t, err, nil)
@@ -1089,6 +1073,11 @@ func TestGetFiles(t *testing.T) {
 					assert.Equal(t, *tt.commit.Files[i].Filename, changedFiles.All[i])
 				}
 			}
+
+			// Check caching
+			metricstest.CheckCountData(t, "pipelines_as_code_git_provider_api_request_count", metricsTags, tt.wantAPIRequestCount)
+			_, _ = provider.GetFiles(ctx, tt.event)
+			metricstest.CheckCountData(t, "pipelines_as_code_git_provider_api_request_count", metricsTags, tt.wantAPIRequestCount)
 		})
 	}
 }
@@ -1437,18 +1426,6 @@ func TestIsHeadCommitOfBranch(t *testing.T) {
 			assert.Equal(t, err != nil, tt.wantErr)
 		})
 	}
-}
-
-func resetMetrics() {
-	metricstest.Unregister(
-		"pipelines_as_code_pipelinerun_count",
-		"pipelines_as_code_pipelinerun_duration_seconds_sum",
-		"pipelines_as_code_running_pipelineruns_count",
-		"pipelines_as_code_git_provider_api_request_count",
-	)
-
-	// have to reset sync.Once to allow recreation of Recorder.
-	metrics.ResetRecorder()
 }
 
 func TestCreateComment(t *testing.T) {
