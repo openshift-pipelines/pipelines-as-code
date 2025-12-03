@@ -441,11 +441,7 @@ The payload is the JSON content of the webhook request, The headers file support
 
    ```bash
    #!/usr/bin/env bash
-   curl -X POST "http://localhost:8080/" \
-     -H "X-GitHub-Event: pull_request" \
-     -H "Content-Type: application/json" \
-     -H "User-Agent: GitHub-Hookshot/2d5e4d4" \
-     -d @payload.json
+   curl -X POST "http://localhost:8080/" -H "X-GitHub-Event: pull_request" -H "Content-Type: application/json" -H "User-Agent: GitHub-Hookshot/2d5e4d4" -d @payload.json
    ```
 
 #### Usage
