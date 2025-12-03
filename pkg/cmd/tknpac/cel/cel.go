@@ -378,10 +378,22 @@ func splitCurlCommand(command string) ([]string, error) {
 // It looks for patterns like "curl" commands with typical gosmee characteristics.
 func isGosmeeScript(content string) bool {
 	lines := strings.Split(content, "\n")
+	hasCurl := false
+	hasHeaders := false
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
 		// Look for curl commands that contain -H flags (typical of webhook scripts)
-		if strings.HasPrefix(trimmed, "curl") && strings.Contains(trimmed, "-H") {
+		// Look for curl and -H separately in order to support multi-line curl commands such as
+		// curl -X POST "http://localhost:8080/" \
+		// -H "Content-Type: application/json" \
+		// ...
+		if strings.HasPrefix(trimmed, "curl") {
+			hasCurl = true
+		}
+		if strings.Contains(trimmed, "-H") {
+			hasHeaders = true
+		}
+		if hasCurl && hasHeaders {
 			return true
 		}
 	}
@@ -396,7 +408,12 @@ func parseGosmeeScript(content string) (map[string]string, error) {
 
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "curl") && strings.Contains(trimmed, "-H") {
+		// Only parse through lines which have headers and not necessarily starting with curl
+		// to additionally support multi-line curl commands such as
+		// curl -X POST "http://localhost:8080/" \
+		// -H "Content-Type: application/json" \
+		// ...
+		if strings.Contains(trimmed, "-H") {
 			// Parse headers from this curl command
 			curlHeaders, err := parseCurlHeaders(trimmed)
 			if err != nil {
