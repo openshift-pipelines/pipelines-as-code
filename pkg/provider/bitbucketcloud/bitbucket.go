@@ -63,6 +63,12 @@ func (v *Provider) SetPacInfo(pacInfo *info.PacOpts) {
 	v.pacInfo = pacInfo
 }
 
+// EnrichEvent completes event parsing.
+// For Bitbucket Cloud, no additional enrichment is needed as all data comes from the webhook payload.
+func (v *Provider) EnrichEvent(_ context.Context, event *info.Event) (*info.Event, error) {
+	return event, nil
+}
+
 const taskStatusTemplate = `{{range $taskrun := .TaskRunList }} | **{{ formatCondition $taskrun.PipelineRunTaskRunStatus.Status.Conditions }}** | {{ $taskrun.ConsoleLogURL }} | *{{ formatDuration $taskrun.PipelineRunTaskRunStatus.Status.StartTime $taskrun.PipelineRunTaskRunStatus.Status.CompletionTime }}* |
 {{ end }}`
 

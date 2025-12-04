@@ -32,6 +32,7 @@ type Interface interface {
 	Validate(ctx context.Context, params *params.Run, event *info.Event) error
 	Detect(*http.Request, string, *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, string, error)
 	ParsePayload(context.Context, *params.Run, *http.Request, string) (*info.Event, error)
+	EnrichEvent(context.Context, *info.Event) (*info.Event, error)
 	IsAllowed(context.Context, *info.Event) (bool, error)
 	IsAllowedOwnersFile(context.Context, *info.Event) (bool, error)
 	CreateStatus(context.Context, *info.Event, StatusOpts) error
