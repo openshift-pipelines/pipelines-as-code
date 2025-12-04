@@ -158,6 +158,10 @@ func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLog
 
 	err = createStatusWithRetry(ctx, logger, vcx, event, status)
 	logger.Infof("pipelinerun %s has a status of '%s'", pr.Name, status.Conclusion)
+
+	// Also update the parent status (without pipeline name) to reflect pipeline completion.
+	updateParentStatus(ctx, logger, vcx, event, status)
+
 	return pr, err
 }
 
@@ -173,4 +177,15 @@ func createStatusWithRetry(ctx context.Context, logger *zap.SugaredLogger, vcx p
 		finalError = err
 	}
 	return fmt.Errorf("failed to report status: %w", finalError)
+}
+
+// updateParentStatus updates the parent status (without pipeline name) to reflect the current state.
+// This ensures the initial "Pipelines as Code CI" status set when waiting for /ok-to-test is updated
+// when pipelines start or complete. Uses retry logic for resilience to transient network issues.
+func updateParentStatus(ctx context.Context, logger *zap.SugaredLogger, vcx provider.Interface, event *info.Event, status provider.StatusOpts) {
+	parentStatus := status
+	parentStatus.OriginalPipelineRunName = ""
+	if err := createStatusWithRetry(ctx, logger, vcx, event, parentStatus); err != nil {
+		logger.Warnf("failed to update parent status: %v", err)
+	}
 }
