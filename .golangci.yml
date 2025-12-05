@@ -88,6 +88,22 @@ linters:
         path: _test\.go
       - path: pkg/resolve/resolve.go
         text: don't use `init` function
+      - linters:
+          - revive
+        path: pkg/errors/
+        text: "var-naming"
+      - linters:
+          - revive
+        path: pkg/llm/context/
+        text: "var-naming"
+      - linters:
+          - revive
+        path: pkg/sort/
+        text: "var-naming"
+      - linters:
+          - revive
+        path: pkg/test/http/
+        text: "var-naming"
     paths:
       - vendor
       - pkg/provider/gitea/structs
