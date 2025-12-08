@@ -19,7 +19,11 @@ func getHubCatalogs(logger *zap.SugaredLogger, catalogs *sync.Map, config map[st
 	}
 
 	if hubType, ok := config[HubCatalogTypeKey]; !ok || hubType == "" {
-		config[HubCatalogTypeKey] = hubtypes.ArtifactHubType
+		if config[HubURLKey] != ArtifactHubURLDefaultValue {
+			config[HubCatalogTypeKey] = hubtypes.TektonHubType
+		} else {
+			config[HubCatalogTypeKey] = hubtypes.ArtifactHubType
+		}
 	} else if hubType != hubtypes.ArtifactHubType && hubType != hubtypes.TektonHubType {
 		logger.Warnf("CONFIG: invalid hub type %s, defaulting to %s", hubType, hubtypes.ArtifactHubType)
 		config[HubCatalogTypeKey] = hubtypes.ArtifactHubType

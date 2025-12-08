@@ -4,6 +4,7 @@ import (
 	"sync"
 	"testing"
 
+	hubtypes "github.com/openshift-pipelines/pipelines-as-code/pkg/hub/vars"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -18,11 +19,12 @@ func TestGetCatalogHub(t *testing.T) {
 		Name:  "tekton",
 	})
 	tests := []struct {
-		name        string
-		config      map[string]string
-		numCatalogs int
-		wantLog     string
-		hubCatalogs *sync.Map
+		name            string
+		config          map[string]string
+		numCatalogs     int
+		wantLog         string
+		hubCatalogs     *sync.Map
+		wantDefaultType string
 	}{
 		{
 			name:        "good/default catalog",
@@ -141,6 +143,15 @@ func TestGetCatalogHub(t *testing.T) {
 			hubCatalogs: &sync.Map{},
 			wantLog:     `CONFIG: invalid hub type invalid, defaulting to artifacthub`,
 		},
+		{
+			name: "custom hub URL defaults to TektonHubType",
+			config: map[string]string{
+				HubURLKey: "https://custom-tekton-hub.example.com",
+			},
+			numCatalogs:     1,
+			hubCatalogs:     &sync.Map{},
+			wantDefaultType: hubtypes.TektonHubType,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -158,6 +169,13 @@ func TestGetCatalogHub(t *testing.T) {
 			assert.Equal(t, length, tt.numCatalogs)
 			if tt.wantLog != "" {
 				assert.Assert(t, len(catcher.FilterMessageSnippet(tt.wantLog).TakeAll()) > 0, "could not find log message: got ", catcher)
+			}
+			if tt.wantDefaultType != "" {
+				value, ok := catalogs.Load("default")
+				assert.Assert(t, ok, "default catalog should exist")
+				defaultCatalog, ok := value.(HubCatalog)
+				assert.Assert(t, ok, "default catalog should be HubCatalog type")
+				assert.Equal(t, defaultCatalog.Type, tt.wantDefaultType)
 			}
 			cmp.Equal(catalogs, tt.hubCatalogs)
 		})
