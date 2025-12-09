@@ -135,9 +135,7 @@ $ tkn pac create repo
     * Pull request
     * Pushes
 
-    {{< hint info >}}
     [Refer to this screenshot](/images/pac-direct-webhook-create.png) to verify you have properly configured the webhook.
-    {{< /hint >}}
 
   * Click on **Add webhook**
 
