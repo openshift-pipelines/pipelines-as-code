@@ -3,7 +3,6 @@ package gitlab
 import (
 	"context"
 	"crypto/subtle"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -338,23 +337,18 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 		v.Logger.Debugf("created commit status on source project ID %d", event.TargetProjectID)
 		return nil
 	}
-	_, _, err2 := v.Client().Commits.SetCommitStatus(event.TargetProjectID, event.SHA, opt)
-	if err2 == nil {
+	if _, _, err = v.Client().Commits.SetCommitStatus(event.TargetProjectID, event.SHA, opt); err == nil {
 		v.Logger.Debugf("created commit status on target project ID %d", event.TargetProjectID)
 		// we managed to set the status on the target repo, all good we are done
 		return nil
 	}
-	v.Logger.Debugf("cannot set status with the GitLab token on the target project: %v", err2)
+	v.Logger.Debugf("cannot set status with the GitLab token on the target project: %v", err)
 
-	// Only fall back to creating MR comments if either error is a permission issue (401/403).
-	// For other errors (e.g., state transition errors like "Cannot transition status via :run from :running"),
-	// the status might already be set, so we should not create a comment.
-	isPermErr := func(e error) bool {
-		var errResp *gitlab.ErrorResponse
-		return errors.As(e, &errResp) && (errResp.Response.StatusCode == http.StatusUnauthorized || errResp.Response.StatusCode == http.StatusForbidden)
-	}
-	if !isPermErr(err) && !isPermErr(err2) {
-		v.Logger.Debugf("skipping MR comment as error is not a permission issue")
+	// Skip creating MR comments if the error is a state transition error
+	// (e.g., "Cannot transition status via :run from :running").
+	// This means the status is already set, so we should not create a comment.
+	if strings.Contains(err.Error(), "Cannot transition status") {
+		v.Logger.Debugf("skipping MR comment as error is not permission related: %v", err)
 		return nil
 	}
 
