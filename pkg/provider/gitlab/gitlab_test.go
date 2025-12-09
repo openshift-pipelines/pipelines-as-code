@@ -261,7 +261,7 @@ func TestCreateStatus(t *testing.T) {
 			},
 		},
 		{
-			name:       "commit status fails on both projects with non-permission error skips MR comment",
+			name:       "commit status fails with state transition error skips MR comment",
 			wantClient: true,
 			wantErr:    false,
 			fields: fields{
@@ -273,11 +273,31 @@ func TestCreateStatus(t *testing.T) {
 				},
 				event: &info.Event{
 					TriggerTarget:   "pull_request",
-					SourceProjectID: 400, // Will fail with 400 (not permission error)
-					TargetProjectID: 405, // Will fail with 400 (not permission error)
+					SourceProjectID: 404, // Will fail with 404 Not Found
+					TargetProjectID: 422, // Will fail with "Cannot transition status" error
 					SHA:             "abc123",
 				},
-				postStr: "", // No MR comment expected for non-permission errors
+				postStr: "", // No MR comment expected for state transition errors
+			},
+		},
+		{
+			name:       "generic error on both projects creates MR comment",
+			wantClient: true,
+			wantErr:    false,
+			fields: fields{
+				targetProjectID: 100,
+			},
+			args: args{
+				statusOpts: provider.StatusOpts{
+					Conclusion: "success",
+				},
+				event: &info.Event{
+					TriggerTarget:   "pull_request",
+					SourceProjectID: 400, // Will fail with generic 400 error
+					TargetProjectID: 405, // Will fail with generic 400 error
+					SHA:             "abc123def",
+				},
+				postStr: "has successfully", // MR comment expected for non-transition errors
 			},
 		},
 		{
@@ -294,8 +314,8 @@ func TestCreateStatus(t *testing.T) {
 				event: &info.Event{
 					TriggerTarget:   "pull_request",
 					SourceProjectID: 403, // Will fail with 403 Forbidden
-					TargetProjectID: 400, // Will fail with 400 (not permission error)
-					SHA:             "abc123def",
+					TargetProjectID: 400, // Will fail with generic 400 error
+					SHA:             "abc123ghi",
 				},
 				postStr: "has successfully",
 			},
@@ -314,8 +334,8 @@ func TestCreateStatus(t *testing.T) {
 				event: &info.Event{
 					TriggerTarget:   "pull_request",
 					SourceProjectID: 401, // Will fail with 401 Unauthorized
-					TargetProjectID: 400, // Will fail with 400 (not permission error)
-					SHA:             "abc123ghi",
+					TargetProjectID: 400, // Will fail with generic 400 error
+					SHA:             "abc123jkl",
 				},
 				postStr: "has successfully",
 			},
@@ -371,6 +391,9 @@ func TestCreateStatus(t *testing.T) {
 						case 404:
 							rw.WriteHeader(http.StatusNotFound)
 							fmt.Fprint(rw, `{"message": "404 Project Not Found"}`)
+						case 422:
+							rw.WriteHeader(http.StatusBadRequest)
+							fmt.Fprint(rw, `{"message": "Cannot transition status via :run from :running"}`)
 						default:
 							rw.WriteHeader(http.StatusCreated)
 							fmt.Fprint(rw, `{}`)
@@ -395,6 +418,9 @@ func TestCreateStatus(t *testing.T) {
 						case 404:
 							rw.WriteHeader(http.StatusNotFound)
 							fmt.Fprint(rw, `{"message": "404 Project Not Found"}`)
+						case 422:
+							rw.WriteHeader(http.StatusBadRequest)
+							fmt.Fprint(rw, `{"message": "Cannot transition status via :run from :running"}`)
 						default:
 							rw.WriteHeader(http.StatusCreated)
 							fmt.Fprint(rw, `{}`)
