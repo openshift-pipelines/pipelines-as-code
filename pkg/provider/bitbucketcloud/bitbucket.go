@@ -109,7 +109,7 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusopts
 	}
 
 	cso := &bitbucket.CommitStatusOptions{
-		Key:         v.pacInfo.ApplicationName,
+		Key:         provider.GetCheckName(statusopts, v.pacInfo),
 		Url:         detailsURL,
 		State:       statusopts.Conclusion,
 		Description: statusopts.Title,
