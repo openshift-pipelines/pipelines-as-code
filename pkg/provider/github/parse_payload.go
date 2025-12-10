@@ -187,6 +187,11 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 	processedEvent.GHEURL = event.Provider.URL
 	processedEvent.Provider.URL = event.Provider.URL
 
+	if err := v.enrichIssueCommentEventBody(ctx, processedEvent, eventInt); err != nil {
+		// Don't fail - continue without CEL enrichment
+		v.Logger.Warnf("failed to enrich event body: %v", err)
+	}
+
 	return processedEvent, nil
 }
 
@@ -650,4 +655,45 @@ func (v *Provider) handleCommitCommentEvent(ctx context.Context, event *github.C
 
 	v.Logger.Infof("github commit_comment: pipelinerun %s on %s/%s#%s has been requested", action, runevent.Organization, runevent.Repository, runevent.SHA)
 	return runevent, nil
+}
+
+func (v *Provider) enrichIssueCommentEventBody(ctx context.Context, processedEvent *info.Event, eventInt any) error {
+	// Enrich Event body with pull_request data for CEL expressions on comment events
+	// This allows expressions like body.pull_request.draft to work on comment events
+	if issueCommentEvent, ok := eventInt.(*github.IssueCommentEvent); ok {
+		if processedEvent.TriggerTarget == triggertype.PullRequest && processedEvent.PullRequestNumber > 0 {
+			// Skip if client is not initialized (will be initialized later by SetClient)
+			if v.ghClient == nil {
+				return nil
+			}
+
+			// Fetch the full PullRequest object for CEL body enrichment
+			prObj, _, err := wrapAPI(v, "get_pull_request_for_cel", func() (*github.PullRequest, *github.Response, error) {
+				return v.Client().PullRequests.Get(ctx, processedEvent.Organization, processedEvent.Repository, processedEvent.PullRequestNumber)
+			})
+			if err != nil {
+				return err
+			}
+
+			// Marshal the original event to preserve all its fields
+			eventBytes, err := json.Marshal(issueCommentEvent)
+			if err != nil {
+				return err
+			}
+
+			// Unmarshal into a map so we can add the pull_request field
+			var enrichedEvent map[string]any
+			if err := json.Unmarshal(eventBytes, &enrichedEvent); err != nil {
+				return err
+			}
+
+			// Add the pull_request object to the existing event data
+			enrichedEvent["pull_request"] = prObj
+			// Replace original event with enriched version
+			processedEvent.Event = enrichedEvent
+			v.Logger.Infof("Event body enriched with pull_request data for CEL expressions")
+		}
+	}
+
+	return nil
 }

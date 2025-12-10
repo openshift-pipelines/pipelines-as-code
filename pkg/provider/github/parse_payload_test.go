@@ -1215,3 +1215,138 @@ func TestAppTokenGeneration(t *testing.T) {
 		})
 	}
 }
+
+func TestEnrichIssueCommentEventBody(t *testing.T) {
+	tests := []struct {
+		name               string
+		setupMockResponses func(mux *http.ServeMux)
+		event              *info.Event
+		eventInt           any
+		wantEnriched       bool
+		wantErr            bool
+	}{
+		{
+			name: "enriches issue comment event with pull request data",
+			setupMockResponses: func(mux *http.ServeMux) {
+				mux.HandleFunc("/repos/owner/repo/pulls/123", func(rw http.ResponseWriter, _ *http.Request) {
+					pr := github.PullRequest{
+						Number:  github.Ptr(123),
+						Draft:   github.Ptr(true),
+						Merged:  github.Ptr(false),
+						Commits: github.Ptr(5),
+						Head: &github.PullRequestBranch{
+							SHA: github.Ptr("abc123"),
+						},
+					}
+					b, _ := json.Marshal(pr)
+					_, _ = rw.Write(b)
+				})
+			},
+			event: &info.Event{
+				Organization:      "owner",
+				Repository:        "repo",
+				PullRequestNumber: 123,
+				TriggerTarget:     triggertype.PullRequest,
+			},
+			eventInt: &github.IssueCommentEvent{
+				Action: github.Ptr("created"),
+				Comment: &github.IssueComment{
+					Body: github.Ptr("/retest"),
+				},
+			},
+			wantEnriched: true,
+			wantErr:      false,
+		},
+		{
+			name: "skips enrichment when client is nil",
+			// No setupMockResponses - client will be nil
+			event: &info.Event{
+				Organization:      "owner",
+				Repository:        "repo",
+				PullRequestNumber: 123,
+				TriggerTarget:     triggertype.PullRequest,
+			},
+			eventInt: &github.IssueCommentEvent{
+				Action: github.Ptr("created"),
+			},
+			wantEnriched: false,
+			wantErr:      false,
+		},
+		{
+			name: "skips enrichment for non-pull request events",
+			event: &info.Event{
+				Organization:      "owner",
+				Repository:        "repo",
+				PullRequestNumber: 0,
+				TriggerTarget:     triggertype.Push,
+			},
+			eventInt: &github.IssueCommentEvent{
+				Action: github.Ptr("created"),
+			},
+			wantEnriched: false,
+			wantErr:      false,
+		},
+		{
+			name: "skips enrichment for non-issue comment events",
+			event: &info.Event{
+				Organization:      "owner",
+				Repository:        "repo",
+				PullRequestNumber: 123,
+				TriggerTarget:     triggertype.PullRequest,
+			},
+			eventInt:     &github.PushEvent{},
+			wantEnriched: false,
+			wantErr:      false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := rtesting.SetupFakeContext(t)
+
+			testLogger, _ := logger.GetLogger()
+			gprovider := &Provider{
+				Logger: testLogger,
+			}
+
+			// Setup client and mock responses only if provided
+			if tt.setupMockResponses != nil {
+				fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+				defer teardown()
+				tt.setupMockResponses(mux)
+				gprovider.ghClient = fakeclient
+			}
+
+			err := gprovider.enrichIssueCommentEventBody(ctx, tt.event, tt.eventInt)
+
+			if tt.wantErr {
+				assert.Assert(t, err != nil)
+				return
+			}
+			assert.NilError(t, err)
+
+			if tt.wantEnriched {
+				// Verify the event was enriched with pull_request data
+				assert.Assert(t, tt.event.Event != nil)
+				eventMap, ok := tt.event.Event.(map[string]any)
+				assert.Assert(t, ok, "event should be a map after enrichment")
+
+				prData, ok := eventMap["pull_request"]
+				assert.Assert(t, ok, "event should contain pull_request field")
+				assert.Assert(t, prData != nil, "pull_request data should not be nil")
+
+				// Verify some PR fields are present
+				prMap, ok := prData.(map[string]any)
+				if ok {
+					assert.Assert(t, prMap["number"] != nil, "PR should have number field")
+				}
+			} else if tt.event.Event != nil {
+				eventMap, ok := tt.event.Event.(map[string]any)
+				if ok {
+					_, hasPR := eventMap["pull_request"]
+					assert.Assert(t, !hasPR, "event should not have pull_request field when not enriched")
+				}
+			}
+		})
+	}
+}

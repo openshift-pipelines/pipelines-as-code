@@ -10,11 +10,13 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v74/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestGithubPullRequestTest(t *testing.T) {
@@ -96,4 +98,67 @@ func TestGithubSecondOnCommentAnnotation(t *testing.T) {
 	err = twait.RegexpMatchingInPodLog(context.Background(), g.Cnx, g.TargetNamespace, fmt.Sprintf("tekton.dev/pipelineRun=%s", lastPrName), "step-task", *regexp.MustCompile(fmt.Sprintf(
 		"The event is %s", opscomments.OnCommentEventType.String())), "", 2)
 	assert.NilError(t, err)
+}
+
+func TestGithubPullRequestCELEnrichedComment(t *testing.T) {
+	ctx := context.Background()
+	g := &tgithub.PRTest{
+		Label:     "Github CEL enriched comment event",
+		YamlFiles: []string{"testdata/pipelinerun-cel-enriched-comment.yaml"},
+	}
+	g.RunPullRequest(ctx, t)
+	defer g.TearDown(ctx, t)
+
+	g.Cnx.Clients.Log.Infof("Creating /test comment on PullRequest to trigger CEL evaluation with enriched PR data")
+	_, _, err := g.Provider.Client().Issues.CreateComment(ctx,
+		g.Options.Organization,
+		g.Options.Repo, g.PRNumber,
+		&github.IssueComment{Body: github.Ptr("/test")})
+	assert.NilError(t, err)
+
+	g.Cnx.Clients.Log.Infof("Waiting for second PipelineRun to be created from /test comment")
+	sopt := twait.SuccessOpt{
+		Title:           fmt.Sprintf("Testing %s with Github APPS integration on %s", g.Label, g.TargetNamespace),
+		OnEvent:         "test-all-comment",
+		TargetNS:        g.TargetNamespace,
+		NumberofPRMatch: 2,
+	}
+	twait.Succeeded(ctx, t, g.Cnx, g.Options, sopt)
+
+	prs, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, g.SHA),
+	})
+	assert.NilError(t, err)
+
+	// Find the PipelineRun triggered by the /test comment
+	var prName string
+	for _, pr := range prs.Items {
+		if pr.Annotations[keys.EventType] == "test-all-comment" {
+			prName = pr.Name
+			g.Cnx.Clients.Log.Infof("Found PipelineRun from /test comment: %s (event type: %s)", prName, pr.Annotations[keys.EventType])
+			break
+		}
+	}
+	assert.Assert(t, prName != "", "Should find a PipelineRun with event type test-all-comment")
+
+	err = twait.RegexpMatchingInPodLog(ctx, g.Cnx, g.TargetNamespace,
+		fmt.Sprintf("tekton.dev/pipelineRun=%s", prName),
+		"step-verify-cel-enrichment",
+		*regexp.MustCompile("CEL enrichment verified"),
+		"", 1)
+	assert.NilError(t, err, "Should find CEL enrichment verification in logs")
+
+	err = twait.RegexpMatchingInPodLog(ctx, g.Cnx, g.TargetNamespace,
+		fmt.Sprintf("tekton.dev/pipelineRun=%s", prName),
+		"step-verify-cel-enrichment",
+		*regexp.MustCompile(`PR User:.*\S+`),
+		"", 2)
+	assert.NilError(t, err, "Should find PR user in logs from enriched body.pull_request data")
+
+	err = twait.RegexpMatchingInPodLog(ctx, g.Cnx, g.TargetNamespace,
+		fmt.Sprintf("tekton.dev/pipelineRun=%s", prName),
+		"step-verify-cel-enrichment",
+		*regexp.MustCompile(fmt.Sprintf("PR Number: %d", g.PRNumber)),
+		"", 2)
+	assert.NilError(t, err, "Should find PR number in logs from enriched body.pull_request data")
 }
