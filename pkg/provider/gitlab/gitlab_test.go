@@ -1306,6 +1306,72 @@ func TestGetFiles(t *testing.T) {
 	}
 }
 
+func TestGetFilesPaging(t *testing.T) {
+	tests := []struct {
+		name  string
+		event *info.Event
+	}{
+		{
+			name: "pull-request",
+			event: &info.Event{
+				TriggerTarget: "pull_request",
+				Organization:  "owner",
+				Repository:    "repository",
+			},
+		},
+		{
+			name: "push",
+			event: &info.Event{
+				TriggerTarget: "push",
+				Organization:  "owner",
+				Repository:    "repository",
+				SHA:           "shacommitinfo",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := rtesting.SetupFakeContext(t)
+			metrics.ResetMetrics()
+			fakeclient, mux, teardown := thelp.Setup(t)
+			defer teardown()
+
+			if tt.event.TriggerTarget == "pull_request" {
+				mux.HandleFunc(fmt.Sprintf("/projects/0/merge_requests/%d/diffs",
+					tt.event.PullRequestNumber), func(rw http.ResponseWriter, req *http.Request) {
+					pageCount := thelp.SetPagingHeader(t, rw, req, 5)
+					jeez, err := json.Marshal([]*gitlab.MergeRequestDiff{{NewPath: fmt.Sprintf("change-%d.txt", pageCount)}})
+					assert.NilError(t, err)
+					_, _ = rw.Write(jeez)
+				})
+			}
+			if tt.event.TriggerTarget == "push" {
+				mux.HandleFunc(fmt.Sprintf("/projects/0/repository/commits/%s/diff",
+					tt.event.SHA), func(rw http.ResponseWriter, req *http.Request) {
+					pageCount := thelp.SetPagingHeader(t, rw, req, 5)
+					jeez, err := json.Marshal([]*gitlab.Diff{{NewPath: fmt.Sprintf("change-%d.txt", pageCount)}})
+					assert.NilError(t, err)
+					_, _ = rw.Write(jeez)
+				})
+			}
+
+			metricsTags := map[string]string{"provider": "api.gitlab.com", "event-type": string(tt.event.TriggerTarget)}
+			metricstest.CheckStatsNotReported(t, "pipelines_as_code_git_provider_api_request_count")
+
+			providerInfo := &Provider{gitlabClient: fakeclient, sourceProjectID: 0, targetProjectID: 0, triggerEvent: string(tt.event.TriggerTarget), apiURL: "api.gitlab.com"}
+			changedFiles, err := providerInfo.GetFiles(ctx, tt.event)
+			assert.NilError(t, err, nil)
+			assert.DeepEqual(t, changedFiles.All, []string{"change-1.txt", "change-2.txt", "change-3.txt", "change-4.txt", "change-5.txt"})
+			assert.Equal(t, len(changedFiles.Modified), 5)
+
+			// Check caching
+			metricstest.CheckCountData(t, "pipelines_as_code_git_provider_api_request_count", metricsTags, 5)
+			_, _ = providerInfo.GetFiles(ctx, tt.event)
+			metricstest.CheckCountData(t, "pipelines_as_code_git_provider_api_request_count", metricsTags, 5)
+		})
+	}
+}
+
 func TestIsHeadCommitOfBranch(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -1483,4 +1549,51 @@ func TestGitLabCreateComment(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGitLabCreateCommentPaging(t *testing.T) {
+	updated := false
+	event := &info.Event{PullRequestNumber: 123, TargetProjectID: 666}
+	commit := "Updated Comment"
+	updateMarker := "MARKER"
+	mockResponses := map[string]func(rw http.ResponseWriter, _ *http.Request){
+		"/projects/666/merge_requests/123/notes": func(rw http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodGet {
+				page := thelp.SetPagingHeader(t, rw, r, 100)
+				note := "unrelated"
+				if page == 10 {
+					note = "MARKER"
+				} else if page > 10 {
+					t.Error("notes shouldn't be queries past the expected ID")
+				}
+				fmt.Fprintf(rw, `[{"id": %d, "body": "%s"}]`, page, note)
+			}
+		},
+		"/projects/666/merge_requests/123/notes/{id}": func(rw http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, r.Method, "PUT")
+			if r.PathValue("id") == "10" {
+				rw.WriteHeader(http.StatusOK)
+				updated = true
+			} else {
+				rw.WriteHeader(http.StatusNotFound)
+				t.Errorf("note %s is not intended to be updated", r.PathValue("id"))
+			}
+			fmt.Fprint(rw, `{}`)
+		},
+	}
+
+	fakeclient, mux, teardown := thelp.Setup(t)
+	defer teardown()
+
+	for endpoint, handler := range mockResponses {
+		mux.HandleFunc(endpoint, handler)
+	}
+
+	p := &Provider{
+		sourceProjectID: 666,
+		gitlabClient:    fakeclient,
+	}
+	err := p.CreateComment(context.Background(), event, commit, updateMarker)
+	assert.NilError(t, err)
+	assert.Assert(t, updated == true, "comment update handler has not been called")
 }

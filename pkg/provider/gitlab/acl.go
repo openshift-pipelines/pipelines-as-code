@@ -72,7 +72,7 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(ctx context.Context, e
 	}
 
 	var nextPage int
-	opt := &gitlab.ListMergeRequestDiscussionsOptions{Page: page}
+	opt := &gitlab.ListMergeRequestDiscussionsOptions{Page: page, PerPage: defaultGitlabListOptions.PerPage}
 	discussions, resp, err := v.Client().Discussions.ListMergeRequestDiscussions(v.targetProjectID, event.PullRequestNumber, opt)
 	if err != nil || len(discussions) == 0 {
 		return false, err
