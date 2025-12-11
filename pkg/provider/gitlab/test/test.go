@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -174,6 +175,33 @@ func MuxGetFile(mux *http.ServeMux, pid int, fname, content string, wantErr bool
 		}
 		fmt.Fprint(rw, content)
 	})
+}
+
+// SetPagingHeader sets the gitlab paging header "link" to the next page. If the requested page
+// is equal to or higher than maxPage, no next page header is set. The requested page number
+// is returned.
+func SetPagingHeader(t *testing.T, rw http.ResponseWriter, req *http.Request, maxPage int) int {
+	t.Helper()
+	url := req.URL
+	query := url.Query()
+	lastPageStr := query.Get("page")
+	if lastPageStr == "" {
+		lastPageStr = "1"
+	}
+	lastPage, err := strconv.Atoi(lastPageStr)
+	if err != nil {
+		t.Errorf("unable to parse page number %s: %v", lastPageStr, err)
+		return 0
+	}
+
+	if lastPage < maxPage {
+		query.Set("page", strconv.Itoa(lastPage+1))
+		url.RawQuery = query.Encode()
+		header := fmt.Sprintf("<%s>; rel=\"next\",", url.String())
+		rw.Header().Add("link", header)
+	}
+
+	return lastPage
 }
 
 type TEvent struct {
