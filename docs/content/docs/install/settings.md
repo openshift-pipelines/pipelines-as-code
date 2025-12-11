@@ -211,8 +211,10 @@ Pipelines-as-Code supports fetching tasks and pipelines with its remote annotati
 
   The type of hub catalog. Supported values are:
 
-  * `artifacthub` - For Artifact Hub (default if not specified)
+  * `artifacthub` - For Artifact Hub
   * `tektonhub` - For Tekton Hub
+
+  If `hub-catalog-type` is empty, Pipelines as Code will auto-detect the catalog type by probing the Artifact Hub stats endpoint. If the endpoint responds successfully, the catalog is treated as Artifact Hub; otherwise, it falls back to Tekton Hub.
 
 * By default, both Artifact Hub and Tekton Hub are configured:
 

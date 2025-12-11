@@ -1,9 +1,12 @@
 package settings
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"sync"
 	"testing"
 
+	hubtypes "github.com/openshift-pipelines/pipelines-as-code/pkg/hub/vars"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -160,6 +163,42 @@ func TestGetCatalogHub(t *testing.T) {
 				assert.Assert(t, len(catcher.FilterMessageSnippet(tt.wantLog).TakeAll()) > 0, "could not find log message: got ", catcher)
 			}
 			cmp.Equal(catalogs, tt.hubCatalogs)
+		})
+	}
+}
+
+func TestGetHubCatalogTypeViaAPI(t *testing.T) {
+	tests := []struct {
+		name           string
+		serverStatus   int
+		expectedResult string
+	}{
+		{
+			name:           "returns ArtifactHubType on 200 OK",
+			serverStatus:   http.StatusOK,
+			expectedResult: hubtypes.ArtifactHubType,
+		},
+		{
+			name:           "returns TektonHubType on 404 Not Found",
+			serverStatus:   http.StatusNotFound,
+			expectedResult: hubtypes.TektonHubType,
+		},
+		{
+			name:           "returns TektonHubType on 500 Internal Server Error",
+			serverStatus:   http.StatusInternalServerError,
+			expectedResult: hubtypes.TektonHubType,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(tt.serverStatus)
+			}))
+			defer server.Close()
+
+			result := getHubCatalogTypeViaAPI(server.URL)
+			assert.Equal(t, result, tt.expectedResult)
 		})
 	}
 }
