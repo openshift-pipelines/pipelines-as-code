@@ -150,8 +150,10 @@ func (p *GitHubParser) PopulateEvent(event *info.Event, parsedEvent any) error {
 		event.DefaultBranch = gitEvent.GetRepo().GetDefaultBranch()
 		event.PullRequestNumber = gitEvent.GetPullRequest().GetNumber()
 		event.TriggerTarget = triggertype.PullRequest
-		for _, label := range gitEvent.GetPullRequest().Labels {
-			event.PullRequestLabel = append(event.PullRequestLabel, label.GetName())
+		if gitEvent.GetPullRequest() != nil {
+			for _, label := range gitEvent.GetPullRequest().Labels {
+				event.PullRequestLabel = append(event.PullRequestLabel, label.GetName())
+			}
 		}
 	case *github.PushEvent:
 		event.Organization = gitEvent.GetRepo().GetOwner().GetLogin()
@@ -242,8 +244,11 @@ func (p *GitLabParser) PopulateEvent(event *info.Event, parsedEvent any) error {
 	case *gitlab.MergeEvent:
 		event.Organization = extractOrgFromPath(gitEvent.Project.PathWithNamespace)
 		event.Repository = extractRepoFromPath(gitEvent.Project.PathWithNamespace)
-		event.Sender = gitEvent.User.Username
 		event.URL = gitEvent.Project.WebURL
+		event.DefaultBranch = gitEvent.Project.DefaultBranch
+		if gitEvent.User != nil {
+			event.Sender = gitEvent.User.Username
+		}
 		event.SHA = gitEvent.ObjectAttributes.LastCommit.ID
 		event.SHAURL = gitEvent.ObjectAttributes.LastCommit.URL
 		event.SHATitle = gitEvent.ObjectAttributes.LastCommit.Title
@@ -257,7 +262,6 @@ func (p *GitLabParser) PopulateEvent(event *info.Event, parsedEvent any) error {
 		}
 		event.PullRequestNumber = gitEvent.ObjectAttributes.IID
 		event.PullRequestTitle = gitEvent.ObjectAttributes.Title
-		event.DefaultBranch = gitEvent.Project.DefaultBranch
 		event.TriggerTarget = triggertype.PullRequest
 		if gitEvent.ObjectAttributes.Action == "close" {
 			event.TriggerTarget = triggertype.PullRequestClosed
@@ -272,34 +276,38 @@ func (p *GitLabParser) PopulateEvent(event *info.Event, parsedEvent any) error {
 		lastCommitIdx := len(gitEvent.Commits) - 1
 		event.Organization = extractOrgFromPath(gitEvent.Project.PathWithNamespace)
 		event.Repository = extractRepoFromPath(gitEvent.Project.PathWithNamespace)
-		event.Sender = gitEvent.UserUsername
 		event.URL = gitEvent.Project.WebURL
-		event.SHA = gitEvent.Commits[lastCommitIdx].ID
-		event.SHAURL = gitEvent.Commits[lastCommitIdx].URL
-		event.SHATitle = gitEvent.Commits[lastCommitIdx].Title
-		event.HeadBranch = gitEvent.Ref
-		event.BaseBranch = gitEvent.Ref
 		event.HeadURL = gitEvent.Project.WebURL
 		event.BaseURL = gitEvent.Project.WebURL
 		event.DefaultBranch = gitEvent.Project.DefaultBranch
+		event.Sender = gitEvent.UserUsername
+		if gitEvent.Commits[lastCommitIdx] != nil {
+			event.SHA = gitEvent.Commits[lastCommitIdx].ID
+			event.SHAURL = gitEvent.Commits[lastCommitIdx].URL
+			event.SHATitle = gitEvent.Commits[lastCommitIdx].Title
+		}
+		event.HeadBranch = gitEvent.Ref
+		event.BaseBranch = gitEvent.Ref
 		event.TriggerTarget = triggertype.Push
 	case *gitlab.TagEvent:
 		if len(gitEvent.Commits) == 0 {
 			return fmt.Errorf("no commits attached to this tag event")
 		}
 		lastCommitIdx := len(gitEvent.Commits) - 1
+		event.Sender = gitEvent.UserUsername
 		event.Organization = extractOrgFromPath(gitEvent.Project.PathWithNamespace)
 		event.Repository = extractRepoFromPath(gitEvent.Project.PathWithNamespace)
-		event.Sender = gitEvent.UserUsername
+		event.DefaultBranch = gitEvent.Project.DefaultBranch
 		event.URL = gitEvent.Project.WebURL
-		event.SHA = gitEvent.Commits[lastCommitIdx].ID
-		event.SHAURL = gitEvent.Commits[lastCommitIdx].URL
-		event.SHATitle = gitEvent.Commits[lastCommitIdx].Title
-		event.HeadBranch = gitEvent.Ref
-		event.BaseBranch = gitEvent.Ref
 		event.HeadURL = gitEvent.Project.WebURL
 		event.BaseURL = gitEvent.Project.WebURL
-		event.DefaultBranch = gitEvent.Project.DefaultBranch
+		event.HeadBranch = gitEvent.Ref
+		event.BaseBranch = gitEvent.Ref
+		if gitEvent.Commits[lastCommitIdx] != nil {
+			event.SHA = gitEvent.Commits[lastCommitIdx].ID
+			event.SHAURL = gitEvent.Commits[lastCommitIdx].URL
+			event.SHATitle = gitEvent.Commits[lastCommitIdx].Title
+		}
 		event.TriggerTarget = triggertype.Push
 	default:
 		return fmt.Errorf("unsupported GitLab event type: %T", gitEvent)
@@ -578,55 +586,94 @@ func (p *GiteaParser) ParsePayload(eventType string, body []byte) (any, error) {
 func (p *GiteaParser) PopulateEvent(event *info.Event, parsedEvent any) error {
 	switch gitEvent := parsedEvent.(type) {
 	case *giteaStructs.PullRequestPayload:
-		event.Organization = gitEvent.Repository.Owner.UserName
-		event.Repository = gitEvent.Repository.Name
-		event.Sender = gitEvent.Sender.UserName
-		event.URL = gitEvent.Repository.HTMLURL
-		event.SHA = gitEvent.PullRequest.Head.Sha
-		event.SHAURL = fmt.Sprintf("%s/commit/%s", gitEvent.PullRequest.HTMLURL, gitEvent.PullRequest.Head.Sha)
-		event.HeadBranch = gitEvent.PullRequest.Head.Ref
-		event.BaseBranch = gitEvent.PullRequest.Base.Ref
-		event.HeadURL = gitEvent.PullRequest.Head.Repository.HTMLURL
-		event.BaseURL = gitEvent.PullRequest.Base.Repository.HTMLURL
-		event.PullRequestNumber = int(gitEvent.Index)
-		event.PullRequestTitle = gitEvent.PullRequest.Title
-		event.DefaultBranch = gitEvent.Repository.DefaultBranch
+		if gitEvent.Repository != nil {
+			if gitEvent.Repository.Owner != nil {
+				event.Organization = gitEvent.Repository.Owner.UserName
+			}
+			event.Repository = gitEvent.Repository.Name
+			event.URL = gitEvent.Repository.HTMLURL
+			event.DefaultBranch = gitEvent.Repository.DefaultBranch
+		}
+		if gitEvent.Sender != nil {
+			event.Sender = gitEvent.Sender.UserName
+		}
+		if gitEvent.PullRequest != nil {
+			if gitEvent.PullRequest.Head != nil {
+				event.SHA = gitEvent.PullRequest.Head.Sha
+				if gitEvent.PullRequest.HTMLURL != "" && gitEvent.PullRequest.Head.Sha != "" {
+					event.SHAURL = fmt.Sprintf("%s/commit/%s", gitEvent.PullRequest.HTMLURL, gitEvent.PullRequest.Head.Sha)
+				}
+				event.HeadBranch = gitEvent.PullRequest.Head.Ref
+				if gitEvent.PullRequest.Head.Repository != nil {
+					event.HeadURL = gitEvent.PullRequest.Head.Repository.HTMLURL
+				}
+			}
+			if gitEvent.PullRequest.Base != nil {
+				event.BaseBranch = gitEvent.PullRequest.Base.Ref
+				if gitEvent.PullRequest.Base.Repository != nil {
+					event.BaseURL = gitEvent.PullRequest.Base.Repository.HTMLURL
+				}
+			}
+			event.PullRequestNumber = int(gitEvent.Index)
+			event.PullRequestTitle = gitEvent.PullRequest.Title
+			for _, label := range gitEvent.PullRequest.Labels {
+				if label != nil {
+					event.PullRequestLabel = append(event.PullRequestLabel, label.Name)
+				}
+			}
+		}
 		event.TriggerTarget = triggertype.PullRequest
 		if gitEvent.Action == giteaStructs.HookIssueClosed {
 			event.TriggerTarget = triggertype.PullRequestClosed
 		}
-		for _, label := range gitEvent.PullRequest.Labels {
-			event.PullRequestLabel = append(event.PullRequestLabel, label.Name)
-		}
 	case *giteaStructs.PushPayload:
-		event.Organization = gitEvent.Repo.Owner.UserName
-		event.Repository = gitEvent.Repo.Name
-		event.Sender = gitEvent.Sender.UserName
-		event.URL = gitEvent.Repo.HTMLURL
-		event.SHA = gitEvent.HeadCommit.ID
-		if event.SHA == "" {
+		if gitEvent.Repo != nil {
+			if gitEvent.Repo.Owner != nil {
+				event.Organization = gitEvent.Repo.Owner.UserName
+			}
+			event.Repository = gitEvent.Repo.Name
+			event.URL = gitEvent.Repo.HTMLURL
+			event.HeadURL = gitEvent.Repo.HTMLURL
+			event.BaseURL = gitEvent.Repo.HTMLURL
+			event.DefaultBranch = gitEvent.Repo.DefaultBranch
+		}
+		if gitEvent.Sender != nil {
+			event.Sender = gitEvent.Sender.UserName
+		}
+		if gitEvent.HeadCommit != nil {
+			event.SHA = gitEvent.HeadCommit.ID
+			if event.SHA == "" {
+				event.SHA = gitEvent.Before
+			}
+			event.SHAURL = gitEvent.HeadCommit.URL
+			event.SHATitle = gitEvent.HeadCommit.Message
+		} else if gitEvent.Before != "" {
 			event.SHA = gitEvent.Before
 		}
-		event.SHAURL = gitEvent.HeadCommit.URL
-		event.SHATitle = gitEvent.HeadCommit.Message
 		event.HeadBranch = gitEvent.Ref
 		event.BaseBranch = gitEvent.Ref
-		event.HeadURL = gitEvent.Repo.HTMLURL
-		event.BaseURL = gitEvent.Repo.HTMLURL
-		event.DefaultBranch = gitEvent.Repo.DefaultBranch
 		event.TriggerTarget = triggertype.Push
 	case *giteaStructs.IssueCommentPayload:
-		if gitEvent.Issue.PullRequest == nil {
+		issue := gitEvent.Issue
+		if issue == nil || issue.PullRequest == nil {
 			return fmt.Errorf("issue comment is not from a pull request")
 		}
-		event.Organization = gitEvent.Repository.Owner.UserName
-		event.Repository = gitEvent.Repository.Name
-		event.Sender = gitEvent.Sender.UserName
-		event.URL = gitEvent.Repository.HTMLURL
-		event.DefaultBranch = gitEvent.Repository.DefaultBranch
+		if gitEvent.Repository != nil {
+			if gitEvent.Repository.Owner != nil {
+				event.Organization = gitEvent.Repository.Owner.UserName
+			}
+			event.Repository = gitEvent.Repository.Name
+			event.URL = gitEvent.Repository.HTMLURL
+			event.DefaultBranch = gitEvent.Repository.DefaultBranch
+		}
+		if gitEvent.Sender != nil {
+			event.Sender = gitEvent.Sender.UserName
+		}
 		event.TriggerTarget = triggertype.PullRequest
-		event.TriggerComment = gitEvent.Comment.Body
-		event.PullRequestNumber = extractPullRequestNumber(gitEvent.Issue.URL)
+		if gitEvent.Comment != nil {
+			event.TriggerComment = gitEvent.Comment.Body
+		}
+		event.PullRequestNumber = extractPullRequestNumber(issue.URL)
 	default:
 		return fmt.Errorf("unsupported Gitea event type: %T", gitEvent)
 	}
