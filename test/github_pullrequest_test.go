@@ -684,7 +684,7 @@ func TestGithubPullandPushMatchTriggerOnlyPull(t *testing.T) {
 
 	reg := regexp.MustCompile(fmt.Sprintf("Skipping push event for commit.*as it belongs to pull request #%d", g.PRNumber))
 	maxLines := int64(100)
-	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 20, "controller", &maxLines)
+	err = twait.RegexpMatchingInPACLog(ctx, g.Cnx, *reg, 20, "controller", &maxLines)
 	assert.NilError(t, err)
 }
 
@@ -744,7 +744,7 @@ func TestGithubIgnoreTagPushCommitsFromSkipPushEventsSetting(t *testing.T) {
 
 	reg := regexp.MustCompile(fmt.Sprintf("Processing tag push event for commit %s despite skip-push-events-for-pr-commits being enabled.*", g.SHA))
 	maxLines := int64(100)
-	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 20, "controller", &maxLines)
+	err = twait.RegexpMatchingInPACLog(ctx, g.Cnx, *reg, 20, "controller", &maxLines)
 	assert.NilError(t, err)
 
 	g.Cnx.Clients.Log.Infof("Deleting tag %s", tag)

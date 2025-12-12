@@ -1496,18 +1496,19 @@ func TestCreateComment(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
+			log, _ := logger.GetLogger()
 
 			var provider *Provider
 			if !tt.clientNil {
 				fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 				defer teardown()
-				provider = &Provider{ghClient: fakeclient}
+				provider = &Provider{ghClient: fakeclient, Logger: log}
 
 				for pattern, handler := range tt.mockResponses {
 					mux.HandleFunc(pattern, handler)
 				}
 			} else {
-				provider = &Provider{} // nil client
+				provider = &Provider{Logger: log} // nil client
 			}
 
 			err := provider.CreateComment(ctx, tt.event, "comment body", tt.updateMarker)
