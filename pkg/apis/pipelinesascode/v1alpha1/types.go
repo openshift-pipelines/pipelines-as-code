@@ -170,17 +170,19 @@ type GitlabSettings struct {
 	// CommentStrategy defines how GitLab comments are handled for pipeline results.
 	// Options:
 	// - 'disable_all': Disables all comments on merge requests
+	// - 'one_per_pipeline': Updates a single comment per PipelineRun instead of creating new ones
 	// +optional
-	// +kubebuilder:validation:Enum="";disable_all
+	// +kubebuilder:validation:Enum="";disable_all;one_per_pipeline
 	CommentStrategy string `json:"comment_strategy,omitempty"`
 }
 
 type GithubSettings struct {
-	// CommentStrategy defines how GitLab comments are handled for pipeline results.
+	// CommentStrategy defines how GitHub comments are handled for pipeline results.
 	// Options:
-	// - 'disable_all': Disables all comments on merge requests
+	// - 'disable_all': Disables all comments on pull requests
+	// - 'one_per_pipeline': Updates a single comment per PipelineRun instead of creating new ones
 	// +optional
-	// +kubebuilder:validation:Enum="";disable_all
+	// +kubebuilder:validation:Enum="";disable_all;one_per_pipeline
 	CommentStrategy string `json:"comment_strategy,omitempty"`
 }
 
