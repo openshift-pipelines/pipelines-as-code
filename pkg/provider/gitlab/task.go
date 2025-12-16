@@ -2,15 +2,18 @@ package gitlab
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"regexp"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	gl "gitlab.com/gitlab-org/api/client-go"
 )
 
 type gitLabInfo struct {
+	Scheme      string
 	Host        string
 	GroupOrUser string
 	Repository  string
@@ -55,6 +58,7 @@ func extractGitLabInfo(gitlabURL string) (*gitLabInfo, error) {
 	}
 
 	return &gitLabInfo{
+		Scheme:      parsedURL.Scheme,
 		Host:        parsedURL.Host,
 		GroupOrUser: groupOrUser,
 		Repository:  repoName,
@@ -65,7 +69,7 @@ func extractGitLabInfo(gitlabURL string) (*gitLabInfo, error) {
 
 // GetTaskURI if we are getting a URL from the same URL where the provider is,
 // it means we can try to get the file with the provider token.
-func (v *Provider) GetTaskURI(ctx context.Context, event *info.Event, uri string) (bool, string, error) {
+func (v *Provider) GetTaskURI(_ context.Context, event *info.Event, uri string) (bool, string, error) {
 	if ret := provider.CompareHostOfURLS(uri, event.URL); !ret {
 		return false, "", nil
 	}
@@ -74,13 +78,40 @@ func (v *Provider) GetTaskURI(ctx context.Context, event *info.Event, uri string
 		return false, "", err
 	}
 
-	nEvent := info.NewEvent()
-	nEvent.Organization = extracted.GroupOrUser
-	nEvent.Repository = extracted.Repository
-	nEvent.BaseBranch = extracted.Revision
-	ret, err := v.GetFileInsideRepo(ctx, nEvent, extracted.FilePath, extracted.Revision)
-	if err != nil {
-		return false, "", err
+	// Use the existing client if available, otherwise create a temporary one.
+	// We avoid storing it to prevent side effects on the provider's state.
+	client := v.gitlabClient
+	if client == nil {
+		baseURL := fmt.Sprintf("%s://%s", extracted.Scheme, extracted.Host)
+		var clientErr error
+		client, clientErr = gl.NewClient(event.Provider.Token, gl.WithBaseURL(baseURL))
+		if clientErr != nil {
+			return false, "", fmt.Errorf("failed to create gitlab client: %w", clientErr)
+		}
 	}
-	return true, ret, nil
+
+	// Construct the project slug for the remote repository
+	projectSlug := extracted.GroupOrUser + "/" + extracted.Repository
+
+	// Get the project ID for the remote repository
+	project, _, err := client.Projects.GetProject(projectSlug, &gl.GetProjectOptions{})
+	if err != nil {
+		if errors.Is(err, gl.ErrNotFound) {
+			return false, "", nil
+		}
+		return false, "", fmt.Errorf("failed to get project ID for %s: %w", projectSlug, err)
+	}
+
+	// Fetch the file from the remote repository
+	opt := &gl.GetRawFileOptions{
+		Ref: gl.Ptr(extracted.Revision),
+	}
+	file, _, err := client.RepositoryFiles.GetRawFile(project.ID, extracted.FilePath, opt)
+	if err != nil {
+		if errors.Is(err, gl.ErrNotFound) {
+			return false, "", nil
+		}
+		return false, "", fmt.Errorf("failed to get file %s from remote repository: %w", extracted.FilePath, err)
+	}
+	return true, string(file), nil
 }
