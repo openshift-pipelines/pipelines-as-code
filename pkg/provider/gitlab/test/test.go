@@ -35,7 +35,7 @@ func Setup(t *testing.T) (*gitlab.Client, *http.ServeMux, func()) {
 		server.Close()
 	}
 
-	client, err := gitlab.NewClient("token", gitlab.WithBaseURL(server.URL))
+	client, err := gitlab.NewClient("token", gitlab.WithBaseURL(server.URL), gitlab.WithoutRetries())
 	assert.NilError(t, err)
 	return client, mux, tearDown
 }
