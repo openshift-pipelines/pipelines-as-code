@@ -16,10 +16,10 @@ SHELL := bash
 TOPDIR := $(shell git rev-parse --show-toplevel)
 TMPDIR := $(TOPDIR)/tmp
 HUGO_BIN := $(TMPDIR)/hugo/hugo
-PY_FILES := $(shell find . -type f -regex ".*\.py" -not -regex ".*\.venv/.*" -print)
-SH_FILES := $(shell find hack/ -type f -regex ".*\.sh" -not -regex ".*\.venv/.*" -print)
-YAML_FILES := $(shell find . -not -regex '^./vendor/.*' -type f -regex ".*y[a]ml" -print)
-MD_FILES := $(shell find . -type f -regex ".*md"  -not -regex '^./tmp/.*' -not -regex '^./vendor/.*' -not -regex ".*\.venv/.*" -not -regex '^./.vale/.*'  -not -regex "^./docs/themes/.*" -not -regex "^./.git/.*" -print)
+PY_FILES := $(shell find . -type f -name "*.py" -not -path "./worktrees/*" -not -path "*/.venv/*" -print)
+SH_FILES := $(shell find hack/ -type f -name "*.sh" -not -path "./worktrees/*" -not -path "*/.venv/*" -print)
+YAML_FILES := $(shell find . -type f \( -name "*.yml" -o -name "*.yaml" \) -not -path "./.vale/*" -not -path "./docs/themes/hugo-book/.github/*" -not -path "./worktrees/*" -not -path "./vendor/*" -print)
+MD_FILES := $(shell find . -type f -name "*.md" -not -path "./tmp/*" -not -path "./vendor/*" -not -path "*/.venv/*" -not -path "./.vale/*" -not -path "./docs/themes/*" -not -path "./.git/*" -not -path "./worktrees/*" -print)
 
 ifeq ($(PAC_VERSION),)
 	PAC_VERSION="$(shell git describe --tags --exact-match 2>/dev/null || echo nightly-`date +'%Y%m%d'`-`git rev-parse --short HEAD`)"
