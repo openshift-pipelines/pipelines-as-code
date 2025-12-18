@@ -27,10 +27,12 @@ var (
 // value.
 //
 // The function first checks if the key in the placeholder has a prefix of
-// "body", "headers", or "files". If it does and both `rawEvent` and `headers`
+// "body", "headers", "files", or "cel:". If it does and both `rawEvent` and `headers`
 // are not nil, it attempts to retrieve the value for the key using the
 // `cel.Value` function and returns the corresponding string
-// representation. If the key does not have any of the mentioned prefixes, the
+// representation. The "cel:" prefix allows evaluating arbitrary CEL expressions
+// with access to body, headers, files, and pac (standard PAC parameters) namespaces.
+// If the key does not have any of the mentioned prefixes, the
 // function checks if the key exists in the `dico` map. If it does, the
 // function replaces the placeholder with the corresponding value from the
 // `dico` map.
@@ -52,10 +54,18 @@ func ReplacePlaceHoldersVariables(template string, dico map[string]string, rawEv
 	return keys.ParamsRe.ReplaceAllStringFunc(template, func(s string) string {
 		parts := keys.ParamsRe.FindStringSubmatch(s)
 		key := strings.TrimSpace(parts[1])
-		if strings.HasPrefix(key, "body") || strings.HasPrefix(key, "headers") || strings.HasPrefix(key, "files") {
+
+		// Check for cel: prefix first - it allows arbitrary CEL expressions
+		isCelExpr := strings.HasPrefix(key, "cel:")
+
+		if strings.HasPrefix(key, "body") || strings.HasPrefix(key, "headers") || strings.HasPrefix(key, "files") || isCelExpr {
 			// Check specific requirements for each prefix
 			canEvaluate := false
+			celExpr := key
 			switch {
+			case isCelExpr:
+				canEvaluate = true
+				celExpr = strings.TrimSpace(strings.TrimPrefix(key, "cel:"))
 			case strings.HasPrefix(key, "body") && rawEvent != nil:
 				canEvaluate = true
 			case strings.HasPrefix(key, "headers") && headers != nil:
@@ -70,8 +80,17 @@ func ReplacePlaceHoldersVariables(template string, dico map[string]string, rawEv
 				for k, v := range headers {
 					headerMap[k] = v[0]
 				}
-				val, err := cel.Value(key, rawEvent, headerMap, map[string]string{}, changedFiles)
+				// For cel: prefix, pass dico as pacParams so pac.* variables are available
+				pacParams := map[string]string{}
+				if isCelExpr {
+					pacParams = dico
+				}
+				val, err := cel.Value(celExpr, rawEvent, headerMap, pacParams, changedFiles)
 				if err != nil {
+					// For cel: prefix, return empty string on error
+					if isCelExpr {
+						return ""
+					}
 					return s
 				}
 				var raw any
