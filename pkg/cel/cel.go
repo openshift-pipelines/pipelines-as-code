@@ -1,6 +1,7 @@
 package cel
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 
@@ -38,14 +39,29 @@ func evaluate(expr string, env *cel.Env, data map[string]any) (ref.Val, error) {
 // / pacParams, it will output a Cel value or an error if selectedjm.
 func Value(query string, body any, headers, pacParams map[string]string, changedFiles map[string]any) (ref.Val, error) {
 	// Marshal/Unmarshal the body to a map[string]any so we can access it from the CEL
-	nbody, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
 	var jsonMap map[string]any
-	err = json.Unmarshal(nbody, &jsonMap)
-	if err != nil {
-		return nil, err
+	switch b := body.(type) {
+	case nil:
+		jsonMap = map[string]any{}
+	case map[string]any:
+		jsonMap = b
+	default:
+		nbody, err := json.Marshal(body)
+		if err != nil {
+			return nil, err
+		}
+		trimmed := bytes.TrimSpace(nbody)
+		if len(trimmed) == 0 || bytes.Equal(trimmed, []byte("null")) {
+			jsonMap = map[string]any{}
+		} else {
+			err = json.Unmarshal(nbody, &jsonMap)
+			if err != nil {
+				return nil, err
+			}
+			if jsonMap == nil {
+				jsonMap = map[string]any{}
+			}
+		}
 	}
 
 	mapStrDyn := types.NewMapType(types.StringType, types.DynType)
