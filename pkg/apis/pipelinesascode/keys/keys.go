@@ -60,6 +60,7 @@ const (
 	CancelInProgress       = pipelinesascode.GroupName + "/cancel-in-progress"
 	LogURL                 = pipelinesascode.GroupName + "/log-url"
 	ExecutionOrder         = pipelinesascode.GroupName + "/execution-order"
+	PipelineRunFingerprint = pipelinesascode.GroupName + "/fingerprint"
 	SCMReportingPLRStarted = pipelinesascode.GroupName + "/scm-reporting-plr-started"
 	// PublicGithubAPIURL default is "https://api.github.com" but it can be overridden by X-GitHub-Enterprise-Host header.
 	PublicGithubAPIURL   = "https://api.github.com"

@@ -1037,7 +1037,7 @@ func TestParsePayLoad(t *testing.T) {
 				})
 			}
 
-			logger, _ := logger.GetLogger()
+			logger, observer := logger.GetLogger()
 			gprovider := Provider{
 				ghClient: ghClient,
 				Logger:   logger,
@@ -1060,6 +1060,11 @@ func TestParsePayLoad(t *testing.T) {
 				return
 			}
 			assert.NilError(t, err)
+
+			if tt.skipPushEventForPRCommits {
+				logMsg := observer.FilterMessageSnippet("The 'skip-push-event-for-pr-commits' setting is deprecated").TakeAll()
+				assert.Assert(t, len(logMsg) > 0, "Deprecation warning not found in logs")
+			}
 			// If shaRet is empty, this is a skip case (push event for PR commit)
 			// In this case, ret should be nil
 			if tt.shaRet == "" {
