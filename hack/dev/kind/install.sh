@@ -52,8 +52,8 @@ INSTALL_FROM_RELEASE=
 PAC_PASS_SECRET_FOLDER=${PAC_PASS_SECRET_FOLDER:-""}
 SUDO=sudo
 PAC_DIR=${PAC_DIR:-""}
-DISABLE_GITEA=${DISABLE_GITEA:-""}
-GITEA_HOST=${GITEA_HOST:-"localhost:3000"}
+DISABLE_FORGEJO=${DISABLE_FORGEJO:-""}
+FORGEJO_HOST=${FORGEJO_HOST:-"forgejo.paac-127-0-0-1.nip.io"}
 NO_REINSTALL_KIND=${NO_REINSTALL_KIND:-""}
 
 [[ $(uname -s) == "Darwin" ]] && {
@@ -238,9 +238,9 @@ EOF
   echo "Run: gosmee client --saveDir /tmp/replays ${TEST_GITEA_SMEEURL} http://controller.${DOMAIN_NAME}"
 }
 
-function install_gitea() {
-  env GITEA_URL="http://${GITEA_HOST}" GITEA_HOST=$GITEA_HOST GITEA_USER="pac" \
-    GITEA_PASSWORD="pac" GITEA_REPO_NAME="pac-e2e" ./gitea/deploy.py
+function install_forgejo() {
+  env FORGEJO_URL="http://${FORGEJO_HOST}" FORGEJO_HOST=$FORGEJO_HOST FORGEJO_USER="pac" \
+    FORGEJO_PASSWORD="pac" FORGEJO_REPO_NAME="pac-e2e" python3 ./forgejo/deploy.py
 }
 
 main() {
@@ -253,7 +253,7 @@ main() {
   install_nginx
   install_tekton
   install_pac
-  [[ -z ${DISABLE_GITEA} ]] && install_gitea
+  [[ -z ${DISABLE_FORGEJO} ]] && install_forgejo
   echo "And we are done :): "
   echo "Using registry on localhost:${REG_PORT}"
 }
@@ -267,8 +267,8 @@ Options:
   -b          Only install the registry/kind/nginx and tekton and don't install PAC
   -c          Configure PAC
   -p          Install only PAC
-  -g          Install only Gitea
-  -G          Disable Gitea when installing
+  -g          Install only Forgejo
+  -G          Disable Forgejo when installing
   -r          Install from release instead of local checkout with ko
   -R          Restart the PAC pods
   -O          Don't reinstall kind or registry and continue the whole install of tekton/dashboard/nginx/pac
@@ -308,11 +308,11 @@ while getopts "ROGhgpcrb" o; do
     NO_REINSTALL_KIND=yes
     ;;
   g)
-    install_gitea
+    install_forgejo
     exit
     ;;
   G)
-    DISABLE_GITEA=yes
+    DISABLE_FORGEJO=yes
     ;;
 
   *)

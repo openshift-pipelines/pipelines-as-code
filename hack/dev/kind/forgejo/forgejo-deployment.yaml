@@ -2,38 +2,38 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: gitea
+  name: forgejo
 
 ---
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: gitea-config
-  namespace: gitea
+  name: forgejo-config
+  namespace: forgejo
 data:
   app.ini: |
-    APP_NAME = Gitea: Git with a cup of tea
+    APP_NAME = Forgejo: Beyond coding. We forge.
     RUN_MODE = prod
-    RUN_USER = gitea
+    RUN_USER = git
 
     [repository]
-    ROOT = /home/gitea/repositories
+    ROOT = /data/git/repositories
 
     [repository.local]
-    LOCAL_COPY_PATH = /home/gitea/tmp/local-repo
+    LOCAL_COPY_PATH = /data/tmp/local-repo
 
     [repository.upload]
-    TEMP_PATH = /home/gitea/uploads
+    TEMP_PATH = /data/tmp/uploads
 
     [oauth2]
     ENABLE = false
 
     [server]
-    APP_DATA_PATH    = /home/gitea
-    DOMAIN           = VAR_GITEA_HOST
-    SSH_DOMAIN       = VAR_GITEA_HOST
+    APP_DATA_PATH    = /data
+    DOMAIN           = VAR_FORGEJO_HOST
+    SSH_DOMAIN       = VAR_FORGEJO_HOST
     HTTP_PORT        = 3000
-    ROOT_URL         = VAR_GITEA_URL
+    ROOT_URL         = VAR_FORGEJO_URL
     DISABLE_SSH      = true
     START_SSH_SERVER = false
     SSH_LISTEN_PORT  = 22
@@ -41,33 +41,33 @@ data:
     OFFLINE_MODE     = false
 
     [database]
-    PATH     = /home/gitea/gitea.db
+    PATH     = /data/forgejo.db
     DB_TYPE  = sqlite3
 
     [indexer]
-    ISSUE_INDEXER_PATH = /home/gitea/indexers/issues.bleve
+    ISSUE_INDEXER_PATH = /data/indexers/issues.bleve
 
     [session]
-    PROVIDER_CONFIG = /home/gitea/sessions
+    PROVIDER_CONFIG = /data/sessions
     PROVIDER        = file
 
     [webhook]
     ALLOWED_HOST_LIST = internal, external, *
 
     [picture]
-    AVATAR_UPLOAD_PATH            = /home/gitea/avatars
-    REPOSITORY_AVATAR_UPLOAD_PATH = /home/gitea/repo-avatars
+    AVATAR_UPLOAD_PATH            = /data/avatars
+    REPOSITORY_AVATAR_UPLOAD_PATH = /data/repo-avatars
     DISABLE_GRAVATAR              = false
     ENABLE_FEDERATED_AVATAR       = true
 
     [attachment]
-    PATH = /home/gitea/attachments
+    PATH = /data/attachments
 
     [log]
     MODE      = console
     LEVEL     = info
     ROUTER    = console
-    ROOT_PATH = /home/gitea/log
+    ROOT_PATH = /data/log
 
     [security]
     INSTALL_LOCK                  = true
@@ -102,7 +102,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: gosmee
-  namespace: gitea
+  namespace: forgejo
 spec:
   replicas: 1
   selector:
@@ -122,52 +122,64 @@ spec:
               "client",
               "--saveDir",
               "/tmp/save",
-              "VAR_GITEA_SMEE_HOOK_URL",
+              "VAR_FORGEJO_SMEE_HOOK_URL",
               "VAR_URL",
             ]
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: gitea
-  namespace: gitea
+  name: forgejo
+  namespace: forgejo
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: gitea
+      app: forgejo
   template:
     metadata:
       labels:
-        app: gitea
+        app: forgejo
     spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
       volumes:
-        - name: gitea-configmap
+        - name: forgejo-configmap
           configMap:
-            name: gitea-config
+            name: forgejo-config
             items:
               - key: app.ini
                 path: app.ini
+        - name: forgejo-data
+          emptyDir: {}
       containers:
-        - image: quay.io/gpte-devops-automation/gitea
+        - image: codeberg.org/forgejo/forgejo:13
           imagePullPolicy: IfNotPresent
-          name: gitea
+          name: forgejo
           env:
-            - name: GITEA_HOST
-              value: VAR_GITEA_HOST
-            - name: GITEA_URL
-              value: VAR_GITEA_URL
+            - name: FORGEJO_HOST
+              value: VAR_FORGEJO_HOST
+            - name: FORGEJO_URL
+              value: VAR_FORGEJO_URL
+            - name: FORGEJO_WORK_DIR
+              value: /data
+            - name: FORGEJO_CUSTOM
+              value: /data/gitea
           command:
             [
-              "bash",
-              "-xvec",
-              "rm -rf /home/gitea/conf;cp -av /configmap /home/gitea/conf;rungitea",
+              "sh",
+              "-c",
+              "mkdir -p /data/gitea/conf && cp -f /configmap/app.ini /data/gitea/conf/app.ini && /usr/local/bin/gitea web -c /data/gitea/conf/app.ini",
             ]
           ports:
             - containerPort: 3000
           volumeMounts:
-            - name: gitea-configmap
+            - name: forgejo-configmap
               mountPath: /configmap
+            - name: forgejo-data
+              mountPath: /data
           readinessProbe:
             httpGet:
               path: /
@@ -192,12 +204,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  namespace: gitea
-  name: gitea
+  namespace: forgejo
+  name: forgejo
 spec:
   type: NodePort
   selector:
-    app: gitea
+    app: forgejo
   ports:
     - protocol: TCP
       port: 3000

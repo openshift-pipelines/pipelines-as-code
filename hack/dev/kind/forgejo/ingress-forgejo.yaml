@@ -2,17 +2,17 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: gitea-ingress
-  namespace: gitea
+  name: forgejo-ingress
+  namespace: forgejo
 spec:
   ingressClassName: nginx
   rules:
-  - host: "gitea.paac-127-0-0-1.nip.io"
+  - host: "forgejo.paac-127-0-0-1.nip.io"
     http:
       paths:
       - backend:
           service:
-            name: "gitea"
+            name: "forgejo"
             port:
               number: 3000
         path: /

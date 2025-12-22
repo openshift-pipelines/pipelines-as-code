@@ -80,6 +80,17 @@ func (p *Policy) checkAllowed(ctx context.Context, tType triggertype.Trigger) (R
 	return ResultDisallowed, fmt.Sprintf("policy check: %s, %s", string(tType), reason)
 }
 
+// IsAllowed determines if a given event trigger is permitted based on repository policy settings and OWNERS file.
+//
+// The function first checks if a policy is set for the repository and if the event trigger type is allowed by the policy.
+// - If allowed by policy, it emits an informational event and returns ResultAllowed.
+// - If disallowed by policy, it checks if the sender is allowed via the OWNERS file:
+//   - If allowed via OWNERS, it emits an informational event and returns ResultAllowed.
+//   - If not allowed, it emits a disallowed event and returns ResultDisallowed with a reason.
+//
+// - If no policy is set, it returns ResultNotSet.
+//
+// This function ensures that policy settings take precedence, but fallback to OWNERS file permissions if policy disallows the event.
 func (p *Policy) IsAllowed(ctx context.Context, tType triggertype.Trigger) (Result, string) {
 	var reason string
 	policyRes, reason := p.checkAllowed(ctx, tType)

@@ -52,7 +52,7 @@ jobs:
       TEST_BITBUCKET_CLOUD_E2E_REPOSITORY: cboudjna/pac-e2e-tests
       TEST_BITBUCKET_CLOUD_USER: cboudjna
       TEST_EL_URL: http://controller.paac-127-0-0-1.nip.io
-      TEST_GITEA_API_URL: http://localhost:3000
+      TEST_GITEA_API_URL: http://forgejo.paac-127-0-0-1.nip.io
       TEST_GITEA_USERNAME: pac
       TEST_GITEA_PASSWORD: pac
       TEST_GITEA_REPO_OWNER: pac/pac
