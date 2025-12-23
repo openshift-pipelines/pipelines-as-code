@@ -300,6 +300,11 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 		statusOpts.Conclusion = "success"
 		statusOpts.Title = "completed"
 	case "pending":
+		statusOpts.Conclusion = "pending"
+	}
+	// When the pipeline is actually running (in_progress), show it as running
+	// not pending. Pending is only for waiting states like /ok-to-test approval.
+	if statusOpts.Status == "in_progress" {
 		statusOpts.Conclusion = "running"
 	}
 	if statusOpts.DetailsURL != "" {
