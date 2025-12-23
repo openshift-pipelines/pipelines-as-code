@@ -1,1 +1,1 @@
-nightly
+nightly-bafda3204-20251223
