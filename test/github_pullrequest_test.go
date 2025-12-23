@@ -685,6 +685,54 @@ func TestGithubIgnoreTagPushCommitsFromSkipPushEventsSetting(t *testing.T) {
 	g.Cnx.Clients.Log.Infof("Tag %s has been deleted", tag)
 }
 
+// TestGithubPullRequestCelPrefix tests the cel: prefix for arbitrary CEL expressions.
+// The cel: prefix allows evaluating full CEL expressions with access to body, headers, files, and pac namespaces.
+func TestGithubPullRequestCelPrefix(t *testing.T) {
+	ctx := context.Background()
+	g := &tgithub.PRTest{
+		Label:     "Github CEL Prefix",
+		YamlFiles: []string{"testdata/pipelinerun-cel-prefix-github.yaml"},
+	}
+	g.RunPullRequest(ctx, t)
+	defer g.TearDown(ctx, t)
+
+	// Wait for repository status to be updated
+	waitOpts := twait.Opts{
+		RepoName:        g.TargetNamespace,
+		Namespace:       g.TargetNamespace,
+		MinNumberStatus: 1,
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       g.SHA,
+	}
+	_, err := twait.UntilRepositoryUpdated(ctx, g.Cnx.Clients, waitOpts)
+	assert.NilError(t, err)
+
+	prs, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{})
+	assert.NilError(t, err)
+	assert.Assert(t, len(prs.Items) >= 1, "Expected at least one PipelineRun")
+
+	// Verify cel: prefix expressions evaluated correctly using golden file
+	// Expected output:
+	// cel_ternary: new-pr (body.action == "opened" for a new PR)
+	// cel_pac_branch: matched (pac.target_branch matches the target branch)
+	// cel_has_function: has-pr (body.pull_request exists)
+	// cel_string_concat: Build on <target_branch>
+	// cel_files_check: has-files (files.all.size() > 0 since we have changed files)
+	// cel_github_header: pull_request (X-Github-Event header value)
+	// cel_error_handling: (empty string - cel: prefix returns empty on error)
+	err = twait.RegexpMatchingInPodLog(
+		ctx,
+		g.Cnx,
+		g.TargetNamespace,
+		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=cel-prefix-test", prs.Items[0].Name),
+		"step-test-cel-prefix-values",
+		regexp.Regexp{},
+		t.Name(),
+		2,
+	)
+	assert.NilError(t, err)
+}
+
 // Local Variables:
 // compile-command: "go test -tags=e2e -v -info TestGithubPullRequest$ ."
 // End:

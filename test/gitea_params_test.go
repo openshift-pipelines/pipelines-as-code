@@ -526,3 +526,44 @@ func TestGiteaParamsChangedFilesCEL(t *testing.T) {
 		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=changed-files-push-params", sortedstatus[0].PipelineRunName),
 		"step-test-changed-files-params-push", strings.ReplaceAll(fmt.Sprintf("%s-changed-files-push-params-2.golden", t.Name()), "/", "-"), 2)
 }
+
+// TestGiteaParamsCelPrefix tests the cel: prefix for arbitrary CEL expressions.
+// The cel: prefix allows evaluating full CEL expressions with access to body, headers, files, and pac namespaces.
+func TestGiteaParamsCelPrefix(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		Regexp:      successRegexp,
+		TargetEvent: "pull_request",
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml": "testdata/pipelinerun-cel-prefix-test.yaml",
+		},
+		CheckForStatus: "success",
+		ExpectEvents:   false,
+	}
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+
+	prs, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{})
+	assert.NilError(t, err)
+	assert.Equal(t, len(prs.Items), 1, "Expected exactly one PipelineRun")
+
+	// Verify cel: prefix expressions evaluated correctly
+	// Expected output:
+	// cel_ternary: new-pr (body.action == "opened" for a new PR)
+	// cel_pac_branch: matched (pac.target_branch matches the target branch)
+	// cel_has_function: has-pr (body.pull_request exists)
+	// cel_string_concat: Build on <target_branch>
+	// cel_files_check: has-files (files.all.size() > 0 since we have changed files)
+	// cel_error_handling: (empty string - cel: prefix returns empty on error)
+	// if this change you need to run that e2e test with -test.update-golden=true
+	err = twait.RegexpMatchingInPodLog(
+		context.Background(),
+		topts.ParamsRun,
+		topts.TargetNS,
+		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=cel-prefix-test", prs.Items[0].Name),
+		"step-test-cel-prefix-values",
+		regexp.Regexp{},
+		t.Name(),
+		2,
+	)
+	assert.NilError(t, err)
+}

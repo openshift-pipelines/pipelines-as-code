@@ -1,0 +1,7 @@
+cel_ternary: new-pr
+cel_pac_branch: matched
+cel_has_function: has-pr
+cel_string_concat: Build on main
+cel_files_check: has-files
+cel_github_header: pull_request
+cel_error_handling: 
