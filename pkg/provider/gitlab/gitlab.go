@@ -337,12 +337,26 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 		v.Logger.Debugf("created commit status on source project ID %d", event.TargetProjectID)
 		return nil
 	}
-	if _, _, err2 := v.Client().Commits.SetCommitStatus(event.TargetProjectID, event.SHA, opt); err2 == nil {
+	_, _, err2 := v.Client().Commits.SetCommitStatus(event.TargetProjectID, event.SHA, opt)
+	if err2 == nil {
 		v.Logger.Debugf("created commit status on target project ID %d", event.TargetProjectID)
 		// we managed to set the status on the target repo, all good we are done
 		return nil
 	}
-	v.Logger.Debugf("cannot set status with the GitLab token on the target project: %v", err)
+	v.Logger.Debugf("cannot set status with the GitLab token on the target project: %v", err2)
+
+	// Skip creating MR comments if the error is a state transition error
+	// (e.g., "Cannot transition status via :run from :running").
+	// This means the status is already set, so we should not create a comment.
+	// For other errors (permission issues, network errors, etc.), we fall back to comments.
+	isTransitionErr := func(e error) bool {
+		return e != nil && strings.Contains(e.Error(), "Cannot transition status")
+	}
+	if isTransitionErr(err) || isTransitionErr(err2) {
+		v.Logger.Debugf("skipping MR comment as error is a state transition issue (status already set)")
+		return nil
+	}
+
 	// we only show the first error as it's likely something the user has more control to fix
 	// the second err is cryptic as it needs a dummy gitlab pipeline to start
 	// with and will only give more confusion in the event namespace
