@@ -438,8 +438,16 @@ of the pull request is called `superuser` and the action is `synchronize` (i.e.:
 an update occurred on a pull request).
 
 {{< hint info >}}
-When matching the body payload in a Pull Request, the GitOps comments such as
-`/retest` won't be working as expected.
+**GitHub App only**: When using GitOps comments such as `/test` or `/retest` on a
+Pull Request, Pipelines as Code automatically enriches the event body with the full
+pull request data. This means expressions like `body.pull_request.draft` or
+`body.pull_request.user.login` will work correctly on both:
+
+* Direct pull request events (opened, synchronized, etc.)
+* Comment events (`/test`, `/retest`, `/ok-to-test`)
+
+**Other providers (GitLab, Gitea, Bitbucket)**: When matching the body payload in a
+Pull Request, the GitOps comments such as `/retest` won't be working as expected.
 
 The payload body will become of the comment and not the original pull request
 payload.
