@@ -1,0 +1,23 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: "\\ .PipelineName //"
+  annotations:
+    pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
+    pipelinesascode.tekton.dev/on-comment: "^/test-comment"
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      trigger_type == "comment"
+spec:
+  pipelineSpec:
+    tasks:
+      - name: on-comment-cel-test
+        taskSpec:
+          steps:
+            - name: test-on-comment-cel
+              image: registry.access.redhat.com/ubi9/ubi-micro
+              script: |
+                cat <<EOF
+                Trigger type verified: trigger_type={{ trigger_type }}
+                Event type: {{ event_type }}
+                EOF
