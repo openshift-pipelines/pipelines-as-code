@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"testing"
 
-	giteaStructs "code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/sdk/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
+	giteaStructs "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/giteastructs"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/test"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"

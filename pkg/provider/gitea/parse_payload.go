@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"net/http"
 
-	giteaStructs "code.gitea.io/gitea/modules/structs"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	giteaStructs "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/giteastructs"
 )
 
 func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.Request,
