@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"strings"
 
-	giteaStructs "code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/sdk/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/acl"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/policy"
+	giteaStructs "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/giteastructs"
 )
 
 func (v *Provider) CheckPolicyAllowing(_ context.Context, event *info.Event, allowedTeams []string) (bool, string) {
