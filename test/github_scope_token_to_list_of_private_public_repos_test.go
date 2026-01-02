@@ -81,7 +81,8 @@ func TestGithubPullRequestScopeTokenToListOfReposByGlobalConfiguration(t *testin
 		splittedValue = strings.Split(urlData.Path, "/")
 	}
 
-	data := map[string]string{"secret-github-app-scope-extra-repos": splittedValue[1] + "/" + splittedValue[2]}
+	// Use glob pattern to match all repos under the organization
+	data := map[string]string{"secret-github-app-scope-extra-repos": splittedValue[1] + "/*"}
 
 	verifyGHTokenScope(t, remoteTaskURL, remoteTaskName, data)
 }
@@ -116,6 +117,7 @@ func verifyGHTokenScope(t *testing.T, remoteTaskURL, remoteTaskName string, data
 		assert.NilError(t, err)
 		splittedValue = strings.Split(urlData.Path, "/")
 	}
+	// Use glob pattern to match all repos under the organization
 	repository := &pacv1alpha1.Repository{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: targetNS,
@@ -123,7 +125,7 @@ func verifyGHTokenScope(t *testing.T, remoteTaskURL, remoteTaskName string, data
 		Spec: pacv1alpha1.RepositorySpec{
 			URL: repoinfo.GetHTMLURL(),
 			Settings: &pacv1alpha1.Settings{
-				GithubAppTokenScopeRepos: []string{splittedValue[1] + "/" + splittedValue[2]},
+				GithubAppTokenScopeRepos: []string{splittedValue[1] + "/*"},
 			},
 		},
 	}
