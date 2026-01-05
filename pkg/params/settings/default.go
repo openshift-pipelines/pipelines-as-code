@@ -73,7 +73,7 @@ func getHubCatalogs(logger *zap.SugaredLogger, catalogs *sync.Map, config map[st
 				catalogName := config[fmt.Sprintf("%s-name", cPrefix)]
 				catalogType := config[fmt.Sprintf("%s-type", cPrefix)]
 				if catalogType == "" {
-					catalogType = hubtypes.ArtifactHubType // default to artifact hub if not specified
+					catalogType = getHubCatalogTypeViaAPI(config[fmt.Sprintf("%s-url", cPrefix)])
 				}
 
 				value, ok := catalogs.Load(catalogID)

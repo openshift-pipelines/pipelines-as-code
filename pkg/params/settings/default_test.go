@@ -20,12 +20,20 @@ func TestGetCatalogHub(t *testing.T) {
 		URL:   "https://foo.com",
 		Name:  "tekton",
 	})
+
+	// Mock server for API-based type detection (returns 200 OK -> ArtifactHubType)
+	artifactHubServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer artifactHubServer.Close()
+
 	tests := []struct {
-		name        string
-		config      map[string]string
-		numCatalogs int
-		wantLog     string
-		hubCatalogs *sync.Map
+		name           string
+		config         map[string]string
+		numCatalogs    int
+		wantLog        string
+		hubCatalogs    *sync.Map
+		wantCustomType map[string]string
 	}{
 		{
 			name:        "good/default catalog",
@@ -144,6 +152,32 @@ func TestGetCatalogHub(t *testing.T) {
 			hubCatalogs: &sync.Map{},
 			wantLog:     `CONFIG: invalid hub type invalid, defaulting to artifacthub`,
 		},
+		{
+			name: "custom catalog type detection via API - success (ArtifactHub)",
+			config: map[string]string{
+				"catalog-1-id":   "example-ah",
+				"catalog-1-url":  artifactHubServer.URL,
+				"catalog-1-name": "artifact",
+			},
+			numCatalogs: 2,
+			hubCatalogs: &sync.Map{},
+			wantCustomType: map[string]string{
+				"example-ah": hubtypes.ArtifactHubType,
+			},
+		},
+		{
+			name: "custom catalog type detection via API - failure (TektonHub)",
+			config: map[string]string{
+				"catalog-1-id":   "example-th",
+				"catalog-1-url":  "https://this-is-not-a-real-hub.test",
+				"catalog-1-name": "tekton",
+			},
+			numCatalogs: 2,
+			hubCatalogs: &sync.Map{},
+			wantCustomType: map[string]string{
+				"example-th": hubtypes.TektonHubType,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -161,6 +195,13 @@ func TestGetCatalogHub(t *testing.T) {
 			assert.Equal(t, length, tt.numCatalogs)
 			if tt.wantLog != "" {
 				assert.Assert(t, len(catcher.FilterMessageSnippet(tt.wantLog).TakeAll()) > 0, "could not find log message: got ", catcher)
+			}
+			for catalogID, expectedType := range tt.wantCustomType {
+				value, ok := catalogs.Load(catalogID)
+				assert.Assert(t, ok, "catalog %s should exist", catalogID)
+				catalog, ok := value.(HubCatalog)
+				assert.Assert(t, ok, "catalog %s should be HubCatalog type", catalogID)
+				assert.Equal(t, catalog.Type, expectedType)
 			}
 			cmp.Equal(catalogs, tt.hubCatalogs)
 		})
