@@ -88,7 +88,14 @@ containerdConfigPatches:
     endpoint = ["http://${REG_NAME}:5000"]
 EOF
 
-  ${SUDO} ${kind} create cluster --name ${KIND_CLUSTER_NAME} --config ${TMPD}/kconfig.yaml
+  kind_args=()
+
+  # Only add the --image flag if the NODE_IMAGE variable is not empty
+  if [[ -n "${NODE_IMAGE:-}" ]]; then
+    echo "Using custom node image: $NODE_IMAGE"
+    kind_args+=(--image "$NODE_IMAGE")
+  fi
+  ${SUDO} ${kind} create cluster --name ${KIND_CLUSTER_NAME} --config ${TMPD}/kconfig.yaml "${kind_args[@]}"
   mkdir -p $(dirname ${KUBECONFIG})
   ${SUDO} ${kind} --name ${KIND_CLUSTER_NAME} get kubeconfig >${KUBECONFIG}
 
