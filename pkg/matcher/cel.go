@@ -12,17 +12,20 @@ import (
 	"github.com/google/cel-go/common/decls"
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/ref"
+	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/changedfiles"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"go.uber.org/zap"
 )
 
 const (
 	reChangedFilesTags = `files\.`
 )
 
-func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provider.Interface) (ref.Val, error) {
+func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provider.Interface, customParams map[string]string, eventEmitter *events.EventEmitter, repo *apipac.Repository) (ref.Val, error) {
 	eventTitle := event.PullRequestTitle
 	if event.TriggerTarget == triggertype.Push {
 		eventTitle = event.SHATitle
@@ -72,6 +75,7 @@ func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provid
 
 	data := map[string]any{
 		"event":         event.TriggerTarget.String(),
+		"event_type":    event.EventType,
 		"event_title":   eventTitle,
 		"target_branch": event.BaseBranch,
 		"source_branch": event.HeadBranch,
@@ -87,10 +91,12 @@ func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provid
 			"renamed":  changedFiles.Renamed,
 		},
 	}
-	env, err := cel.NewEnv(
+
+	varDecls := []cel.EnvOption{
 		cel.Lib(celPac{vcx, ctx, event}),
 		cel.VariableDecls(
 			decls.NewVariable("event", types.StringType),
+			decls.NewVariable("event_type", types.StringType),
 			decls.NewVariable("headers", types.NewMapType(types.StringType, types.DynType)),
 			decls.NewVariable("body", types.NewMapType(types.StringType, types.DynType)),
 			decls.NewVariable("event_title", types.StringType),
@@ -99,7 +105,21 @@ func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provid
 			decls.NewVariable("target_url", types.StringType),
 			decls.NewVariable("source_url", types.StringType),
 			decls.NewVariable("files", types.NewMapType(types.StringType, types.DynType)),
-		))
+		),
+	}
+	// Add declarations for custom params (all as strings)
+	for k, v := range customParams {
+		// Don't overwrite standard params
+		if _, ok := data[k]; !ok {
+			data[k] = v
+			varDecls = append(varDecls, cel.VariableDecls(decls.NewVariable(k, types.StringType)))
+		} else if eventEmitter != nil && repo != nil {
+			eventEmitter.EmitMessage(repo, zap.WarnLevel, "CELParamConflict",
+				fmt.Sprintf("custom parameter '%s' conflicts with standard CEL variable and was ignored", k))
+		}
+	}
+
+	env, err := cel.NewEnv(varDecls...)
 	if err != nil {
 		return nil, err
 	}

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	giteaStructs "code.gitea.io/gitea/modules/structs"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	giteaStructs "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/giteastructs"
 	"go.uber.org/zap"
 )
 

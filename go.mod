@@ -5,7 +5,6 @@ go 1.24.0
 toolchain go1.24.2
 
 require (
-	code.gitea.io/gitea v1.24.6
 	code.gitea.io/sdk/gitea v0.22.0
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/bradleyfalzon/ghinstallation/v2 v2.16.0

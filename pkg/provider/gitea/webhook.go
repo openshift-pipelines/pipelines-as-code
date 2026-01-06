@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	giteaStructs "code.gitea.io/gitea/modules/structs"
+	giteaStructs "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/giteastructs"
 )
 
 // whEventType represents a Gitea webhook event.
