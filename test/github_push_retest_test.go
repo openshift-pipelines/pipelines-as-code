@@ -221,7 +221,7 @@ func TestGithubPushRequestGitOpsCommentCancel(t *testing.T) {
 	// Check for the skip message in controller logs
 	g.Cnx.Clients.Log.Infof("PipelineRun may have completed before cancellation, checking logs for skip message")
 	numLines := int64(100) // Increased from 20 to capture more logs
-	reg := regexp.MustCompile(fmt.Sprintf(".*skipping cancelling pipelinerun %s/%s.*already done.*",
+	reg := regexp.MustCompile(fmt.Sprintf(".*skipping cancelling pipelinerun %s/%s \\(original: .*\\), already done.*",
 		g.TargetNamespace, targetPRName))
 	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 10, "controller", &numLines)
 	if err != nil {
