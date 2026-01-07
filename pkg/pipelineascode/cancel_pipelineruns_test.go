@@ -74,7 +74,7 @@ var (
 )
 
 func TestCancelPipelinerunOpsComment(t *testing.T) {
-	observer, _ := zapobserver.New(zap.InfoLevel)
+	observer, catcher := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
 	tests := []struct {
 		name                  string
@@ -82,6 +82,7 @@ func TestCancelPipelinerunOpsComment(t *testing.T) {
 		repo                  *v1alpha1.Repository
 		pipelineRuns          []*pipelinev1.PipelineRun
 		cancelledPipelineRuns map[string]bool
+		wantLog               string
 	}{
 		{
 			name: "cancel running",
@@ -215,6 +216,44 @@ func TestCancelPipelinerunOpsComment(t *testing.T) {
 			cancelledPipelineRuns: map[string]bool{},
 		},
 		{
+			name: "skip already done pipelinerun with original name in log",
+			event: &info.Event{
+				Repository:        "foo",
+				SHA:               "foosha",
+				TriggerTarget:     "pull_request",
+				PullRequestNumber: pullReqNumber,
+				State: info.State{
+					CancelPipelineRuns: true,
+				},
+			},
+			pipelineRuns: []*pipelinev1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-foo-abc-123",
+						Namespace: "foo",
+						Labels:    fooRepoLabels,
+						Annotations: map[string]string{
+							keys.OriginalPRName: "pr-foo",
+						},
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+					Status: pipelinev1.PipelineRunStatus{
+						Status: knativeduckv1.Status{
+							Conditions: knativeduckv1.Conditions{
+								apis.Condition{
+									Type:   apis.ConditionSucceeded,
+									Status: corev1.ConditionTrue,
+								},
+							},
+						},
+					},
+				},
+			},
+			repo:                  fooRepo,
+			cancelledPipelineRuns: map[string]bool{},
+			wantLog:               "cancel-in-progress: skipping cancelling pipelinerun foo/pr-foo-abc-123 (original: pr-foo), already done",
+		},
+		{
 			name: "cancel running for push event",
 			event: &info.Event{
 				Repository:    "foo",
@@ -315,6 +354,10 @@ func TestCancelPipelinerunOpsComment(t *testing.T) {
 					continue
 				}
 				assert.Assert(t, string(pr.Spec.Status) != pipelinev1.PipelineRunSpecStatusCancelledRunFinally)
+			}
+
+			if tt.wantLog != "" {
+				assert.Assert(t, len(catcher.FilterMessageSnippet(tt.wantLog).TakeAll()) > 0, fmt.Sprintf("could not find log message: got %+v", catcher.TakeAll()))
 			}
 		})
 	}

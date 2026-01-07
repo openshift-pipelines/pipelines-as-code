@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/google/go-github/v74/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
@@ -173,6 +174,24 @@ func TestGithubPushRequestGitOpsCommentCancel(t *testing.T) {
 	err = twait.UntilPipelineRunCreated(ctx, g.Cnx.Clients, waitOpts)
 	assert.NilError(t, err)
 
+	// Get the specific PipelineRun name that was created by the /test comment
+	prs, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, g.SHA),
+	})
+	assert.NilError(t, err)
+
+	var targetPRName string
+	for _, pr := range prs.Items {
+		annotations := pr.GetAnnotations()
+		if annotations != nil &&
+			annotations[keys.OriginalPRName] == "pipelinerun-on-push" &&
+			annotations[keys.EventType] == "test-comment" {
+			targetPRName = pr.GetName()
+			break
+		}
+	}
+	assert.Assert(t, targetPRName != "", "Could not find the PipelineRun created by /test comment")
+
 	comment := "/cancel pipelinerun-on-push branch:" + g.TargetNamespace
 	g.Cnx.Clients.Log.Infof("%s on Push Request", comment)
 	_, _, err = g.Provider.Client().Repositories.CreateComment(ctx,
@@ -181,37 +200,62 @@ func TestGithubPushRequestGitOpsCommentCancel(t *testing.T) {
 		&github.RepositoryComment{Body: github.Ptr(comment)})
 	assert.NilError(t, err)
 
-	g.Cnx.Clients.Log.Infof("Waiting for Repository to be updated still to %d since it has been cancelled", numberOfStatus)
-	repo, _ := twait.UntilRepositoryUpdated(ctx, g.Cnx.Clients, waitOpts) // don't check for error, because cancelled is not success and this will fail
-	cancelled := false
-	for _, c := range repo.Status {
-		if c.Conditions[0].Reason == tektonv1.TaskRunReasonCancelled.String() {
-			cancelled = true
-		}
-	}
+	g.Cnx.Clients.Log.Infof("Waiting for PipelineRun %s to be cancelled or skip message", targetPRName)
 
-	// this went too fast so at least we check it was requested for it
-	if !cancelled {
-		numLines := int64(20)
-		reg := regexp.MustCompile(".*pipelinerun.*skipping cancelling pipelinerun.*on-push.*already done.*")
-		err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 10, "controller", &numLines)
-		if err != nil {
-			t.Errorf("neither a cancelled pipelinerun in repo status or a request to skip the cancellation in the controller log was found: %s", err.Error())
+	// Wait for PipelineRun to be cancelled using existing helper function
+	waitOpts.MinNumberStatus = 1 // Looking for at least 1 cancelled PR
+	err = twait.UntilPipelineRunHasReason(ctx, g.Cnx.Clients, tektonv1.PipelineRunReasonCancelled, waitOpts)
+
+	if err == nil {
+		// PipelineRun was successfully cancelled, verify in Repository status
+		g.Cnx.Clients.Log.Infof("PipelineRun %s was cancelled, verifying Repository status", targetPRName)
+
+		// Wait for Repository status to be updated (reconciler updates asynchronously)
+		cancelled := false
+		lastReason := ""
+		for i := 0; i < 10; i++ {
+			repo, err := g.Cnx.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(g.TargetNamespace).Get(ctx, g.TargetNamespace, metav1.GetOptions{})
+			assert.NilError(t, err)
+
+			for _, status := range repo.Status {
+				if status.PipelineRunName == targetPRName &&
+					len(status.Conditions) > 0 &&
+					(status.Conditions[0].Reason == tektonv1.PipelineRunReasonCancelled.String() ||
+						status.Conditions[0].Reason == tektonv1.PipelineRunReasonCancelledRunningFinally.String()) {
+					lastReason = status.Conditions[0].Reason
+					cancelled = true
+					break
+				}
+				if status.PipelineRunName == targetPRName && len(status.Conditions) > 0 {
+					lastReason = status.Conditions[0].Reason
+				}
+			}
+
+			if cancelled {
+				break
+			}
+			time.Sleep(1 * time.Second)
 		}
+		assert.Assert(t, cancelled, fmt.Sprintf("Repository status does not show PipelineRun %s as cancelled after 10 retries (last reason: %q)", targetPRName, lastReason))
+
+		// Final verification: ensure we have the expected number of PipelineRuns
+		pruns, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{})
+		assert.NilError(t, err)
+		assert.Equal(t, len(pruns.Items), numberOfStatus)
 		return
 	}
 
-	// make sure the number of items
-	pruns, err = g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, g.SHA),
-	})
-	assert.NilError(t, err)
-	assert.Equal(t, len(pruns.Items), numberOfStatus)
-	cancelled = false
-	for _, pr := range pruns.Items {
-		if pr.Status.Conditions[0].Reason == tektonv1.TaskRunReasonCancelled.String() {
-			cancelled = true
-		}
+	// If PipelineRun didn't get cancelled, it likely completed before cancel was processed
+	// Check for the skip message in controller logs
+	g.Cnx.Clients.Log.Infof("PipelineRun may have completed before cancellation, checking logs for skip message")
+	numLines := int64(100) // Use a larger buffer to ensure we capture the skip message in busy logs
+	reg := regexp.MustCompile(fmt.Sprintf(".*skipping cancelling pipelinerun %s/%s \\(original: .*\\), already done.*",
+		g.TargetNamespace, targetPRName))
+	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 10, "controller", &numLines)
+	if err != nil {
+		t.Errorf("neither a cancelled pipelinerun in repo status or a request to skip the cancellation in the controller log was found: %s", err.Error())
+		return
 	}
-	assert.Assert(t, cancelled, "No cancelled pipeline run found")
+
+	g.Cnx.Clients.Log.Infof("Found skip message for PipelineRun %s in controller logs", targetPRName)
 }
