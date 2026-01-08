@@ -176,6 +176,9 @@ spec:
       comment_strategy: "disable_all"
 ```
 
+For installation guidance and troubleshooting fork-based workflows, see:
+[GitLab Installation - Working with Forked Repositories](../install/gitlab/#working-with-forked-repositories)
+
 ### GitHub Webhook
 
 ```yaml
