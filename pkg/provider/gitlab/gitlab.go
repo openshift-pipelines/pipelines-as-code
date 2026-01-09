@@ -343,6 +343,15 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 		return nil
 	}
 	v.Logger.Debugf("cannot set status with the GitLab token on the target project: %v", err)
+
+	// Skip creating MR comments if the error is a state transition error
+	// (e.g., "Cannot transition status via :run from :running").
+	// This means the status is already set, so we should not create a comment.
+	if strings.Contains(err.Error(), "Cannot transition status") {
+		v.Logger.Debugf("skipping MR comment as error is a state transition issue (status already set)")
+		return nil
+	}
+
 	// we only show the first error as it's likely something the user has more control to fix
 	// the second err is cryptic as it needs a dummy gitlab pipeline to start
 	// with and will only give more confusion in the event namespace
