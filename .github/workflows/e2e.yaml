@@ -44,15 +44,16 @@ jobs:
 
     env:
       TARGET_TEAM_SLUGS: "pipeline-as-code,pipeline-as-code-contributors"
-      KO_DOCKER_REPO: localhost:5000
-      CONTROLLER_DOMAIN_URL: controller.paac-127-0-0-1.nip.io
+      KO_DOCKER_REPO: registry.paac-127-0-0-1.nip.io
+      CONTROLLER_DOMAIN_URL: paac.paac-127-0-0-1.nip.io
       TEST_GITHUB_REPO_OWNER_GITHUBAPP: openshift-pipelines/pipelines-as-code-e2e-tests
-      KUBECONFIG: /home/runner/.kube/config.kind
+      KUBECONFIG: /home/runner/.kube/config.local
       TEST_BITBUCKET_CLOUD_API_URL: https://api.bitbucket.org/2.0
       TEST_BITBUCKET_CLOUD_E2E_REPOSITORY: cboudjna/pac-e2e-tests
       TEST_BITBUCKET_CLOUD_USER: cboudjna
-      TEST_EL_URL: http://controller.paac-127-0-0-1.nip.io
-      TEST_GITEA_API_URL: http://forgejo.paac-127-0-0-1.nip.io
+      TEST_EL_URL: https://paac.paac-127-0-0-1.nip.io
+      TEST_GITEA_API_URL: http://localhost:3000
+      TEST_GITEA_INTERNAL_URL: http://forgejo-http.forgejo.svc.cluster.local:3000
       TEST_GITEA_USERNAME: pac
       TEST_GITEA_PASSWORD: pac
       TEST_GITEA_REPO_OWNER: pac/pac
@@ -61,7 +62,7 @@ jobs:
       TEST_GITHUB_PRIVATE_TASK_URL: https://github.com/openshift-pipelines/pipelines-as-code-e2e-tests-private/blob/main/remote_task.yaml
       TEST_GITHUB_PRIVATE_TASK_NAME: task-remote
       TEST_GITHUB_SECOND_API_URL: ghe.pipelinesascode.com
-      TEST_GITHUB_SECOND_EL_URL: http://ghe.paac-127-0-0-1.nip.io
+      TEST_GITHUB_SECOND_EL_URL: https://ghe.paac-127-0-0-1.nip.io
       TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP: pipelines-as-code/e2e
       TEST_GITHUB_SECOND_REPO_INSTALLATION_ID: 1
       TEST_GITLAB_API_URL: https://gitlab.com
@@ -254,9 +255,25 @@ jobs:
         with:
           repo: chmouel/snazy
 
-      - name: Run gosmee
+      - name: Install minica
         run: |
-          nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.PYSMEE_URL }} "http://${CONTROLLER_DOMAIN_URL}" &
+          go install github.com/jsha/minica@latest
+          echo "$HOME/go/bin" >> $GITHUB_PATH
+
+      - name: Clone startpaac
+        uses: actions/checkout@v6
+        with:
+          repository: openshift-pipelines/startpaac
+          path: startpaac
+
+      - name: Run gosmee for main controller (Gitea)
+        run: |
+          nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.TEST_GITEA_SMEEURL }} "https://${CONTROLLER_DOMAIN_URL}" &
+
+      - name: Run gosmee for second controller (GHE)
+        if: matrix.provider == 'providers'
+        run: |
+          nohup gosmee client --saveDir /tmp/gosmee-replay-ghe ${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }} "https://ghe.paac-127-0-0-1.nip.io" &
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
@@ -265,19 +282,23 @@ jobs:
           detached: true
           limit-access-to-actor: true
 
-      - name: Start installing cluster
-        run: |
-          export PAC_DIR=${PWD}
-          export TEST_GITEA_SMEEURL="${{ secrets.TEST_GITEA_SMEEURL }}"
-          bash -x ./hack/dev/kind/install.sh
-
-      - name: Create PAC github-app-secret
+      - name: Start installing cluster with startpaac
         env:
-          PAC_GITHUB_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-          PAC_GITHUB_APPLICATION_ID: ${{ vars.APPLICATION_ID }}
-          PAC_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+          PAC_DIR: ${{ github.workspace }}
+          PAAC_DOMAIN: paac-127-0-0-1.nip.io
+          TEST_GITEA_SMEEURL: ${{ secrets.TEST_GITEA_SMEEURL }}
         run: |
-          ./hack/gh-workflow-ci.sh create_pac_github_app_secret
+          # Create real secrets for startpaac (not dummy)
+          mkdir -p ~/secrets
+          echo "${{ vars.APPLICATION_ID }}" > ~/secrets/github-application-id
+          echo "${{ secrets.APP_PRIVATE_KEY }}" > ~/secrets/github-private-key
+          echo "${{ secrets.WEBHOOK_SECRET }}" > ~/secrets/webhook.secret
+          echo "${{ secrets.TEST_GITEA_SMEEURL }}" > ~/secrets/smee
+          export PAC_SECRET_FOLDER=~/secrets
+          export TARGET_HOST=local
+
+          cd startpaac
+          ./startpaac --ci -a
 
       - name: Create second Github APP Controller on GHE
         env:
@@ -287,6 +308,10 @@ jobs:
           TEST_GITHUB_SECOND_APPLICATION_ID: ${{ vars.TEST_GITHUB_SECOND_APPLICATION_ID }}
         run: |
           ./hack/gh-workflow-ci.sh create_second_github_app_controller_on_ghe
+
+      - name: Configure git to skip TLS verification
+        run: |
+          git config --global http.sslVerify false
 
       # Adjusted step-level conditions based on the new job-level logic
       - name: Run E2E Tests

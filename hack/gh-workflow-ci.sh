@@ -59,7 +59,7 @@ create_second_github_app_controller_on_ghe() {
     --namespace="pipelines-as-code" \
     ghe | tee /tmp/generated.yaml
 
-  ko apply -f /tmp/generated.yaml
+  ko apply --insecure-registry -f /tmp/generated.yaml
   kubectl delete secret -n pipelines-as-code ghe-secret || true
   kubectl -n pipelines-as-code create secret generic ghe-secret \
     --from-literal github-private-key="${test_github_second_private_key}" \
