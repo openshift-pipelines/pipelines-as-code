@@ -1220,3 +1220,121 @@ func Test_detectIncoming_body_params_are_parsed(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Assert(t, got)
 }
+
+func Test_parseIncomingPayload(t *testing.T) {
+	tests := []struct {
+		name          string
+		method        string
+		url           string
+		headers       http.Header
+		body          string
+		wantPayload   incomingPayload
+		wantErr       bool
+		wantErrSubstr string
+	}{
+		{
+			name:   "legacy mode with valid query params",
+			method: http.MethodGet,
+			url:    "http://localhost/incoming?repository=test-repo&branch=main&pipelinerun=my-pr&secret=mysecret&namespace=ns1",
+			body:   "",
+			wantPayload: incomingPayload{
+				legacyMode:  true,
+				RepoName:    "test-repo",
+				Branch:      "main",
+				PipelineRun: "my-pr",
+				Secret:      "mysecret",
+				Namespace:   "ns1",
+			},
+			wantErr: false,
+		},
+		{
+			name:   "new mode with valid JSON body",
+			method: http.MethodPost,
+			url:    "http://localhost/incoming",
+			headers: http.Header{
+				"Content-Type": []string{"application/json"},
+			},
+			body: `{"repository":"test-repo","branch":"feature","pipelinerun":"pr-123","secret":"topsecret","namespace":"team-a","params":{"foo":"bar"}}`,
+			wantPayload: incomingPayload{
+				legacyMode:  false,
+				RepoName:    "test-repo",
+				Branch:      "feature",
+				PipelineRun: "pr-123",
+				Secret:      "topsecret",
+				Namespace:   "team-a",
+				Params:      map[string]any{"foo": "bar"},
+			},
+			wantErr: false,
+		},
+		{
+			name:   "malformed JSON error",
+			method: http.MethodPost,
+			url:    "http://localhost/incoming",
+			headers: http.Header{
+				"Content-Type": []string{"application/json"},
+			},
+			body:          `{invalid json syntax`,
+			wantErr:       true,
+			wantErrSubstr: "invalid JSON body for incoming webhook",
+		},
+		{
+			name:   "missing required fields in JSON",
+			method: http.MethodPost,
+			url:    "http://localhost/incoming",
+			headers: http.Header{
+				"Content-Type": []string{"application/json"},
+			},
+			body:          `{"repository":"test-repo","branch":"main"}`,
+			wantErr:       true,
+			wantErrSubstr: "missing required fields",
+		},
+		{
+			name:   "fallback from invalid query params to JSON body",
+			method: http.MethodPost,
+			url:    "http://localhost/incoming?repository=incomplete",
+			headers: http.Header{
+				"Content-Type": []string{"application/json"},
+			},
+			body: `{"repository":"test-repo","branch":"develop","pipelinerun":"pr-456","secret":"secret123"}`,
+			wantPayload: incomingPayload{
+				legacyMode:  false,
+				RepoName:    "test-repo",
+				Branch:      "develop",
+				PipelineRun: "pr-456",
+				Secret:      "secret123",
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(tt.method, tt.url, strings.NewReader(tt.body))
+			if tt.headers != nil {
+				req.Header = tt.headers
+			}
+
+			got, err := parseIncomingPayload(req, []byte(tt.body))
+
+			if tt.wantErr {
+				assert.Assert(t, err != nil, "expected error but got nil")
+				if tt.wantErrSubstr != "" {
+					assert.ErrorContains(t, err, tt.wantErrSubstr)
+				}
+				return
+			}
+
+			assert.NilError(t, err)
+			assert.Equal(t, tt.wantPayload.legacyMode, got.legacyMode)
+			assert.Equal(t, tt.wantPayload.RepoName, got.RepoName)
+			assert.Equal(t, tt.wantPayload.Branch, got.Branch)
+			assert.Equal(t, tt.wantPayload.PipelineRun, got.PipelineRun)
+			assert.Equal(t, tt.wantPayload.Secret, got.Secret)
+			assert.Equal(t, tt.wantPayload.Namespace, got.Namespace)
+
+			if tt.wantPayload.Params != nil {
+				assert.DeepEqual(t, tt.wantPayload.Params, got.Params)
+			}
+		})
+	}
+}
