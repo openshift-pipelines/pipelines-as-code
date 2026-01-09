@@ -282,7 +282,7 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, runevent *info
 	// Only set completed-at if conclusion is set (which means finished)
 	if statusOpts.Conclusion != "" && statusOpts.Conclusion != providerstatus.ConclusionPending {
 		opts.CompletedAt = &github.Timestamp{Time: time.Now()}
-		opts.Conclusion = (*string)(&statusOpts.Conclusion)
+opts.Conclusion = github.Ptr(string(statusOpts.Conclusion))
 	}
 	if isPipelineRunCancelledOrStopped(statusOpts.PipelineRun) {
 		opts.Conclusion = github.Ptr("cancelled")
