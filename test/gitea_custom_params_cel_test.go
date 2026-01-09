@@ -130,7 +130,7 @@ func TestGiteaCustomParamsFromSecretsInCEL(t *testing.T) {
 	// Verify secrets are not leaked in controller logs
 	maxLines := int64(1000)
 	secretLeakRegex := regexp.MustCompile(`super-secret-api-key-12345|deploy-token-xyz-789`)
-	err = twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *secretLeakRegex, 2, "controller", &maxLines)
+	err = twait.RegexpMatchingInPACLog(ctx, topts.ParamsRun, *secretLeakRegex, 2, "controller", &maxLines)
 	if err == nil {
 		t.Fatal("Secret values were found in controller logs - this is a security issue!")
 	}

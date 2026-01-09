@@ -89,6 +89,73 @@ func PushFilesToRef(ctx context.Context, client *ghlib.Client, commitMessage, ba
 	return commit.GetSHA(), vref, nil
 }
 
+func PushFilesToExistingBranch(ctx context.Context, client *ghlib.Client, commitMessage, parentSHA, targetRef, owner, repo string, files map[string]string) (string, error) {
+	parentCommit, _, err := client.Git.GetCommit(ctx, owner, repo, parentSHA)
+	if err != nil {
+		return "", fmt.Errorf("error getting parent commit: %w", err)
+	}
+	parentTreeSHA := parentCommit.GetTree().GetSHA()
+
+	entries := []*ghlib.TreeEntry{}
+	defaultMode := "100644"
+	for path, fcontent := range files {
+		content := base64.StdEncoding.EncodeToString([]byte(fcontent))
+		encoding := "base64"
+		blob, _, err := client.Git.CreateBlob(ctx, owner, repo, &ghlib.Blob{
+			Content:  &content,
+			Encoding: &encoding,
+		})
+		if err != nil {
+			return "", fmt.Errorf("error creating blobs: %w", err)
+		}
+		sha := blob.GetSHA()
+
+		_path := path
+		entries = append(entries,
+			&ghlib.TreeEntry{
+				Path: &_path,
+				Mode: &defaultMode,
+				SHA:  &sha,
+			})
+	}
+
+	tree, _, err := client.Git.CreateTree(ctx, owner, repo, parentTreeSHA, entries)
+	if err != nil {
+		return "", fmt.Errorf("error creating tree: %w", err)
+	}
+
+	commitAuthor := "OpenShift Pipelines E2E test"
+	commitEmail := "e2e-pipelines@redhat.com"
+	commit, _, err := client.Git.CreateCommit(ctx, owner, repo, &ghlib.Commit{
+		Author: &ghlib.CommitAuthor{
+			Name:  &commitAuthor,
+			Email: &commitEmail,
+		},
+		Message: &commitMessage,
+		Tree:    tree,
+		Parents: []*ghlib.Commit{
+			{
+				SHA: &parentSHA,
+			},
+		},
+	}, &ghlib.CreateCommitOptions{})
+	if err != nil {
+		return "", fmt.Errorf("error creating commit: %w", err)
+	}
+
+	ref := &ghlib.Reference{
+		Ref: &targetRef,
+		Object: &ghlib.GitObject{
+			SHA: commit.SHA,
+		},
+	}
+	_, _, err = client.Git.UpdateRef(ctx, owner, repo, ref, false)
+	if err != nil {
+		return "", fmt.Errorf("error updating ref: %w", err)
+	}
+	return commit.GetSHA(), nil
+}
+
 func PRCreate(ctx context.Context, cs *params.Run, ghcnx *ghprovider.Provider, owner, repo, targetRef, defaultBranch, title string) (int, error) {
 	pr, _, err := ghcnx.Client().PullRequests.Create(ctx, owner, repo, &ghlib.NewPullRequest{
 		Title: &title,
