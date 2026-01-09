@@ -18,8 +18,8 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	thelp "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab/test"
+	providerstatus "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
 	metricsutils "github.com/openshift-pipelines/pipelines-as-code/pkg/test/metricstest"
@@ -39,7 +39,7 @@ func TestCreateStatus(t *testing.T) {
 	}
 	type args struct {
 		event      *info.Event
-		statusOpts provider.StatusOpts
+		statusOpts providerstatus.StatusOpts
 		postStr    string
 	}
 	tests := []struct {
@@ -58,7 +58,7 @@ func TestCreateStatus(t *testing.T) {
 			wantClient: true,
 			wantErr:    false,
 			args: args{
-				statusOpts: provider.StatusOpts{
+				statusOpts: providerstatus.StatusOpts{
 					Status: "in_progress",
 				},
 			},
@@ -68,7 +68,7 @@ func TestCreateStatus(t *testing.T) {
 			wantClient: true,
 			wantErr:    false,
 			args: args{
-				statusOpts: provider.StatusOpts{
+				statusOpts: providerstatus.StatusOpts{
 					Conclusion: "skipped",
 				},
 				event: &info.Event{
@@ -82,7 +82,7 @@ func TestCreateStatus(t *testing.T) {
 			wantClient: true,
 			wantErr:    false,
 			args: args{
-				statusOpts: provider.StatusOpts{
+				statusOpts: providerstatus.StatusOpts{
 					Conclusion: "neutral",
 				},
 				event: &info.Event{
@@ -96,7 +96,7 @@ func TestCreateStatus(t *testing.T) {
 			wantClient: true,
 			wantErr:    false,
 			args: args{
-				statusOpts: provider.StatusOpts{
+				statusOpts: providerstatus.StatusOpts{
 					Conclusion: "failure",
 				},
 				event: &info.Event{
@@ -110,7 +110,7 @@ func TestCreateStatus(t *testing.T) {
 			wantClient: true,
 			wantErr:    false,
 			args: args{
-				statusOpts: provider.StatusOpts{
+				statusOpts: providerstatus.StatusOpts{
 					Conclusion: "success",
 				},
 				event: &info.Event{
@@ -124,7 +124,7 @@ func TestCreateStatus(t *testing.T) {
 			wantClient: true,
 			wantErr:    false,
 			args: args{
-				statusOpts: provider.StatusOpts{
+				statusOpts: providerstatus.StatusOpts{
 					Conclusion: "pending",
 				},
 				event: &info.Event{
@@ -138,7 +138,7 @@ func TestCreateStatus(t *testing.T) {
 			wantClient: true,
 			wantErr:    false,
 			args: args{
-				statusOpts: provider.StatusOpts{
+				statusOpts: providerstatus.StatusOpts{
 					Conclusion: "completed",
 				},
 				event: &info.Event{
@@ -152,7 +152,7 @@ func TestCreateStatus(t *testing.T) {
 			wantClient: true,
 			wantErr:    false,
 			args: args{
-				statusOpts: provider.StatusOpts{
+				statusOpts: providerstatus.StatusOpts{
 					Conclusion: "cancelled",
 				},
 				event: &info.Event{
@@ -166,7 +166,7 @@ func TestCreateStatus(t *testing.T) {
 			wantClient: true,
 			wantErr:    false,
 			args: args{
-				statusOpts: provider.StatusOpts{
+				statusOpts: providerstatus.StatusOpts{
 					Conclusion: "completed",
 				},
 				event: &info.Event{
@@ -180,7 +180,7 @@ func TestCreateStatus(t *testing.T) {
 			wantClient: true,
 			wantErr:    false,
 			args: args{
-				statusOpts: provider.StatusOpts{
+				statusOpts: providerstatus.StatusOpts{
 					Conclusion: "skipped",
 					DetailsURL: "https://url.com",
 				},
@@ -195,7 +195,7 @@ func TestCreateStatus(t *testing.T) {
 			wantClient: true,
 			wantErr:    false,
 			args: args{
-				statusOpts: provider.StatusOpts{
+				statusOpts: providerstatus.StatusOpts{
 					Conclusion: "pending",
 				},
 				event: &info.Event{
@@ -210,7 +210,7 @@ func TestCreateStatus(t *testing.T) {
 			wantClient: true,
 			wantErr:    false,
 			args: args{
-				statusOpts: provider.StatusOpts{
+				statusOpts: providerstatus.StatusOpts{
 					Conclusion: "completed",
 				},
 				event: &info.Event{
@@ -228,7 +228,7 @@ func TestCreateStatus(t *testing.T) {
 				targetProjectID: 100,
 			},
 			args: args{
-				statusOpts: provider.StatusOpts{
+				statusOpts: providerstatus.StatusOpts{
 					Conclusion: "success",
 				},
 				event: &info.Event{
@@ -248,7 +248,7 @@ func TestCreateStatus(t *testing.T) {
 				targetProjectID: 100,
 			},
 			args: args{
-				statusOpts: provider.StatusOpts{
+				statusOpts: providerstatus.StatusOpts{
 					Conclusion: "success",
 				},
 				event: &info.Event{
@@ -268,7 +268,7 @@ func TestCreateStatus(t *testing.T) {
 				targetProjectID: 100,
 			},
 			args: args{
-				statusOpts: provider.StatusOpts{
+				statusOpts: providerstatus.StatusOpts{
 					Conclusion: "success",
 				},
 				event: &info.Event{
@@ -288,7 +288,7 @@ func TestCreateStatus(t *testing.T) {
 				targetProjectID: 100,
 			},
 			args: args{
-				statusOpts: provider.StatusOpts{
+				statusOpts: providerstatus.StatusOpts{
 					Conclusion: "success",
 				},
 				event: &info.Event{
@@ -308,7 +308,7 @@ func TestCreateStatus(t *testing.T) {
 				targetProjectID: 100,
 			},
 			args: args{
-				statusOpts: provider.StatusOpts{
+				statusOpts: providerstatus.StatusOpts{
 					Conclusion: "success",
 				},
 				event: &info.Event{
@@ -328,7 +328,7 @@ func TestCreateStatus(t *testing.T) {
 				targetProjectID: 100,
 			},
 			args: args{
-				statusOpts: provider.StatusOpts{
+				statusOpts: providerstatus.StatusOpts{
 					Conclusion: "success",
 				},
 				event: &info.Event{

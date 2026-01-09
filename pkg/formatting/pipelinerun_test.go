@@ -77,7 +77,7 @@ func TestPipelineRunStatus(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			output := PipelineRunStatus(tt.pr)
+			output := string(PipelineRunStatus(tt.pr))
 			assert.Equal(t, output, tt.name, "PipelineRunStatus() = %v, want %v", output, tt.name)
 		})
 	}

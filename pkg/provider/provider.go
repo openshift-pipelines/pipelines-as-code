@@ -9,6 +9,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	providerstatus "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	"gopkg.in/yaml.v2"
 )
 
@@ -202,7 +203,7 @@ func ValidateYaml(content []byte, filename string) error {
 // Otherwise, the OriginalPipelineRunName will be used.
 // If the OriginalPipelineRunName is not set, an empty string will be returned.
 // The check name will be in the format "ApplicationName / OriginalPipelineRunName".
-func GetCheckName(status StatusOpts, pacopts *info.PacOpts) string {
+func GetCheckName(status providerstatus.StatusOpts, pacopts *info.PacOpts) string {
 	if pacopts.ApplicationName != "" {
 		if status.OriginalPipelineRunName == "" {
 			return pacopts.ApplicationName

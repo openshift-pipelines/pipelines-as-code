@@ -20,6 +20,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	providerMetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/providermetrics"
+	providerstatus "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"go.uber.org/zap"
 )
@@ -277,39 +278,43 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.
 }
 
 //nolint:misspell
-func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOpts provider.StatusOpts,
+func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOpts providerstatus.StatusOpts,
 ) error {
 	var detailsURL string
 	if v.gitlabClient == nil {
 		return fmt.Errorf("no gitlab client has been initialized, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
+
+	var state gitlab.BuildStateValue
+
 	switch statusOpts.Conclusion {
-	case "skipped":
-		statusOpts.Conclusion = "canceled"
+	case providerstatus.ConclusionSkipped:
+		state = gitlab.Canceled
 		statusOpts.Title = "skipped validating this commit"
-	case "neutral":
-		statusOpts.Conclusion = "canceled"
+	case providerstatus.ConclusionNeutral:
+		state = gitlab.Canceled
 		statusOpts.Title = "stopped"
-	case "cancelled":
-		statusOpts.Conclusion = "canceled"
+	case providerstatus.ConclusionCancelled:
+		state = gitlab.Canceled
 		statusOpts.Title = "cancelled validating this commit"
-	case "failure":
-		statusOpts.Conclusion = "failed"
+	case providerstatus.ConclusionFailure:
+		state = gitlab.Failed
 		statusOpts.Title = "failed"
-	case "success":
-		statusOpts.Conclusion = "success"
+	case providerstatus.ConclusionSuccess:
+		state = gitlab.Success
 		statusOpts.Title = "successfully validated your commit"
-	case "completed":
-		statusOpts.Conclusion = "success"
+	case providerstatus.ConclusionCompleted:
+		state = gitlab.Success
 		statusOpts.Title = "completed"
-	case "pending":
-		statusOpts.Conclusion = "pending"
+	case providerstatus.ConclusionPending:
+		state = gitlab.Running
 	}
+
 	// When the pipeline is actually running (in_progress), show it as running
 	// not pending. Pending is only for waiting states like /ok-to-test approval.
 	if statusOpts.Status == "in_progress" {
-		statusOpts.Conclusion = "running"
+		state = gitlab.Running
 	}
 	if statusOpts.DetailsURL != "" {
 		detailsURL = statusOpts.DetailsURL
@@ -324,7 +329,7 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOp
 
 	contextName := provider.GetCheckName(statusOpts, v.pacInfo)
 	opt := &gitlab.SetCommitStatusOptions{
-		State:       gitlab.BuildStateValue(statusOpts.Conclusion),
+		State:       state,
 		Name:        gitlab.Ptr(contextName),
 		TargetURL:   gitlab.Ptr(detailsURL),
 		Description: gitlab.Ptr(statusOpts.Title),
@@ -685,7 +690,7 @@ func (v *Provider) GetTemplate(commentType provider.CommentType) string {
 }
 
 //nolint:misspell
-func (v *Provider) formatPipelineComment(sha string, status provider.StatusOpts) string {
+func (v *Provider) formatPipelineComment(sha string, status providerstatus.StatusOpts) string {
 	var emoji string
 
 	switch status.Conclusion {

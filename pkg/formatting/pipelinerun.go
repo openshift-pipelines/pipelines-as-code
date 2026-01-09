@@ -1,21 +1,22 @@
 package formatting
 
 import (
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 )
 
 // PipelineRunStatus return status of PR  success failed or skipped.
-func PipelineRunStatus(pr *tektonv1.PipelineRun) string {
+func PipelineRunStatus(pr *tektonv1.PipelineRun) status.Conclusion {
 	if len(pr.Status.Conditions) == 0 {
-		return "neutral"
+		return status.ConclusionNeutral
 	}
 	if pr.Status.GetCondition(apis.ConditionSucceeded).GetReason() == tektonv1.PipelineRunSpecStatusCancelled {
-		return "cancelled"
+		return status.ConclusionCancelled
 	}
 	if pr.Status.Conditions[0].Status == corev1.ConditionFalse {
-		return "failure"
+		return status.ConclusionFailure
 	}
-	return "success"
+	return status.ConclusionSuccess
 }
