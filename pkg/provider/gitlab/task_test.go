@@ -223,6 +223,12 @@ func TestGetTaskURI(t *testing.T) {
 				Token: "token",
 			}
 
+			if server != nil {
+				client, err := gl.NewClient("token", gl.WithBaseURL(server.URL), gl.WithoutRetries())
+				assert.NilError(t, err)
+				v.gitlabClient = client
+			}
+
 			found, content, err := v.GetTaskURI(ctx, event, remotePipelineURL)
 
 			if tt.wantErr {
