@@ -26,6 +26,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	providerMetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/providermetrics"
+	providerstatus "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	"go.uber.org/zap"
 )
 
@@ -206,27 +207,28 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.
 	return nil
 }
 
-func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts provider.StatusOpts) error {
+func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts providerstatus.StatusOpts) error {
 	if v.giteaClient == nil {
 		return fmt.Errorf("cannot set status on gitea no token or url set")
 	}
 	switch statusOpts.Conclusion {
-	case "success":
+	case providerstatus.ConclusionSuccess:
 		statusOpts.Title = "Success"
 		statusOpts.Summary = "has <b>successfully</b> validated your commit."
-	case "failure":
+	case providerstatus.ConclusionFailure:
 		statusOpts.Title = "Failed"
 		statusOpts.Summary = "has <b>failed</b>."
-	case "pending":
+	case providerstatus.ConclusionPending:
 		// for concurrency set title as pending
 		if statusOpts.Title == "" {
 			statusOpts.Title = "Pending"
 		}
 		// for unauthorized user set title as Pending approval
 		statusOpts.Summary = "is skipping this commit."
-	case "neutral":
+	case providerstatus.ConclusionNeutral:
 		statusOpts.Title = "Unknown"
 		statusOpts.Summary = "doesn't know what happened with this commit."
+	case providerstatus.ConclusionCancelled, providerstatus.ConclusionCompleted, providerstatus.ConclusionSkipped:
 	}
 
 	if statusOpts.Status == "in_progress" {
@@ -244,15 +246,16 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	return v.createStatusCommit(event, v.pacInfo, statusOpts)
 }
 
-func (v *Provider) createStatusCommit(event *info.Event, pacopts *info.PacOpts, status provider.StatusOpts) error {
+func (v *Provider) createStatusCommit(event *info.Event, pacopts *info.PacOpts, status providerstatus.StatusOpts) error {
 	state := forgejo.StatusState(status.Conclusion)
 	switch status.Conclusion {
-	case "neutral":
+	case providerstatus.ConclusionNeutral:
 		state = forgejo.StatusSuccess // We don't have a choice than setting as success, no pending here.c
-	case "pending":
+	case providerstatus.ConclusionPending:
 		if status.Title != "" {
 			state = forgejo.StatusPending
 		}
+	default:
 	}
 	if status.Status == "in_progress" {
 		state = forgejo.StatusPending

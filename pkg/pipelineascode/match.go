@@ -13,7 +13,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	providerstatus "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/secrets"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/templates"
@@ -92,10 +92,10 @@ func (p *PacRun) verifyRepoAndUser(ctx context.Context) (*v1alpha1.Repository, e
 	// trigger CI on the repository, as any user is able to comment on a pushed commit in open-source repositories.
 	if p.event.TriggerTarget == triggertype.Push && opscomments.IsAnyOpsEventType(p.event.EventType) {
 		p.debugf("verifyRepoAndUser: checking access for gitops comment on push")
-		status := provider.StatusOpts{
+		status := providerstatus.StatusOpts{
 			Status:       CompletedStatus,
 			Title:        "Permission denied",
-			Conclusion:   failureConclusion,
+			Conclusion:   providerstatus.ConclusionFailure,
 			DetailsURL:   p.event.URL,
 			AccessDenied: true,
 		}
@@ -109,10 +109,10 @@ func (p *PacRun) verifyRepoAndUser(ctx context.Context) (*v1alpha1.Repository, e
 	// on comment we skip it for now, we are going to check later on
 	if p.event.TriggerTarget != triggertype.Push && p.event.EventType != opscomments.NoOpsCommentEventType.String() {
 		p.debugf("verifyRepoAndUser: checking access for trigger target=%s event_type=%s", p.event.TriggerTarget, p.event.EventType)
-		status := provider.StatusOpts{
+		status := providerstatus.StatusOpts{
 			Status:       queuedStatus,
 			Title:        "Pending approval, waiting for an /ok-to-test",
-			Conclusion:   pendingConclusion,
+			Conclusion:   providerstatus.ConclusionPending,
 			DetailsURL:   p.event.URL,
 			AccessDenied: true,
 		}
@@ -122,10 +122,10 @@ func (p *PacRun) verifyRepoAndUser(ctx context.Context) (*v1alpha1.Repository, e
 		// When /ok-to-test is approved, update the parent "Pipelines as Code CI" status to success
 		// to indicate the approval was successful before pipelines start running.
 		if p.event.EventType == opscomments.OkToTestCommentEventType.String() {
-			approvalStatus := provider.StatusOpts{
+			approvalStatus := providerstatus.StatusOpts{
 				Status:     CompletedStatus,
 				Title:      "Approved",
-				Conclusion: successConclusion,
+				Conclusion: providerstatus.ConclusionSuccess,
 				DetailsURL: p.event.URL,
 			}
 			if err := p.vcx.CreateStatus(ctx, p.event, approvalStatus); err != nil {
@@ -282,10 +282,10 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 	// if the event is a comment event, but we don't have any match from the keys.OnComment then do the ACL checks again
 	// we skipped previously so we can get the match from the event to the pipelineruns
 	if p.event.EventType == opscomments.NoOpsCommentEventType.String() || p.event.EventType == opscomments.OnCommentEventType.String() {
-		status := provider.StatusOpts{
+		status := providerstatus.StatusOpts{
 			Status:       queuedStatus,
 			Title:        "Pending approval, waiting for an /ok-to-test",
-			Conclusion:   pendingConclusion,
+			Conclusion:   providerstatus.ConclusionPending,
 			DetailsURL:   p.event.URL,
 			AccessDenied: true,
 		}
@@ -484,11 +484,11 @@ func (p *PacRun) checkNeedUpdate(_ string) (string, bool) {
 
 func (p *PacRun) createNeutralStatus(ctx context.Context, title, text string) error {
 	p.debugf("createNeutralStatus: title=%s", title)
-	status := provider.StatusOpts{
+	status := providerstatus.StatusOpts{
 		Status:     CompletedStatus,
 		Title:      title,
 		Text:       text,
-		Conclusion: neutralConclusion,
+		Conclusion: providerstatus.ConclusionNeutral,
 		DetailsURL: p.event.URL,
 	}
 	if err := p.vcx.CreateStatus(ctx, p.event, status); err != nil {

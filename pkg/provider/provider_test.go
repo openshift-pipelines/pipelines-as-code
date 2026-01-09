@@ -5,6 +5,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	"gotest.tools/v3/assert"
 )
 
@@ -513,7 +514,7 @@ func TestCompareHostOfURLS(t *testing.T) {
 
 func TestGetCheckName(t *testing.T) {
 	type args struct {
-		status  StatusOpts
+		status  status.StatusOpts
 		pacopts *info.PacOpts
 	}
 	tests := []struct {
@@ -524,7 +525,7 @@ func TestGetCheckName(t *testing.T) {
 		{
 			name: "no application name",
 			args: args{
-				status: StatusOpts{
+				status: status.StatusOpts{
 					OriginalPipelineRunName: "HELLO",
 				},
 				pacopts: &info.PacOpts{Settings: settings.Settings{ApplicationName: ""}},
@@ -534,7 +535,7 @@ func TestGetCheckName(t *testing.T) {
 		{
 			name: "application and pipelinerun name",
 			args: args{
-				status: StatusOpts{
+				status: status.StatusOpts{
 					OriginalPipelineRunName: "MOTO",
 				},
 				pacopts: &info.PacOpts{Settings: settings.Settings{ApplicationName: "HELLO"}},
@@ -544,7 +545,7 @@ func TestGetCheckName(t *testing.T) {
 		{
 			name: "application no pipelinerun name",
 			args: args{
-				status: StatusOpts{
+				status: status.StatusOpts{
 					OriginalPipelineRunName: "",
 				},
 				pacopts: &info.PacOpts{Settings: settings.Settings{ApplicationName: "PAC"}},

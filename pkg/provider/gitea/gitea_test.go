@@ -22,8 +22,8 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/test"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -33,7 +33,7 @@ import (
 func TestProvider_CreateStatus(t *testing.T) {
 	type args struct {
 		event      *info.Event
-		statusOpts provider.StatusOpts
+		statusOpts status.StatusOpts
 	}
 	tests := []struct {
 		name    string
@@ -44,8 +44,8 @@ func TestProvider_CreateStatus(t *testing.T) {
 			name: "Test with success conclusion",
 			args: args{
 				event: &info.Event{},
-				statusOpts: provider.StatusOpts{
-					Conclusion: "success",
+				statusOpts: status.StatusOpts{
+					Conclusion: status.ConclusionSuccess,
 				},
 			},
 			wantErr: false,
@@ -54,8 +54,8 @@ func TestProvider_CreateStatus(t *testing.T) {
 			name: "Test with failure conclusion",
 			args: args{
 				event: &info.Event{},
-				statusOpts: provider.StatusOpts{
-					Conclusion: "failure",
+				statusOpts: status.StatusOpts{
+					Conclusion: status.ConclusionFailure,
 				},
 			},
 			wantErr: false,
@@ -64,8 +64,8 @@ func TestProvider_CreateStatus(t *testing.T) {
 			name: "Test with pending conclusion",
 			args: args{
 				event: &info.Event{},
-				statusOpts: provider.StatusOpts{
-					Conclusion: "pending",
+				statusOpts: status.StatusOpts{
+					Conclusion: status.ConclusionPending,
 				},
 			},
 			wantErr: false,
@@ -74,8 +74,8 @@ func TestProvider_CreateStatus(t *testing.T) {
 			name: "Test with neutral conclusion",
 			args: args{
 				event: &info.Event{},
-				statusOpts: provider.StatusOpts{
-					Conclusion: "neutral",
+				statusOpts: status.StatusOpts{
+					Conclusion: status.ConclusionNeutral,
 				},
 			},
 			wantErr: false,
@@ -84,7 +84,7 @@ func TestProvider_CreateStatus(t *testing.T) {
 			name: "Test with in_progress status",
 			args: args{
 				event: &info.Event{},
-				statusOpts: provider.StatusOpts{
+				statusOpts: status.StatusOpts{
 					Status: "in_progress",
 				},
 			},
@@ -94,7 +94,7 @@ func TestProvider_CreateStatus(t *testing.T) {
 			name: "Test with onpr",
 			args: args{
 				event: &info.Event{},
-				statusOpts: provider.StatusOpts{
+				statusOpts: status.StatusOpts{
 					Status:          "in_progress",
 					PipelineRunName: "mypr",
 				},
@@ -105,7 +105,7 @@ func TestProvider_CreateStatus(t *testing.T) {
 			name: "Test with ok-to-test event",
 			args: args{
 				event: &info.Event{EventType: triggertype.OkToTest.String()},
-				statusOpts: provider.StatusOpts{
+				statusOpts: status.StatusOpts{
 					Status:          "in_progress",
 					PipelineRunName: "mypr",
 				},
@@ -116,7 +116,7 @@ func TestProvider_CreateStatus(t *testing.T) {
 			name: "Test with oncomment event",
 			args: args{
 				event: &info.Event{EventType: opscomments.OkToTestCommentEventType.String()},
-				statusOpts: provider.StatusOpts{
+				statusOpts: status.StatusOpts{
 					Status:          "in_progress",
 					PipelineRunName: "mypr",
 				},
@@ -127,7 +127,7 @@ func TestProvider_CreateStatus(t *testing.T) {
 			name: "Test status_text",
 			args: args{
 				event: &info.Event{EventType: triggertype.PullRequest.String()},
-				statusOpts: provider.StatusOpts{
+				statusOpts: status.StatusOpts{
 					Status:          "in_progress",
 					PipelineRunName: "mypr",
 					Text:            "mytext",
@@ -407,7 +407,7 @@ func TestProvider_CreateStatusCommit(t *testing.T) {
 	type args struct {
 		event   *info.Event
 		pacopts *info.PacOpts
-		status  provider.StatusOpts
+		status  status.StatusOpts
 	}
 	tests := []struct {
 		name                            string
@@ -428,8 +428,8 @@ func TestProvider_CreateStatusCommit(t *testing.T) {
 					TriggerTarget:     "pull_request",
 					SHA:               "123456",
 				},
-				status: provider.StatusOpts{
-					Conclusion: "neutral",
+				status: status.StatusOpts{
+					Conclusion: status.ConclusionNeutral,
 				},
 			},
 			wantStatusJSON: `{"state":"success","target_url":"","description":"","context":"myapp"}`,
@@ -437,8 +437,8 @@ func TestProvider_CreateStatusCommit(t *testing.T) {
 		{
 			name: "pending",
 			args: args{
-				status: provider.StatusOpts{
-					Conclusion: "pending",
+				status: status.StatusOpts{
+					Conclusion: status.ConclusionPending,
 					Title:      "Pipeline run for myapp has been triggered",
 				},
 				pacopts: &info.PacOpts{Settings: settings.Settings{
@@ -457,7 +457,7 @@ func TestProvider_CreateStatusCommit(t *testing.T) {
 		{
 			name: "pending from status",
 			args: args{
-				status: provider.StatusOpts{
+				status: status.StatusOpts{
 					Status: "in_progress",
 					Title:  "Pipeline run for myapp has been triggered",
 				},
@@ -477,8 +477,8 @@ func TestProvider_CreateStatusCommit(t *testing.T) {
 		{
 			name: "ok-to-test",
 			args: args{
-				status: provider.StatusOpts{
-					Conclusion: "pending",
+				status: status.StatusOpts{
+					Conclusion: status.ConclusionPending,
 					Title:      "Pipeline run for myapp has been triggered",
 					Text:       "time to get started",
 				},
@@ -499,8 +499,8 @@ func TestProvider_CreateStatusCommit(t *testing.T) {
 		{
 			name: "cancel",
 			args: args{
-				status: provider.StatusOpts{
-					Conclusion: "pending",
+				status: status.StatusOpts{
+					Conclusion: status.ConclusionPending,
 					Title:      "Pipeline run for myapp has been triggered",
 					Text:       "time to get started",
 				},
@@ -521,8 +521,8 @@ func TestProvider_CreateStatusCommit(t *testing.T) {
 		{
 			name: "retest",
 			args: args{
-				status: provider.StatusOpts{
-					Conclusion: "pending",
+				status: status.StatusOpts{
+					Conclusion: status.ConclusionPending,
 					Title:      "Pipeline run for myapp has been triggered",
 					Text:       "time to get started",
 				},
@@ -649,7 +649,7 @@ func TestProviderCreateStatusCommitRetryOnTransientError(t *testing.T) {
 			pacopts := &info.PacOpts{Settings: settings.Settings{
 				ApplicationName: "myapp",
 			}}
-			status := provider.StatusOpts{
+			status := status.StatusOpts{
 				Conclusion: "success",
 			}
 
