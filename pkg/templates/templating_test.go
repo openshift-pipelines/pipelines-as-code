@@ -286,6 +286,255 @@ func TestReplacePlaceHoldersVariablesJSONOutput(t *testing.T) {
 	}
 }
 
+func TestReplacePlaceHoldersVariablesCelPrefix(t *testing.T) {
+	tests := []struct {
+		name         string
+		template     string
+		expected     string
+		dicto        map[string]string
+		headers      http.Header
+		changedFiles map[string]any
+		rawEvent     any
+	}{
+		{
+			name:         "cel: prefix with simple body access",
+			template:     `result: {{ cel: body.hello }}`,
+			expected:     `result: world`,
+			dicto:        map[string]string{},
+			changedFiles: map[string]any{},
+			headers:      http.Header{},
+			rawEvent: map[string]string{
+				"hello": "world",
+			},
+		},
+		{
+			name:         "cel: prefix with ternary expression",
+			template:     `status: {{ cel: body.action == "opened" ? "new-pr" : "updated-pr" }}`,
+			expected:     `status: new-pr`,
+			dicto:        map[string]string{},
+			changedFiles: map[string]any{},
+			headers:      http.Header{},
+			rawEvent: map[string]any{
+				"action": "opened",
+			},
+		},
+		{
+			name:         "cel: prefix with ternary expression - else branch",
+			template:     `status: {{ cel: body.action == "opened" ? "new-pr" : "updated-pr" }}`,
+			expected:     `status: updated-pr`,
+			dicto:        map[string]string{},
+			changedFiles: map[string]any{},
+			headers:      http.Header{},
+			rawEvent: map[string]any{
+				"action": "synchronize",
+			},
+		},
+		{
+			name:     "cel: prefix with pac namespace access",
+			template: `branch: {{ cel: pac.target_branch }}`,
+			expected: `branch: main`,
+			dicto: map[string]string{
+				"target_branch": "main",
+			},
+			changedFiles: map[string]any{},
+			headers:      http.Header{},
+			rawEvent:     map[string]any{},
+		},
+		{
+			name:     "cel: prefix with pac namespace conditional",
+			template: `env: {{ cel: pac.target_branch == "main" ? "production" : "staging" }}`,
+			expected: `env: production`,
+			dicto: map[string]string{
+				"target_branch": "main",
+			},
+			changedFiles: map[string]any{},
+			headers:      http.Header{},
+			rawEvent:     map[string]any{},
+		},
+		{
+			name:     "cel: prefix with pac namespace - staging branch",
+			template: `env: {{ cel: pac.target_branch == "main" ? "production" : "staging" }}`,
+			expected: `env: staging`,
+			dicto: map[string]string{
+				"target_branch": "develop",
+			},
+			changedFiles: map[string]any{},
+			headers:      http.Header{},
+			rawEvent:     map[string]any{},
+		},
+		{
+			name:         "cel: prefix with has() function",
+			template:     `has_field: {{ cel: has(body.optional_field) ? body.optional_field : "default" }}`,
+			expected:     `has_field: custom_value`,
+			dicto:        map[string]string{},
+			changedFiles: map[string]any{},
+			headers:      http.Header{},
+			rawEvent: map[string]any{
+				"optional_field": "custom_value",
+			},
+		},
+		{
+			name:         "cel: prefix with has() function - field missing",
+			template:     `has_field: {{ cel: has(body.optional_field) ? body.optional_field : "default" }}`,
+			expected:     `has_field: default`,
+			dicto:        map[string]string{},
+			changedFiles: map[string]any{},
+			headers:      http.Header{},
+			rawEvent:     map[string]any{},
+		},
+		{
+			name:     "cel: prefix with files access",
+			template: `go_files: {{ cel: files.all.exists(f, f.endsWith(".go")) ? "yes" : "no" }}`,
+			expected: `go_files: yes`,
+			dicto:    map[string]string{},
+			changedFiles: map[string]any{
+				"all": []string{"main.go", "README.md"},
+			},
+			headers:  http.Header{},
+			rawEvent: map[string]any{},
+		},
+		{
+			name:     "cel: prefix with files access - no go files",
+			template: `go_files: {{ cel: files.all.exists(f, f.endsWith(".go")) ? "yes" : "no" }}`,
+			expected: `go_files: no`,
+			dicto:    map[string]string{},
+			changedFiles: map[string]any{
+				"all": []string{"README.md", "config.yaml"},
+			},
+			headers:  http.Header{},
+			rawEvent: map[string]any{},
+		},
+		{
+			name:         "cel: prefix with headers access",
+			template:     `event: {{ cel: headers["X-GitHub-Event"] }}`,
+			expected:     `event: push`,
+			dicto:        map[string]string{},
+			changedFiles: map[string]any{},
+			headers: http.Header{
+				"X-GitHub-Event": []string{"push"},
+			},
+			rawEvent: map[string]any{},
+		},
+		{
+			name:         "cel: prefix with boolean result",
+			template:     `is_draft: {{ cel: body.draft == true }}`,
+			expected:     `is_draft: false`,
+			dicto:        map[string]string{},
+			changedFiles: map[string]any{},
+			headers:      http.Header{},
+			rawEvent: map[string]any{
+				"draft": false,
+			},
+		},
+		{
+			name:         "cel: prefix with invalid expression returns empty string",
+			template:     `invalid: {{ cel: invalid.syntax[ }}`,
+			expected:     `invalid: `,
+			dicto:        map[string]string{},
+			changedFiles: map[string]any{},
+			headers:      http.Header{},
+			rawEvent:     map[string]any{},
+		},
+		{
+			name:         "cel: prefix with evaluation error returns empty string",
+			template:     `error: {{ cel: body.nonexistent.deep.field }}`,
+			expected:     `error: `,
+			dicto:        map[string]string{},
+			changedFiles: map[string]any{},
+			headers:      http.Header{},
+			rawEvent:     map[string]any{},
+		},
+		{
+			name:         "cel: prefix with extra whitespace",
+			template:     `result: {{ cel:    body.hello   }}`,
+			expected:     `result: world`,
+			dicto:        map[string]string{},
+			changedFiles: map[string]any{},
+			headers:      http.Header{},
+			rawEvent: map[string]string{
+				"hello": "world",
+			},
+		},
+		{
+			name:         "cel: prefix with string concatenation",
+			template:     `greeting: {{ cel: "Hello, " + body.name + "!" }}`,
+			expected:     `greeting: Hello, World!`,
+			dicto:        map[string]string{},
+			changedFiles: map[string]any{},
+			headers:      http.Header{},
+			rawEvent: map[string]any{
+				"name": "World",
+			},
+		},
+		{
+			name:         "cel: prefix with size function",
+			template:     `count: {{ cel: body.items.size() }}`,
+			expected:     `count: 3`,
+			dicto:        map[string]string{},
+			changedFiles: map[string]any{},
+			headers:      http.Header{},
+			rawEvent: map[string]any{
+				"items": []string{"a", "b", "c"},
+			},
+		},
+		{
+			name:         "cel: prefix with complex nested conditional (merge commit detection)",
+			template:     `commit_type: {{ cel: has(body.head_commit) && body.head_commit.message.startsWith("Merge") ? "merge" : "regular" }}`,
+			expected:     `commit_type: merge`,
+			dicto:        map[string]string{},
+			changedFiles: map[string]any{},
+			headers:      http.Header{},
+			rawEvent: map[string]any{
+				"head_commit": map[string]any{
+					"message": "Merge pull request #123",
+				},
+			},
+		},
+		{
+			name:         "cel: prefix with complex nested conditional - regular commit",
+			template:     `commit_type: {{ cel: has(body.head_commit) && body.head_commit.message.startsWith("Merge") ? "merge" : "regular" }}`,
+			expected:     `commit_type: regular`,
+			dicto:        map[string]string{},
+			changedFiles: map[string]any{},
+			headers:      http.Header{},
+			rawEvent: map[string]any{
+				"head_commit": map[string]any{
+					"message": "Fix bug in parser",
+				},
+			},
+		},
+		{
+			name:     "cel: prefix mixed with regular placeholders",
+			template: `branch: {{ target_branch }}, check: {{ cel: pac.target_branch == "main" ? "prod" : "dev" }}`,
+			expected: `branch: main, check: prod`,
+			dicto: map[string]string{
+				"target_branch": "main",
+			},
+			changedFiles: map[string]any{},
+			headers:      http.Header{},
+			rawEvent:     map[string]any{},
+		},
+		{
+			name:         "cel: prefix with nil rawEvent still works",
+			template:     `result: {{ cel: pac.revision }}`,
+			expected:     `result: abc123`,
+			dicto:        map[string]string{"revision": "abc123"},
+			changedFiles: map[string]any{},
+			headers:      http.Header{},
+			rawEvent:     nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ReplacePlaceHoldersVariables(tt.template, tt.dicto, tt.rawEvent, tt.headers, tt.changedFiles)
+			if d := cmp.Diff(got, tt.expected); d != "" {
+				t.Fatalf("-got, +want: %v", d)
+			}
+		})
+	}
+}
+
 func TestReplacePlaceHoldersVariablesEdgeCases(t *testing.T) {
 	tests := []struct {
 		name         string
