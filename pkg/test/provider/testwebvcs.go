@@ -11,6 +11,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	providerstatus "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	"go.uber.org/zap"
 )
 
@@ -103,7 +104,7 @@ func (v *TestProviderImp) GetTaskURI(_ context.Context, _ *info.Event, _ string)
 	return v.WantProviderRemoteTask, "", nil
 }
 
-func (v *TestProviderImp) CreateStatus(_ context.Context, _ *info.Event, _ provider.StatusOpts) error {
+func (v *TestProviderImp) CreateStatus(_ context.Context, _ *info.Event, _ providerstatus.StatusOpts) error {
 	if v.CreateStatusErorring {
 		return fmt.Errorf("some provider error occurred while reporting status")
 	}
