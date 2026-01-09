@@ -1069,3 +1069,63 @@ func TestStartPR_ConcurrentWithSameSecret(t *testing.T) {
 	assert.Assert(t, attempts >= 1, "Secret creation should have been attempted at least once, got %d attempts", attempts)
 	t.Logf("Successfully created %d/%d concurrent PipelineRuns with shared secret (%d creation attempts)", successCount, numConcurrent, attempts)
 }
+
+func TestStartPR_Deduplication(t *testing.T) {
+	fixture := setupStartPRTestDefault(t)
+	defer fixture.teardown()
+
+	fixture.pacInfo.DeduplicatePipelineRuns = true
+	match := createTestMatch(true, nil)
+	match.PipelineRun.Annotations[keys.OriginalPRName] = "test-pipeline"
+
+	// Create an existing PipelineRun with the same fingerprint
+	fingerprint := fixture.pac.generateFingerprint(match.PipelineRun, match.Repo.GetName())
+	existingPR := &pipelinev1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "existing-pr",
+			Namespace: match.Repo.GetNamespace(),
+			Labels: map[string]string{
+				keys.PipelineRunFingerprint: fingerprint,
+			},
+		},
+	}
+	_, err := fixture.cs.Clients.Tekton.TektonV1().PipelineRuns(match.Repo.GetNamespace()).Create(fixture.ctx, existingPR, metav1.CreateOptions{})
+	assert.NilError(t, err)
+
+	// Attempt to start a new PR with the same fingerprint
+	pr, err := fixture.pac.startPR(fixture.ctx, match)
+
+	assert.NilError(t, err)
+	assert.Assert(t, pr != nil)
+	assert.Equal(t, pr.GetName(), "existing-pr")
+}
+
+func TestStartPR_NoDeduplicationIfDisabled(t *testing.T) {
+	fixture := setupStartPRTestDefault(t)
+	defer fixture.teardown()
+
+	fixture.pacInfo.DeduplicatePipelineRuns = false
+	match := createTestMatch(true, nil)
+	match.PipelineRun.Annotations[keys.OriginalPRName] = "test-pipeline"
+
+	// Create an existing PipelineRun with the same fingerprint
+	fingerprint := fixture.pac.generateFingerprint(match.PipelineRun, match.Repo.GetName())
+	existingPR := &pipelinev1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "existing-pr",
+			Namespace: match.Repo.GetNamespace(),
+			Labels: map[string]string{
+				keys.PipelineRunFingerprint: fingerprint,
+			},
+		},
+	}
+	_, err := fixture.cs.Clients.Tekton.TektonV1().PipelineRuns(match.Repo.GetNamespace()).Create(fixture.ctx, existingPR, metav1.CreateOptions{})
+	assert.NilError(t, err)
+
+	// Attempt to start a new PR with the same fingerprint
+	pr, err := fixture.pac.startPR(fixture.ctx, match)
+
+	assert.NilError(t, err)
+	assert.Assert(t, pr != nil)
+	assert.Assert(t, pr.GetName() != "existing-pr")
+}
