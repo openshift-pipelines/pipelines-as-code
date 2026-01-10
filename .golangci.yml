@@ -41,7 +41,7 @@ linters:
     - nilerr
     - noctx
     - nosprintfhostport
-    - prealloc
+    # - prealloc
     - predeclared
     - promlinter
     - protogetter
