@@ -10,6 +10,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"time"
 
 	ghinstallation "github.com/bradleyfalzon/ghinstallation/v2"
 	ogithub "github.com/google/go-github/v72/github"
@@ -191,7 +192,9 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 }
 
 // getPullRequestsWithCommit lists the all pull requests associated with given commit.
-func (v *Provider) getPullRequestsWithCommit(ctx context.Context, sha, org, repo string) ([]*github.PullRequest, error) {
+// It implements retry logic with exponential backoff to handle cases where GitHub's API
+// hasn't yet indexed the PR-to-commit association (e.g., immediately after a merge commit).
+func (v *Provider) getPullRequestsWithCommit(ctx context.Context, sha, org, repo string, isMergeCommit bool) ([]*github.PullRequest, error) {
 	if v.ghClient == nil {
 		return nil, fmt.Errorf("github client is not initialized")
 	}
@@ -207,33 +210,66 @@ func (v *Provider) getPullRequestsWithCommit(ctx context.Context, sha, org, repo
 		return nil, fmt.Errorf("repository cannot be empty")
 	}
 
-	opts := &github.ListOptions{
-		PerPage: 100, // GitHub's maximum per page
+	// if its pull request merge event, we need to retry the API call to get the pull requests associated with the commit
+	// because the API call is not immediate and it takes some time to index the commit
+	maxRetries := 0
+
+	if isMergeCommit {
+		maxRetries = 3
 	}
 
-	pullRequests := []*github.PullRequest{}
+	const initialBackoff = 1 * time.Second
 
-	for {
-		// Use the "List pull requests associated with a commit" API to check if the commit is part of any open PR
-		prs, resp, err := wrapAPI(v, "list_pull_requests_with_commit", func() ([]*github.PullRequest, *github.Response, error) {
-			return v.Client().PullRequests.ListPullRequestsWithCommit(ctx, org, repo, sha, opts)
-		})
-		if err != nil {
-			// Log the error for debugging purposes
-			v.Logger.Debugf("Failed to list pull requests for commit %s in %s/%s: %v", sha, org, repo, err)
-			return nil, fmt.Errorf("failed to list pull requests for commit %s: %w", sha, err)
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		opts := &github.ListOptions{
+			PerPage: 100, // GitHub's maximum per page
 		}
 
-		pullRequests = append(pullRequests, prs...)
+		pullRequests := []*github.PullRequest{}
 
-		// Check if there are more pages
-		if resp.NextPage == 0 {
-			break
+		for {
+			// Use the "List pull requests associated with a commit" API to check if the commit is part of any open PR
+			prs, resp, err := wrapAPI(v, "list_pull_requests_with_commit", func() ([]*github.PullRequest, *github.Response, error) {
+				return v.Client().PullRequests.ListPullRequestsWithCommit(ctx, org, repo, sha, opts)
+			})
+			if err != nil {
+				// Log the error for debugging purposes
+				v.Logger.Debugf("Failed to list pull requests for commit %s in %s/%s: %v", sha, org, repo, err)
+				return nil, fmt.Errorf("failed to list pull requests for commit %s: %w", sha, err)
+			}
+
+			pullRequests = append(pullRequests, prs...)
+
+			// Check if there are more pages
+			if resp.NextPage == 0 {
+				break
+			}
+			opts.Page = resp.NextPage
 		}
-		opts.Page = resp.NextPage
+
+		// If we found pull requests, return them immediately
+		if len(pullRequests) > 0 {
+			return pullRequests, nil
+		}
+
+		// If this is not the last attempt and we got an empty result, retry with exponential backoff
+		// This handles the case where GitHub's API hasn't indexed the PR-to-commit association yet
+		// (common when a PR is merged via Merge Commit strategy)
+		if attempt < maxRetries {
+			backoff := time.Duration(1<<uint(attempt)) * initialBackoff // #nosec G115
+			v.Logger.Debugf("No pull requests found for commit %s in %s/%s (attempt %d/%d), retrying after %v", sha, org, repo, attempt+1, maxRetries+1, backoff)
+
+			// Wait with exponential backoff, but respect context cancellation
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(backoff):
+			}
+		}
 	}
 
-	return pullRequests, nil
+	// After all retries, return empty list (no error, as this is a valid state)
+	return []*github.PullRequest{}, nil
 }
 
 // isCommitPartOfPullRequest checks if the commit from a push event is part of an open pull request
@@ -319,10 +355,14 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		org := gitEvent.GetRepo().GetOwner().GetLogin()
 		repoName := gitEvent.GetRepo().GetName()
 
+		// when the commit is a merge commit, either email is 'noreply@github.com' or name is 'web-flow'
+		isMergeCommit := gitEvent.GetHeadCommit().GetCommitter().GetEmail() == "noreply@github.com" ||
+			gitEvent.GetHeadCommit().GetCommitter().GetName() == "web-flow"
+
 		// First get all the pull requests associated with this commit so that we can reuse the output to check
 		// whether the commit is included in any PR or not, and if this push is generated on PR merge event, we can
 		// assign PR number to `pull_request_number` variable.
-		prs, err := v.getPullRequestsWithCommit(ctx, sha, org, repoName)
+		prs, err := v.getPullRequestsWithCommit(ctx, sha, org, repoName, isMergeCommit)
 		if err != nil {
 			v.Logger.Warnf("Error getting pull requests associated with the commit in this push event: %v", err)
 		}
