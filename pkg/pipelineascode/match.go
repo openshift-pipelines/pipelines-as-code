@@ -107,6 +107,19 @@ func (p *PacRun) verifyRepoAndUser(ctx context.Context) (*v1alpha1.Repository, e
 		if allowed, err := p.checkAccessOrError(ctx, repo, status, "via "+p.event.TriggerTarget.String()); !allowed {
 			return nil, err
 		}
+		// When /ok-to-test is approved, update the parent "Pipelines as Code CI" status to success
+		// to indicate the approval was successful before pipelines start running.
+		if p.event.EventType == opscomments.OkToTestCommentEventType.String() {
+			approvalStatus := provider.StatusOpts{
+				Status:     CompletedStatus,
+				Title:      "Approved",
+				Conclusion: successConclusion,
+				DetailsURL: p.event.URL,
+			}
+			if err := p.vcx.CreateStatus(ctx, p.event, approvalStatus); err != nil {
+				p.logger.Warnf("failed to update parent status on /ok-to-test approval: %v", err)
+			}
+		}
 	}
 	return repo, nil
 }
