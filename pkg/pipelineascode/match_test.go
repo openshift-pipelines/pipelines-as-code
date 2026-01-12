@@ -335,9 +335,9 @@ func TestGetPipelineRunsFromRepo(t *testing.T) {
 			p.eventEmitter = events.NewEventEmitter(stdata.Kube, logger)
 			matchedPRs, err := p.getPipelineRunsFromRepo(ctx, tt.repositories)
 			assert.NilError(t, err)
-			matchedPRNames := []string{}
+			matchedPRNames := make([]string, len(matchedPRs))
 			for i := range matchedPRs {
-				matchedPRNames = append(matchedPRNames, matchedPRs[i].PipelineRun.GetGenerateName())
+				matchedPRNames[i] = matchedPRs[i].PipelineRun.GetGenerateName()
 			}
 			if tt.logSnippet != "" {
 				assert.Assert(t, logCatcher.FilterMessageSnippet(tt.logSnippet).Len() > 0, logCatcher.All())

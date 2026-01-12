@@ -329,9 +329,9 @@ func TestFilterPipelineRunByInProgress(t *testing.T) {
 		PipelineRuns: pipelineRuns,
 	}
 
-	orderList := []string{}
-	for _, pr := range pipelineRuns {
-		orderList = append(orderList, fmt.Sprintf("%s/%s", ns, pr.GetName()))
+	orderList := make([]string, len(pipelineRuns))
+	for i, pr := range pipelineRuns {
+		orderList[i] = fmt.Sprintf("%s/%s", ns, pr.GetName())
 	}
 	stdata, _ := testclient.SeedTestData(t, ctx, tdata)
 	filtered := FilterPipelineRunByState(ctx, stdata.Pipeline, orderList, tektonv1.PipelineRunSpecStatusPending, kubeinteraction.StateQueued)

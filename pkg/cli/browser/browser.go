@@ -10,7 +10,7 @@ import (
 func OpenWebBrowser(ctx context.Context, url string) error {
 	var cmd string
 
-	args := []string{}
+	args := make([]string, 0, 1)
 	switch runtime.GOOS {
 	case "windows":
 		cmd = "cmd"

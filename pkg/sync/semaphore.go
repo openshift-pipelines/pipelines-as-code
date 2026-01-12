@@ -39,7 +39,7 @@ func (s *prioritySemaphore) getLimit() int {
 }
 
 func (s *prioritySemaphore) getCurrentPending() []string {
-	keys := []string{}
+	keys := make([]string, 0, len(s.pending.items))
 	for _, item := range s.pending.items {
 		keys = append(keys, item.key)
 	}
@@ -47,7 +47,7 @@ func (s *prioritySemaphore) getCurrentPending() []string {
 }
 
 func (s *prioritySemaphore) getCurrentRunning() []string {
-	keys := []string{}
+	keys := make([]string, 0, len(s.running))
 	for k := range s.running {
 		keys = append(keys, k)
 	}
