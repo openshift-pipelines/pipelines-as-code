@@ -162,6 +162,7 @@ The script filters tests by category using pattern matching on test function nam
 In CI, use [startpaac](https://github.com/openshift-pipelines/startpaac) to install the second GitHub controller (GHE). When running with the `--ci` flag, startpaac automatically installs the second controller when `PAC_SECOND_SECRET_FOLDER` is set.
 
 Example from e2e.yaml workflow:
+
 ```yaml
 - name: Start installing cluster with startpaac
   env:

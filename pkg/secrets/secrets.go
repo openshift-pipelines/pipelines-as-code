@@ -66,8 +66,8 @@ func GetSecretsAttachedToPipelineRun(ctx context.Context, k kubeinteraction.Inte
 // if we don't sort by longest then if there two passwords with the same prefix
 // the shortest one will replace and would leak the end of the passwords of the longest after.
 func sortSecretsByLongests(values []ktypes.SecretValue) []ktypes.SecretValue {
-	ret := []ktypes.SecretValue{}
-	ret = append(ret, values...)
+	ret := make([]ktypes.SecretValue, len(values))
+	copy(ret, values)
 	for i := 0; i < len(ret); i++ {
 		for j := i + 1; j < len(ret); j++ {
 			if len(ret[i].Value) < len(ret[j].Value) {
