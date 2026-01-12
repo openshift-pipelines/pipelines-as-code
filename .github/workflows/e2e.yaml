@@ -286,6 +286,12 @@ jobs:
           detached: true
           limit-access-to-actor: true
 
+      - name: Build binaries in parallel with cluster installation
+        run: |
+          # Start binary build in background
+          nohup make allbinaries > /tmp/binary-build.log 2>&1 &
+          echo $! > /tmp/binary-build.pid
+
       - name: Start installing cluster with startpaac
         env:
           PAC_DIR: ${{ github.workspace }}
@@ -316,6 +322,20 @@ jobs:
       - name: Configure git to skip TLS verification
         run: |
           git config --global http.sslVerify false
+
+      - name: Check binary build status
+        if: always()
+        run: |
+          if [ -f /tmp/binary-build.pid ]; then
+            PID=$(cat /tmp/binary-build.pid)
+            # Wait for build to complete (if still running)
+            wait $PID || echo "Binary build completed with status: $?"
+            # Show build log
+            if [ -f /tmp/binary-build.log ]; then
+              echo "Binary build log:"
+              cat /tmp/binary-build.log
+            fi
+          fi
 
       # Adjusted step-level conditions based on the new job-level logic
       - name: Run E2E Tests
