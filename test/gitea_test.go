@@ -68,35 +68,6 @@ func TestGiteaPullRequestTaskAnnotations(t *testing.T) {
 	defer f()
 }
 
-func TestGiteaTaskResolutionFromMultipleHubs(t *testing.T) {
-	topts := &tgitea.TestOpts{
-		Regexp:      successRegexp,
-		TargetEvent: triggertype.PullRequest.String(),
-		YAMLFiles: map[string]string{
-			".tekton/pr1.yaml": "testdata/pipelinerun-multi-hub-tasks-1.yaml",
-			".tekton/pr2.yaml": "testdata/pipelinerun-multi-hub-tasks-2.yaml",
-		},
-		CheckForNumberStatus: 2,
-		CheckForStatus:       "success",
-	}
-	_, f := tgitea.TestPR(t, topts)
-	defer f()
-}
-
-func TestGiteaPipelineResolutionFromHub(t *testing.T) {
-	topts := &tgitea.TestOpts{
-		Regexp:      successRegexp,
-		TargetEvent: triggertype.PullRequest.String(),
-		YAMLFiles: map[string]string{
-			".tekton/pr.yaml": "testdata/pipelinerun-remote-pipeline-from-hub.yaml",
-		},
-		CheckForNumberStatus: 1,
-		CheckForStatus:       "success",
-	}
-	_, f := tgitea.TestPR(t, topts)
-	defer f()
-}
-
 func TestGiteaUseDisplayName(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		Regexp:      regexp.MustCompile(`.*The Task name is Task.*`),

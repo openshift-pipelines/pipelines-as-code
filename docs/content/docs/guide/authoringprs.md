@@ -198,15 +198,10 @@ repositories](../privaterepo/) in the key `git-provider-token`.
 
 As an example, if you want to add a comment to your pull request, you can use the
 [github-add-comment](https://artifacthub.io/packages/tekton-task/tekton-catalog-tasks/github-add-comment)
-task from [Artifact Hub](https://artifacthub.io) or the same task from
-[Tekton Hub](https://hub.tekton.dev/) using a [Pipelines-as-Code annotation](../resolver/#hub-support-for-tasks):
+task from [Artifact Hub](https://artifacthub.io) using a [Pipelines-as-Code annotation](../resolver/#hub-support-for-tasks):
 
 ```yaml
-# Using Artifact Hub (default)
 pipelinesascode.tekton.dev/task: "github-add-comment"
-
-# Or explicitly using Tekton Hub
-pipelinesascode.tekton.dev/task: "tektonhub://github-add-comment"
 ```
 
 you can then add the task to your [tasks section](https://tekton.dev/docs/pipelines/pipelines/#adding-tasks-to-the-pipeline) (or [finally](https://tekton.dev/docs/pipelines/pipelines/#adding-finally-to-the-pipeline) tasks) of your PipelineRun :

@@ -10,7 +10,6 @@ metadata:
     pipelinesascode.tekton.dev/task: "[.other-tasks/task-referenced-internally.yaml]"
     pipelinesascode.tekton.dev/task-1: "[\\ .RemoteTaskURL //]"
     pipelinesascode.tekton.dev/task-2: "default://pylint"
-    pipelinesascode.tekton.dev/task-3: "tektonhub://curl"
 spec:
   pipelineRef:
     name: pipeline-in-tekton-dir
