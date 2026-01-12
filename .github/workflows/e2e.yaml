@@ -266,6 +266,10 @@ jobs:
           repository: openshift-pipelines/startpaac
           path: startpaac
 
+      - name: Run gosmee for main controller
+        run: |
+          nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.PYSMEE_URL }} "https://${CONTROLLER_DOMAIN_URL}" &
+
       - name: Run gosmee for main controller (Gitea)
         run: |
           nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.TEST_GITEA_SMEEURL }} "https://${CONTROLLER_DOMAIN_URL}" &
