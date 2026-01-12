@@ -151,11 +151,32 @@ Secrets are stored in GitHub Secrets and made available to the workflow via `${{
 The `hack/gh-workflow-ci.sh` script contains several functions that assist in the CI process:
 
 1. `create_pac_github_app_secret` - Creates the required secrets for GitHub app authentication
-2. `create_second_github_app_controller_on_ghe` - Sets up a second controller for GitHub Enterprise
+2. ~~`create_second_github_app_controller_on_ghe`~~ - Use [startpaac](https://github.com/openshift-pipelines/startpaac) instead. See [Second Controller Setup](#second-controller-setup) below.
 3. `run_e2e_tests` - Executes the E2E tests with proper filters
 4. `collect_logs` - Gathers logs and diagnostic information
 
 The script filters tests by category using pattern matching on test function names.
+
+#### Second Controller Setup
+
+In CI, use [startpaac](https://github.com/openshift-pipelines/startpaac) to install the second GitHub controller (GHE). When running with the `--ci` flag, startpaac automatically installs the second controller when `PAC_SECOND_SECRET_FOLDER` is set.
+
+Example from e2e.yaml workflow:
+```yaml
+- name: Start installing cluster with startpaac
+  env:
+    PAC_SECOND_SECRET_FOLDER: ~/secrets-second
+  run: |
+    mkdir -p ~/secrets-second
+    echo "${{ vars.TEST_GITHUB_SECOND_APPLICATION_ID }}" > ~/secrets-second/github-application-id
+    echo "${{ secrets.TEST_GITHUB_SECOND_PRIVATE_KEY }}" > ~/secrets-second/github-private-key
+    # ... other secrets ...
+
+    cd startpaac
+    ./startpaac --ci -a  # Automatically installs second controller
+```
+
+For manual setup or non-CI environments, see the [Second Controller documentation](https://pipelinesascode.com/docs/install/second_controller/).
 
 > [!NOTE]
 > For details on how API call metrics are generated and archived as artifacts, see [API Instrumentation (optional)](#api-instrumentation-optional).

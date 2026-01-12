@@ -245,6 +245,13 @@ jobs:
 
       - uses: ko-build/setup-ko@v0.9
 
+      # Start binary build in background as soon as possible so we can optimize
+      # the run of e2e when it's start later on
+      - name: Build binaries in parallel with cluster installation
+        run: |
+          nohup make allbinaries > /tmp/binary-build.log 2>&1 &
+          echo $! > /tmp/binary-build.pid
+
       - name: Install gosmee
         uses: jaxxstorm/action-install-gh-release@v2.1.0
         with:
@@ -286,12 +293,6 @@ jobs:
           detached: true
           limit-access-to-actor: true
 
-      - name: Build binaries in parallel with cluster installation
-        run: |
-          # Start binary build in background
-          nohup make allbinaries > /tmp/binary-build.log 2>&1 &
-          echo $! > /tmp/binary-build.pid
-
       - name: Start installing cluster with startpaac
         env:
           PAC_DIR: ${{ github.workspace }}
@@ -304,7 +305,16 @@ jobs:
           echo "${{ secrets.APP_PRIVATE_KEY }}" > ~/secrets/github-private-key
           echo "${{ secrets.WEBHOOK_SECRET }}" > ~/secrets/webhook.secret
           echo "${{ secrets.TEST_GITEA_SMEEURL }}" > ~/secrets/smee
+
+          # Create second controller secrets
+          mkdir -p ~/secrets-second
+          echo "${{ vars.TEST_GITHUB_SECOND_APPLICATION_ID }}" > ~/secrets-second/github-application-id
+          echo "${{ secrets.TEST_GITHUB_SECOND_PRIVATE_KEY }}" > ~/secrets-second/github-private-key
+          echo "${{ secrets.TEST_GITHUB_SECOND_WEBHOOK_SECRET }}" > ~/secrets-second/webhook.secret
+          echo "${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}" > ~/secrets-second/smee
+
           export PAC_SECRET_FOLDER=~/secrets
+          export PAC_SECOND_SECRET_FOLDER=~/secrets-second
           export TARGET_HOST=local
 
           cd startpaac
@@ -329,32 +339,9 @@ jobs:
             exit 1
           fi
 
-      - name: Create second Github APP Controller on GHE
-        env:
-          TEST_GITHUB_SECOND_SMEE_URL: ${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}
-          TEST_GITHUB_SECOND_PRIVATE_KEY: ${{ secrets.TEST_GITHUB_SECOND_PRIVATE_KEY }}
-          TEST_GITHUB_SECOND_WEBHOOK_SECRET: ${{ secrets.TEST_GITHUB_SECOND_WEBHOOK_SECRET }}
-          TEST_GITHUB_SECOND_APPLICATION_ID: ${{ vars.TEST_GITHUB_SECOND_APPLICATION_ID }}
-        run: |
-          ./hack/gh-workflow-ci.sh create_second_github_app_controller_on_ghe
-
       - name: Configure git to skip TLS verification
         run: |
           git config --global http.sslVerify false
-
-      - name: Check binary build status
-        if: always()
-        run: |
-          if [ -f /tmp/binary-build.pid ]; then
-            PID=$(cat /tmp/binary-build.pid)
-            # Wait for build to complete (if still running)
-            wait $PID || echo "Binary build completed with status: $?"
-            # Show build log
-            if [ -f /tmp/binary-build.log ]; then
-              echo "Binary build log:"
-              cat /tmp/binary-build.log
-            fi
-          fi
 
       # Adjusted step-level conditions based on the new job-level logic
       - name: Run E2E Tests
