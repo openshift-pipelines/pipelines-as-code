@@ -287,10 +287,6 @@ jobs:
         run: |
           nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.PYSMEE_URL }} "https://${CONTROLLER_DOMAIN_URL}" &
 
-      - name: Run gosmee for main controller (Gitea)
-        run: |
-          nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.TEST_GITEA_SMEEURL }} "https://${CONTROLLER_DOMAIN_URL}" &
-
       - name: Run gosmee for second controller (GHE)
         if: matrix.provider == 'providers'
         run: |
@@ -314,7 +310,7 @@ jobs:
           echo "${{ vars.APPLICATION_ID }}" > ~/secrets/github-application-id
           echo "${{ secrets.APP_PRIVATE_KEY }}" > ~/secrets/github-private-key
           echo "${{ secrets.WEBHOOK_SECRET }}" > ~/secrets/webhook.secret
-          echo "${{ secrets.TEST_GITEA_SMEEURL }}" > ~/secrets/smee
+          echo "${{ secrets.PYSMEE_URL }}" > ~/secrets/smee
 
           # Create second controller secrets
           mkdir -p ~/secrets-second

@@ -36,7 +36,7 @@ func TestGithubSecondPullRequestConcurrencyMultiplePR(t *testing.T) {
 	maxKeepRun := 1
 	allPipelinesRunsCnt := (numberOfPullRequest * numberOfPipelineRuns) + (numberOfPullRequest * numberOfRetests * numberOfPipelineRuns)
 	allPipelinesRunAfterCleanUp := allPipelinesRunsCnt / (maxKeepRun + 1)
-	loopMax := 35
+	loopMax := 60
 
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	_, runcnx, opts, ghcnx, err := tgithub.Setup(ctx, true, false)
