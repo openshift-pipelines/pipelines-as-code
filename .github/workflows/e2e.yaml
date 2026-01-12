@@ -310,6 +310,25 @@ jobs:
           cd startpaac
           ./startpaac --ci -a
 
+      - name: Install minica CA certificate to system trust store
+        run: |
+          set -x
+          echo "=== Installing minica CA certificate to system trust store ==="
+          if [ -f /tmp/certs/minica.pem ]; then
+            sudo mkdir -p /usr/local/share/ca-certificates/
+            sudo cp /tmp/certs/minica.pem /usr/local/share/ca-certificates/minica.crt
+            sudo update-ca-certificates
+            echo "✓ CA certificate installed to system trust store"
+
+            # Verify installation
+            ls -la /usr/local/share/ca-certificates/minica.crt
+            echo "System will now trust HTTPS connections to *.127-0-0-1.nip.io domains"
+          else
+            echo "✗ ERROR: /tmp/certs/minica.pem not found"
+            echo "startpaac should have created this file"
+            exit 1
+          fi
+
       - name: Create second Github APP Controller on GHE
         env:
           TEST_GITHUB_SECOND_SMEE_URL: ${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}
