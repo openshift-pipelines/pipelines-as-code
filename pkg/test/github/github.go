@@ -59,7 +59,6 @@ func SetupGH() (client *github.Client, mux *http.ServeMux, serverURL string, tea
 
 // SetupGitTree Take a dir and fake a full GitTree GitHub api calls reply recursively over a muxer.
 func SetupGitTree(t *testing.T, mux *http.ServeMux, dir string, event *info.Event, recursive bool) {
-	entries := []*github.TreeEntry{}
 	type file struct {
 		sha, name string
 		isdir     bool
@@ -83,6 +82,7 @@ func SetupGitTree(t *testing.T, mux *http.ServeMux, dir string, event *info.Even
 			files = append(files, file{name: filepath.Join(dir, f.Name()), sha: sha, isdir: f.IsDir()})
 		}
 	}
+	entries := make([]*github.TreeEntry, 0, len(files))
 	for _, f := range files {
 		etype := "blob"
 		mode := "100644"

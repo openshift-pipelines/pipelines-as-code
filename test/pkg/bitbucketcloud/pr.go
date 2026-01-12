@@ -20,7 +20,7 @@ func MakePR(t *testing.T, bprovider bitbucketcloud.Provider, runcnx *params.Run,
 	commitAuthor := "OpenShift Pipelines E2E test"
 	commitEmail := "e2e-pipelines@redhat.com"
 
-	bbfiles := []bitbucket.File{}
+	bbfiles := make([]bitbucket.File, 0, len(entries))
 	for k, v := range entries {
 		tmpfile := fs.NewFile(t, "pipelinerun", fs.WithContent(v))
 		defer tmpfile.Remove()

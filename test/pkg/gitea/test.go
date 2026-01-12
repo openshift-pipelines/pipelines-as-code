@@ -564,9 +564,9 @@ func GetStandardParams(t *testing.T, topts *TestOpts, eventType string) (repoURL
 		})
 		assert.NilError(t, err)
 		// get all pipelinerun names
-		names := []string{}
-		for _, pr := range prs.Items {
-			names = append(names, pr.Name)
+		names := make([]string, len(prs.Items))
+		for i, pr := range prs.Items {
+			names[i] = pr.Name
 		}
 		assert.Equal(t, len(prs.Items), 1, "should have only one "+eventType+" pipelinerun", names)
 
