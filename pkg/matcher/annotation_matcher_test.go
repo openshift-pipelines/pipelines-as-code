@@ -1629,12 +1629,12 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				tt.args.runevent.Request = &info.Request{Header: http.Header{}, Payload: nil}
 			}
 			if len(tt.args.fileChanged) > 0 {
-				commitFiles := []*github.CommitFile{}
-				for _, v := range tt.args.fileChanged {
-					commitFiles = append(commitFiles, &github.CommitFile{
+				commitFiles := make([]*github.CommitFile, len(tt.args.fileChanged))
+				for i, v := range tt.args.fileChanged {
+					commitFiles[i] = &github.CommitFile{
 						Filename: github.Ptr(v.FileName),
 						Status:   github.Ptr(v.Status),
-					})
+					}
 				}
 				if tt.args.runevent.TriggerTarget == "push" {
 					mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/commits/%s",
