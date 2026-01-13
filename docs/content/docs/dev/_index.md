@@ -9,78 +9,36 @@ weight: 15
 
 It's important: <https://github.com/openshift-pipelines/pipelines-as-code/blob/main/code-of-conduct.md>
 
-## Use the all in one install on kind to develop
+## Local Development Setup with startpaac
 
-It uses kind under docker. You start it with:
+For local development, we recommend using [startpaac](https://github.com/openshift-pipelines/startpaac).
 
-```shell
-make dev
-```
-
-When it finishes, you will have the following installed in your kind cluster:
+startpaac provides an interactive, modular setup that includes:
 
 - Kind Cluster deployment
-- Internal registry to push to from `ko`
-- An ingress controller with nginx for routing.
-- Tekton and Dashboard installed with an ingress route.
-- Pipelines as code deployed from your repo with ko.
-- Gitea service running locally so you can run the E2E tests against it (Gitea has the most comprehensive set of tests).
+- Internal registry for `ko`
+- Nginx ingress controller
+- Tekton and Dashboard
+- Pipelines as Code deployment
+- Forgejo for local E2E testing
 
-### Configuring the Kind Registry Port
-
-By default, the Kind registry runs on port 5000. To use a different port, set the `REG_PORT` environment variable:
+### Quick Start
 
 ```shell
-# Set a custom registry port
-export REG_PORT=5001
-make dev
+git clone https://github.com/openshift-pipelines/startpaac
+cd startpaac
+./startpaac -a
 ```
 
-By default, it will try to install from
-$GOPATH/src/github.com/openshift-pipelines/pipelines-as-code. To override it,
-set the `PAC_DIRS` environment variable.
+See the [startpaac README](https://github.com/openshift-pipelines/startpaac) for configuration options and environment variables.
 
-- It will deploy under the nip.io domain reflector, the URL will be:
+### Redeploying PAC
 
-  - <http://controller.paac-127-0-0-1.nip.io>
-  - <http://dashboard.paac-127-0-0-1.nip.io>
+If you need to redeploy just Pipelines as Code, you can use ko directly:
 
-- You will need to create the secret yourself. If you have the [pass cli](https://www.passwordstore.org/)
-  installed, you can point to a folder that contains: github-application-id, github-private-key, webhook.secret
-  as configured from your GitHub application. Set the `PAC_PASS_SECRET_FOLDER`
-  environment variable to point to it.
-  For example:
-
-  ```shell
-  pass insert github-app/github-application-id
-  pass insert github-app/webhook.secret
-  pass insert -m github-app/github-private-key
-  ```
-
-- If you need to redeploy your pac install (and only pac), you can do:
-
-  ```shell
-  ./hack/dev/kind/install.sh -p
-  ```
-
-  or
-
-  ```shell
-  make rdev
-  ```
-
-  or you can do this directly with ko:
-
-  ```shell
-  env KO_DOCKER_REPO=localhost:5000 ko apply -f ${1:-"config"} -B
-  ```
-
-- more flags: `-b` to only do the kind creation+nginx+docker image, `-r` to
-  install from the latest stable release (override with the env variable `PAC_RELEASE`)
-  instead of ko. `-c` will only do the pac configuration (i.e., creation of
-  secrets/ingress, etc..)
-
-- see the [install.sh](https://github.com/openshift-pipelines/pipelines-as-code/blob/main/hack/dev/kind/install.sh) -h for all flags
+```shell
+env KO_DOCKER_REPO=localhost:5000 ko apply -f config -B
+```
 
 ## Gitea
 
@@ -129,7 +87,7 @@ There are some gotchas with the webhook validation secret. Pipelines-as-Code
 detects a Gitea install and lets the user set an empty webhook secret (by default
 it's enforced).
 
-The `install.sh` script will by default spin up a new instance of GITEA to play
+startpaac will by default spin up a new instance of Forgejo (a Gitea fork) to play
 with and run the Gitea E2E tests.
 
 You will need to create a Hook URL generated from <https://hook.pipelinesascode.com/new>
