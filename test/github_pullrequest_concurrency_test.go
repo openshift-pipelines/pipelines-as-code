@@ -27,7 +27,6 @@ import (
 const pipelineRunFileNamePrefix = "prlongrunnning-"
 
 func TestGithubSecondPullRequestConcurrency1by1(t *testing.T) {
-	t.Skip("Skipping test temporarily due to flakiness issues, to be investigated further CB - 20260112")
 	ctx := context.Background()
 	label := "Github PullRequest Concurrent, sequentially one by one"
 	numberOfPipelineRuns := 5
