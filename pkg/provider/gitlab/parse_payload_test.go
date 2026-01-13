@@ -493,6 +493,7 @@ func TestParsePayload(t *testing.T) {
 			}
 			assert.NilError(t, err)
 			if tt.want != nil {
+				assert.Assert(t, got.Event != nil)
 				assert.Equal(t, tt.want.TriggerTarget, got.TriggerTarget)
 				assert.Equal(t, tt.want.EventType, got.EventType)
 				assert.Equal(t, tt.want.Organization, got.Organization)
