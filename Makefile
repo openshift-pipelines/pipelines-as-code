@@ -161,15 +161,6 @@ fmt: ## formats the GO code(excludes vendors dir)
 fumpt: ## formats the GO code with gofumpt(excludes vendors dir)
 	@find test pkg -name '*.go'|xargs -P4 $(GOFUMPT) -w -extra
 
-##@ Local Development
-.PHONY: dev
-dev: ## deploys dev setup locally
-	./hack/dev/kind/install.sh
-
-.PHONY: dev-redeploy
-dev-redeploy: ## redeploy pac in local setup
-	./hack/dev/kind/install.sh -p
-
 ##@ Generated files
 check-generated: # check if all files that needs to be generated are generated
 	@git status -uno |grep -E "modified:[ ]*(vendor/|.*.golden$)" && \
