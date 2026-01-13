@@ -68,6 +68,12 @@ If you have used AI assistance, please provide the following details:
 > **💡You can use the script `./hack/add-llm-coauthor.sh` to automatically add
 > these co-author trailers to your commits.
 
+# Release Notes
+
+```release-note
+NONE
+```
+
 ## ✅ Submitter Checklist
 
 - [ ] 📝 My commit messages are clear, informative, and follow the project's [How to write a git commit message guide](https://developers.google.com/blockly/guides/contribute/get-started/commits). **The [Gitlint](https://jorisroovers.com/gitlint/latest) linter ensures in CI it's properly validated**
