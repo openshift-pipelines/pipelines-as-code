@@ -159,7 +159,7 @@ func UntilPipelineRunHasReason(ctx context.Context, clients clients.Clients, des
 			}
 		}
 
-		clients.Log.Infof("still waiting for pipelinerun to have reason %s in %s namespace", desiredReason.String(), opts.Namespace)
+		clients.Log.Infof("still waiting for %d pipelinerun(s) to have reason %s in %s namespace", opts.MinNumberStatus, desiredReason.String(), opts.Namespace)
 		return len(prsWithReason) >= opts.MinNumberStatus, nil
 	})
 }
