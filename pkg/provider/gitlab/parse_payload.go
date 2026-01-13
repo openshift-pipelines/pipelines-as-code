@@ -162,7 +162,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 	case *gitlab.CommitCommentEvent:
 		// need run in fetching repository
 		v.run = run
-		return v.handleCommitCommentEvent(ctx, gitEvent)
+		return v.handleCommitCommentEvent(ctx, gitEvent, processedEvent)
 	default:
 		return nil, fmt.Errorf("event %s is not supported", event)
 	}
@@ -224,9 +224,8 @@ func (v *Provider) initGitLabClient(ctx context.Context, event *info.Event) (*in
 	return event, nil
 }
 
-func (v *Provider) handleCommitCommentEvent(ctx context.Context, event *gitlab.CommitCommentEvent) (*info.Event, error) {
+func (v *Provider) handleCommitCommentEvent(ctx context.Context, event *gitlab.CommitCommentEvent, processedEvent *info.Event) (*info.Event, error) {
 	action := "trigger"
-	processedEvent := info.NewEvent()
 	if event.Repository == nil {
 		return nil, fmt.Errorf("error parse_payload: the repository in event payload must not be nil")
 	}
