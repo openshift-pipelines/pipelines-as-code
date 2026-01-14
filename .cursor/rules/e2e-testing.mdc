@@ -1,9 +1,0 @@
----
-description: E2E testing rules
-alwaysApply: false
----
-# E2E Testing
-
-- Always ask the user to run the e2e tests manually and copy the output. Since
-  E2E tests require specific setup and environment variables
-- Gitea tests are the most comprehensive and self-contained

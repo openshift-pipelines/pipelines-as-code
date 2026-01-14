@@ -1,9 +1,0 @@
----
-description: Pre-commit and Quality Gates
-alwaysApply: false
----
-- Install pre-commit hooks with `pre-commit install` to ensure code quality
-- The project uses multiple linters: golangci-lint, yamllint, markdownlint, ruff, shellcheck, vale, codespell
-- Pre-commit hooks run automatically on push, but can be skipped with `git push --no-verify`
-- Use `SKIP=hook-name git push` to skip specific hooks
-
