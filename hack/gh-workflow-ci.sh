@@ -90,8 +90,30 @@ run_e2e_tests() {
 
   mapfile -t tests < <(get_tests "${target}")
   echo "About to run ${#tests[@]} tests: ${tests[*]}"
+
+  # Build the test pattern
   # shellcheck disable=SC2001
-  make test-e2e GO_TEST_FLAGS="-v -run \"$(echo "${tests[*]}" | sed 's/ /|/g')\""
+  test_pattern=$(echo "${tests[*]}" | sed 's/ /|/g')
+
+  # Run tests with gotestsum for better output and JUnit/JSON reports
+  # Falls back to regular go test if gotestsum is not installed
+  if command -v gotestsum >/dev/null 2>&1; then
+    echo "Running tests with gotestsum..."
+    env GODEBUG=asynctimerchan=1 gotestsum \
+      --format testdox \
+      --junitfile /tmp/e2e-results.xml \
+      --jsonfile /tmp/e2e-results.json \
+      -- \
+      -timeout "${TIMEOUT_E2E:-2h}" \
+      -failfast \
+      -count=1 \
+      -tags=e2e \
+      -run "${test_pattern}" \
+      ./test
+  else
+    echo "gotestsum not found, falling back to go test..."
+    make test-e2e GO_TEST_FLAGS="-v -run \"${test_pattern}\""
+  fi
 }
 
 output_logs() {
