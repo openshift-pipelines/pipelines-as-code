@@ -4,6 +4,7 @@ package test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -43,7 +44,9 @@ func TestGithubMaxKeepRuns(t *testing.T) {
 
 	count := 0
 	for {
-		prs, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{})
+		prs, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, g.SHA),
+		})
 		if err == nil && len(prs.Items) == 1 {
 			if prs.Items[0].GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason() == "Running" {
 				t.Logf("skipping %s since currently running", prs.Items[0].GetName())

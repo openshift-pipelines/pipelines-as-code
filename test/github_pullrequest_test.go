@@ -443,7 +443,9 @@ func TestGithubPullRequestNoOnLabelAnnotation(t *testing.T) {
 
 	// let's wait 10 secs and check every second that a PipelineRun is created or not.
 	for i := 0; i < 10; i++ {
-		prs, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{})
+		prs, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, g.SHA),
+		})
 		assert.NilError(t, err)
 		// after adding a label on the PR we need to make sure that it doesn't trigger another PipelineRun.
 		assert.Equal(t, len(prs.Items), 1)
@@ -462,7 +464,9 @@ func TestGithubPullRequestCELLabelEvent(t *testing.T) {
 	defer g.TearDown(ctx, t)
 
 	g.Cnx.Clients.Log.Infof("Verifying no PipelineRun created on PR creation")
-	prs, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{})
+	prs, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, g.SHA),
+	})
 	assert.NilError(t, err)
 	assert.Equal(t, len(prs.Items), 0, "No PipelineRun should be created on PR creation")
 
@@ -544,7 +548,9 @@ func TestGithubPullRequestNoPipelineRunCancelledOnPRClosed(t *testing.T) {
 	var prReason string
 
 	for range 10 {
-		prs, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{})
+		prs, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, g.SHA),
+		})
 		if err != nil {
 			t.Logf("failed to list PipelineRuns: %v", err)
 			time.Sleep(1 * time.Second)

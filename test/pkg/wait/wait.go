@@ -29,7 +29,11 @@ func UntilMinPRAppeared(ctx context.Context, clients clients.Clients, opts Opts,
 	ctx, cancel := context.WithTimeout(ctx, opts.PollTimeout)
 	defer cancel()
 	return kubeinteraction.PollImmediateWithContext(ctx, opts.PollTimeout, func() (bool, error) {
-		prs, err := clients.Tekton.TektonV1().PipelineRuns(opts.Namespace).List(ctx, metav1.ListOptions{})
+		listOpts := metav1.ListOptions{}
+		if opts.TargetSHA != "" {
+			listOpts.LabelSelector = fmt.Sprintf("%s=%s", keys.SHA, opts.TargetSHA)
+		}
+		prs, err := clients.Tekton.TektonV1().PipelineRuns(opts.Namespace).List(ctx, listOpts)
 		if err != nil {
 			return false, err
 		}

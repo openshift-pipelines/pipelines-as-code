@@ -70,7 +70,9 @@ func TestGithubSecondPullRequestGitopsCommentCancel(t *testing.T) {
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
 
-	pruns, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{})
+	pruns, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, g.SHA),
+	})
 	assert.NilError(t, err)
 	assert.Equal(t, len(pruns.Items), 2)
 

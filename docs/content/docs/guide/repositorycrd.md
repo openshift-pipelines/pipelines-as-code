@@ -176,6 +176,9 @@ spec:
       comment_strategy: "disable_all"
 ```
 
+For installation guidance and troubleshooting fork-based workflows, see:
+[GitLab Installation - Working with Forked Repositories](../install/gitlab/#working-with-forked-repositories)
+
 ### GitHub Webhook
 
 ```yaml
@@ -237,6 +240,7 @@ This setting enables the scoping of the GitHub token to private and public repos
 ### Scoping the GitHub token using Global configuration
 
 You can use the global configuration to use as a list of repositories used from any Repository CR in any namespace.
+You can specify repositories using exact names or glob patterns (e.g., `myorg/*` to match all repositories under an organization where the app is installed).
 
 To set the global configuration, in the `pipelines-as-code` configmap, set the `secret-github-app-scope-extra-repos` key, as in the following example:
 
@@ -247,13 +251,14 @@ To set the global configuration, in the `pipelines-as-code` configmap, set the `
     name: pipelines-as-code
     namespace: pipelines-as-code
   data:
-    secret-github-app-scope-extra-repos: "owner2/project2, owner3/project3"
+    secret-github-app-scope-extra-repos: "owner2/project2, owner3/*"
   ```
 
 ### Scoping the GitHub token using Repository level configuration
 
 You can use the `Repository` custom resource to scope the generated GitHub token to a list of repositories.
 The repositories can be public or private, but must reside in the same namespace as the repository with which the `Repository` resource is associated.
+You can specify repositories using exact names or glob patterns (e.g., `myorg/*` to match all repositories under an organization which have the GitHub app installed).
 
 Set the `github_app_token_scope_repos` spec configuration within the `Repository` custom resource, as in the following example:
 
@@ -268,18 +273,18 @@ Set the `github_app_token_scope_repos` spec configuration within the `Repository
     settings:
       github_app_token_scope_repos:
       - "owner/project"
-      - "owner1/project1"
+      - "owner1/*"
   ```
 
 In this example, the `Repository` custom resource is associated with the `linda/project` repository in the `test-repo` namespace.
-The scope of the generated GitHub token is extended to the `owner/project` and `owner1/project1` repositories, as well as the `linda/project` repository. These repositories must exist under the `test-repo` namespace.
+The scope of the generated GitHub token is extended to the `owner/project` repository, all repositories matching `owner1/*`, as well as the `linda/project` repository. These repositories must exist under the `test-repo` namespace.
 
 **Note:**
 
-If any of the repositories do not exist in the namespace, the scoping of the GitHub token fails with an error message as in the following example:
+If any of the repositories or patterns do not match any repository in the namespace, the scoping of the GitHub token fails with an error message as in the following example:
 
 ```console
-failed to scope GitHub token as repo owner1/project1 does not exist in namespace test-repo
+failed to scope GitHub token as repo with pattern owner1/project1 does not exist in namespace test-repo
 ```
 
 ### Combining global and repository level configuration
@@ -332,10 +337,10 @@ creation of the GitHub token fails with the following error message:
     ```
 
 - If the scoping of the GitHub token to the repositories set in global or repository level configuration fails for any reason,
-the CI process does not run. This includes cases where the same repository is listed in the global or repository level configuration,
+the CI process does not run. This includes cases where the same repository is listed (or matched) in the global or repository level configuration,
 and the scoping fails for the repository level configuration because the repository is not in the same namespace as the `Repository` custom resource.
 
-  In the following example, the `owner5/project5` repository is listed in both the global configuration and in the repository level configuration:
+  In the following example, the `owner5/project5` repository is listed in the global configuration and matches the pattern in the repository level configuration:
 
   ```yaml
   apiVersion: v1
@@ -357,11 +362,11 @@ and the scoping fails for the repository level configuration because the reposit
     url: "https://github.com/linda/project"
     settings:
       github_app_token_scope_repos:
-      - "owner5/project5"
+      - "owner5/*"
   ```
 
-  In this example, if the `owner5/project5` repository is not under the `test-repo` namespace, scoping of the GitHub token fails with the following error message:
+  In this example, if the `owner5/project5` repository (or any other repository satisfying the specified pattern of `owner5/*`) is not under the `test-repo` namespace, scoping of the GitHub token fails with the following error message:
 
   ```yaml
-  failed to scope GitHub token as repo owner5/project5 does not exist in namespace test-repo
+  failed to scope GitHub token as repo with pattern owner5/* does not exist in namespace test-repo
   ```

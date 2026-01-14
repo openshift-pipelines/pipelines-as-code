@@ -4,6 +4,7 @@ package test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"path/filepath"
 	"testing"
@@ -118,7 +119,9 @@ func TestGithubGitOpsCommentOnTag(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, repo.Status[len(repo.Status)-1].Conditions[0].Status, corev1.ConditionTrue)
 
-	pruns, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
+	pruns, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, sha),
+	})
 	assert.NilError(t, err)
 	assert.Equal(t, len(pruns.Items), numberOfPRs)
 

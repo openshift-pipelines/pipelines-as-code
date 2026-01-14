@@ -33,7 +33,9 @@ func TestGithubPushRequestGitOpsCommentOnComment(t *testing.T) {
 	defer g.TearDown(ctx, t)
 
 	// let's make sure we didn't create any PipelineRuns since we only match on-comment here
-	pruns, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{})
+	pruns, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, g.SHA),
+	})
 	assert.NilError(t, err)
 	assert.Equal(t, len(pruns.Items), 0)
 
@@ -60,7 +62,9 @@ func TestGithubPushRequestGitOpsCommentOnComment(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, repo.Status[len(repo.Status)-1].Conditions[0].Status, corev1.ConditionTrue)
 
-	pruns, err = g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{})
+	pruns, err = g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, g.SHA),
+	})
 	assert.NilError(t, err)
 	assert.Equal(t, len(pruns.Items), len(g.YamlFiles))
 	lastPrName := pruns.Items[0].GetName()
@@ -89,7 +93,9 @@ func TestGithubPushRequestGitOpsCommentRetest(t *testing.T) {
 	defer g.TearDown(ctx, t)
 	comment := "/retest branch:" + g.TargetNamespace
 
-	pruns, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{})
+	pruns, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, g.SHA),
+	})
 	assert.NilError(t, err)
 	assert.Equal(t, len(pruns.Items), 2)
 
@@ -116,7 +122,9 @@ func TestGithubPushRequestGitOpsCommentRetest(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, repo.Status[len(repo.Status)-1].Conditions[0].Status, corev1.ConditionTrue)
 
-	pruns, err = g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{})
+	pruns, err = g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, g.SHA),
+	})
 	assert.NilError(t, err)
 	assert.Equal(t, len(pruns.Items), 4)
 
@@ -142,7 +150,9 @@ func TestGithubPushRequestGitOpsCommentCancel(t *testing.T) {
 	ctx, err := cctx.GetControllerCtxInfo(ctx, g.Cnx)
 	assert.NilError(t, err)
 
-	pruns, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{})
+	pruns, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, g.SHA),
+	})
 	assert.NilError(t, err)
 	assert.Equal(t, len(pruns.Items), 2)
 
@@ -192,7 +202,9 @@ func TestGithubPushRequestGitOpsCommentCancel(t *testing.T) {
 	}
 
 	// make sure the number of items
-	pruns, err = g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{})
+	pruns, err = g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, g.SHA),
+	})
 	assert.NilError(t, err)
 	assert.Equal(t, len(pruns.Items), numberOfStatus)
 	cancelled = false

@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
@@ -296,8 +297,9 @@ func verifyIncomingWebhook(t *testing.T, randomedString, pipelinerunName string,
 		time.Sleep(5 * time.Second)
 	}
 
-	// Verify PipelineRun count matches expected
-	prsNew, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(randomedString).List(ctx, metav1.ListOptions{})
+	prsNew, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(randomedString).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, sha),
+	})
 	assert.NilError(t, err)
 	assert.Assert(t, len(prsNew.Items) == numberOfPR, "PipelineRun count mismatch: expected=%d, actual=%d (branch: %s, targets: %v)", numberOfPR, len(prsNew.Items), randomedString, targets)
 

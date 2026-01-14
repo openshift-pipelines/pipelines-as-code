@@ -28,6 +28,40 @@
         key: token
   ```
 
+## Fork Limitations and Status Reporting
+
+When a Merge Request originates from a forked repository to an upstream repository,
+Pipelines-as-Code uses a three-layer fallback mechanism for status reporting:
+
+1. **Source Project (Fork)**: First attempt to set commit status
+   - Requires: Token with write access to fork repository
+   - Common failure: Token lacks fork permissions
+
+2. **Target Project (Upstream)**: Fallback to setting status on upstream
+   - Requires: Token with CI pipeline access to upstream
+   - May fail: GitLab only creates pipeline entries when CI runs in that project
+
+3. **Merge Request Comments**: Final fallback to posting status as comment
+   - Always succeeds (requires MR write permissions)
+   - Provides same information as API status checks
+
+**Comment Strategy Control:**
+
+Disable status comments (will still attempt API status updates):
+
+```yaml
+spec:
+  settings:
+    gitlab:
+      comment_strategy: "disable_all"
+```
+
+**For detailed troubleshooting and workarounds**, see:
+[GitLab Installation - Troubleshooting Fork Merge Requests](../../../docs/content/docs/install/gitlab.md#troubleshooting-fork-merge-requests)
+
+**For technical implementation details**, see:
+[Repository CRD - GitLab comment strategy](../../../docs/content/docs/guide/repositorycrd.md#gitlab)
+
 ## TODO
 
 ### Until there is a ask for it

@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/gobwas/glob"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -24,7 +25,7 @@ func ScopeTokenToListOfRepos(ctx context.Context, vcx provider.Interface, pacInf
 		listRepos bool
 		token     string
 	)
-	listURLs := map[string]string{}
+	listURLs := []string{}
 	repoListToScopeToken := []string{}
 
 	// This is a Global config to provide list of repos to scope token
@@ -34,6 +35,14 @@ func ScopeTokenToListOfRepos(ctx context.Context, vcx provider.Interface, pacInf
 			if configValueS == "" {
 				continue
 			}
+			// May or may not be a glob
+			if _, err := glob.Compile(configValueS); err != nil {
+				msg := fmt.Sprintf("invalid repo glob specified %s", configValueS)
+				eventEmitter.EmitMessage(nil, zap.ErrorLevel, "InvalidRepoGlobSpecified", msg)
+
+				return "", errors.New(msg)
+			}
+
 			repoListToScopeToken = append(repoListToScopeToken, configValueS)
 		}
 		listRepos = true
@@ -50,15 +59,30 @@ func ScopeTokenToListOfRepos(ctx context.Context, vcx provider.Interface, pacInf
 			if err != nil {
 				return "", err
 			}
-			listURLs[splitData[1]+"/"+splitData[2]] = splitData[1] + "/" + splitData[2]
+			listURLs = append(listURLs, splitData[1]+"/"+splitData[2])
 		}
 		for i := range repo.Spec.Settings.GithubAppTokenScopeRepos {
-			if _, ok := listURLs[repo.Spec.Settings.GithubAppTokenScopeRepos[i]]; !ok {
-				msg := fmt.Sprintf("failed to scope GitHub token as repo %s does not exist in namespace %s", repo.Spec.Settings.GithubAppTokenScopeRepos[i], ns)
+			// May or may not be a glob
+			repoToScope, err := glob.Compile(repo.Spec.Settings.GithubAppTokenScopeRepos[i])
+			if err != nil {
+				msg := fmt.Sprintf("invalid repo glob specified %s", repo.Spec.Settings.GithubAppTokenScopeRepos[i])
+				eventEmitter.EmitMessage(nil, zap.ErrorLevel, "InvalidRepoGlobSpecified", msg)
+
+				return "", errors.New(msg)
+			}
+			globMatchFound := false
+			// Match glob to repos list.
+			for _, repoKey := range listURLs {
+				if repoToScope.Match(repoKey) {
+					repoListToScopeToken = append(repoListToScopeToken, repoKey)
+					globMatchFound = true
+				}
+			}
+			if !globMatchFound {
+				msg := fmt.Sprintf("failed to scope GitHub token as repo with pattern %s does not exist in namespace %s", repo.Spec.Settings.GithubAppTokenScopeRepos[i], ns)
 				eventEmitter.EmitMessage(nil, zap.ErrorLevel, "RepoDoesNotExistInNamespace", msg)
 				return "", errors.New(msg)
 			}
-			repoListToScopeToken = append(repoListToScopeToken, repo.Spec.Settings.GithubAppTokenScopeRepos[i])
 		}
 		// When the global configuration is not set then check for secret-github-app-token-scoped key for the repo level configuration
 		if pacInfo.SecretGHAppRepoScoped && pacInfo.SecretGhAppTokenScopedExtraRepos == "" {
