@@ -50,7 +50,8 @@ check out the code that is being tested.
 | Variable              | Description                                                                                                                                                                       | Example                               | Example Output                                                                                                                                                  |
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | body                  | The full payload body (see [below](#using-the-body-and-headers-in-a-pipelines-as-code-parameter))                                                                                 | `{{body.pull_request.user.email }}`   | <email@domain.com>                                                                                                                                              |
-| event_type            | The event type (eg: `pull_request` or `push`)                                                                                                                                     | `{{event_type}}`                      | pull_request          (see the note for GitOps Comments [here]({{< relref "/docs/guide/gitops_commands.md#event-type-annotation-and-dynamic-variables" >}}) )   |
+| event                 | The normalized event type (`push`, `pull_request`, or `incoming`)                                                                                                                 | `{{event}}`                           | pull_request                                                                                                                                                    |
+| event_type            | The provider-specific event type from the webhook payload header (eg: GitHub sends `pull_request`, GitLab sends `Merge Request`, etc.)                                            | `{{event_type}}`                      | pull_request          (see the note for GitOps Comments [here]({{< relref "/docs/guide/gitops_commands.md#event-type-annotation-and-dynamic-variables" >}}) )   |
 | git_auth_secret       | The secret name auto-generated with provider token to check out private repos.                                                                                                    | `{{git_auth_secret}}`                 | pac-gitauth-xkxkx                                                                                                                                               |
 | headers               | The request headers (see [below](#using-the-body-and-headers-in-a-pipelines-as-code-parameter))                                                                                   | `{{headers['x-github-event']}}`       | push                                                                                                                                                            |
 | pull_request_number   | The pull or merge request number, only defined when we are in a `pull_request` event or push event occurred when pull request is merged.                                          | `{{pull_request_number}}`             | 1                                                                                                                                                               |
@@ -268,15 +269,10 @@ repositories](../privaterepo/) in the key `git-provider-token`.
 
 As an example, if you want to add a comment to your pull request, you can use the
 [github-add-comment](https://artifacthub.io/packages/tekton-task/tekton-catalog-tasks/github-add-comment)
-task from [Artifact Hub](https://artifacthub.io) or the same task from
-[Tekton Hub](https://hub.tekton.dev/) using a [Pipelines-as-Code annotation](../resolver/#hub-support-for-tasks):
+task from [Artifact Hub](https://artifacthub.io) using a [Pipelines-as-Code annotation](../resolver/#hub-support-for-tasks):
 
 ```yaml
-# Using Artifact Hub (default)
 pipelinesascode.tekton.dev/task: "github-add-comment"
-
-# Or explicitly using Tekton Hub
-pipelinesascode.tekton.dev/task: "tektonhub://github-add-comment"
 ```
 
 you can then add the task to your [tasks section](https://tekton.dev/docs/pipelines/pipelines/#adding-tasks-to-the-pipeline) (or [finally](https://tekton.dev/docs/pipelines/pipelines/#adding-finally-to-the-pipeline) tasks) of your PipelineRun :

@@ -6,6 +6,11 @@
 *.so
 *.dylib
 
+bin/
+docs/public/
+docs/resources/
+tmp/
+
 # Test binary, build with `go test -c`
 *.test
 
@@ -14,13 +19,9 @@
 
 # pac binary itself, if you want to `go build cmd/kn` in the top dir.
 /pipelines-as-code
-/bin/*
 
 # ignore coverage files 
 coverage*
-
-# ignore tmp files
-tmp/*
 
 # ignroe venv directory
 .venv/

@@ -21,14 +21,3 @@ spec:
     - name: task-referenced-internally
       taskRef:
         name: task-referenced-internally
-
-    - name: task-from-custom-hub
-      taskRef:
-        name: curl
-      params:
-        - name: url
-          value: https://icanhazip.com
-        - name: options
-          value:
-          - "-f"
-          - "--fail-early"

@@ -47,14 +47,9 @@ data:
   hub-url: "https://artifacthub.io"
 
   # The default hub catalog type, by default it is artifacthub.
-  # Other supported values: tektonhub
+  # Other supported values: tektonhub (for custom self-hosted Tekton Hub instances)
   hub-catalog-type: "artifacthub"
 
-  # Pipelines-as-code uses Artifact Hub by default. For backward
-  # compatibility, until https://hub.tekton.dev/ is discontinued the public
-  # Tekton Hub can also be accessed with the `tektonhub://` prefix (e.g.,
-  # `tektonhub://git-clone`).
-  #
   # Additional Hub Catalogs are supported, for example:
   #
   # catalog-1-id: custom

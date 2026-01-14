@@ -21,6 +21,50 @@ Follow the Pipelines-as-Code [installation](/docs/install/installation) accordin
   to fall back nicely by showing the status of the pipeline directly as a comment
   on the Merge Request.
 
+### Token Scoping for Fork-based Workflows
+
+When working with Merge Requests from forked repositories, the token scope affects
+how Pipelines-as-Code can report pipeline status:
+
+* **Project-scoped tokens**: Limited to the upstream repository, cannot access forks
+  * Status reporting will fall back to MR comments
+  * Most secure option but limited functionality
+
+* **Organization/Group-scoped tokens**: Can access multiple repositories including forks
+  * Enables status checks on both fork and upstream
+  * Requires broader permissions
+
+* **Bot account tokens**: Recommended for production (see troubleshooting section below)
+  * Minimal required permissions
+  * Clear audit trail
+
+## Working with Forked Repositories
+
+Pipelines-as-Code supports Merge Requests from forked repositories with an automatic
+fallback mechanism for status reporting:
+
+1. **Primary**: Attempt to set commit status on the fork (source project)
+   * Appears in both fork and upstream UI if successful
+   * Requires: Token with write access to fork repository
+
+2. **Fallback**: Attempt to set commit status on upstream (target project)
+   * Appears in upstream repository UI
+   * May fail if upstream has no active CI pipeline for this commit
+
+3. **Final Fallback**: Post status as Merge Request comment
+   * Always works (requires MR write permissions)
+   * Same information as status checks, different presentation
+
+This design ensures status reporting works even with restricted token permissions.
+
+**Visual Example:**
+
+Status checks appear in GitLab's "Pipelines" tab:
+![GitLab Pipelines Tab](/images/gitlab-pipelines-tab.png)
+
+When status check reporting is unavailable, comments provide the same information
+(Comments show pipeline status, duration, and results).
+
 ## Create a `Repository` and configure webhook
 
 There are two ways to create the `Repository` and configure the webhook:
@@ -129,6 +173,106 @@ $ tkn pac create repo
         # Set this if you have a different key in your secret
         # key: "webhook.secret"
   ```
+
+## Troubleshooting Fork Merge Requests
+
+### Why does my fork MR show comments instead of status checks?
+
+**Symptom:** Pipeline status appears as MR comments, not in the "Pipelines" tab.
+
+**Root Cause:** The GitLab token configured in your Repository CR lacks write access
+to the fork repository.
+
+**What Happened:**
+
+1. PaC attempted to set status on fork → Failed (insufficient permissions)
+2. PaC attempted to set status on upstream → Failed (no CI pipeline on upstream for this commit)
+3. PaC fell back to MR comment → Succeeded ✓
+
+**This is working as designed.** Comments provide the same pipeline information as
+status checks, just in a different format.
+
+### How can I get status checks instead of comments?
+
+Choose the option that fits your security model:
+
+#### Option 1: Bot Account (Recommended for Production)
+
+Create a dedicated service account with minimal permissions:
+
+1. Create GitLab bot/service account
+2. Grant permissions:
+   * Read access: upstream and fork repositories
+   * Write access: fork repository (for status updates)
+   * CI pipeline access: upstream repository
+3. Generate personal access token with `api` scope for bot account
+4. Use bot token in Repository CR secret
+
+**Advantages:**
+
+* Minimal permissions principle
+* Clear audit trail (pipeline actions attributed to bot)
+* No personal token rotation when team members change
+
+**Trade-off:** Requires GitLab account administration
+
+#### Option 2: Group-scoped Token
+
+Use a [Group Access Token](https://docs.gitlab.com/ee/user/group/settings/group_access_tokens.html) with `api` scope. This token will have access to all repositories within the group:
+
+**Advantages:**
+
+* Simple to set up
+* Works for both fork and upstream
+
+**Trade-offs:**
+
+* Broader permission scope
+* Personal token tied to individual user account
+
+#### Option 3: Accept Comment-based Status (Default)
+
+Continue using project-scoped token with comment fallback:
+
+**Advantages:**
+
+* Most restrictive permissions
+* No additional configuration needed
+
+**Trade-off:** Status appears as comments instead of checks
+
+### I don't want any comments, can I disable them?
+
+Yes. If you prefer not to see status comments on your Merge Requests (even if status checks fail), you can disable them completely by updating your Repository CR:
+
+```yaml
+spec:
+  settings:
+    gitlab:
+      comment_strategy: "disable_all"
+```
+
+See [Repository CRD documentation](../guide/repositorycrd/#controlling-pullmerge-request-comment-volume)
+for details.
+
+**Important:** Even with correct token permissions, upstream status updates may fail
+if GitLab doesn't create a pipeline entry for that commit in the upstream repository.
+GitLab only creates pipeline entries when CI actually runs in that project.
+
+### Can I use forks for development within a single repository?
+
+Yes! The restrictions only apply to cross-repository Merge Requests (fork → upstream).
+
+If you're working within a single repository (even a fork used as your primary repo):
+
+* Token needs `api` scope for that repository
+* Status checks appear normally
+* No permission issues expected
+
+### Where can I learn more about the fallback mechanism?
+
+See the detailed technical explanation and visual example in:
+[Repository CRD - GitLab comment strategy](../guide/repositorycrd/#gitlab)
 
 ## Notes
 

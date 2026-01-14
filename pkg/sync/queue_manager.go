@@ -290,15 +290,15 @@ func (qm *QueueManager) RunningPipelineRuns(repo *v1alpha1.Repository) []string 
 }
 
 func sortPipelineRunsByCreationTimestamp(prs []tektonv1.PipelineRun) []*tektonv1.PipelineRun {
-	runTimeObj := []runtime.Object{}
+	runTimeObj := make([]runtime.Object, len(prs))
 	for i := range prs {
-		runTimeObj = append(runTimeObj, &prs[i])
+		runTimeObj[i] = &prs[i]
 	}
 	sort.ByField(creationTimestamp, runTimeObj)
-	sortedPRs := []*tektonv1.PipelineRun{}
-	for _, run := range runTimeObj {
+	sortedPRs := make([]*tektonv1.PipelineRun, len(runTimeObj))
+	for i, run := range runTimeObj {
 		pr, _ := run.(*tektonv1.PipelineRun)
-		sortedPRs = append(sortedPRs, pr)
+		sortedPRs[i] = pr
 	}
 	return sortedPRs
 }

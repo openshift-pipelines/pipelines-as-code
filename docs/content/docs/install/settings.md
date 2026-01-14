@@ -197,29 +197,27 @@ There are a few things you can configure through the ConfigMap
 
 ### Remote Hub Catalogs
 
-Pipelines-as-Code supports fetching tasks and pipelines with its remote annotations feature. By default, it will fetch from [Artifact Hub](https://artifacthub.io/), but you can also implicitly use the [Tekton Hub](https://hub.tekton.dev/) by using the `tektonhub://` prefix (as documented below) or point to your own custom hub with these settings:
+Pipelines-as-Code supports fetching tasks and pipelines with its remote
+annotations feature. By default, it will fetch from [Artifact
+Hub](https://artifacthub.io/) or point to your own custom hub with these
+settings:
 
 * `hub-url`
 
-  The base URL for the hub API. For Artifact Hub (default), this is set to <https://artifacthub.io>. For Tekton Hub, it would be <https://api.hub.tekton.dev/v1>.
+  The base URL for the hub API. For Artifact Hub (default), this is set to <https://artifacthub.io>.
 
 * `hub-catalog-name`
 
-  The catalog name in the hub. For Artifact Hub, the defaults are `tekton-catalog-tasks` for tasks and `tekton-catalog-pipelines` for pipelines. For Tekton Hub, this defaults to `tekton`.
+  The catalog name in the hub. For Artifact Hub, the defaults are `tekton-catalog-tasks` for tasks and `tekton-catalog-pipelines` for pipelines.
 
 * `hub-catalog-type`
 
   The type of hub catalog. Supported values are:
 
-  * `artifacthub` - For Artifact Hub
-  * `tektonhub` - For Tekton Hub
+  * `artifacthub` - For Artifact Hub (default)
+  * `tektonhub` - For custom self-hosted Tekton Hub instances
 
-  If `hub-catalog-type` is empty, Pipelines as Code will auto-detect the catalog type by probing the Artifact Hub stats endpoint. If the endpoint responds successfully, the catalog is treated as Artifact Hub; otherwise, it falls back to Tekton Hub.
-
-* By default, both Artifact Hub and Tekton Hub are configured:
-
-  * Artifact Hub is the default catalog (no prefix needed, but `artifact://` can be used explicitly)
-  * Tekton Hub is available using the `tektonhub://` prefix
+  If `hub-catalog-type` is empty, Pipelines as Code will auto-detect the catalog type by probing the Artifact Hub stats endpoint. If the endpoint responds successfully, the catalog is treated as Artifact Hub; otherwise, it falls back to Tekton Hub type.
 
 * Additionally you can have multiple hubs configured by using the following format:
 

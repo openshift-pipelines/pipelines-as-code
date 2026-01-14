@@ -83,21 +83,14 @@ pipelinesascode.tekton.dev/task: "[git-clone, pylint]"
 pipelinesascode.tekton.dev/task: "git-clone"
 ```
 
-By default, this syntax will install the task from Artifact Hub.
+By default, this syntax will install the task from the [ArtifactHUB](https://artifacthub.io/packages/search?kind=7&kind=11).
 
 Examples:
 
 ```yaml
 # Using Artifact Hub (default)
 pipelinesascode.tekton.dev/task: "git-clone"
-
-# Using Tekton Hub
-pipelinesascode.tekton.dev/task: "tektonhub://git-clone"
 ```
-
-{{< hint danger >}}
-The public Tekton Hub service <https://hub.tekton.dev/> is scheduled to be deprecated in the future, so we recommend using Artifact Hub for task resolution.
-{{< /hint >}}
 
 You can have multiple tasks in there if you separate them by a comma `,` around
 an array syntax with bracket:
@@ -121,9 +114,6 @@ the string and a version number, like in this example:
 ```yaml
 # Using specific version from Artifact Hub
 pipelinesascode.tekton.dev/task: "git-clone:0.9.0"
-
-# Using specific version from Tekton Hub
-pipelinesascode.tekton.dev/task: "tektonhub://git-clone:0.1"
 ```
 
 #### Custom Hub Support for Tasks
@@ -303,9 +293,6 @@ Examples:
 ```yaml
 # Using Artifact Hub (default)
 pipelinesascode.tekton.dev/pipeline: "buildpacks"
-
-# Using Tekton Hub
-pipelinesascode.tekton.dev/pipeline: "tektonhub://buildpacks"
 ```
 
 If you want to have a specific version of the pipeline, you can add a colon `:` to
@@ -314,9 +301,6 @@ the string and a version number, like in this example:
 ```yaml
 # Using specific version from Artifact Hub
 pipelinesascode.tekton.dev/pipeline: "buildpacks:0.1"
-
-# Using specific version from Tekton Hub
-pipelinesascode.tekton.dev/pipeline: "tektonhub://buildpacks:0.1"
 ```
 
 #### Custom Hub Support for Pipelines

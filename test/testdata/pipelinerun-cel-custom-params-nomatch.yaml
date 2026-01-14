@@ -1,0 +1,19 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: "\\ .PipelineName //"
+  annotations:
+    pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      event == "pull_request" && enable_ci == "false" && environment == "production"
+spec:
+  pipelineSpec:
+    tasks:
+      - name: should-not-run
+        taskSpec:
+          steps:
+            - name: should-not-execute
+              image: registry.access.redhat.com/ubi9/ubi-micro
+              script: |
+                echo "This should not run - enable_ci is true not false"

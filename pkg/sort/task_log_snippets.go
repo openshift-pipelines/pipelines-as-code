@@ -19,7 +19,7 @@ func (s taskInfoSorter) Less(i, j int) bool {
 }
 
 func TaskInfos(taskinfos map[string]pacv1alpha1.TaskInfos) []pacv1alpha1.TaskInfos {
-	tis := taskInfoSorter{}
+	tis := make(taskInfoSorter, 0, len(taskinfos))
 	for _, ti := range taskinfos {
 		tis = append(tis, ti)
 	}

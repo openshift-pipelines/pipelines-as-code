@@ -122,3 +122,73 @@ and a pull request event.
 - [GitHub Documentation for webhook events](https://docs.github.com/webhooks-and-events/webhooks/webhook-events-and-payloads?actionType=auto_merge_disabled#pull_request)
 - [GitLab Documentation for webhook events](https://docs.gitlab.com/ee/user/project/integrations/webhook_events.html)
 {{< /hint >}}
+
+### Using custom parameters in CEL matching expressions
+
+In addition to template expansion (`{{ param }}`), custom parameters defined in the Repository CR are available as CEL variables in the `on-cel-expression` annotation. This allows you to control which PipelineRuns are triggered based on repository-specific configuration.
+
+For example, with this Repository CR configuration:
+
+```yaml
+apiVersion: pipelinesascode.tekton.dev/v1alpha1
+kind: Repository
+metadata:
+  name: my-repo
+spec:
+  url: "https://github.com/owner/repo"
+  params:
+    - name: enable_ci
+      value: "true"
+    - name: environment
+      value: "staging"
+```
+
+You can use these parameters directly in your PipelineRun's CEL expression:
+
+```yaml
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: my-pipeline
+  annotations:
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      event == "push" && enable_ci == "true" && environment == "staging"
+spec:
+  # ... pipeline spec
+```
+
+This approach is particularly useful for:
+
+- **Conditional CI**: Enable or disable CI for specific repositories without changing PipelineRun files
+- **Environment-specific matching**: Run different pipelines based on environment configuration
+- **Feature flags**: Control which pipelines run using repository-level feature flags
+
+Custom parameters from secrets are also available:
+
+```yaml
+apiVersion: pipelinesascode.tekton.dev/v1alpha1
+kind: Repository
+metadata:
+  name: my-repo
+spec:
+  url: "https://github.com/owner/repo"
+  params:
+    - name: api_key
+      secret_ref:
+        name: my-secret
+        key: key
+```
+
+```yaml
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: my-pipeline-with-secret
+  annotations:
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      event == "push" && api_key != ""
+spec:
+  # ... pipeline spec
+```
+
+For more information on CEL expressions and event matching, see the [Advanced event matching using CEL]({{< relref "/docs/guide/matchingevents#advanced-event-matching-using-cel" >}}) documentation.

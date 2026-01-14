@@ -9,9 +9,11 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/customparams"
 	pacerrors "github.com/openshift-pipelines/pipelines-as-code/pkg/errors"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -210,6 +212,14 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 	}
 	logger.Info(infomsg)
 
+	// Resolve custom params once for all PipelineRuns (for use in CEL expressions)
+	// Track original event type to detect changes (when on-comment matches)
+	originalEventType := event.EventType
+	customParams := resolveCustomParamsForCEL(ctx, repo, event, cs, vcx, eventEmitter, logger)
+	if len(customParams) > 0 {
+		logger.Debugf("resolved %d custom params from repo for CEL", len(customParams))
+	}
+
 	celValidationErrors := []*pacerrors.PacYamlValidations{}
 	for _, prun := range pruns {
 		prMatch := Match{
@@ -254,6 +264,12 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 			if re.MatchString(strippedComment) {
 				event.EventType = opscomments.OnCommentEventType.String()
 
+				// Re-resolve custom params if event type changed, so filters based on event_type stay accurate
+				if event.EventType != originalEventType {
+					customParams = resolveCustomParamsForCEL(ctx, repo, event, cs, vcx, eventEmitter, logger)
+					originalEventType = event.EventType
+				}
+
 				comment := event.TriggerComment
 				if len(comment) > maxCommentLogLength {
 					comment = comment[:maxCommentLogLength] + "..."
@@ -269,18 +285,10 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 			continue
 		}
 
-		// If the event is a pull_request and the event type is label_update, but the PipelineRun
-		// does not contain an 'on-label' annotation, do not match this PipelineRun, as it is not intended for this event.
-		_, ok := prun.GetObjectMeta().GetAnnotations()[keys.OnLabel]
-		if event.TriggerTarget == triggertype.PullRequest && event.EventType == string(triggertype.PullRequestLabeled) && !ok {
-			logger.Infof("label update event, PipelineRun %s does not have a on-label for any of those labels: %s", prName, strings.Join(event.PullRequestLabel, "|"))
-			continue
-		}
-
 		if celExpr, ok := prun.GetObjectMeta().GetAnnotations()[keys.OnCelExpression]; ok {
 			checkPipelineRunAnnotation(prun, eventEmitter, repo)
 
-			out, err := celEvaluate(ctx, celExpr, event, vcx)
+			out, err := celEvaluate(ctx, celExpr, event, vcx, customParams, eventEmitter, repo)
 			if err != nil {
 				logger.Errorf("there was an error evaluating the CEL expression, skipping: %v", err)
 				if checkIfCELEvaluateError(err) {
@@ -297,6 +305,15 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 			}
 			logger.Infof("CEL expression has been evaluated and matched")
 		} else {
+			// If the event is a pull_request and the event type is label_update, but the PipelineRun
+			// does not contain an 'on-label' annotation, do not match this PipelineRun, as it is not intended for this event.
+			// Check this early to avoid any unnecessary processing.
+			_, hasOnLabel := prun.GetObjectMeta().GetAnnotations()[keys.OnLabel]
+			if event.TriggerTarget == triggertype.PullRequest && event.EventType == string(triggertype.PullRequestLabeled) && !hasOnLabel {
+				logger.Infof("label update event, PipelineRun %s does not have a on-label for any of those labels: %s", prName, strings.Join(event.PullRequestLabel, "|"))
+				continue
+			}
+
 			matched, targetEvent, targetBranch, err := getTargetBranch(prun, event)
 			if err != nil {
 				return matchedPRs, err
@@ -507,4 +524,39 @@ func MatchRunningPipelineRunForIncomingWebhook(eventType, incomingPipelineRun st
 		}
 	}
 	return nil
+}
+
+// resolveCustomParamsForCEL resolves custom parameters from the Repository CR for use in CEL expressions.
+// It returns a map of parameter names to values, excluding reserved keywords.
+// All parameters are returned as strings, including those from secret_ref.
+func resolveCustomParamsForCEL(ctx context.Context, repo *apipac.Repository, event *info.Event, cs *params.Run, vcx provider.Interface, eventEmitter *events.EventEmitter, logger *zap.SugaredLogger) map[string]string {
+	if repo == nil || repo.Spec.Params == nil {
+		return map[string]string{}
+	}
+
+	// Create kubeinteraction interface
+	kinteract, err := kubeinteraction.NewKubernetesInteraction(cs)
+	if err != nil {
+		logger.Warnf("failed to create kubernetes interaction for custom params: %s", err.Error())
+		return map[string]string{}
+	}
+
+	// Use existing customparams package to resolve all params
+	cp := customparams.NewCustomParams(event, repo, cs, kinteract, eventEmitter, vcx)
+	allParams, _, err := cp.GetParams(ctx)
+	if err != nil {
+		eventEmitter.EmitMessage(repo, zap.WarnLevel, "CustomParamsCELError",
+			fmt.Sprintf("failed to resolve custom params for CEL: %s", err.Error()))
+		return map[string]string{}
+	}
+
+	// Filter to only include params defined in repo.Spec.Params (not standard PAC params)
+	result := make(map[string]string)
+	for _, param := range *repo.Spec.Params {
+		if value, ok := allParams[param.Name]; ok {
+			result[param.Name] = value
+		}
+	}
+
+	return result
 }

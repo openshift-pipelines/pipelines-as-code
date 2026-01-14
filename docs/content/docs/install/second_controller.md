@@ -34,6 +34,55 @@ Each GitHub application requires:
 status reconciler ("watcher") component is needed cluster-wide.
 {{< /hint >}}
 
+## Automated CI Setup with startpaac
+
+For automated testing environments, [startpaac](https://github.com/openshift-pipelines/startpaac) can automatically install and configure second controllers.
+
+### Prerequisites
+
+- startpaac installed and configured
+- Secret files for the second GitHub application
+
+### Automatic Installation in CI Mode
+
+When running startpaac with the `--ci` flag, it automatically detects and installs the second controller if:
+
+1. `PAC_SECOND_SECRET_FOLDER` environment variable is set
+2. Required secret files exist in that folder:
+   - `github-application-id`
+   - `github-private-key`
+   - `webhook.secret`
+   - `smee` (optional, for webhook tunneling)
+
+Example:
+
+```bash
+# Create secret folder with GitHub App credentials
+mkdir -p ~/secrets-second
+echo "12345" > ~/secrets-second/github-application-id
+echo "...RSA PRIVATE KEY..." > ~/secrets-second/github-private-key
+echo "webhook-secret-value" > ~/secrets-second/webhook.secret
+echo "https://smee.io/your-channel" > ~/secrets-second/smee
+
+# Export environment variable
+export PAC_SECOND_SECRET_FOLDER=~/secrets-second
+
+# Run startpaac in CI mode
+cd startpaac
+./startpaac --ci -a
+```
+
+This will:
+
+- Generate TLS certificates using minica for the second controller domain
+- Create Kubernetes secrets from the secret folder
+- Deploy the second controller with proper ingress/route configuration
+- Configure gosmee for webhook tunneling (if smee URL provided)
+
+### Manual Setup
+
+For manual installation or custom configurations, use the `second-controller.py` script as described below.
+
 ## Deployment Automation Script
 
 The `second-controller.py` script makes it easy to generate the deployment yaml:
