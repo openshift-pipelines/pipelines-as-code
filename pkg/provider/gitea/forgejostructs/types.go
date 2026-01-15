@@ -2,10 +2,10 @@
 // Copyright 2017 The Gitea Authors. All rights reserved.
 // SPDX-License-Identifier: MIT.
 
-// Package giteastructs contains Gitea webhook payload types.
+// Package forgejostructs contains Gitea webhook payload types.
 // These types are copied from code.gitea.io/gitea/modules/structs v1.25.3.
 // to avoid importing the entire Gitea codebase and its massive dependency tree.
-package giteastructs
+package forgejostructs
 
 import (
 	"encoding/json"

@@ -10,7 +10,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/acl"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/policy"
-	giteaStructs "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/giteastructs"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/forgejostructs"
 )
 
 func (v *Provider) CheckPolicyAllowing(_ context.Context, event *info.Event, allowedTeams []string) (bool, string) {
@@ -105,14 +105,14 @@ func (v *Provider) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *inf
 	}
 
 	switch event := revent.Event.(type) {
-	case *giteaStructs.IssueCommentPayload:
+	case *forgejostructs.IssueCommentPayload:
 		// if we don't need to check old comments, then on issue comment we
 		// need to check if comment have /ok-to-test and is from allowed user
 		if !v.pacInfo.RememberOKToTest {
 			return v.aclAllowedOkToTestCurrentComment(ctx, revent, event.Comment.ID)
 		}
 		revent.URL = event.Issue.URL
-	case *giteaStructs.PullRequestPayload:
+	case *forgejostructs.PullRequestPayload:
 		// if we don't need to check old comments, then on push event we don't need
 		// to check anything for the non-allowed user
 		if !v.pacInfo.RememberOKToTest {
