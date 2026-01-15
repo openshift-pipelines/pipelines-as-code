@@ -7,7 +7,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
-	giteaStructs "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/giteastructs"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/forgejostructs"
 	"go.uber.org/zap"
 )
 
@@ -51,17 +51,17 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 // filtering out the events that are not supported.
 func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (triggertype.Trigger, string) {
 	switch event := eventInt.(type) {
-	case *giteaStructs.PushPayload:
+	case *forgejostructs.PushPayload:
 		if event.Pusher != nil {
 			return triggertype.Push, ""
 		}
 		return "", "invalid payload: no pusher in event"
-	case *giteaStructs.PullRequestPayload:
+	case *forgejostructs.PullRequestPayload:
 		if provider.Valid(string(event.Action), append(pullRequestOpenSyncEvent, pullRequestLabelUpdated, pullRequestLabelClosed)) {
 			return triggertype.PullRequest, ""
 		}
 		return "", fmt.Sprintf("pull_request: unsupported action \"%s\"", event.Action)
-	case *giteaStructs.IssueCommentPayload:
+	case *forgejostructs.IssueCommentPayload:
 		if event.Action == "created" &&
 			event.Issue.PullRequest != nil &&
 			event.Issue.State == "open" {
