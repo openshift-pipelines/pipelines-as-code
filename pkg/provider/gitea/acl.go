@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"code.gitea.io/sdk/gitea"
+	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/acl"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/policy"
@@ -18,7 +18,7 @@ func (v *Provider) CheckPolicyAllowing(_ context.Context, event *info.Event, all
 		return true, ""
 	}
 	// TODO: caching
-	orgTeams, resp, err := v.Client().ListOrgTeams(event.Organization, gitea.ListTeamsOptions{})
+	orgTeams, resp, err := v.Client().ListOrgTeams(event.Organization, forgejo.ListTeamsOptions{})
 	if resp.StatusCode == http.StatusNotFound {
 		// we explicitly disallow the policy when there is no team on org
 		return false, fmt.Sprintf("no teams on org %s", event.Organization)
@@ -220,14 +220,14 @@ func (v *Provider) getFileFromDefaultBranch(ctx context.Context, path string, ru
 
 // GetStringPullRequestComment return the comment if we find a regexp in one of
 // the comments text of a pull request.
-func (v *Provider) GetStringPullRequestComment(_ context.Context, runevent *info.Event, reg string) ([]*gitea.Comment, error) {
-	var ret []*gitea.Comment
+func (v *Provider) GetStringPullRequestComment(_ context.Context, runevent *info.Event, reg string) ([]*forgejo.Comment, error) {
+	var ret []*forgejo.Comment
 	prNumber, err := convertPullRequestURLtoNumber(runevent.URL)
 	if err != nil {
 		return nil, err
 	}
 
-	comments, _, err := v.Client().ListIssueComments(runevent.Organization, runevent.Repository, int64(prNumber), gitea.ListIssueCommentOptions{})
+	comments, _, err := v.Client().ListIssueComments(runevent.Organization, runevent.Repository, int64(prNumber), forgejo.ListIssueCommentOptions{})
 	if err != nil {
 		return nil, err
 	}
