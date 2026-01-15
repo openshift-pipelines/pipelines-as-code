@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 
-	"code.gitea.io/sdk/gitea"
+	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"gotest.tools/v3/assert"
 )
@@ -22,7 +22,7 @@ var (
 	giteaMinVersion = "1.17.0"
 )
 
-func Setup(t *testing.T) (*gitea.Client, *http.ServeMux, func()) {
+func Setup(t *testing.T) (*forgejo.Client, *http.ServeMux, func()) {
 	mux := http.NewServeMux()
 	apiHandler := http.NewServeMux()
 	apiHandler.Handle(defaultAPIURL+"/", http.StripPrefix(defaultAPIURL, mux))
@@ -45,7 +45,7 @@ func Setup(t *testing.T) (*gitea.Client, *http.ServeMux, func()) {
 		server.Close()
 	}
 
-	client, err := gitea.NewClient(server.URL)
+	client, err := forgejo.NewClient(server.URL)
 	assert.NilError(t, err)
 	return client, mux, tearDown
 }
@@ -75,7 +75,7 @@ func SetupGitTree(t *testing.T, mux *http.ServeMux, dir string, event *info.Even
 			files = append(files, file{name: filepath.Join(dir, f.Name()), sha: sha, isdir: f.IsDir()})
 		}
 	}
-	entries := make([]gitea.GitEntry, 0, len(files))
+	entries := make([]forgejo.GitEntry, 0, len(files))
 	for _, f := range files {
 		etype := "blob"
 		mode := "100644"
@@ -108,7 +108,7 @@ func SetupGitTree(t *testing.T, mux *http.ServeMux, dir string, event *info.Even
 					s, err := os.ReadFile(chosenf.name)
 					assert.NilError(t, err)
 					// encode content as base64
-					blob := &gitea.GitBlobResponse{
+					blob := &forgejo.GitBlobResponse{
 						SHA:     chosenf.sha,
 						Content: base64.StdEncoding.EncodeToString(s),
 					}
@@ -117,7 +117,7 @@ func SetupGitTree(t *testing.T, mux *http.ServeMux, dir string, event *info.Even
 					fmt.Fprint(w, string(b))
 				})
 		}
-		entries = append(entries, gitea.GitEntry{
+		entries = append(entries, forgejo.GitEntry{
 			Path: strings.TrimPrefix(f.name, dir+"/"),
 			Mode: mode,
 			Type: etype,
@@ -126,7 +126,7 @@ func SetupGitTree(t *testing.T, mux *http.ServeMux, dir string, event *info.Even
 	}
 	u := fmt.Sprintf("/repos/%v/%v/git/trees/%v", event.Organization, event.Repository, event.SHA)
 	mux.HandleFunc(u, func(rw http.ResponseWriter, _ *http.Request) {
-		tree := &gitea.GitTreeResponse{
+		tree := &forgejo.GitTreeResponse{
 			SHA:     event.SHA,
 			Entries: entries,
 		}
