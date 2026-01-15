@@ -9,7 +9,7 @@ import (
 	pacerrors "github.com/openshift-pipelines/pipelines-as-code/pkg/errors"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	providerstatus "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	testprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/test/provider"
 	"go.uber.org/zap"
@@ -94,7 +94,7 @@ func TestCheckAccessOrErrror(t *testing.T) {
 
 			// Call the function
 			repo := &v1alpha1.Repository{}
-			status := provider.StatusOpts{}
+			status := providerstatus.StatusOpts{}
 			allowed, err := p.checkAccessOrError(context.Background(), repo, status, "via test")
 
 			// Verify results

@@ -11,9 +11,9 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	bbcloudtest "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/test"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -277,14 +277,14 @@ func TestCreateStatus(t *testing.T) {
 	tests := []struct {
 		name                  string
 		wantErr               bool
-		status                provider.StatusOpts
+		status                status.StatusOpts
 		applicationName       string
 		expectedDescSubstr    string
 		expectedCommentSubstr string
 	}{
 		{
 			name: "skipped",
-			status: provider.StatusOpts{
+			status: status.StatusOpts{
 				Conclusion:              "skipped",
 				OriginalPipelineRunName: originalPipelineRunName,
 			},
@@ -292,7 +292,7 @@ func TestCreateStatus(t *testing.T) {
 		},
 		{
 			name: "neutral",
-			status: provider.StatusOpts{
+			status: status.StatusOpts{
 				Conclusion:              "neutral",
 				OriginalPipelineRunName: originalPipelineRunName,
 			},
@@ -300,7 +300,7 @@ func TestCreateStatus(t *testing.T) {
 		},
 		{
 			name: "completed with comment",
-			status: provider.StatusOpts{
+			status: status.StatusOpts{
 				Conclusion:              "success",
 				Status:                  "completed",
 				OriginalPipelineRunName: originalPipelineRunName,
@@ -311,7 +311,7 @@ func TestCreateStatus(t *testing.T) {
 		},
 		{
 			name: "failed",
-			status: provider.StatusOpts{
+			status: status.StatusOpts{
 				Conclusion:              "failure",
 				OriginalPipelineRunName: originalPipelineRunName,
 			},
@@ -319,7 +319,7 @@ func TestCreateStatus(t *testing.T) {
 		},
 		{
 			name: "details url",
-			status: provider.StatusOpts{
+			status: status.StatusOpts{
 				Conclusion:              "failure",
 				DetailsURL:              "http://fail.com",
 				OriginalPipelineRunName: originalPipelineRunName,
@@ -328,7 +328,7 @@ func TestCreateStatus(t *testing.T) {
 		},
 		{
 			name: "pending",
-			status: provider.StatusOpts{
+			status: status.StatusOpts{
 				Conclusion:              "pending",
 				OriginalPipelineRunName: originalPipelineRunName,
 			},
@@ -336,7 +336,7 @@ func TestCreateStatus(t *testing.T) {
 		},
 		{
 			name: "success",
-			status: provider.StatusOpts{
+			status: status.StatusOpts{
 				Conclusion:              "success",
 				OriginalPipelineRunName: originalPipelineRunName,
 			},
@@ -344,7 +344,7 @@ func TestCreateStatus(t *testing.T) {
 		},
 		{
 			name: "completed",
-			status: provider.StatusOpts{
+			status: status.StatusOpts{
 				Conclusion:              "completed",
 				OriginalPipelineRunName: originalPipelineRunName,
 			},
@@ -352,7 +352,7 @@ func TestCreateStatus(t *testing.T) {
 		},
 		{
 			name: "application name",
-			status: provider.StatusOpts{
+			status: status.StatusOpts{
 				Conclusion:              "completed",
 				OriginalPipelineRunName: originalPipelineRunName,
 			},

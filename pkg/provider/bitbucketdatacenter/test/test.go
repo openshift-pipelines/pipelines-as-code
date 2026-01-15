@@ -15,8 +15,8 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/stash"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketdatacenter/types"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	"gotest.tools/v3/assert"
 )
 
@@ -198,7 +198,7 @@ func MuxListDir(t *testing.T, mux *http.ServeMux, event *info.Event, path string
 	})
 }
 
-func MuxCreateAndTestCommitStatus(t *testing.T, mux *http.ServeMux, event *info.Event, expectedDescSubstr string, expStatus provider.StatusOpts) {
+func MuxCreateAndTestCommitStatus(t *testing.T, mux *http.ServeMux, event *info.Event, expectedDescSubstr string, expStatus status.StatusOpts) {
 	path := fmt.Sprintf("/commits/%s", event.SHA)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 		cso := &BuildStatus{}
