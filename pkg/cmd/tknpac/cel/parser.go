@@ -11,7 +11,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
-	giteaStructs "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/giteastructs"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/forgejostructs"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
@@ -566,11 +566,11 @@ func (p *GiteaParser) ParsePayload(eventType string, body []byte) (any, error) {
 	var eventInt any
 	switch eventType {
 	case "push":
-		eventInt = &giteaStructs.PushPayload{}
+		eventInt = &forgejostructs.PushPayload{}
 	case "pull_request":
-		eventInt = &giteaStructs.PullRequestPayload{}
+		eventInt = &forgejostructs.PullRequestPayload{}
 	case "issue_comment", "pull_request_comment":
-		eventInt = &giteaStructs.IssueCommentPayload{}
+		eventInt = &forgejostructs.IssueCommentPayload{}
 	default:
 		return nil, fmt.Errorf("unsupported Gitea event type: %s", eventType)
 	}
@@ -585,7 +585,7 @@ func (p *GiteaParser) ParsePayload(eventType string, body []byte) (any, error) {
 
 func (p *GiteaParser) PopulateEvent(event *info.Event, parsedEvent any) error {
 	switch gitEvent := parsedEvent.(type) {
-	case *giteaStructs.PullRequestPayload:
+	case *forgejostructs.PullRequestPayload:
 		if gitEvent.Repository != nil {
 			if gitEvent.Repository.Owner != nil {
 				event.Organization = gitEvent.Repository.Owner.UserName
@@ -623,10 +623,10 @@ func (p *GiteaParser) PopulateEvent(event *info.Event, parsedEvent any) error {
 			}
 		}
 		event.TriggerTarget = triggertype.PullRequest
-		if gitEvent.Action == giteaStructs.HookIssueClosed {
+		if gitEvent.Action == forgejostructs.HookIssueClosed {
 			event.TriggerTarget = triggertype.PullRequestClosed
 		}
-	case *giteaStructs.PushPayload:
+	case *forgejostructs.PushPayload:
 		if gitEvent.Repo != nil {
 			if gitEvent.Repo.Owner != nil {
 				event.Organization = gitEvent.Repo.Owner.UserName
@@ -653,7 +653,7 @@ func (p *GiteaParser) PopulateEvent(event *info.Event, parsedEvent any) error {
 		event.HeadBranch = gitEvent.Ref
 		event.BaseBranch = gitEvent.Ref
 		event.TriggerTarget = triggertype.Push
-	case *giteaStructs.IssueCommentPayload:
+	case *forgejostructs.IssueCommentPayload:
 		issue := gitEvent.Issue
 		if issue == nil || issue.PullRequest == nil {
 			return fmt.Errorf("issue comment is not from a pull request")

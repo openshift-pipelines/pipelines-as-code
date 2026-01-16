@@ -1,9 +1,9 @@
 # cel.dev/expr v0.24.0
 ## explicit; go 1.22.0
 cel.dev/expr
-# code.gitea.io/sdk/gitea v0.22.0
+# codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2 v2.2.0
 ## explicit; go 1.23.0
-code.gitea.io/sdk/gitea
+codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2
 # contrib.go.opencensus.io/exporter/ocagent v0.7.1-0.20200907061046-05415f1de66d
 ## explicit; go 1.13
 contrib.go.opencensus.io/exporter/ocagent

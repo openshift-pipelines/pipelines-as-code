@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"testing"
 
-	"code.gitea.io/sdk/gitea"
+	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
-	giteaStructs "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/giteastructs"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/forgejostructs"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/test"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
@@ -99,16 +99,16 @@ func TestCheckPolicyAllowing(t *testing.T) {
 }
 
 func TestOkToTestComment(t *testing.T) {
-	issueCommentPayload := &giteaStructs.IssueCommentPayload{
-		Comment: &giteaStructs.Comment{
+	issueCommentPayload := &forgejostructs.IssueCommentPayload{
+		Comment: &forgejostructs.Comment{
 			ID: 1,
 		},
-		Issue: &giteaStructs.Issue{
+		Issue: &forgejostructs.Issue{
 			URL: "http://url.com/owner/repo/1",
 		},
 	}
-	pullRequestPayload := &giteaStructs.PullRequestPayload{
-		PullRequest: &giteaStructs.PullRequest{
+	pullRequestPayload := &forgejostructs.PullRequestPayload{
+		PullRequest: &forgejostructs.PullRequest{
 			HTMLURL: "http://url.com/owner/repo/1",
 		},
 	}
@@ -156,7 +156,7 @@ func TestOkToTestComment(t *testing.T) {
 				Repository:   "repo",
 				Sender:       "nonowner",
 				EventType:    "issue_comment",
-				Event:        &giteaStructs.RepositoryPayload{},
+				Event:        &forgejostructs.RepositoryPayload{},
 			},
 			allowed:          false,
 			wantErr:          false,
@@ -226,7 +226,7 @@ func TestOkToTestComment(t *testing.T) {
 				Repository:   "repo",
 				Sender:       "nonowner",
 				EventType:    "issue_comment",
-				Event:        &giteaStructs.RepositoryPayload{},
+				Event:        &forgejostructs.RepositoryPayload{},
 			},
 			allowed:          false,
 			wantErr:          false,
@@ -381,7 +381,7 @@ func TestAclCheckAll(t *testing.T) {
 					encoded := base64.StdEncoding.EncodeToString([]byte(
 						fmt.Sprintf("approvers:\n  - %s\n", tt.runevent.Sender)))
 					// encode to json
-					b, err := json.Marshal(gitea.ContentsResponse{
+					b, err := json.Marshal(forgejo.ContentsResponse{
 						Content: &encoded,
 					})
 					if err != nil {

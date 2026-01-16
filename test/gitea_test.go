@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"code.gitea.io/sdk/gitea"
+	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2"
 	"github.com/google/go-github/v74/github"
 	"github.com/tektoncd/pipeline/pkg/names"
 	"gotest.tools/v3/assert"
@@ -197,7 +197,7 @@ func TestGiteaBadYamlReportingOnPR(t *testing.T) {
 	topts.Regexp = regexp.MustCompile(`.*bad-valid | .json: cannot unmarshal array into Go struct field PipelineRunSpec.spec.pipelineSpec of type v1.PipelineSpec.*`)
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
 
-	comments, _, err := topts.GiteaCNX.Client().ListRepoIssueComments(topts.PullRequest.Base.Repository.Owner.UserName, topts.PullRequest.Base.Repository.Name, gitea.ListIssueCommentOptions{})
+	comments, _, err := topts.GiteaCNX.Client().ListRepoIssueComments(topts.PullRequest.Base.Repository.Owner.UserName, topts.PullRequest.Base.Repository.Name, forgejo.ListIssueCommentOptions{})
 	assert.NilError(t, err)
 	assert.Equal(t, len(comments), 1, "should have only one comment")
 
@@ -221,7 +221,7 @@ func TestGiteaBadYamlReportingOnPR(t *testing.T) {
 	entries := map[string]string{".tekton/pr-bad-validation.yaml": processed}
 	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
 
-	comments, _, err = topts.GiteaCNX.Client().ListRepoIssueComments(topts.PullRequest.Base.Repository.Owner.UserName, topts.PullRequest.Base.Repository.Name, gitea.ListIssueCommentOptions{})
+	comments, _, err = topts.GiteaCNX.Client().ListRepoIssueComments(topts.PullRequest.Base.Repository.Owner.UserName, topts.PullRequest.Base.Repository.Name, forgejo.ListIssueCommentOptions{})
 	assert.NilError(t, err)
 	assert.Equal(t, len(comments), 1, "should have only one comment")
 }
@@ -235,7 +235,7 @@ func TestGiteaYamlReportingNotReportingNotTektonResources(t *testing.T) {
 
 	_, f := tgitea.TestPR(t, topts)
 	defer f()
-	comments, _, err := topts.GiteaCNX.Client().ListRepoIssueComments(topts.PullRequest.Base.Repository.Owner.UserName, topts.PullRequest.Base.Repository.Name, gitea.ListIssueCommentOptions{})
+	comments, _, err := topts.GiteaCNX.Client().ListRepoIssueComments(topts.PullRequest.Base.Repository.Owner.UserName, topts.PullRequest.Base.Repository.Name, forgejo.ListIssueCommentOptions{})
 	assert.NilError(t, err)
 	assert.Equal(t, len(comments), 0, "should have zero comments")
 }
@@ -489,7 +489,7 @@ func TestGiteaConfigCancelInProgress(t *testing.T) {
 	}
 	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
 
-	pr, _, err := topts.GiteaCNX.Client().CreatePullRequest(topts.Opts.Organization, topts.Opts.Repo, gitea.CreatePullRequestOption{
+	pr, _, err := topts.GiteaCNX.Client().CreatePullRequest(topts.Opts.Organization, topts.Opts.Repo, forgejo.CreatePullRequestOption{
 		Title: "Test Pull Request - " + targetRef,
 		Head:  targetRef,
 		Base:  topts.DefaultBranch,
@@ -551,9 +551,10 @@ func TestGiteaConfigCancelInProgressAfterPRClosed(t *testing.T) {
 	err := twait.UntilPipelineRunCreated(context.Background(), topts.ParamsRun.Clients, waitOpts)
 	assert.NilError(t, err)
 
-	closed := gitea.StateClosed
-	_, _, err = topts.GiteaCNX.Client().EditPullRequest(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index, gitea.EditPullRequestOption{
+	closed := forgejo.StateClosed
+	_, _, err = topts.GiteaCNX.Client().EditPullRequest(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index, forgejo.EditPullRequestOption{
 		State: &closed,
+		Body:  topts.PullRequest.Body,
 	})
 	assert.NilError(t, err)
 
@@ -580,7 +581,7 @@ func TestGiteaPush(t *testing.T) {
 	_, f := tgitea.TestPR(t, topts)
 	defer f()
 	merged, resp, err := topts.GiteaCNX.Client().MergePullRequest(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index,
-		gitea.MergePullRequestOption{
+		forgejo.MergePullRequestOption{
 			Title: "Merged with Panache",
 			Style: "merge",
 		},
@@ -898,7 +899,7 @@ func TestGiteaErrorSnippetCustomLines(t *testing.T) {
 	topts.Regexp = regexp.MustCompile(`Hey man i just wanna to say i am not such a failure, i am useful in my failure`)
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
 
-	comments, _, err := topts.GiteaCNX.Client().ListRepoIssueComments(topts.PullRequest.Base.Repository.Owner.UserName, topts.PullRequest.Base.Repository.Name, gitea.ListIssueCommentOptions{})
+	comments, _, err := topts.GiteaCNX.Client().ListRepoIssueComments(topts.PullRequest.Base.Repository.Owner.UserName, topts.PullRequest.Base.Repository.Name, forgejo.ListIssueCommentOptions{})
 	assert.NilError(t, err)
 	assert.Assert(t, len(comments) > 0)
 	lastComment := comments[len(comments)-1]
@@ -1131,7 +1132,7 @@ func verifyProvenance(t *testing.T, topts *tgitea.TestOpts, expectedOutput, cNam
 	scmOpts.TargetRefName = targetRef
 	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
 
-	pr, _, err := topts.GiteaCNX.Client().CreatePullRequest(topts.Opts.Organization, targetRef, gitea.CreatePullRequestOption{
+	pr, _, err := topts.GiteaCNX.Client().CreatePullRequest(topts.Opts.Organization, targetRef, forgejo.CreatePullRequestOption{
 		Title: "Test Pull Request - " + targetRef,
 		Head:  targetRef,
 		Base:  options.MainBranch,

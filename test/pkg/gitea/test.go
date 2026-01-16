@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"code.gitea.io/sdk/gitea"
+	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -53,7 +53,7 @@ type TestOpts struct {
 	ParamsRun             *params.Run
 	GiteaCNX              pgitea.Provider
 	Opts                  options.E2E
-	PullRequest           *gitea.PullRequest
+	PullRequest           *forgejo.PullRequest
 	DefaultBranch         string
 	GitCloneURL           string
 	GitHTMLURL            string
@@ -70,7 +70,7 @@ type TestOpts struct {
 func PostCommentOnPullRequest(t *testing.T, topt *TestOpts, body string) {
 	_, _, err := topt.GiteaCNX.Client().CreateIssueComment(topt.Opts.Organization,
 		topt.Opts.Repo, topt.PullRequest.Index,
-		gitea.CreateIssueCommentOption{Body: body})
+		forgejo.CreateIssueCommentOption{Body: body})
 	topt.ParamsRun.Clients.Log.Infof("Posted comment \"%s\" in %s", body, topt.PullRequest.HTMLURL)
 	assert.NilError(t, err)
 }
@@ -97,7 +97,7 @@ func checkEvents(t *testing.T, events *corev1.EventList, topts *TestOpts) {
 
 func AddLabelToIssue(t *testing.T, topt *TestOpts, label string) {
 	var targetID int64
-	allLabels, _, err := topt.GiteaCNX.Client().ListRepoLabels(topt.Opts.Organization, topt.Opts.Repo, gitea.ListLabelsOptions{})
+	allLabels, _, err := topt.GiteaCNX.Client().ListRepoLabels(topt.Opts.Organization, topt.Opts.Repo, forgejo.ListLabelsOptions{})
 	assert.NilError(t, err)
 	for _, l := range allLabels {
 		if l.Name == label {
@@ -105,7 +105,7 @@ func AddLabelToIssue(t *testing.T, topt *TestOpts, label string) {
 		}
 	}
 
-	opt := gitea.IssueLabelsOption{Labels: []int64{targetID}}
+	opt := forgejo.IssueLabelsOption{Labels: []int64{targetID}}
 	_, _, err = topt.GiteaCNX.Client().AddIssueLabels(topt.Opts.Organization, topt.Opts.Repo, topt.PullRequest.Index, opt)
 	assert.NilError(t, err)
 	topt.ParamsRun.Clients.Log.Infof("Added label \"%s\" to %s", label, topt.PullRequest.HTMLURL)
@@ -235,7 +235,7 @@ func TestPR(t *testing.T, topts *TestOpts) (context.Context, func()) {
 
 	topts.ParamsRun.Clients.Log.Infof("Creating PullRequest")
 	for i := 0; i < 5; i++ {
-		if topts.PullRequest, _, err = topts.GiteaCNX.Client().CreatePullRequest(topts.Opts.Organization, repoInfo.Name, gitea.CreatePullRequestOption{
+		if topts.PullRequest, _, err = topts.GiteaCNX.Client().CreatePullRequest(topts.Opts.Organization, repoInfo.Name, forgejo.CreatePullRequestOption{
 			Title: "Test Pull Request - " + topts.TargetRefName,
 			Head:  topts.TargetRefName,
 			Base:  topts.DefaultBranch,
@@ -355,7 +355,7 @@ func NewPR(t *testing.T, topts *TestOpts) func() {
 
 	topts.ParamsRun.Clients.Log.Infof("Creating PullRequest")
 	for i := 0; i < 5; i++ {
-		if topts.PullRequest, _, err = topts.GiteaCNX.Client().CreatePullRequest(topts.Opts.Organization, repoInfo.Name, gitea.CreatePullRequestOption{
+		if topts.PullRequest, _, err = topts.GiteaCNX.Client().CreatePullRequest(topts.Opts.Organization, repoInfo.Name, forgejo.CreatePullRequestOption{
 			Title: "Test Pull Request - " + topts.TargetRefName,
 			Head:  topts.TargetRefName,
 			Base:  options.MainBranch,
@@ -420,7 +420,7 @@ func WaitForStatus(t *testing.T, topts *TestOpts, ref, forcontext string, onlyla
 	for {
 		numstatus := 0
 		// get first sha of tree ref
-		statuses, _, err := topts.GiteaCNX.Client().ListStatuses(topts.Opts.Organization, topts.Opts.Repo, ref, gitea.ListStatusesOption{})
+		statuses, _, err := topts.GiteaCNX.Client().ListStatuses(topts.Opts.Organization, topts.Opts.Repo, ref, forgejo.ListStatusesOption{})
 		assert.NilError(t, err)
 		// sort statuses by id
 		sort.Slice(statuses, func(i, j int) bool {
@@ -523,7 +523,7 @@ func WaitForPullRequestCommentMatch(t *testing.T, topts *TestOpts) {
 	i := 0
 	topts.ParamsRun.Clients.Log.Infof("Looking for regexp \"%s\" in PR comments", topts.Regexp.String())
 	for {
-		comments, _, err := topts.GiteaCNX.Client().ListRepoIssueComments(topts.PullRequest.Base.Repository.Owner.UserName, topts.PullRequest.Base.Repository.Name, gitea.ListIssueCommentOptions{})
+		comments, _, err := topts.GiteaCNX.Client().ListRepoIssueComments(topts.PullRequest.Base.Repository.Owner.UserName, topts.PullRequest.Base.Repository.Name, forgejo.ListIssueCommentOptions{})
 		assert.NilError(t, err)
 		for _, v := range comments {
 			if topts.Regexp.MatchString(v.Body) {
@@ -547,7 +547,7 @@ func WaitForPullRequestCommentGoldenMatch(t *testing.T, topts *TestOpts, goldenF
 	}
 
 	for {
-		comments, _, err := topts.GiteaCNX.Client().ListRepoIssueComments(topts.PullRequest.Base.Repository.Owner.UserName, topts.PullRequest.Base.Repository.Name, gitea.ListIssueCommentOptions{})
+		comments, _, err := topts.GiteaCNX.Client().ListRepoIssueComments(topts.PullRequest.Base.Repository.Owner.UserName, topts.PullRequest.Base.Repository.Name, forgejo.ListIssueCommentOptions{})
 		assert.NilError(t, err)
 		for _, v := range comments {
 			if v.Body == "" {
