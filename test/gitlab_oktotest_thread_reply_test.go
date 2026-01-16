@@ -64,7 +64,7 @@ func TestGitlabOpsCommentInThreadReply(t *testing.T) {
 	defer tgitlab.TearDown(ctx, t, runcnx, glprovider, mrID, targetRefName, targetNS, opts.ProjectID)
 
 	// Create a discussion thread with an initial note
-	disc, _, err := glprovider.Client().Discussions.CreateMergeRequestDiscussion(opts.ProjectID, mrID, &clientGitlab.CreateMergeRequestDiscussionOptions{
+	disc, _, err := glprovider.Client().Discussions.CreateMergeRequestDiscussion(opts.ProjectID, int64(mrID), &clientGitlab.CreateMergeRequestDiscussionOptions{
 		Body: clientGitlab.Ptr("random initial note"),
 	})
 	assert.NilError(t, err)
@@ -82,7 +82,7 @@ func TestGitlabOpsCommentInThreadReply(t *testing.T) {
 
 	runcnx.Clients.Log.Info("Updating discussion with /test comment in a reply thread")
 	// Add a reply to the discussion containing /test
-	_, _, err = glprovider.Client().Discussions.AddMergeRequestDiscussionNote(opts.ProjectID, mrID, disc.ID, &clientGitlab.AddMergeRequestDiscussionNoteOptions{
+	_, _, err = glprovider.Client().Discussions.AddMergeRequestDiscussionNote(opts.ProjectID, int64(mrID), disc.ID, &clientGitlab.AddMergeRequestDiscussionNoteOptions{
 		Body: clientGitlab.Ptr("/test"),
 	})
 	assert.NilError(t, err)

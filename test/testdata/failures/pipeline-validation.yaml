@@ -15,7 +15,7 @@ spec:
       taskSpec:
         steps:
           - name: noop-task
-            image: registry.access.redhat.com/ubi9/ubi-micro
+            image: registry.access.redhat.com/ubi10/ubi-micro
             script: |
               exit 0
     - name: noop-task-2
@@ -23,6 +23,6 @@ spec:
       taskSpec:
         steps:
           - name: noop-task
-            image: registry.access.redhat.com/ubi9/ubi-micro
+            image: registry.access.redhat.com/ubi10/ubi-micro
             script: |
               exit 1

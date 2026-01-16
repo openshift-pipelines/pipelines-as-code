@@ -26,10 +26,10 @@ func (v *Provider) IsAllowedOwnersFile(_ context.Context, event *info.Event) (bo
 	return allowed, nil
 }
 
-func (v *Provider) checkMembership(ctx context.Context, event *info.Event, userid int) bool {
+func (v *Provider) checkMembership(ctx context.Context, event *info.Event, userid int64) bool {
 	// Initialize cache lazily
 	if v.memberCache == nil {
-		v.memberCache = map[int]bool{}
+		v.memberCache = map[int64]bool{}
 	}
 
 	if allowed, ok := v.memberCache[userid]; ok {
@@ -54,7 +54,7 @@ func (v *Provider) checkMembership(ctx context.Context, event *info.Event, useri
 	return isAllowed
 }
 
-func (v *Provider) checkOkToTestCommentFromApprovedMember(ctx context.Context, event *info.Event, page int) (bool, error) {
+func (v *Provider) checkOkToTestCommentFromApprovedMember(ctx context.Context, event *info.Event, page int64) (bool, error) {
 	switch gitEvent := event.Event.(type) {
 	case *gitlab.MergeEvent:
 		if !v.pacInfo.RememberOKToTest {
@@ -71,9 +71,14 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(ctx context.Context, e
 		return false, nil
 	}
 
-	var nextPage int
-	opt := &gitlab.ListMergeRequestDiscussionsOptions{Page: page, PerPage: defaultGitlabListOptions.PerPage}
-	discussions, resp, err := v.Client().Discussions.ListMergeRequestDiscussions(v.targetProjectID, event.PullRequestNumber, opt)
+	var nextPage int64
+	opt := &gitlab.ListMergeRequestDiscussionsOptions{
+		ListOptions: gitlab.ListOptions{
+			Page:    page,
+			PerPage: defaultGitlabListOptions.PerPage,
+		},
+	}
+	discussions, resp, err := v.Client().Discussions.ListMergeRequestDiscussions(v.targetProjectID, int64(event.PullRequestNumber), opt)
 	if err != nil || len(discussions) == 0 {
 		return false, err
 	}
@@ -108,8 +113,8 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(ctx context.Context, e
 	return false, nil
 }
 
-func (v *Provider) aclAllowedOkToTestCurrentComment(ctx context.Context, event *info.Event, commentID int) (bool, error) {
-	comment, _, err := v.Client().Notes.GetMergeRequestNote(v.targetProjectID, event.PullRequestNumber, commentID)
+func (v *Provider) aclAllowedOkToTestCurrentComment(ctx context.Context, event *info.Event, commentID int64) (bool, error) {
+	comment, _, err := v.Client().Notes.GetMergeRequestNote(v.targetProjectID, int64(event.PullRequestNumber), commentID)
 	if err != nil {
 		return false, err
 	}

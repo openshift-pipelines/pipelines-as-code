@@ -29,7 +29,7 @@ spec:
         taskSpec:
           steps:
             - name: test-cel-params-value
-              image: registry.access.redhat.com/ubi9/ubi-micro
+              image: registry.access.redhat.com/ubi10/ubi-micro
               script: |
                 # reply Should be:
                 # Look mum I know that we are acting on a push

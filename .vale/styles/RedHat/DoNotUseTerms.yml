@@ -2,12 +2,12 @@
 extends: substitution
 ignorecase: false
 level: warning
-link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/donotuseterms/
+link: https://redhat-documentation.github.io/vale-at-red-hat/reference-guide.html#do-not-use-terms
 message: "%s"
 swap:
   # Start each error message with "Do not use ..."
   # Error messages must be single quoted.
-  'ACK(?! flag)': 'Do not use "ACK" as acronym for "acknowledgement". When writing about the acknowledgement flag ("ACK flag") in a TCP packet, use "ACK flag".'
+  'ACK(?! flag| packet)': 'Do not use "ACK" as acronym for "acknowledgement". When writing about the acknowledgement flag ("ACK flag") or acknowledgement packet ("ACK packet") in a TCP packet, use "ACK flag" or "ACK packet".'
   'future-proof': Do not use "future-proof" in a statement about the benefits, characteristics, or performance of a Red Hat product or service.'
   'out of the box|out-of-the-box': 'Do not use "out of the box" or "out-of-the-box". Use text that is suitable for the context and the noun to which this adjective applies.'
   and/or: 'Do not use "and/or". Depending on the context, use one of the following constructions: a and b, a or b, or a, b, or both.'

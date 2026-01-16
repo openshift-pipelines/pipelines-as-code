@@ -14,7 +14,7 @@ spec:
         taskSpec:
           steps:
             - name: test-cel-prefix-values
-              image: registry.access.redhat.com/ubi9/ubi-micro
+              image: registry.access.redhat.com/ubi10/ubi-micro
               script: |
                 # Test cel: prefix with various expressions for GitHub
                 # Expected output:

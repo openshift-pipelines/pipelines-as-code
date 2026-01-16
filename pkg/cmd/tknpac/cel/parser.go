@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/go-github/v74/github"
+	"github.com/google/go-github/v81/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
@@ -260,7 +260,7 @@ func (p *GitLabParser) PopulateEvent(event *info.Event, parsedEvent any) error {
 		if gitEvent.ObjectAttributes.Target != nil {
 			event.BaseURL = gitEvent.ObjectAttributes.Target.WebURL
 		}
-		event.PullRequestNumber = gitEvent.ObjectAttributes.IID
+		event.PullRequestNumber = int(gitEvent.ObjectAttributes.IID)
 		event.PullRequestTitle = gitEvent.ObjectAttributes.Title
 		event.TriggerTarget = triggertype.PullRequest
 		if gitEvent.ObjectAttributes.Action == "close" {

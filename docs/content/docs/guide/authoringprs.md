@@ -152,7 +152,7 @@ doesn't:
 taskSpec:
   steps:
     - name: check-label
-      image: registry.access.redhat.com/ubi9/ubi
+      image: registry.access.redhat.com/ubi10/ubi
       script: |
         #!/usr/bin/env python3
         import json
@@ -169,7 +169,7 @@ The expressions are CEL expressions so you can as well make some conditional:
 
 ```yaml
 - name: bash
-  image: registry.access.redhat.com/ubi9/ubi
+  image: registry.access.redhat.com/ubi10/ubi
   script: |
     if {{ body.pull_request.state == "open" }}; then
       echo "PR is Open"

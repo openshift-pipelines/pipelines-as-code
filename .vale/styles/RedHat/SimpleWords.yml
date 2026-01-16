@@ -2,7 +2,7 @@
 extends: substitution
 ignorecase: true
 level: suggestion
-link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/simplewords/
+link: https://redhat-documentation.github.io/vale-at-red-hat/reference-guide.html#simple-words
 message: "Use simple language. Consider using '%s' rather than '%s'."
 action:
   name: replace
@@ -47,7 +47,6 @@ swap:
   collaborate: work together
   commence: begin
   compensate: pay
-  component: part
   comprise: form|include
   concerning: about
   confer: give|award
@@ -90,7 +89,6 @@ swap:
   maintain: keep|support
   methodology: method
   modify: change
-  monitor: check|watch
   multiple: many
   necessitate: cause
   notify: tell
@@ -112,7 +110,6 @@ swap:
   subsequent: later|next
   substantial: large
   sufficient: enough
-  terminate: end
   transmit: send
   utilization: use
   utilize: use

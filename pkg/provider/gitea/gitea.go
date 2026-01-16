@@ -230,8 +230,26 @@ func (v *Provider) createStatusCommit(event *info.Event, pacopts *info.PacOpts, 
 		Description: status.Title,
 		Context:     provider.GetCheckName(status, pacopts),
 	}
-	if _, _, err := v.Client().CreateStatus(event.Organization, event.Repository, event.SHA, gStatus); err != nil {
-		return err
+
+	// Retry logic for transient errors (e.g., "user does not exist" under concurrent load)
+	maxRetries := 3
+	var lastErr error
+	for i := range maxRetries {
+		if _, _, err := v.Client().CreateStatus(event.Organization, event.Repository, event.SHA, gStatus); err != nil {
+			lastErr = err
+			// Only retry on transient "user does not exist" errors
+			if strings.Contains(err.Error(), "user does not exist") {
+				v.Logger.Warnf("CreateStatus failed with transient error, retrying %d/%d: %v", i+1, maxRetries, err)
+				time.Sleep(time.Duration(i+1) * 500 * time.Millisecond)
+				continue
+			}
+			return err
+		}
+		lastErr = nil
+		break
+	}
+	if lastErr != nil {
+		return lastErr
 	}
 
 	eventType := triggertype.IsPullRequestType(event.EventType)

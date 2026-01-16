@@ -293,7 +293,7 @@ func TestCreateStatus(t *testing.T) {
 				},
 			}
 			v := &Provider{
-				targetProjectID: tt.fields.targetProjectID,
+				targetProjectID: int64(tt.fields.targetProjectID),
 				run:             params.New(),
 				Logger:          logger,
 				pacInfo: &info.PacOpts{
@@ -346,7 +346,7 @@ func TestCreateStatus(t *testing.T) {
 					})
 				}
 
-				thelp.MuxNotePost(t, mux, v.targetProjectID, tt.args.event.PullRequestNumber, tt.args.postStr)
+				thelp.MuxNotePost(t, mux, int(v.targetProjectID), tt.args.event.PullRequestNumber, tt.args.postStr)
 			}
 
 			if err := v.CreateStatus(ctx, tt.args.event, tt.args.statusOpts); (err != nil) != tt.wantErr {
@@ -456,7 +456,7 @@ func TestGetCommitInfo(t *testing.T) {
 
 				provider = &Provider{
 					gitlabClient:    client,
-					sourceProjectID: tt.sourceProjectID,
+					sourceProjectID: int64(tt.sourceProjectID),
 				}
 			} else {
 				provider = &Provider{}
@@ -614,7 +614,7 @@ func TestSetClientFieldsInitializedOnError(t *testing.T) {
 				Organization:    "test-org",
 				Repository:      "test-repo",
 				TriggerTarget:   tt.triggerTarget,
-				SourceProjectID: tt.sourceProjectID,
+				SourceProjectID: int64(tt.sourceProjectID),
 				TargetProjectID: 123,
 				EventType:       "pull_request",
 			}
@@ -714,7 +714,7 @@ func TestSetClientRepositoryAccessCheck(t *testing.T) {
 				Organization:    "test-org",
 				Repository:      "test-repo",
 				TriggerTarget:   tt.triggerTarget,
-				SourceProjectID: tt.sourceProjectID,
+				SourceProjectID: int64(tt.sourceProjectID),
 				TargetProjectID: 123,
 			}
 
@@ -1026,9 +1026,9 @@ func TestGetTektonDir(t *testing.T) {
 			observer, exporter := zapobserver.New(zap.InfoLevel)
 			fakelogger := zap.New(observer).Sugar()
 			v := &Provider{
-				targetProjectID: tt.fields.targetProjectID,
-				sourceProjectID: tt.fields.sourceProjectID,
-				userID:          tt.fields.userID,
+				targetProjectID: int64(tt.fields.targetProjectID),
+				sourceProjectID: int64(tt.fields.sourceProjectID),
+				userID:          int64(tt.fields.userID),
 				Logger:          fakelogger,
 			}
 			if tt.wantClient {
@@ -1074,7 +1074,7 @@ func TestGetFileInsideRepo(t *testing.T) {
 		sourceProjectID: 10,
 		gitlabClient:    client,
 	}
-	thelp.MuxListTektonDir(t, mux, v.sourceProjectID, event.HeadBranch, content, false, false)
+	thelp.MuxListTektonDir(t, mux, int(v.sourceProjectID), event.HeadBranch, content, false, false)
 	got, err := v.GetFileInsideRepo(ctx, event, "pr.yaml", "")
 	assert.NilError(t, err)
 	assert.Equal(t, content, got)
@@ -1271,7 +1271,7 @@ func TestGetFiles(t *testing.T) {
 			metricsTags := map[string]string{"provider": "api.gitlab.com", "event-type": string(tt.event.TriggerTarget)}
 			metricstest.CheckStatsNotReported(t, "pipelines_as_code_git_provider_api_request_count")
 
-			providerInfo := &Provider{gitlabClient: fakeclient, sourceProjectID: tt.sourceProjectID, targetProjectID: tt.targetProjectID, triggerEvent: string(tt.event.TriggerTarget), apiURL: "api.gitlab.com"}
+			providerInfo := &Provider{gitlabClient: fakeclient, sourceProjectID: int64(tt.sourceProjectID), targetProjectID: int64(tt.targetProjectID), triggerEvent: string(tt.event.TriggerTarget), apiURL: "api.gitlab.com"}
 			changedFiles, err := providerInfo.GetFiles(ctx, tt.event)
 			if tt.wantError != true {
 				assert.NilError(t, err, nil)

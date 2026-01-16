@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	ghlib "github.com/google/go-github/v74/github"
+	"github.com/google/go-github/v81/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
@@ -28,7 +28,7 @@ func TestGithubMaxKeepRuns(t *testing.T) {
 
 	g.Cnx.Clients.Log.Infof("Creating /test in PullRequest to create a second run")
 	_, _, err := g.Provider.Client().Issues.CreateComment(ctx, g.Options.Organization, g.Options.Repo, g.PRNumber,
-		&ghlib.IssueComment{Body: ghlib.Ptr("/test")})
+		&github.IssueComment{Body: github.Ptr("/test")})
 	assert.NilError(t, err)
 
 	g.Cnx.Clients.Log.Infof("Wait for the second repository update to be updated")

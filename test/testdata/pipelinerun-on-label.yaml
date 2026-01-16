@@ -15,7 +15,7 @@ spec:
         taskSpec:
           steps:
             - name: success
-              image: registry.access.redhat.com/ubi9/ubi-micro
+              image: registry.access.redhat.com/ubi10/ubi-micro
               script: |
                 echo "Labels on PR: "
                 for i in $(echo -e "{{ pull_request_labels }}");do

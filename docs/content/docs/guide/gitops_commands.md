@@ -230,7 +230,7 @@ spec:
         taskSpec:
           steps:
             - name: echo
-              image: registry.access.redhat.com/ubi9/ubi-micro
+              image: registry.access.redhat.com/ubi10/ubi-micro
               script: |
                 echo "tag: {{ git_tag }}"
 ```

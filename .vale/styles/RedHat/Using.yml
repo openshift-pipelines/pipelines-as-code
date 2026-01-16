@@ -1,8 +1,9 @@
 ---
 extends: sequence
 message: "Use 'by using' instead of 'using' when it follows a noun for clarity and grammatical correctness."
-link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/using/
+link: https://redhat-documentation.github.io/vale-at-red-hat/reference-guide.html#using
 level: warning
+scope: ~heading
 action:
   name: edit
   params:

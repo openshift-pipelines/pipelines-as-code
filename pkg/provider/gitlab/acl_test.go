@@ -161,9 +161,9 @@ func TestIsAllowed(t *testing.T) {
 			logger, _ := logger.GetLogger()
 
 			v := &Provider{
-				targetProjectID: tt.fields.targetProjectID,
-				sourceProjectID: tt.fields.sourceProjectID,
-				userID:          tt.fields.userID,
+				targetProjectID: int64(tt.fields.targetProjectID),
+				sourceProjectID: int64(tt.fields.sourceProjectID),
+				userID:          int64(tt.fields.userID),
 				Logger:          logger,
 				pacInfo:         &info.PacOpts{Settings: settings.Settings{RememberOKToTest: tt.rememberOKToTest}},
 			}
@@ -171,7 +171,7 @@ func TestIsAllowed(t *testing.T) {
 				client, mux, tearDown := thelp.Setup(t)
 				v.gitlabClient = client
 				if tt.allowMemberID != 0 {
-					v.userID = tt.allowMemberID
+					v.userID = int64(tt.allowMemberID)
 					thelp.MuxAllowUserID(mux, tt.fields.targetProjectID, tt.allowMemberID)
 				} else {
 					thelp.MuxDisallowUserID(mux, tt.fields.targetProjectID, tt.allowMemberID)
@@ -234,7 +234,7 @@ func TestMembershipCaching(t *testing.T) {
 
 	// Count how many times the membership API is hit.
 	var calls int
-	thelp.MuxAllowUserIDCounting(mux, v.targetProjectID, v.userID, &calls)
+	thelp.MuxAllowUserIDCounting(mux, int(v.targetProjectID), int(v.userID), &calls)
 
 	ev := &info.Event{Sender: "someone", PullRequestNumber: 1}
 
@@ -297,7 +297,7 @@ func TestMembershipAPIFailureDoesNotCacheApiError(t *testing.T) {
 		}
 	})
 
-	thelp.MuxDiscussionsNoteEmpty(mux, v.targetProjectID, ev.PullRequestNumber)
+	thelp.MuxDiscussionsNoteEmpty(mux, int(v.targetProjectID), ev.PullRequestNumber)
 
 	allowed, err := v.IsAllowed(ctx, ev)
 	if err != nil {
@@ -416,7 +416,7 @@ func TestIsAllowedOwnersFile(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 
 			v := &Provider{
-				targetProjectID: tt.targetProjectID,
+				targetProjectID: int64(tt.targetProjectID),
 			}
 
 			client, mux, tearDown := thelp.Setup(t)
@@ -570,8 +570,8 @@ func TestCheckMembership(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 
 			v := &Provider{
-				targetProjectID: tt.targetProjectID,
-				userID:          tt.userID,
+				targetProjectID: int64(tt.targetProjectID),
+				userID:          int64(tt.userID),
 				memberCache:     nil, // Start with nil cache to test lazy initialization
 			}
 
@@ -606,7 +606,7 @@ func TestCheckMembership(t *testing.T) {
 			}
 
 			// Execute checkMembership
-			result := v.checkMembership(ctx, ev, tt.userID)
+			result := v.checkMembership(ctx, ev, int64(tt.userID))
 
 			// Verify result
 			if result != tt.wantResult {
@@ -615,11 +615,11 @@ func TestCheckMembership(t *testing.T) {
 
 			// Verify cache behavior
 			if tt.verifyCacheNotSet {
-				if _, ok := v.memberCache[tt.userID]; ok {
+				if _, ok := v.memberCache[int64(tt.userID)]; ok {
 					t.Errorf("expected result NOT to be cached when API fails")
 				}
 			} else if tt.wantCached {
-				cached, ok := v.memberCache[tt.userID]
+				cached, ok := v.memberCache[int64(tt.userID)]
 				if !ok {
 					t.Errorf("expected result to be cached")
 				} else if cached != tt.wantCachedValue {
@@ -635,7 +635,7 @@ func TestCheckMembership(t *testing.T) {
 			// Verify retry behavior for API failures
 			if tt.verifyRetry {
 				initialCallCount := callCount
-				result = v.checkMembership(ctx, ev, tt.userID)
+				result = v.checkMembership(ctx, ev, int64(tt.userID))
 				if result != tt.wantResult {
 					t.Errorf("checkMembership() on retry = %v, want %v", result, tt.wantResult)
 				}

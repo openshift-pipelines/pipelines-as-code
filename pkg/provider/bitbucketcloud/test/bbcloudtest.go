@@ -48,7 +48,7 @@ func SetupBBCloudClient(t *testing.T) (*bitbucket.Client, *http.ServeMux, func()
 		restoreEnv()
 	}
 
-	client := bitbucket.NewBasicAuth("", "")
+	client, _ := bitbucket.NewBasicAuth("", "")
 	client.HttpClient = server.Client()
 	return client, mux, tearDown
 }

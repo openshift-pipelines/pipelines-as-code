@@ -69,7 +69,7 @@ func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, glprovider 
 
 	if mrNumber != -1 {
 		runcnx.Clients.Log.Infof("Closing PR %d", mrNumber)
-		_, _, err := glprovider.Client().MergeRequests.UpdateMergeRequest(projectid, mrNumber,
+		_, _, err := glprovider.Client().MergeRequests.UpdateMergeRequest(projectid, int64(mrNumber),
 			&gitlab2.UpdateMergeRequestOptions{StateEvent: gitlab2.Ptr("close")})
 		if err != nil {
 			t.Fatal(err)

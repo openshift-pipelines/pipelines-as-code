@@ -1,7 +1,7 @@
 ---
 extends: existence
 level: suggestion
-link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/oxfordcomma/
+link: https://redhat-documentation.github.io/vale-at-red-hat/reference-guide.html#oxford-comma
 message: "Use the Oxford comma in '%s'."
 scope: sentence
 nonword: true
