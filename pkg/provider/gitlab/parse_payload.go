@@ -54,7 +54,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		processedEvent.BaseBranch = gitEvent.ObjectAttributes.TargetBranch
 		processedEvent.HeadURL = gitEvent.ObjectAttributes.Source.WebURL
 		processedEvent.BaseURL = gitEvent.ObjectAttributes.Target.WebURL
-		processedEvent.PullRequestNumber = gitEvent.ObjectAttributes.IID
+		processedEvent.PullRequestNumber = int(gitEvent.ObjectAttributes.IID)
 		processedEvent.PullRequestTitle = gitEvent.ObjectAttributes.Title
 		v.targetProjectID = gitEvent.Project.ID
 		v.sourceProjectID = gitEvent.ObjectAttributes.SourceProjectID
@@ -153,7 +153,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		processedEvent.Organization, processedEvent.Repository = getOrgRepo(v.pathWithNamespace)
 		processedEvent.TriggerTarget = triggertype.PullRequest
 
-		processedEvent.PullRequestNumber = gitEvent.MergeRequest.IID
+		processedEvent.PullRequestNumber = int(gitEvent.MergeRequest.IID)
 		v.targetProjectID = gitEvent.MergeRequest.TargetProjectID
 		v.sourceProjectID = gitEvent.MergeRequest.SourceProjectID
 		v.userID = gitEvent.User.ID

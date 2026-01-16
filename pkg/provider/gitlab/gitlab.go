@@ -53,9 +53,9 @@ type Provider struct {
 	run               *params.Run
 	pacInfo           *info.PacOpts
 	Token             *string
-	targetProjectID   int
-	sourceProjectID   int
-	userID            int
+	targetProjectID   int64
+	sourceProjectID   int64
+	userID            int64
 	pathWithNamespace string
 	repoURL           string
 	apiURL            string
@@ -64,7 +64,7 @@ type Provider struct {
 	triggerEvent      string
 	// memberCache caches membership/permission checks by user ID within the
 	// current provider instance lifecycle to avoid repeated API calls.
-	memberCache        map[int]bool
+	memberCache        map[int64]bool
 	cachedChangedFiles *changedfiles.ChangedFiles
 }
 
@@ -107,14 +107,14 @@ func (v *Provider) CreateComment(_ context.Context, event *info.Event, commit, u
 		options := []gitlab.RequestOptionFunc{}
 
 		for {
-			comments, resp, err := v.Client().Notes.ListMergeRequestNotes(event.TargetProjectID, event.PullRequestNumber, &gitlab.ListMergeRequestNotesOptions{ListOptions: defaultGitlabListOptions}, options...)
+			comments, resp, err := v.Client().Notes.ListMergeRequestNotes(event.TargetProjectID, int64(event.PullRequestNumber), &gitlab.ListMergeRequestNotesOptions{ListOptions: defaultGitlabListOptions}, options...)
 			if err != nil {
 				return err
 			}
 
 			for _, comment := range comments {
 				if commentRe.MatchString(comment.Body) {
-					_, _, err := v.Client().Notes.UpdateMergeRequestNote(event.TargetProjectID, event.PullRequestNumber, comment.ID, &gitlab.UpdateMergeRequestNoteOptions{
+					_, _, err := v.Client().Notes.UpdateMergeRequestNote(event.TargetProjectID, int64(event.PullRequestNumber), comment.ID, &gitlab.UpdateMergeRequestNoteOptions{
 						Body: &commit,
 					})
 					if err != nil {
@@ -136,7 +136,7 @@ func (v *Provider) CreateComment(_ context.Context, event *info.Event, commit, u
 		}
 	}
 
-	_, _, err := v.Client().Notes.CreateMergeRequestNote(event.TargetProjectID, event.PullRequestNumber, &gitlab.CreateMergeRequestNoteOptions{
+	_, _, err := v.Client().Notes.CreateMergeRequestNote(event.TargetProjectID, int64(event.PullRequestNumber), &gitlab.CreateMergeRequestNoteOptions{
 		Body: &commit,
 	})
 	if err != nil {
@@ -380,7 +380,7 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	default:
 		if eventType == triggertype.PullRequest || provider.Valid(event.EventType, anyMergeRequestEventType) {
 			mopt := &gitlab.CreateMergeRequestNoteOptions{Body: gitlab.Ptr(body)}
-			_, _, err := v.Client().Notes.CreateMergeRequestNote(event.TargetProjectID, event.PullRequestNumber, mopt)
+			_, _, err := v.Client().Notes.CreateMergeRequestNote(event.TargetProjectID, int64(event.PullRequestNumber), mopt)
 			return err
 		}
 	}
@@ -469,7 +469,7 @@ func (v *Provider) concatAllYamlFiles(objects []*gitlab.TreeNode, revision strin
 	return allTemplates, nil
 }
 
-func (v *Provider) getObject(fname, branch string, pid int) ([]byte, *gitlab.Response, error) {
+func (v *Provider) getObject(fname, branch string, pid int64) ([]byte, *gitlab.Response, error) {
 	opt := &gitlab.GetRawFileOptions{
 		Ref: gitlab.Ptr(branch),
 	}
@@ -558,7 +558,7 @@ func (v *Provider) fetchChangedFiles(_ context.Context, runevent *info.Event) (c
 		options := []gitlab.RequestOptionFunc{}
 
 		for {
-			mrchanges, resp, err := v.Client().MergeRequests.ListMergeRequestDiffs(v.targetProjectID, runevent.PullRequestNumber, opt, options...)
+			mrchanges, resp, err := v.Client().MergeRequests.ListMergeRequestDiffs(v.targetProjectID, int64(runevent.PullRequestNumber), opt, options...)
 			if err != nil {
 				// TODO: Should this return the files found so far?
 				return changedfiles.ChangedFiles{}, err
