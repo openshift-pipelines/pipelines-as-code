@@ -14,5 +14,5 @@ spec:
         taskSpec:
           steps:
             - name: task
-              image: registry.access.redhat.com/ubi9/ubi-micro
+              image: registry.access.redhat.com/ubi10/ubi-micro
               command: ["/bin/echo", "event: {{ body.eventKey }}, refId: {{ body.changes[0].ref.id }}, message: {{ body.toCommit.message }}"]

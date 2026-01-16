@@ -28,7 +28,7 @@ spec:
         taskSpec:
           steps:
             - name: test-standard-params-value
-              image: registry.access.redhat.com/ubi9/ubi-micro
+              image: registry.access.redhat.com/ubi10/ubi-micro
               script: |
                 echo "{{ repo_url }}--"
                 echo "{{ source_url }}--"

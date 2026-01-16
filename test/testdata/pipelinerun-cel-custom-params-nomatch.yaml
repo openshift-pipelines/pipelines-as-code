@@ -14,6 +14,6 @@ spec:
         taskSpec:
           steps:
             - name: should-not-execute
-              image: registry.access.redhat.com/ubi9/ubi-micro
+              image: registry.access.redhat.com/ubi10/ubi-micro
               script: |
                 echo "This should not run - enable_ci is true not false"
