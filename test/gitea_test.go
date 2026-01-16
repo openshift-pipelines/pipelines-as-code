@@ -162,7 +162,7 @@ func TestGiteaPullRequestPrivateRepository(t *testing.T) {
 	defer f()
 	reg := regexp.MustCompile(".*successfully fetched git-clone task from default configured catalog Hub")
 	maxLines := int64(100)
-	err := twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *reg, 20, "controller", &maxLines)
+	err := twait.RegexpMatchingInPACLog(ctx, topts.ParamsRun, *reg, 20, "controller", &maxLines)
 	assert.NilError(t, err)
 	tgitea.WaitForSecretDeletion(t, topts, topts.TargetRefName)
 }
@@ -253,7 +253,7 @@ func TestGiteaBadYamlValidation(t *testing.T) {
 	ctx, f := tgitea.TestPR(t, topts)
 	defer f()
 	maxLines := int64(20)
-	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *regexp.MustCompile(
+	assert.NilError(t, twait.RegexpMatchingInPACLog(ctx, topts.ParamsRun, *regexp.MustCompile(
 		"cannot read the PipelineRun: pr-bad-format.yaml, error: yaml validation error: line 3: could not find expected ':'"),
 		10, "controller", &maxLines))
 }
@@ -999,7 +999,7 @@ func TestGiteaBadLinkOfTask(t *testing.T) {
 	defer f()
 	errre := regexp.MustCompile("There was an error starting the PipelineRun")
 	maxLines := int64(20)
-	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *errre, 10, "controller", &maxLines))
+	assert.NilError(t, twait.RegexpMatchingInPACLog(ctx, topts.ParamsRun, *errre, 10, "controller", &maxLines))
 }
 
 // TestGiteaPipelineRunWithSameName checks that we fail properly with the error from the
@@ -1020,7 +1020,7 @@ func TestGiteaPipelineRunWithSameName(t *testing.T) {
 	defer f()
 	errre := regexp.MustCompile("found multiple pipelinerun in .tekton with the same name")
 	maxLines := int64(20)
-	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *errre, 10, "controller", &maxLines))
+	assert.NilError(t, twait.RegexpMatchingInPACLog(ctx, topts.ParamsRun, *errre, 10, "controller", &maxLines))
 }
 
 // TestGiteaProvenanceForDefaultBranch tests the provenance feature of the PipelineRun.

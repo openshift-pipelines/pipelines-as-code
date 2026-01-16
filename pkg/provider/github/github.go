@@ -751,47 +751,97 @@ func (v *Provider) GetTemplate(commentType provider.CommentType) string {
 
 // CreateComment creates a comment on a Pull Request.
 func (v *Provider) CreateComment(ctx context.Context, event *info.Event, commit, updateMarker string) error {
+	_, err := v.createOrUpdateComment(ctx, event, commit, updateMarker)
+
+	return err
+}
+
+func (v *Provider) createOrUpdateStatusComment(ctx context.Context, event *info.Event, commit, updateMarker string, cachedCommentID int64) (int64, error) {
 	if v.ghClient == nil {
-		return fmt.Errorf("no github client has been initialized")
+		return 0, fmt.Errorf("no github client has been initialized")
 	}
 
 	if event.PullRequestNumber == 0 {
-		return fmt.Errorf("create comment only works on pull requests")
+		return 0, fmt.Errorf("create comment only works on pull requests")
 	}
 
-	// List last page of the comments of the PR
-	if updateMarker != "" {
-		comments, _, err := wrapAPI(v, "list_comments", func() ([]*github.IssueComment, *github.Response, error) {
-			return v.Client().Issues.ListComments(ctx, event.Organization, event.Repository, event.PullRequestNumber, &github.IssueListCommentsOptions{
-				ListOptions: github.ListOptions{
-					Page:    1,
-					PerPage: 100,
-				},
+	// Try cached comment ID first
+	if updateMarker != "" && cachedCommentID > 0 {
+		v.Logger.Debugf("Attempting to update status comment using cached ID: %d", cachedCommentID)
+
+		updatedComment, resp, err := wrapAPI(v, "edit_comment", func() (*github.IssueComment, *github.Response, error) {
+			return v.Client().Issues.EditComment(ctx, event.Organization, event.Repository, cachedCommentID, &github.IssueComment{
+				Body: &commit,
 			})
 		})
-		if err != nil {
-			return err
+
+		if err == nil {
+			v.Logger.Debugf("Successfully updated status comment using cached ID: %d", cachedCommentID)
+			return updatedComment.GetID(), nil
 		}
 
-		re := regexp.MustCompile(regexp.QuoteMeta(updateMarker))
-		for _, comment := range comments {
-			if re.MatchString(comment.GetBody()) {
-				if _, _, err := wrapAPI(v, "edit_comment", func() (*github.IssueComment, *github.Response, error) {
-					return v.Client().Issues.EditComment(ctx, event.Organization, event.Repository, comment.GetID(), &github.IssueComment{
-						Body: &commit,
-					})
-				}); err != nil {
-					return err
-				}
-				return nil
-			}
+		if resp != nil && resp.StatusCode == http.StatusNotFound {
+			v.Logger.Warnf("Cached status comment ID %d not found (deleted?), falling back to marker search", cachedCommentID)
+		} else {
+			return 0, err
 		}
 	}
 
-	_, _, err := wrapAPI(v, "create_comment", func() (*github.IssueComment, *github.Response, error) {
+	return v.createOrUpdateComment(ctx, event, commit, updateMarker)
+}
+
+func (v *Provider) createOrUpdateComment(ctx context.Context, event *info.Event, commit, updateMarker string) (int64, error) {
+	if v.ghClient == nil {
+		return 0, fmt.Errorf("no github client has been initialized")
+	}
+
+	if event.PullRequestNumber == 0 {
+		return 0, fmt.Errorf("create comment only works on pull requests")
+	}
+
+	if updateMarker != "" {
+		v.Logger.Debug("Searching for existing status comment by marker")
+
+		re := regexp.MustCompile(regexp.QuoteMeta(updateMarker))
+		commentsPage := 1
+		for {
+			comments, resp, err := wrapAPI(v, "list_comments", func() ([]*github.IssueComment, *github.Response, error) {
+				return v.Client().Issues.ListComments(ctx, event.Organization, event.Repository, event.PullRequestNumber, &github.IssueListCommentsOptions{
+					ListOptions: github.ListOptions{
+						Page:    commentsPage,
+						PerPage: 100,
+					},
+				})
+			})
+			if err != nil {
+				return 0, err
+			}
+
+			for _, comment := range comments {
+				if re.MatchString(comment.GetBody()) {
+					updatedComment, _, err := wrapAPI(v, "edit_comment", func() (*github.IssueComment, *github.Response, error) {
+						return v.Client().Issues.EditComment(ctx, event.Organization, event.Repository, comment.GetID(), &github.IssueComment{
+							Body: &commit,
+						})
+					})
+					if err != nil {
+						return 0, err
+					}
+					return updatedComment.GetID(), nil
+				}
+			}
+
+			if resp.NextPage == 0 {
+				break
+			}
+			commentsPage = resp.NextPage
+		}
+	}
+
+	createdComment, _, err := wrapAPI(v, "create_comment", func() (*github.IssueComment, *github.Response, error) {
 		return v.Client().Issues.CreateComment(ctx, event.Organization, event.Repository, event.PullRequestNumber, &github.IssueComment{
 			Body: &commit,
 		})
 	})
-	return err
+	return createdComment.GetID(), err
 }
