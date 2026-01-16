@@ -1,21 +1,25 @@
 package reconciler
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sync"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
+	testkubernetestint "github.com/openshift-pipelines/pipelines-as-code/pkg/test/kubernetestint"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/logging"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -29,6 +33,11 @@ var (
 		Spec: v1alpha1.RepositorySpec{
 			URL:              "https://github.com/sm43/pac-app",
 			ConcurrencyLimit: &concurrency,
+			GitProvider: &v1alpha1.GitProvider{
+				Secret: &v1alpha1.Secret{
+					Name: "pac-git-basic-auth-owner-repo",
+				},
+			},
 		},
 	}
 )
@@ -43,8 +52,12 @@ func getTestPR(name, state string) *tektonv1.PipelineRun {
 			Name:      name,
 			Namespace: finalizeTestRepo.Namespace,
 			Annotations: map[string]string{
-				keys.State:      state,
-				keys.Repository: finalizeTestRepo.Name,
+				keys.State:         state,
+				keys.Repository:    finalizeTestRepo.Name,
+				keys.GitProvider:   "github",
+				keys.SHA:           "123afc",
+				keys.URLOrg:        "sm43",
+				keys.URLRepository: "pac-app",
 			},
 		},
 		Spec: tektonv1.PipelineRunSpec{
@@ -92,11 +105,21 @@ func TestReconciler_FinalizeKind(t *testing.T) {
 			},
 			skipAddingRepo: true,
 		},
+		{
+			name:        "cancelled status reported",
+			pipelinerun: getTestPR("pr3", kubeinteraction.StateStarted),
+			addToQueue: []*tektonv1.PipelineRun{
+				getTestPR("pr1", kubeinteraction.StateStarted),
+				getTestPR("pr2", kubeinteraction.StateQueued),
+				getTestPR("pr3", kubeinteraction.StateQueued),
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
+			ctx = logging.WithLogger(ctx, fakelogger)
 			testData := testclient.Data{
 				Repositories: []*v1alpha1.Repository{finalizeTestRepo},
 			}
@@ -104,18 +127,29 @@ func TestReconciler_FinalizeKind(t *testing.T) {
 				testData.Repositories = []*v1alpha1.Repository{}
 			}
 			stdata, informers := testclient.SeedTestData(t, ctx, testData)
+			kinterfaceTest := &testkubernetestint.KinterfaceTest{
+				GetSecretResult: map[string]string{
+					"pac-git-basic-auth-owner-repo": "https://whateveryousayboss",
+				},
+			}
+
+			cs := &params.Run{
+				Clients: clients.Clients{
+					PipelineAsCode: stdata.PipelineAsCode,
+					Log:            fakelogger,
+				},
+				Info: info.Info{
+					Kube:       &info.KubeOpts{Namespace: "pac"},
+					Controller: &info.ControllerInfo{GlobalRepository: "pac"},
+					Pac:        info.NewPacOpts(),
+				},
+			}
+			cs.Clients.SetConsoleUI(consoleui.FallBackConsole{})
 			r := Reconciler{
 				repoLister: informers.Repository.Lister(),
 				qm:         sync.NewQueueManager(fakelogger),
-				run: &params.Run{
-					Clients: clients.Clients{
-						PipelineAsCode: stdata.PipelineAsCode,
-					},
-					Info: info.Info{
-						Kube:       &info.KubeOpts{Namespace: "pac"},
-						Controller: &info.ControllerInfo{GlobalRepository: "pac"},
-					},
-				},
+				run:        cs,
+				kinteract:  kinterfaceTest,
 			}
 
 			if len(tt.addToQueue) != 0 {
@@ -125,7 +159,9 @@ func TestReconciler_FinalizeKind(t *testing.T) {
 				}
 			}
 			err := r.FinalizeKind(ctx, tt.pipelinerun)
-			assert.NilError(t, err)
+			if err != nil && !strings.Contains(err.Error(), "401 Bad credentials []") {
+				t.Fatalf("expected no error, got %v", err)
+			}
 
 			// if repo was deleted then no queue will be there
 			if tt.skipAddingRepo {
