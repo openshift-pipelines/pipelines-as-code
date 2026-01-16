@@ -3138,6 +3138,9 @@ func TestFilterSuccessfulTemplates(t *testing.T) {
 			expectedNames: []string{"template-a", "template-b"},
 		},
 		{
+			// Note: filterSuccessfulTemplates returns empty list, but the caller
+			// (MatchPipelinerunByAnnotation) will re-run all pipelines when this happens.
+			// See TestRetestRerunsAllWhenAllSucceeded for the integration test.
 			name:          "All templates filtered results in empty list",
 			eventType:     opscomments.RetestAllCommentEventType.String(),
 			sha:           "test-sha",
@@ -3207,6 +3210,149 @@ func TestFilterSuccessfulTemplates(t *testing.T) {
 				}
 				assert.Assert(t, found, "Unexpected template %s found in %v", actualName, actualNames)
 			}
+		})
+	}
+}
+
+// TestRetestRerunsAllWhenAllSucceeded tests that when /retest or /ok-to-test is used
+// and all pipelines have already succeeded, all pipelines are re-run instead of none.
+func TestRetestRerunsAllWhenAllSucceeded(t *testing.T) {
+	ctx, _ := rtesting.SetupFakeContext(t)
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observer).Sugar()
+
+	repo := &v1alpha1.Repository{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-repo",
+			Namespace: "test-ns",
+		},
+	}
+
+	now := metav1.Now()
+
+	// Create successful PipelineRuns for all templates
+	successfulPRA := &tektonv1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "template-a-run",
+			Namespace: "test-ns",
+			Labels: map[string]string{
+				keys.SHA:            "all-passed-sha",
+				keys.OriginalPRName: "template-a",
+			},
+			Annotations: map[string]string{
+				keys.OriginalPRName: "template-a",
+			},
+			CreationTimestamp: now,
+		},
+		Status: tektonv1.PipelineRunStatus{
+			Status: knativeduckv1.Status{
+				Conditions: knativeduckv1.Conditions{
+					apis.Condition{
+						Type:   apis.ConditionSucceeded,
+						Status: corev1.ConditionTrue,
+					},
+				},
+			},
+		},
+	}
+
+	successfulPRB := &tektonv1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "template-b-run",
+			Namespace: "test-ns",
+			Labels: map[string]string{
+				keys.SHA:            "all-passed-sha",
+				keys.OriginalPRName: "template-b",
+			},
+			Annotations: map[string]string{
+				keys.OriginalPRName: "template-b",
+			},
+			CreationTimestamp: now,
+		},
+		Status: tektonv1.PipelineRunStatus{
+			Status: knativeduckv1.Status{
+				Conditions: knativeduckv1.Conditions{
+					apis.Condition{
+						Type:   apis.ConditionSucceeded,
+						Status: corev1.ConditionTrue,
+					},
+				},
+			},
+		},
+	}
+
+	// Setup test clients with all successful PipelineRuns
+	tdata := testclient.Data{
+		PipelineRuns: []*tektonv1.PipelineRun{successfulPRA, successfulPRB},
+		Repositories: []*v1alpha1.Repository{repo},
+	}
+	stdata, _ := testclient.SeedTestData(t, ctx, tdata)
+
+	cs := &params.Run{
+		Clients: clients.Clients{
+			Log:    logger,
+			Tekton: stdata.Pipeline,
+			Kube:   stdata.Kube,
+		},
+	}
+
+	// Create PipelineRun templates that match
+	templateA := &tektonv1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "template-a",
+			Annotations: map[string]string{
+				keys.OnEvent:        "[pull_request]",
+				keys.OnTargetBranch: "[main]",
+			},
+		},
+	}
+
+	templateB := &tektonv1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "template-b",
+			Annotations: map[string]string{
+				keys.OnEvent:        "[pull_request]",
+				keys.OnTargetBranch: "[main]",
+			},
+		},
+	}
+
+	tests := []struct {
+		name              string
+		eventType         string
+		expectedPRCount   int
+		expectedLogSubstr string
+	}{
+		{
+			name:              "retest reruns all when all succeeded",
+			eventType:         opscomments.RetestAllCommentEventType.String(),
+			expectedPRCount:   2,
+			expectedLogSubstr: "all pipelineruns have succeeded, re-running all pipelines",
+		},
+		{
+			name:              "ok-to-test reruns all when all succeeded",
+			eventType:         opscomments.OkToTestCommentEventType.String(),
+			expectedPRCount:   2,
+			expectedLogSubstr: "all pipelineruns have succeeded, re-running all pipelines",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			event := &info.Event{
+				TriggerTarget: triggertype.PullRequest,
+				EventType:     tt.eventType,
+				BaseBranch:    "main",
+				HeadBranch:    "feature",
+				SHA:           "all-passed-sha",
+				Request:       &info.Request{Header: http.Header{}},
+			}
+
+			eventEmitter := events.NewEventEmitter(cs.Clients.Kube, logger)
+			matches, err := MatchPipelinerunByAnnotation(ctx, logger, []*tektonv1.PipelineRun{templateA, templateB}, cs, event, &ghprovider.Provider{}, eventEmitter, repo)
+
+			assert.NilError(t, err)
+			assert.Equal(t, tt.expectedPRCount, len(matches), "Expected %d pipelines to be returned, got %d", tt.expectedPRCount, len(matches))
 		})
 	}
 }
