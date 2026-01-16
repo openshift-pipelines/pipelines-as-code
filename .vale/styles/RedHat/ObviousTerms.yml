@@ -8,9 +8,9 @@ scope: sentence
 action:
   name: remove
 tokens:
+  - 'Description field'
+  - 'Mail field'
+  - 'Name field'
+  - 'Password field'
   - 'User field'
   - 'Username field'
-  - 'Password field'
-  - 'Mail field'
-  - 'Description field'
-  - 'Name field'

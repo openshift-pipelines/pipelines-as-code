@@ -2,7 +2,7 @@
 extends: existence
 level: suggestion
 message: "Separate words by underscores in user-replaced values."
-link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/userreplacedvalues/
+link: https://redhat-documentation.github.io/vale-at-red-hat/reference-guide.html#user-replaced-values
 scope: raw
 nonword: true
 action:

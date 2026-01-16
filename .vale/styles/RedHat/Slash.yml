@@ -1,7 +1,7 @@
 extends: existence
 ignorecase: true
 level: warning
-link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/slash/
+link: https://redhat-documentation.github.io/vale-at-red-hat/reference-guide.html#slash
 message: "Use either 'or' or 'and' in '%s'"
 scope:
   - sentence
@@ -15,19 +15,39 @@ exceptions:
   - 'https?://\S+'
   # common technical terms
   - "0/"
+  - "[Aa]ccess/InfiniBand"
+  - "[Aa]ctive/[Aa]ctive"
+  - "[Aa]ctive/[Pp]assive"
+  - "[Cc]heckpoint/[Rr]estore"
+  - "[Gg]roup/[Vv]ersion"
   - "[Ii]nput/[Oo]utput"
   - "[Kk]ey/value"
+  - "[Mm]in/[Mm]ax"
+  - "[Pp]acemaker/[Cc]orosync"
+  - "[Pp]ublish/[Ss]ubscribe"
+  - "[Ss]ource/[Dd]estination"
+  - "[Ss]top/[Ss]tart"
+  - "A/B"
   - "C/C"
   - "CI/CD"
   - "client/server"
+  - "HTTP/HTTPS"
   - "I/O"
   - "N/A"
+  - "NVMe/FC"
+  - "NVMe/RDMA"
+  - "NVMe/TCP"
+  - "OS/architecture"
+  - "Q/A"
   - "read/write"
+  - "S/MIME"
   - "SSL/TLS"
+  - "Tcl/T[Kk]"
   - "TCP/IP"
   - "upstream/downstream"
   - "z/OS"
   - "z/OSMF"
+  - "z/VM"
   - '.*ai/\w+'
   - '.*AI/\w+'
   - '.*community/\w+'
@@ -46,6 +66,8 @@ exceptions:
   - '.*t5/\w+'
   - '.*team/\w+'
   - '.*testing/\w+'
+  # Kubernetes/OpenShift annotations and registry paths
+  - '\w+\.io/\w+'
   - 'AIDC-AI/\w+'
   - 'Alibaba-NLP/\w+'
   - 'apple/\w+'
