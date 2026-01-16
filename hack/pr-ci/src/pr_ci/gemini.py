@@ -102,6 +102,121 @@ Respond with only a JSON array of label names that exist in the available labels
             return []
 
 
+class GeminiReleaseNoteChecker:
+    """Checks if a PR requires release notes using Gemini AI."""
+
+    def __init__(self, api_key: str, model_name: str = DEFAULT_MODEL):
+        genai.configure(api_key=api_key)
+        self.model = genai.GenerativeModel(model_name)
+        self.model_name = model_name
+
+    def check_release_note_required(self, pr_data: PRData) -> dict:
+        """Analyze PR and determine if release notes are required.
+
+        Returns:
+            dict with keys:
+            - required: bool - whether release notes are required
+            - reason: str - explanation for the decision
+        """
+        try:
+            prompt = self._build_prompt(pr_data)
+            response = self.model.generate_content(prompt)
+            return self._parse_response(response)
+        except Exception as exc:  # pylint: disable=broad-except
+            print(f"Error with Gemini API: {exc}")
+            # Default to requiring release notes on error
+            return {
+                "required": True,
+                "reason": "Could not analyze PR (defaulting to required)",
+            }
+
+    def _build_prompt(self, pr_data: PRData) -> str:
+        """Build the prompt for Gemini."""
+        commits_text = "\n".join([f"- {msg}" for msg in pr_data.commit_messages])
+        files_text = "\n".join(pr_data.files_changed)
+
+        return f"""
+You are analyzing a Pull Request for the "Pipelines as Code" project (a Tekton-based CI/CD system) to determine if it requires release notes.
+
+Release notes are ONLY for changes that END USERS of Pipelines as Code need to know about.
+
+PR Title: {pr_data.title}
+
+PR Description:
+{pr_data.description}
+
+Files changed:
+{files_text}
+
+Commit messages:
+{commits_text}
+
+IMPORTANT: Default to NOT requiring release notes unless the change clearly affects end users.
+
+NO RELEASE NOTES NEEDED (return required: false):
+- ANY changes to CI/CD pipelines, GitHub Actions, Tekton tasks (.tekton/, .github/workflows/)
+- ANY changes to tests (test/, *_test.go, *_test.py)
+- ANY changes to development tooling (hack/, scripts/, Makefile, pre-commit)
+- ANY changes to linters, formatters, or code quality tools
+- Internal refactoring that doesn't change behavior
+- Adding/improving logging or error messages (unless user-visible)
+- Documentation updates (docs/, README, CONTRIBUTING)
+- Dependency updates (go.mod, requirements.txt) unless they fix user-facing bugs
+- Code comments or internal string fixes
+- Build system changes
+- Developer experience improvements
+- Flaky test fixes
+- Code cleanup or style changes
+
+RELEASE NOTES REQUIRED (return required: true):
+- New user-facing features
+- Bug fixes that users would notice (not internal/test bugs)
+- Changes to CLI commands, flags, or output
+- Changes to Kubernetes CRDs or API
+- Changes to configuration options users can set
+- Security vulnerabilities fixed
+- Breaking changes or deprecations
+- Changes to webhook handling that affects users
+- Changes to how pipelines are triggered or run
+
+Look at the FILES CHANGED carefully:
+- If changes are mostly in test/, hack/, .tekton/, .github/ → NO release notes
+- If changes are in pkg/ but only add logging/refactor internals → NO release notes  
+- If changes affect user-visible behavior in pkg/, cmd/ → MAYBE release notes
+
+Be conservative: when in doubt, return required: false.
+
+Respond with only valid JSON:
+{{
+  "required": true/false,
+  "reason": "Brief explanation"
+}}
+"""
+
+    def _parse_response(self, response) -> dict:
+        """Parse Gemini response."""
+        try:
+            response_text = response.text.strip()
+            if response_text.startswith("```json"):
+                response_text = response_text[7:-3]
+            elif response_text.startswith("```"):
+                response_text = response_text[3:-3]
+
+            result = json.loads(response_text)
+            if isinstance(result, dict) and "required" in result:
+                return {
+                    "required": bool(result.get("required", True)),
+                    "reason": result.get("reason", "No reason provided"),
+                }
+            return {
+                "required": True,
+                "reason": "Invalid response format (defaulting to required)",
+            }
+        except json.JSONDecodeError as exc:
+            print(f"Could not parse Gemini response as JSON: {exc}")
+            return {"required": True, "reason": "Parse error (defaulting to required)"}
+
+
 class GeminiIssueGenerator:
     """Generates GitHub issue content using Gemini AI."""
 
