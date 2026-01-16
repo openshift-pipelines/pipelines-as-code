@@ -14,7 +14,7 @@ spec:
         taskSpec:
           steps:
             - name: test-custom-params-cel
-              image: registry.access.redhat.com/ubi9/ubi-micro
+              image: registry.access.redhat.com/ubi10/ubi-micro
               script: |
                 cat <<EOF
                 Custom params: enable_ci={{ enable_ci }} environment={{ environment }}

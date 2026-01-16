@@ -15,7 +15,7 @@ spec:
         taskSpec:
           steps:
             - name: test-on-comment-cel
-              image: registry.access.redhat.com/ubi9/ubi-micro
+              image: registry.access.redhat.com/ubi10/ubi-micro
               script: |
                 cat <<EOF
                 Trigger type verified: trigger_type={{ trigger_type }}

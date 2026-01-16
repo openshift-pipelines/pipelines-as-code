@@ -13,7 +13,7 @@ spec:
       taskSpec:
         steps:
           - name: task
-            image: registry.access.redhat.com/ubi9/ubi-micro
+            image: registry.access.redhat.com/ubi10/ubi-micro
             script: |
               echo "Hello $(params.foo)"
               exit 0
