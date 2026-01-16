@@ -2,7 +2,7 @@
 extends: substitution
 ignorecase: false
 level: warning
-link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/casesensitiveterms/
+link: https://redhat-documentation.github.io/vale-at-red-hat/reference-guide.html#case-sensitive-terms
 message: "Use '%s' rather than '%s'."
 action:
   name: replace
@@ -11,6 +11,7 @@ swap:
   "(?<!/)var": VAR
   "(?<!Business )Resource Planner|(?<!Business Resource )Planner": Business Resource Planner
   "(?<!Microsoft Azure )On-Demand Marketplace": Microsoft Azure On-Demand Marketplace
+  "(?<!Red Hat )Advanced Cluster Management|(?<!Red Hat )Advanced Cluster Management for Kubernetes|ACM|ACMK": Red Hat Advanced Cluster Management for Kubernetes
   "(?<!Red Hat )JBoss Enterprise Application Platform": Red Hat JBoss Enterprise Application Platform
   "(?<!Red Hat )OpenStack Platform|RHOS|RH-OSP": Red Hat OpenStack Platform
   "(?<!Red Hat JBoss )BRMS(?! engine)": inference engine
@@ -20,7 +21,7 @@ swap:
   "[dD]ay-1|day 1": Day 1
   "[dD]ay-2|day 2": Day 2
   "BPMS|(?<!Red Hat )JBoss BPMS|(?<!Red Hat JBoss )BPM(?! Suite)": Red Hat JBoss BPM Suite
-  "DM(?![ -]Multipath)|directory manager": Directory Manager
+  "DM(?![ -]?[Mm]ultipath)|directory manager": Directory Manager
   "JBoss Broker|Red Hat Broker|The AMQ Broker": AMQ Broker
   "JBoss Console|Red Hat Console": AMQ Console
   "Kernel(?!-based Virtual Machine| Module Management| parameters| arguments| packet filtering)": kernel
@@ -117,6 +118,7 @@ swap:
   Faq|faq|F.A.Q: FAQ
   fault tolerant: fault-tolerant
   fault-tolerance: fault tolerance
+  fbc|Fbc|FBC: file-based catalog
   fedora project: Fedora™ Project
   filestore|File Store: FileStore
   Firewalld|firewallD|FirewallD: firewalld
@@ -168,7 +170,7 @@ swap:
   jetbrains|Jetbrains: JetBrains
   Junit|junit: JUnit
   Jvm|jvm: JVM
-  kbase|knowledge base: KIE base
+  kbase: KIE base
   kernel-based virtual machine: Kernel-based Virtual Machine
   kernelspace: kernel space
   key store: keystore
@@ -183,6 +185,7 @@ swap:
   Lan|lan: LAN
   Librados|LIBRADOS: librados
   Librbd|LIBRBD: librbd
+  Lightspeed|LightSpeed: Red Hat Ansible Lightspeed|Red Hat Enterprise Linux Lightspeed
   Lightweight Directory Access Protocol over Secure Socket Layer: LDAPS
   LINUX|linux: Linux
   live-backup group: master-slave group
@@ -204,9 +207,11 @@ swap:
   network interface card: network interface controller (NIC)
   objectclass: objectClass
   Objective-C: Objective C
+  oci|Oci: OCI
   OCP: Red Hat OpenShift Container Platform
   ODF: Red Hat OpenShift Data Foundation
   OK button|okay|ok: OK
+  open container initiative|Open container initiative: Open Container Initiative
   Open InfiniBand|Infiniband: InfiniBand
   Open Telemetry: OpenTelemetry (OTel)
   openid connect|Openid Connect: OpenID Connect
@@ -250,7 +255,7 @@ swap:
   Redboot|Red Boot: RedBoot
   RedFish: Redfish
   redis: Redis
-  RESTEASY|resteasy|Resteasy: RESTEasy
+  RESTEASY|(?<!-)resteasy|Resteasy: RESTEasy
   RHDS: Red Hat Directory Server
   RHEL host|RHEL-H: Red Hat Enterprise Linux host
   RHV: Red Hat Virtualization
@@ -281,7 +286,6 @@ swap:
   SR IOV: SR-IOV
   Ssh|ssh: SSH
   SSL handshake: TLS handshake
-  SSL(?!/TLS): SSL/TLS
   standard Manager|standard environment: standalone Manager
   Staroffice|Star Office: StarOffice
   StartTLS|startTLS: STARTTLS
@@ -297,7 +301,7 @@ swap:
   ttl: TTL
   uid: UID
   ULTRASPARC|UltraSparc: UltraSPARC
-  Unix|unix|UNIX-like: UNIX
+  Unix|unix: UNIX
   uri: URI
   url: URL
   urn: URN

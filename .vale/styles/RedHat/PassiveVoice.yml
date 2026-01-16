@@ -2,7 +2,7 @@
 extends: existence
 ignorecase: true
 level: suggestion
-link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/passivevoice/
+link: https://redhat-documentation.github.io/vale-at-red-hat/reference-guide.html#passive-voice
 message: "'%s' is passive voice. In general, use active voice. Consult the style guide for acceptable use of passive voice."
 # source: "https://redhat-documentation.github.io/supplementary-style-guide/#prerequisites; IBM - Voice, p.35"
 raw:
@@ -188,6 +188,7 @@ exceptions:
   - deprecated
   - displayed
   - imported
+  - interested
   - supported
   - tested
   - trusted
