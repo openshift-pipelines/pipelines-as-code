@@ -188,6 +188,118 @@ spec:
       comment_strategy: "disable_all"
 ```
 
+## Error Detection
+
+Error detection scans container logs for error patterns and creates inline
+annotations on Pull Requests. This feature is currently **only supported for
+GitHub Apps**.
+
+By default, error detection uses the global pattern configured in the
+`pipelines-as-code` ConfigMap via the `error-detection-simple-regexp` setting.
+However, you can customize error detection patterns on a per-repository basis
+using the Repository CR.
+
+### Configuring Error Detection Patterns
+
+You can specify multiple regex patterns to detect different error formats in
+your repository:
+
+```yaml
+apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+kind: Repository
+metadata:
+  name: my-repo
+spec:
+  url: "https://github.com/owner/repo"
+  settings:
+    error_detection:
+      enabled: true 
+      patterns:
+        - "^(?P<filename>[^:]*):(?P<line>[0-9]+):(?P<column>[0-9]+)?([ ]*)?(?P<error>.*)"
+        - "^ERROR: (?P<filename>[^ ]+) line (?P<line>[0-9]+): (?P<error>.*)"
+      max_number_of_lines: 100
+```
+
+**Pattern Requirements:**
+
+Each pattern must use [named groups](https://www.regular-expressions.info/named.html) to capture:
+
+- `filename`: The file path where the error occurred
+- `line`: The line number
+- `error`: The error message
+- `column`: (optional) The column number
+
+**Configuration Options:**
+
+- `enabled`: **Required** boolean flag to enable or disable error detection for this
+  repository. Set to `true` to enable or `false` to disable error detection.
+  This field must be explicitly specified when configuring error detection settings.
+- `patterns`: Array of regex patterns. Repository-specific patterns are tried
+  first, followed by global patterns. If not specified or empty, only the
+  global patterns are used. **Note:** Providing an empty array does not disable
+  error detection; it falls back to using only the global patterns defined in
+  the `pipelines-as-code` ConfigMap.
+- `max_number_of_lines`: Number of log lines to scan (overrides global
+  setting). Default is 50. Use -1 for unlimited.
+
+### Examples
+
+**Multiple error formats:**
+
+```yaml
+spec:
+  settings:
+    error_detection:
+      enabled: true
+      patterns:
+        # Standard format (make, gcc, eslint, etc.)
+        - "^(?P<filename>[^:]*):(?P<line>[0-9]+):(?P<column>[0-9]+)?([ ]*)?(?P<error>.*)"
+        # Python traceback format
+        - 'File "(?P<filename>[^"]+)", line (?P<line>[0-9]+).*\n.*(?P<error>.*)'
+        # Custom CI format
+        - "^\\[(?P<filename>[^\\]]+)\\]:(?P<line>[0-9]+) - (?P<error>.*)"
+      max_number_of_lines: 200
+```
+
+**Disabling error detection for a repository:**
+
+You can explicitly disable error detection for a specific repository, even if
+it's enabled globally:
+
+```yaml
+spec:
+  settings:
+    error_detection:
+      enabled: false
+```
+
+**Using only global patterns:**
+
+If you want to use only the global patterns defined in the `pipelines-as-code`
+ConfigMap with custom settings, provide an empty `patterns` array:
+
+```yaml
+spec:
+  settings:
+    error_detection:
+      enabled: true
+      patterns: []  # Uses only global patterns
+      max_number_of_lines: 100  # Can still override line count
+```
+
+If you don't need to customize error detection at all, simply omit the
+entire `error_detection` field and the global settings will be used.
+
+{{< hint info >}}
+**Pattern Priority:** When repository-specific patterns are defined, they are
+tried first for each log line. If no repository pattern matches, the global
+patterns are then tried. This allows you to add repository-specific patterns
+while still benefiting from the global patterns as a fallback.
+{{< /hint >}}
+
+For more information about error detection and log snippets, see the
+[Status documentation]({{< relref "/docs/guide/statuses.md" >}}).
+
 ## Concurrency
 
 `concurrency_limit` allows you to define the maximum number of PipelineRuns running at any time for a Repository.

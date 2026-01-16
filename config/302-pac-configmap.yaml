@@ -96,7 +96,19 @@ data:
   # memory usage.  Use -1 for unlimited lines.
   error-detection-max-number-of-lines: "50"
 
-  # The default regexp used when we use the simple error detection
+  # The default regexp(s) used for simple error detection.
+  # Supports multiple formats for backward compatibility:
+  #
+  # 1. Single pattern (backward compatible):
+  #    error-detection-simple-regexp: '^(?P<filename>[^:]*):(?P<line>[0-9]+):(?P<column>[0-9]+)?([ ]*)?(?P<error>.*)'
+  #
+  # 2. YAML list format (multiple patterns, one per line):
+  #    error-detection-simple-regexp: |-
+  #      ^(?P<filename>[^:]*):(?P<line>[0-9]+):(?P<column>[0-9]+)?([ ]*)?(?P<error>.*)
+  #      ^ERROR: (?P<filename>[^ ]+) line (?P<line>[0-9]+): (?P<error>.*)
+  #      ^\[(?P<filename>[^\]]+)\]:(?P<line>[0-9]+) - (?P<error>.*)
+  #
+  # Each pattern must include named groups: filename, line, and error (column is optional)
   error-detection-simple-regexp: |-
     ^(?P<filename>[^:]*):(?P<line>[0-9]+):(?P<column>[0-9]+)?([ ]*)?(?P<error>.*)
 
