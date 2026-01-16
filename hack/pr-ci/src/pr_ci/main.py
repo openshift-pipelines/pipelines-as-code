@@ -15,6 +15,7 @@ from .utils import check_file_categories, detect_modified_providers
 
 def run_lint() -> None:
     """Run PR linting checks."""
+    # Try to get Gemini config for AI-powered release note checking, but don't require it
     config = Config.from_env(require_gemini=False)
     if not config:
         print("Error: Missing required environment variables")
@@ -30,7 +31,13 @@ def run_lint() -> None:
         print(f"Skipping lint checks for mirrored PR: {pr_data.title}")
         return
 
-    linter = PRLinter(pr_data, github)
+    # Pass Gemini config if available for AI-powered release note checking
+    linter = PRLinter(
+        pr_data,
+        github,
+        gemini_api_key=config.gemini_api_key,
+        gemini_model=config.gemini_model,
+    )
     linter.check_all()
     linter.report()
 
