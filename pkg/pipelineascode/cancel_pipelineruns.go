@@ -219,7 +219,9 @@ func (p *PacRun) cancelPipelineRuns(ctx context.Context, prs *tektonv1.PipelineR
 		}
 
 		if pr.IsDone() {
-			p.logger.Infof("cancel-in-progress: skipping cancelling pipelinerun %v/%v, already done", pr.GetNamespace(), pr.GetName())
+			originalName := pr.GetAnnotations()[keys.OriginalPRName]
+			p.logger.Infof("cancel-in-progress: skipping cancelling pipelinerun %v/%v (original: %s), already done",
+				pr.GetNamespace(), pr.GetName(), originalName)
 			continue
 		}
 
