@@ -52,7 +52,7 @@ type BulkImportStartMigrationOptions struct {
 //
 // GitLab API docs: https://docs.gitlab.com/api/bulk_imports/#start-a-new-group-or-project-migration
 type BulkImportStartMigrationResponse struct {
-	ID          int       `json:"id"`
+	ID          int64     `json:"id"`
 	Status      string    `json:"status"`
 	SourceType  string    `json:"source_type"`
 	SourceURL   string    `json:"source_url"`
@@ -61,9 +61,6 @@ type BulkImportStartMigrationResponse struct {
 	HasFailures bool      `json:"has_failures"`
 }
 
-// StartMigration starts a migration.
-//
-// GitLab API docs: https://docs.gitlab.com/api/bulk_imports/#start-a-new-group-or-project-migration
 func (b *BulkImportsService) StartMigration(startMigrationOptions *BulkImportStartMigrationOptions, options ...RequestOptionFunc) (*BulkImportStartMigrationResponse, *Response, error) {
 	request, err := b.client.NewRequest(http.MethodPost, "bulk_imports", startMigrationOptions, options)
 	if err != nil {

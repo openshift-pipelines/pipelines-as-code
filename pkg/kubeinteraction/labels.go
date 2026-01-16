@@ -76,10 +76,10 @@ func AddLabelsAndAnnotations(event *info.Event, pipelineRun *tektonv1.PipelineRu
 
 	// GitLab
 	if event.SourceProjectID != 0 {
-		annotations[keys.SourceProjectID] = strconv.Itoa(event.SourceProjectID)
+		annotations[keys.SourceProjectID] = strconv.Itoa(int(event.SourceProjectID))
 	}
 	if event.TargetProjectID != 0 {
-		annotations[keys.TargetProjectID] = strconv.Itoa(event.TargetProjectID)
+		annotations[keys.TargetProjectID] = strconv.Itoa(int(event.TargetProjectID))
 	}
 
 	if value, ok := pipelineRun.GetObjectMeta().GetAnnotations()[keys.CancelInProgress]; ok {

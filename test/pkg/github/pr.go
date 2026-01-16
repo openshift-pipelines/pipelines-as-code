@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	ghlib "github.com/google/go-github/v74/github"
+	"github.com/google/go-github/v81/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	ghprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
@@ -23,18 +23,18 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-func PushFilesToRef(ctx context.Context, client *ghlib.Client, commitMessage, baseBranch, targetRef, owner, repo string, files map[string]string) (string, *ghlib.Reference, error) {
+func PushFilesToRef(ctx context.Context, client *github.Client, commitMessage, baseBranch, targetRef, owner, repo string, files map[string]string) (string, *github.Reference, error) {
 	maintree, _, err := client.Git.GetTree(ctx, owner, repo, baseBranch, false)
 	if err != nil {
 		return "", nil, fmt.Errorf("error getting tree: %w", err)
 	}
 	mainSha := maintree.GetSHA()
-	entries := []*ghlib.TreeEntry{}
+	entries := []*github.TreeEntry{}
 	defaultMode := "100644"
 	for path, fcontent := range files {
 		content := base64.StdEncoding.EncodeToString([]byte(fcontent))
 		encoding := "base64"
-		blob, _, err := client.Git.CreateBlob(ctx, owner, repo, &ghlib.Blob{
+		blob, _, err := client.Git.CreateBlob(ctx, owner, repo, github.Blob{
 			Content:  &content,
 			Encoding: &encoding,
 		})
@@ -45,7 +45,7 @@ func PushFilesToRef(ctx context.Context, client *ghlib.Client, commitMessage, ba
 
 		_path := path
 		entries = append(entries,
-			&ghlib.TreeEntry{
+			&github.TreeEntry{
 				Path: &_path,
 				Mode: &defaultMode,
 				SHA:  &sha,
@@ -59,30 +59,28 @@ func PushFilesToRef(ctx context.Context, client *ghlib.Client, commitMessage, ba
 
 	commitAuthor := "OpenShift Pipelines E2E test"
 	commitEmail := "e2e-pipelines@redhat.com"
-	commit, _, err := client.Git.CreateCommit(ctx, owner, repo, &ghlib.Commit{
-		Author: &ghlib.CommitAuthor{
+	commit, _, err := client.Git.CreateCommit(ctx, owner, repo, github.Commit{
+		Author: &github.CommitAuthor{
 			Name:  &commitAuthor,
 			Email: &commitEmail,
 		},
 		Message: &commitMessage,
 		Tree:    tree,
-		Parents: []*ghlib.Commit{
+		Parents: []*github.Commit{
 			{
 				SHA: &mainSha,
 			},
 		},
-	}, &ghlib.CreateCommitOptions{})
+	}, &github.CreateCommitOptions{})
 	if err != nil {
 		return "", nil, fmt.Errorf("error creating commit: %w", err)
 	}
 
-	ref := &ghlib.Reference{
-		Ref: &targetRef,
-		Object: &ghlib.GitObject{
-			SHA: commit.SHA,
-		},
+	createRef := github.CreateRef{
+		Ref: targetRef,
+		SHA: *commit.SHA,
 	}
-	vref, _, err := client.Git.CreateRef(ctx, owner, repo, ref)
+	vref, _, err := client.Git.CreateRef(ctx, owner, repo, createRef)
 	if err != nil {
 		return "", nil, fmt.Errorf("error creating ref: %w", err)
 	}
@@ -90,11 +88,11 @@ func PushFilesToRef(ctx context.Context, client *ghlib.Client, commitMessage, ba
 }
 
 func PRCreate(ctx context.Context, cs *params.Run, ghcnx *ghprovider.Provider, owner, repo, targetRef, defaultBranch, title string) (int, error) {
-	pr, _, err := ghcnx.Client().PullRequests.Create(ctx, owner, repo, &ghlib.NewPullRequest{
+	pr, _, err := ghcnx.Client().PullRequests.Create(ctx, owner, repo, &github.NewPullRequest{
 		Title: &title,
 		Head:  &targetRef,
 		Base:  &defaultBranch,
-		Body:  ghlib.Ptr("Add a new PR for testing"),
+		Body:  github.Ptr("Add a new PR for testing"),
 	})
 	if err != nil {
 		return -1, err
@@ -197,7 +195,7 @@ func (g *PRTest) TearDown(ctx context.Context, t *testing.T) {
 		state := "closed"
 		_, _, err := g.Provider.Client().PullRequests.Edit(ctx,
 			g.Options.Organization, g.Options.Repo, g.PRNumber,
-			&ghlib.PullRequest{State: &state})
+			&github.PullRequest{State: &state})
 		if err != nil {
 			t.Fatal(err)
 		}

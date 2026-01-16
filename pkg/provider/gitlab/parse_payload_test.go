@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/google/go-github/v74/github"
+	"github.com/google/go-github/v81/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
@@ -75,7 +75,7 @@ func TestParsePayload(t *testing.T) {
 				event:   gitlab.EventTypePipeline,
 				payload: sample.MREventAsJSON("open", ""),
 			},
-			wantErrMsg: "json: cannot unmarshal object into Go struct field .object_attributes.source of type string",
+			wantErrMsg: "json: cannot unmarshal object into Go struct field PipelineEventObjectAttributes.object_attributes.source of type string",
 		},
 		{
 			name: "merge event",
@@ -429,9 +429,9 @@ func TestParsePayload(t *testing.T) {
 			}
 			v := &Provider{
 				Token:           github.Ptr("tokeneuneu"),
-				targetProjectID: tt.fields.targetProjectID,
-				sourceProjectID: tt.fields.sourceProjectID,
-				userID:          tt.fields.userID,
+				targetProjectID: int64(tt.fields.targetProjectID),
+				sourceProjectID: int64(tt.fields.sourceProjectID),
+				userID:          int64(tt.fields.userID),
 				run:             run,
 				pacInfo: &info.PacOpts{
 					Settings: settings.Settings{
