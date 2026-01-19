@@ -1,0 +1,30 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: "\\ .PipelineName //"
+  annotations:
+    pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      event == "\\ .TargetEvent //" &&
+        body.pull_request.draft == false &&
+        body.pull_request.user.login != "" &&
+        body.pull_request.number > 0
+spec:
+  pipelineSpec:
+    tasks:
+      - name: cel-enriched-test
+        taskSpec:
+          steps:
+            - name: verify-cel-enrichment
+              image: registry.access.redhat.com/ubi9/ubi-micro
+              script: |
+                # This test verifies that body.pull_request data is available
+                # in CEL expressions when triggered via comment events like /test
+                cat <<EOF
+                CEL enrichment verified:
+                - PR User: {{ body.pull_request.user.login }}
+                - PR Number: {{ body.pull_request.number }}
+                - PR Draft: {{ body.pull_request.draft }}
+                - PR State: {{ body.pull_request.state }}
+                EOF
