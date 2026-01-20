@@ -1,0 +1,36 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: "\\ .PipelineName //"
+  annotations:
+    pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      target_branch == "\\ .TargetBranch //" && event == "\\ .TargetEvent //"
+spec:
+  pipelineSpec:
+    tasks:
+      - name: cel-prefix-test
+        taskSpec:
+          steps:
+            - name: test-cel-prefix-values
+              image: registry.access.redhat.com/ubi10/ubi-micro
+              script: |
+                # Test cel: prefix with various expressions for GitLab
+                # Expected output:
+                # cel_ternary: new-mr
+                # cel_pac_branch: matched
+                # cel_has_function: has-mr
+                # cel_string_concat: Build on <target_branch>
+                # cel_files_check: has-files
+                # cel_gitlab_header: Merge Request Hook
+                # cel_error_handling: (empty - error returns empty string)
+                cat <<EOF
+                cel_ternary: {{ cel: body.object_attributes.action == "open" ? "new-mr" : "updated-mr" }}
+                cel_pac_branch: {{ cel: pac.target_branch == "\\ .TargetBranch //" ? "matched" : "not-matched" }}
+                cel_has_function: {{ cel: has(body.object_attributes) ? "has-mr" : "no-mr" }}
+                cel_string_concat: {{ cel: "Build on " + pac.target_branch }}
+                cel_files_check: {{ cel: files.all.size() > 0 ? "has-files" : "no-files" }}
+                cel_gitlab_header: {{ cel: headers["X-Gitlab-Event"] }}
+                cel_error_handling: {{ cel: nonexistent.field.access }}
+                EOF

@@ -2,7 +2,7 @@
 extends: substitution
 ignorecase: true
 level: warning
-link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/hyphens/
+link: https://redhat-documentation.github.io/vale-at-red-hat/reference-guide.html#hyphens
 message: "Use %s rather than '%s'."
 action:
   name: replace
@@ -188,7 +188,7 @@ swap:
   pseudo-code: pseudocode
   pseudo-random: pseudorandom
   pseudo-text: pseudotext
-  pulldown|pull down: pull-down
+  pulldown: pull-down
   re-direct: redirect
   re-edit: reedit
   re-examine: reexamine

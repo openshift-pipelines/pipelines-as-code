@@ -261,7 +261,7 @@ func TestCreateStatus(t *testing.T) {
 			},
 		},
 		{
-			name:       "commit status fails on both projects but continues",
+			name:       "commit status fails with state transition error skips MR comment",
 			wantClient: true,
 			wantErr:    false,
 			fields: fields{
@@ -273,9 +273,69 @@ func TestCreateStatus(t *testing.T) {
 				},
 				event: &info.Event{
 					TriggerTarget:   "pull_request",
-					SourceProjectID: 404, // Will fail
-					TargetProjectID: 405, // Will fail
+					SourceProjectID: 404, // Will fail with 404 Not Found
+					TargetProjectID: 422, // Will fail with "Cannot transition status" error
 					SHA:             "abc123",
+				},
+				postStr: "", // No MR comment expected for state transition errors
+			},
+		},
+		{
+			name:       "generic error on both projects creates MR comment",
+			wantClient: true,
+			wantErr:    false,
+			fields: fields{
+				targetProjectID: 100,
+			},
+			args: args{
+				statusOpts: provider.StatusOpts{
+					Conclusion: "success",
+				},
+				event: &info.Event{
+					TriggerTarget:   "pull_request",
+					SourceProjectID: 400, // Will fail with generic 400 error
+					TargetProjectID: 405, // Will fail with generic 400 error
+					SHA:             "abc123def",
+				},
+				postStr: "has successfully", // MR comment expected for non-transition errors
+			},
+		},
+		{
+			name:       "permission error 403 on source creates MR comment",
+			wantClient: true,
+			wantErr:    false,
+			fields: fields{
+				targetProjectID: 100,
+			},
+			args: args{
+				statusOpts: provider.StatusOpts{
+					Conclusion: "success",
+				},
+				event: &info.Event{
+					TriggerTarget:   "pull_request",
+					SourceProjectID: 403, // Will fail with 403 Forbidden
+					TargetProjectID: 400, // Will fail with generic 400 error
+					SHA:             "abc123ghi",
+				},
+				postStr: "has successfully",
+			},
+		},
+		{
+			name:       "permission error 401 on source creates MR comment",
+			wantClient: true,
+			wantErr:    false,
+			fields: fields{
+				targetProjectID: 100,
+			},
+			args: args{
+				statusOpts: provider.StatusOpts{
+					Conclusion: "success",
+				},
+				event: &info.Event{
+					TriggerTarget:   "pull_request",
+					SourceProjectID: 401, // Will fail with 401 Unauthorized
+					TargetProjectID: 400, // Will fail with generic 400 error
+					SHA:             "abc123jkl",
 				},
 				postStr: "has successfully",
 			},
@@ -293,7 +353,7 @@ func TestCreateStatus(t *testing.T) {
 				},
 			}
 			v := &Provider{
-				targetProjectID: tt.fields.targetProjectID,
+				targetProjectID: int64(tt.fields.targetProjectID),
 				run:             params.New(),
 				Logger:          logger,
 				pacInfo: &info.PacOpts{
@@ -318,15 +378,26 @@ func TestCreateStatus(t *testing.T) {
 					// Mock source project commit status endpoint
 					sourceStatusPath := fmt.Sprintf("/projects/%d/statuses/%s", tt.args.event.SourceProjectID, tt.args.event.SHA)
 					mux.HandleFunc(sourceStatusPath, func(rw http.ResponseWriter, _ *http.Request) {
-						if tt.args.event.SourceProjectID == 404 {
-							// Simulate failure on source project
+						switch tt.args.event.SourceProjectID {
+						case 400:
+							rw.WriteHeader(http.StatusBadRequest)
+							fmt.Fprint(rw, `{"message": "400 Bad Request"}`)
+						case 401:
+							rw.WriteHeader(http.StatusUnauthorized)
+							fmt.Fprint(rw, `{"message": "401 Unauthorized"}`)
+						case 403:
+							rw.WriteHeader(http.StatusForbidden)
+							fmt.Fprint(rw, `{"message": "403 Forbidden"}`)
+						case 404:
 							rw.WriteHeader(http.StatusNotFound)
 							fmt.Fprint(rw, `{"message": "404 Project Not Found"}`)
-							return
+						case 422:
+							rw.WriteHeader(http.StatusBadRequest)
+							fmt.Fprint(rw, `{"message": "Cannot transition status via :run from :running"}`)
+						default:
+							rw.WriteHeader(http.StatusCreated)
+							fmt.Fprint(rw, `{}`)
 						}
-						// Success on source project
-						rw.WriteHeader(http.StatusCreated)
-						fmt.Fprint(rw, `{}`)
 					})
 				}
 
@@ -334,19 +405,30 @@ func TestCreateStatus(t *testing.T) {
 					// Mock target project commit status endpoint
 					targetStatusPath := fmt.Sprintf("/projects/%d/statuses/%s", tt.args.event.TargetProjectID, tt.args.event.SHA)
 					mux.HandleFunc(targetStatusPath, func(rw http.ResponseWriter, _ *http.Request) {
-						if tt.args.event.TargetProjectID == 404 {
-							// Simulate failure on target project
+						switch tt.args.event.TargetProjectID {
+						case 400, 405:
+							rw.WriteHeader(http.StatusBadRequest)
+							fmt.Fprint(rw, `{"message": "400 Bad Request"}`)
+						case 401:
+							rw.WriteHeader(http.StatusUnauthorized)
+							fmt.Fprint(rw, `{"message": "401 Unauthorized"}`)
+						case 403:
+							rw.WriteHeader(http.StatusForbidden)
+							fmt.Fprint(rw, `{"message": "403 Forbidden"}`)
+						case 404:
 							rw.WriteHeader(http.StatusNotFound)
 							fmt.Fprint(rw, `{"message": "404 Project Not Found"}`)
-							return
+						case 422:
+							rw.WriteHeader(http.StatusBadRequest)
+							fmt.Fprint(rw, `{"message": "Cannot transition status via :run from :running"}`)
+						default:
+							rw.WriteHeader(http.StatusCreated)
+							fmt.Fprint(rw, `{}`)
 						}
-						// Success on target project
-						rw.WriteHeader(http.StatusCreated)
-						fmt.Fprint(rw, `{}`)
 					})
 				}
 
-				thelp.MuxNotePost(t, mux, v.targetProjectID, tt.args.event.PullRequestNumber, tt.args.postStr)
+				thelp.MuxNotePost(t, mux, int(v.targetProjectID), tt.args.event.PullRequestNumber, tt.args.postStr)
 			}
 
 			if err := v.CreateStatus(ctx, tt.args.event, tt.args.statusOpts); (err != nil) != tt.wantErr {
@@ -456,7 +538,7 @@ func TestGetCommitInfo(t *testing.T) {
 
 				provider = &Provider{
 					gitlabClient:    client,
-					sourceProjectID: tt.sourceProjectID,
+					sourceProjectID: int64(tt.sourceProjectID),
 				}
 			} else {
 				provider = &Provider{}
@@ -614,7 +696,7 @@ func TestSetClientFieldsInitializedOnError(t *testing.T) {
 				Organization:    "test-org",
 				Repository:      "test-repo",
 				TriggerTarget:   tt.triggerTarget,
-				SourceProjectID: tt.sourceProjectID,
+				SourceProjectID: int64(tt.sourceProjectID),
 				TargetProjectID: 123,
 				EventType:       "pull_request",
 			}
@@ -714,7 +796,7 @@ func TestSetClientRepositoryAccessCheck(t *testing.T) {
 				Organization:    "test-org",
 				Repository:      "test-repo",
 				TriggerTarget:   tt.triggerTarget,
-				SourceProjectID: tt.sourceProjectID,
+				SourceProjectID: int64(tt.sourceProjectID),
 				TargetProjectID: 123,
 			}
 
@@ -1026,9 +1108,9 @@ func TestGetTektonDir(t *testing.T) {
 			observer, exporter := zapobserver.New(zap.InfoLevel)
 			fakelogger := zap.New(observer).Sugar()
 			v := &Provider{
-				targetProjectID: tt.fields.targetProjectID,
-				sourceProjectID: tt.fields.sourceProjectID,
-				userID:          tt.fields.userID,
+				targetProjectID: int64(tt.fields.targetProjectID),
+				sourceProjectID: int64(tt.fields.sourceProjectID),
+				userID:          int64(tt.fields.userID),
 				Logger:          fakelogger,
 			}
 			if tt.wantClient {
@@ -1074,7 +1156,7 @@ func TestGetFileInsideRepo(t *testing.T) {
 		sourceProjectID: 10,
 		gitlabClient:    client,
 	}
-	thelp.MuxListTektonDir(t, mux, v.sourceProjectID, event.HeadBranch, content, false, false)
+	thelp.MuxListTektonDir(t, mux, int(v.sourceProjectID), event.HeadBranch, content, false, false)
 	got, err := v.GetFileInsideRepo(ctx, event, "pr.yaml", "")
 	assert.NilError(t, err)
 	assert.Equal(t, content, got)
@@ -1271,7 +1353,7 @@ func TestGetFiles(t *testing.T) {
 			metricsTags := map[string]string{"provider": "api.gitlab.com", "event-type": string(tt.event.TriggerTarget)}
 			metricstest.CheckStatsNotReported(t, "pipelines_as_code_git_provider_api_request_count")
 
-			providerInfo := &Provider{gitlabClient: fakeclient, sourceProjectID: tt.sourceProjectID, targetProjectID: tt.targetProjectID, triggerEvent: string(tt.event.TriggerTarget), apiURL: "api.gitlab.com"}
+			providerInfo := &Provider{gitlabClient: fakeclient, sourceProjectID: int64(tt.sourceProjectID), targetProjectID: int64(tt.targetProjectID), triggerEvent: string(tt.event.TriggerTarget), apiURL: "api.gitlab.com"}
 			changedFiles, err := providerInfo.GetFiles(ctx, tt.event)
 			if tt.wantError != true {
 				assert.NilError(t, err, nil)

@@ -53,9 +53,9 @@ type Provider struct {
 	run               *params.Run
 	pacInfo           *info.PacOpts
 	Token             *string
-	targetProjectID   int
-	sourceProjectID   int
-	userID            int
+	targetProjectID   int64
+	sourceProjectID   int64
+	userID            int64
 	pathWithNamespace string
 	repoURL           string
 	apiURL            string
@@ -64,7 +64,7 @@ type Provider struct {
 	triggerEvent      string
 	// memberCache caches membership/permission checks by user ID within the
 	// current provider instance lifecycle to avoid repeated API calls.
-	memberCache        map[int]bool
+	memberCache        map[int64]bool
 	cachedChangedFiles *changedfiles.ChangedFiles
 }
 
@@ -107,14 +107,14 @@ func (v *Provider) CreateComment(_ context.Context, event *info.Event, commit, u
 		options := []gitlab.RequestOptionFunc{}
 
 		for {
-			comments, resp, err := v.Client().Notes.ListMergeRequestNotes(event.TargetProjectID, event.PullRequestNumber, &gitlab.ListMergeRequestNotesOptions{ListOptions: defaultGitlabListOptions}, options...)
+			comments, resp, err := v.Client().Notes.ListMergeRequestNotes(event.TargetProjectID, int64(event.PullRequestNumber), &gitlab.ListMergeRequestNotesOptions{ListOptions: defaultGitlabListOptions}, options...)
 			if err != nil {
 				return err
 			}
 
 			for _, comment := range comments {
 				if commentRe.MatchString(comment.Body) {
-					_, _, err := v.Client().Notes.UpdateMergeRequestNote(event.TargetProjectID, event.PullRequestNumber, comment.ID, &gitlab.UpdateMergeRequestNoteOptions{
+					_, _, err := v.Client().Notes.UpdateMergeRequestNote(event.TargetProjectID, int64(event.PullRequestNumber), comment.ID, &gitlab.UpdateMergeRequestNoteOptions{
 						Body: &commit,
 					})
 					if err != nil {
@@ -136,7 +136,7 @@ func (v *Provider) CreateComment(_ context.Context, event *info.Event, commit, u
 		}
 	}
 
-	_, _, err := v.Client().Notes.CreateMergeRequestNote(event.TargetProjectID, event.PullRequestNumber, &gitlab.CreateMergeRequestNoteOptions{
+	_, _, err := v.Client().Notes.CreateMergeRequestNote(event.TargetProjectID, int64(event.PullRequestNumber), &gitlab.CreateMergeRequestNoteOptions{
 		Body: &commit,
 	})
 	if err != nil {
@@ -300,6 +300,11 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 		statusOpts.Conclusion = "success"
 		statusOpts.Title = "completed"
 	case "pending":
+		statusOpts.Conclusion = "pending"
+	}
+	// When the pipeline is actually running (in_progress), show it as running
+	// not pending. Pending is only for waiting states like /ok-to-test approval.
+	if statusOpts.Status == "in_progress" {
 		statusOpts.Conclusion = "running"
 	}
 	if statusOpts.DetailsURL != "" {
@@ -337,12 +342,21 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 		v.Logger.Debugf("created commit status on source project ID %d", event.TargetProjectID)
 		return nil
 	}
-	if _, _, err2 := v.Client().Commits.SetCommitStatus(event.TargetProjectID, event.SHA, opt); err2 == nil {
+	if _, _, err = v.Client().Commits.SetCommitStatus(event.TargetProjectID, event.SHA, opt); err == nil {
 		v.Logger.Debugf("created commit status on target project ID %d", event.TargetProjectID)
 		// we managed to set the status on the target repo, all good we are done
 		return nil
 	}
 	v.Logger.Debugf("cannot set status with the GitLab token on the target project: %v", err)
+
+	// Skip creating MR comments if the error is a state transition error
+	// (e.g., "Cannot transition status via :run from :running").
+	// This means the status is already set, so we should not create a comment.
+	if strings.Contains(err.Error(), "Cannot transition status") {
+		v.Logger.Debugf("skipping MR comment as error is not permission related: %v", err)
+		return nil
+	}
+
 	// we only show the first error as it's likely something the user has more control to fix
 	// the second err is cryptic as it needs a dummy gitlab pipeline to start
 	// with and will only give more confusion in the event namespace
@@ -371,7 +385,7 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	default:
 		if eventType == triggertype.PullRequest || provider.Valid(event.EventType, anyMergeRequestEventType) {
 			mopt := &gitlab.CreateMergeRequestNoteOptions{Body: gitlab.Ptr(body)}
-			_, _, err := v.Client().Notes.CreateMergeRequestNote(event.TargetProjectID, event.PullRequestNumber, mopt)
+			_, _, err := v.Client().Notes.CreateMergeRequestNote(event.TargetProjectID, int64(event.PullRequestNumber), mopt)
 			return err
 		}
 	}
@@ -460,7 +474,7 @@ func (v *Provider) concatAllYamlFiles(objects []*gitlab.TreeNode, revision strin
 	return allTemplates, nil
 }
 
-func (v *Provider) getObject(fname, branch string, pid int) ([]byte, *gitlab.Response, error) {
+func (v *Provider) getObject(fname, branch string, pid int64) ([]byte, *gitlab.Response, error) {
 	opt := &gitlab.GetRawFileOptions{
 		Ref: gitlab.Ptr(branch),
 	}
@@ -549,7 +563,7 @@ func (v *Provider) fetchChangedFiles(_ context.Context, runevent *info.Event) (c
 		options := []gitlab.RequestOptionFunc{}
 
 		for {
-			mrchanges, resp, err := v.Client().MergeRequests.ListMergeRequestDiffs(v.targetProjectID, runevent.PullRequestNumber, opt, options...)
+			mrchanges, resp, err := v.Client().MergeRequests.ListMergeRequestDiffs(v.targetProjectID, int64(runevent.PullRequestNumber), opt, options...)
 			if err != nil {
 				// TODO: Should this return the files found so far?
 				return changedfiles.ChangedFiles{}, err

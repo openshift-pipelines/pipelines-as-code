@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/google/go-github/v74/github"
+	"github.com/google/go-github/v81/github"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/env"
 	corev1 "k8s.io/api/core/v1"
@@ -87,15 +87,17 @@ var samplePRAnother = github.PullRequest{
 }
 
 func TestGetPullRequestsWithCommit(t *testing.T) {
+	apiHitCount := 0
 	tests := []struct {
-		name         string
-		sha          string
-		org          string
-		repo         string
-		hasClient    bool
-		mockAPIs     map[string]func(rw http.ResponseWriter, r *http.Request)
-		wantPRsCount int
-		wantErr      bool
+		name          string
+		sha           string
+		org           string
+		repo          string
+		hasClient     bool
+		mockAPIs      map[string]func(rw http.ResponseWriter, r *http.Request)
+		wantPRsCount  int
+		isMergeCommit bool
+		wantErr       bool
 	}{
 		{
 			name:      "nil client returns error",
@@ -212,6 +214,27 @@ func TestGetPullRequestsWithCommit(t *testing.T) {
 			wantPRsCount: 2,
 			wantErr:      false,
 		},
+		{
+			name:      "commit is part of one PR and is a merge commit",
+			sha:       "abc123",
+			org:       "testorg",
+			repo:      "testrepo",
+			hasClient: true,
+			mockAPIs: map[string]func(rw http.ResponseWriter, r *http.Request){
+				"/repos/testorg/testrepo/commits/abc123/pulls": func(rw http.ResponseWriter, r *http.Request) {
+					assert.Equal(t, r.Method, http.MethodGet)
+					apiHitCount++
+					if apiHitCount == 3 {
+						fmt.Fprint(rw, `[{"number": 42, "state": "closed"}]`)
+					} else {
+						fmt.Fprint(rw, `[]`)
+					}
+				},
+			},
+			wantPRsCount:  1,
+			isMergeCommit: true,
+			wantErr:       false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -240,9 +263,13 @@ func TestGetPullRequestsWithCommit(t *testing.T) {
 				}
 			}
 
-			prs, err := provider.getPullRequestsWithCommit(ctx, tt.sha, tt.org, tt.repo)
+			prs, err := provider.getPullRequestsWithCommit(ctx, tt.sha, tt.org, tt.repo, tt.isMergeCommit)
 			assert.Equal(t, err != nil, tt.wantErr)
 			assert.Equal(t, len(prs), tt.wantPRsCount)
+
+			if tt.isMergeCommit {
+				assert.Equal(t, apiHitCount, 3)
+			}
 
 			if tt.wantErr && err != nil {
 				// Verify error messages for validation cases

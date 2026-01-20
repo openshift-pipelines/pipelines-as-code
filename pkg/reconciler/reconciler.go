@@ -293,40 +293,10 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 	if err != nil {
 		return fmt.Errorf("cannot update state: %w", err)
 	}
-	pacInfo := r.run.Info.GetPacOpts()
-	detectedProvider, event, err := r.detectProvider(ctx, logger, pr)
+
+	detectedProvider, event, err := r.initGitProviderClient(ctx, logger, repo, pr)
 	if err != nil {
-		logger.Error(err)
-		return nil
-	}
-	detectedProvider.SetPacInfo(&pacInfo)
-
-	if event.InstallationID > 0 {
-		event.Provider.WebhookSecret, _ = pac.GetCurrentNSWebhookSecret(ctx, r.kinteract, r.run)
-	} else {
-		// secretNS is needed when git provider is other than Github.
-		secretNS := repo.GetNamespace()
-		if repo.Spec.GitProvider != nil && repo.Spec.GitProvider.Secret == nil && r.globalRepo != nil && r.globalRepo.Spec.GitProvider != nil && r.globalRepo.Spec.GitProvider.Secret != nil {
-			secretNS = r.globalRepo.GetNamespace()
-		}
-
-		secretFromRepo := pac.SecretFromRepository{
-			K8int:       r.kinteract,
-			Config:      detectedProvider.GetConfig(),
-			Event:       event,
-			Repo:        repo,
-			WebhookType: pacInfo.WebhookType,
-			Logger:      logger,
-			Namespace:   secretNS,
-		}
-		if err := secretFromRepo.Get(ctx); err != nil {
-			return fmt.Errorf("cannot get secret from repository: %w", err)
-		}
-	}
-
-	err = detectedProvider.SetClient(ctx, r.run, event, repo, r.eventEmitter)
-	if err != nil {
-		return fmt.Errorf("cannot set client: %w", err)
+		return fmt.Errorf("cannot initialize git provider client: %w", err)
 	}
 
 	consoleURL := r.run.Clients.ConsoleUI().DetailURL(pr)
@@ -362,6 +332,46 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 
 	logger.Info("updated in_progress status on provider platform for pipelineRun ", pr.GetName())
 	return nil
+}
+
+func (r *Reconciler) initGitProviderClient(ctx context.Context, logger *zap.SugaredLogger, repo *v1alpha1.Repository, pr *tektonv1.PipelineRun) (provider.Interface, *info.Event, error) {
+	pacInfo := r.run.Info.GetPacOpts()
+	detectedProvider, event, err := r.detectProvider(ctx, logger, pr)
+	if err != nil {
+		return nil, nil, fmt.Errorf("cannot detect provider: %w", err)
+	}
+	detectedProvider.SetPacInfo(&pacInfo)
+
+	// installation ID indicates Github App installation
+	if event.InstallationID > 0 {
+		event.Provider.WebhookSecret, _ = pac.GetCurrentNSWebhookSecret(ctx, r.kinteract, r.run)
+	} else {
+		// secretNS is needed when git provider is other than Github App.
+		secretNS := repo.GetNamespace()
+		if repo.Spec.GitProvider != nil && repo.Spec.GitProvider.Secret == nil && r.globalRepo != nil && r.globalRepo.Spec.GitProvider != nil && r.globalRepo.Spec.GitProvider.Secret != nil {
+			secretNS = r.globalRepo.GetNamespace()
+		}
+
+		secretFromRepo := pac.SecretFromRepository{
+			K8int:       r.kinteract,
+			Config:      detectedProvider.GetConfig(),
+			Event:       event,
+			Repo:        repo,
+			WebhookType: pacInfo.WebhookType,
+			Logger:      logger,
+			Namespace:   secretNS,
+		}
+		if err := secretFromRepo.Get(ctx); err != nil {
+			return nil, nil, fmt.Errorf("cannot get secret from repository: %w", err)
+		}
+	}
+
+	err = detectedProvider.SetClient(ctx, r.run, event, repo, r.eventEmitter)
+	if err != nil {
+		return nil, nil, fmt.Errorf("cannot set client: %w", err)
+	}
+
+	return detectedProvider, event, nil
 }
 
 func (r *Reconciler) updatePipelineRunState(ctx context.Context, logger *zap.SugaredLogger, pr *tektonv1.PipelineRun, state string) (*tektonv1.PipelineRun, error) {

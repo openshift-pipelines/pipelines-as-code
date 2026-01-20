@@ -475,6 +475,110 @@ func TestProvider_CreateStatusCommit(t *testing.T) {
 	}
 }
 
+func TestProviderCreateStatusCommitRetryOnTransientError(t *testing.T) {
+	tests := []struct {
+		name           string
+		failCount      int
+		errorMessage   string
+		wantErr        bool
+		wantRetryCount int
+	}{
+		{
+			name:           "retry on user does not exist error",
+			failCount:      2,
+			errorMessage:   "user does not exist [uid: 0, name: ]",
+			wantErr:        false,
+			wantRetryCount: 2,
+		},
+		{
+			name:           "fail after max retries",
+			failCount:      5, // More than maxRetries (3)
+			errorMessage:   "user does not exist [uid: 0, name: ]",
+			wantErr:        true,
+			wantRetryCount: 3,
+		},
+		{
+			name:           "no retry on other errors",
+			failCount:      1,
+			errorMessage:   "some other error",
+			wantErr:        true,
+			wantRetryCount: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeclient, mux, teardown := tgitea.Setup(t)
+			defer teardown()
+
+			observer, logs := zapobserver.New(zap.InfoLevel)
+			logger := zap.New(observer).Sugar()
+
+			callCount := 0
+			mux.HandleFunc("/repos/myorg/myrepo/statuses/abc123", func(rw http.ResponseWriter, _ *http.Request) {
+				callCount++
+				if callCount <= tt.failCount {
+					rw.WriteHeader(http.StatusInternalServerError)
+					_, _ = fmt.Fprintf(rw, `{"message": "%s"}`, tt.errorMessage)
+					return
+				}
+				_, _ = rw.Write([]byte(`{"state":"success"}`))
+			})
+
+			v := &Provider{
+				giteaClient: fakeclient,
+				Logger:      logger,
+			}
+
+			event := &info.Event{
+				Organization: "myorg",
+				Repository:   "myrepo",
+				SHA:          "abc123",
+			}
+			pacopts := &info.PacOpts{Settings: settings.Settings{
+				ApplicationName: "myapp",
+			}}
+			status := provider.StatusOpts{
+				Conclusion: "success",
+			}
+
+			err := v.createStatusCommit(event, pacopts, status)
+
+			if tt.wantErr {
+				assert.Assert(t, err != nil, "expected an error but got none")
+			} else {
+				assert.NilError(t, err)
+			}
+
+			// Verify the number of API calls made
+			isTransientError := strings.Contains(tt.errorMessage, "user does not exist")
+			switch {
+			case tt.wantErr && isTransientError:
+				// For transient errors, we should have tried maxRetries (3) times
+				assert.Equal(t, 3, callCount, "expected 3 retries for transient error")
+			case tt.wantErr:
+				// For non-retryable errors, we should have tried only once
+				assert.Equal(t, 1, callCount, "expected only 1 attempt for non-retryable error")
+			default:
+				// For success after retries, we should have failCount+1 calls
+				assert.Equal(t, tt.failCount+1, callCount, "expected failCount+1 calls for eventual success")
+			}
+
+			// Verify warning logs were emitted for retries on "user does not exist" errors
+			if strings.Contains(tt.errorMessage, "user does not exist") && tt.failCount > 0 {
+				retryLogs := 0
+				for _, log := range logs.All() {
+					if strings.Contains(log.Message, "CreateStatus failed with transient error") {
+						retryLogs++
+					}
+				}
+				expectedLogs := min(tt.failCount, 3)
+				assert.Equal(t, expectedLogs, retryLogs, "unexpected number of retry warning logs")
+			}
+		})
+	}
+}
+
 func TestGetTektonDir(t *testing.T) {
 	testGetTektonDir := []struct {
 		treepath             string

@@ -152,7 +152,7 @@ doesn't:
 taskSpec:
   steps:
     - name: check-label
-      image: registry.access.redhat.com/ubi9/ubi
+      image: registry.access.redhat.com/ubi10/ubi
       script: |
         #!/usr/bin/env python3
         import json
@@ -169,7 +169,7 @@ The expressions are CEL expressions so you can as well make some conditional:
 
 ```yaml
 - name: bash
-  image: registry.access.redhat.com/ubi9/ubi
+  image: registry.access.redhat.com/ubi10/ubi
   script: |
     if {{ body.pull_request.state == "open" }}; then
       echo "PR is Open"
@@ -187,6 +187,77 @@ for example, this will show the GitHub event type for a GitHub event:
 ```
 
 and then you can do the same conditional or access as described above for the `body` keyword.
+
+## Using the cel: prefix for advanced CEL expressions
+
+For more complex CEL expressions that go beyond simple property access, you can
+use the `cel:` prefix. This allows you to write arbitrary CEL expressions with
+access to all available data sources.
+
+The `cel:` prefix provides access to:
+
+- `body` - The full webhook payload
+- `headers` - HTTP request headers
+- `files` - Changed files information (`files.all`, `files.added`, `files.deleted`, `files.modified`, `files.renamed`)
+- `pac` - Standard PAC parameters (`pac.revision`, `pac.target_branch`, `pac.source_branch`, etc.)
+
+### Examples
+
+**Conditional values based on event action:**
+
+```yaml
+params:
+  - name: pr-status
+    value: "{{ cel: body.action == \"opened\" ? \"new-pr\" : \"updated-pr\" }}"
+```
+
+**Environment selection based on target branch:**
+
+```yaml
+params:
+  - name: environment
+    value: "{{ cel: pac.target_branch == \"main\" ? \"production\" : \"staging\" }}"
+```
+
+**Safe field access with has() function:**
+
+Use the `has()` function to safely check if a field exists before accessing it:
+
+```yaml
+params:
+  - name: commit-type
+    value: "{{ cel: has(body.head_commit) && body.head_commit.message.startsWith(\"Merge\") ? \"merge\" : \"regular\" }}"
+```
+
+**Check if Go files were modified:**
+
+```yaml
+params:
+  - name: run-go-tests
+    value: "{{ cel: files.all.exists(f, f.endsWith(\".go\")) ? \"true\" : \"false\" }}"
+```
+
+**String concatenation:**
+
+```yaml
+params:
+  - name: greeting
+    value: "{{ cel: \"Build for \" + pac.repo_name + \" on \" + pac.target_branch }}"
+```
+
+**Count changed files:**
+
+```yaml
+params:
+  - name: file-count
+    value: "{{ cel: files.all.size() }}"
+```
+
+{{< hint info >}}
+If a `cel:` expression has a syntax error or fails to evaluate, it returns an
+empty string. This allows PipelineRuns to continue even if an optional dynamic
+value cannot be computed.
+{{< /hint >}}
 
 ## Using the temporary GitHub APP Token for GitHub API operations
 

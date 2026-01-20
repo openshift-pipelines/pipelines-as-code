@@ -1,0 +1,7 @@
+cel_ternary: new-mr
+cel_pac_branch: matched
+cel_has_function: has-mr
+cel_string_concat: Build on main
+cel_files_check: has-files
+cel_gitlab_header: Merge Request Hook
+cel_error_handling: 

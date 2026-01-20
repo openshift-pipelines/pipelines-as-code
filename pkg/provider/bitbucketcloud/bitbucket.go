@@ -202,7 +202,11 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, event *info.Eve
 	if event.Provider.User == "" {
 		return fmt.Errorf("no git_provider.user has been in repo crd")
 	}
-	v.bbClient = bitbucket.NewBasicAuth(event.Provider.User, event.Provider.Token)
+	bbClient, err := bitbucket.NewBasicAuth(event.Provider.User, event.Provider.Token)
+	if err != nil {
+		return fmt.Errorf("failed to create bitbucket client: %w", err)
+	}
+	v.bbClient = bbClient
 
 	// Added log for security audit purposes to log client access when a token is used
 	run.Clients.Log.Infof("bitbucket-cloud: initialized client with provided token for user=%s", event.Provider.User)

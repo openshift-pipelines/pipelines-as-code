@@ -1,0 +1,36 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: "\\ .PipelineName //"
+  annotations:
+    pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      target_branch == "\\ .TargetBranch //" && event == "\\ .TargetEvent //"
+spec:
+  pipelineSpec:
+    tasks:
+      - name: cel-prefix-test
+        taskSpec:
+          steps:
+            - name: test-cel-prefix-values
+              image: registry.access.redhat.com/ubi10/ubi-micro
+              script: |
+                # Test cel: prefix with various expressions for GitHub
+                # Expected output:
+                # cel_ternary: new-pr
+                # cel_pac_branch: matched
+                # cel_has_function: has-pr
+                # cel_string_concat: Build on <target_branch>
+                # cel_files_check: has-files
+                # cel_github_header: pull_request
+                # cel_error_handling: (empty - error returns empty string)
+                cat <<EOF
+                cel_ternary: {{ cel: body.action == "opened" ? "new-pr" : "updated-pr" }}
+                cel_pac_branch: {{ cel: pac.target_branch == "\\ .TargetBranch //" ? "matched" : "not-matched" }}
+                cel_has_function: {{ cel: has(body.pull_request) ? "has-pr" : "no-pr" }}
+                cel_string_concat: {{ cel: "Build on " + pac.target_branch }}
+                cel_files_check: {{ cel: files.all.size() > 0 ? "has-files" : "no-files" }}
+                cel_github_header: {{ cel: headers["X-Github-Event"] }}
+                cel_error_handling: {{ cel: nonexistent.field.access }}
+                EOF

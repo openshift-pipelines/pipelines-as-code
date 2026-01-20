@@ -39,6 +39,11 @@ func TestValue(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, ref.Val(val), val)
 
+	// Test pac-only query with nil body
+	val, err = Value("pac.param", nil, headers, pacParams, changedFiles)
+	assert.NilError(t, err)
+	assert.Equal(t, val.Value(), "value")
+
 	// Test an invalid query
 	_, err = Value("invalid query", body, headers, pacParams, changedFiles)
 	assert.ErrorContains(t, err, "failed to parse expression")
