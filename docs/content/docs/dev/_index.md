@@ -396,6 +396,13 @@ When submitting a pull request to Pipelines-as-Code, contributors must disclose
 any AI/LLM assistance used during development. This promotes transparency and
 proper attribution in our collaborative development environment.
 
+### Python dependencies
+
+```shell
+cd ./hack/pr-ci
+uv lock -U
+```
+
 ### Required Disclosure
 
 All contributors must:
@@ -444,47 +451,3 @@ Co-authored-by: Gemini <gemini@google.com>
 
 See the [PR template](.github/pull_request_template.md) for complete details on
 the AI assistance disclosure requirements.
-
-## Testing External contributor Pull Requests for E2E Testing
-
-When an external contributor submits a pull request (PR), E2E tests may not run
-automatically due to security restrictions. To work around this, maintainers
-can use a script to mirror the external PR to their own fork, allowing E2E
-tests to run safely.
-
-### Usage
-
-1. Ensure you have the [GitHub CLI (`gh`)](https://cli.github.com/) installed and authenticated and fzf installed.
-2. Fork the repository and configure your fork as a git remote.
-3. Run the script:
-
-   ```bash
-   ./hack/mirror-pr.sh <PR_NUMBER> <YOUR_FORK_REMOTE>
-   ```
-
-   If you omit the PR number, you'll be prompted to select one interactively.
-   Same for the fork remote, if you omit it, it will get asked with fzf.
-
-### What the Script Does
-
-- Checks out the external PR locally.
-- Pushes the branch to your fork with a unique name.
-- Creates a draft pull request on the upstream repository with a `[MIRRORED] DO NOT MERGE` title and a `do-not-merge` label.
-- Comments on the original PR with a link to the mirrored PR.
-
-This process allows E2E tests to run on the mirrored PR, while preventing accidental merges. Once the original PR is merged, the mirrored PR can be closed.
-
-See the script (`./hack/mirror-pr.sh`) in the repository for details.
-
-### When all is green in the mirrored PR pull request
-
-- You can merge the external contributor original PR.
-- Close the mirrored PR.
-- Cleanup the branches on your fork or on your local repo
-
-# Links
-
-- [Jira Backlog](https://issues.redhat.com/browse/SRVKP-2144?jql=component%20%3D%20%22Pipeline%20as%20Code%22%20%20AND%20status%20!%3D%20Done)
-- [Bitbucket Data Center Rest API](https://docs.atlassian.com/bitbucket-server/rest/7.17.0/bitbucket-rest.html)
-- [GitHub API](https://docs.github.com/en/rest/reference)
-- [GitLab API](https://docs.gitlab.com/ee/api/api_resources.html)
