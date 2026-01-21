@@ -524,8 +524,8 @@ func (v *Provider) GetCommitInfo(_ context.Context, runevent *info.Event) error 
 		if branchinfo.CommittedDate != nil {
 			runevent.SHACommitterDate = *branchinfo.CommittedDate
 		}
-		runevent.HasSkipCommand = provider.SkipCI(branchinfo.Message)
 	}
+	runevent.HasSkipCommand = provider.SkipCI(runevent.SHAMessage)
 
 	return nil
 }
