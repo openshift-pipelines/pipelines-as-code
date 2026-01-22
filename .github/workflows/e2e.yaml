@@ -44,6 +44,7 @@ jobs:
 
     env:
       CONTROLLER_DOMAIN_URL: paac.paac-127-0-0-1.nip.io
+      KOCACHE: /tmp/ko-cache
       KO_DOCKER_REPO: registry.paac-127-0-0-1.nip.io
       KUBECONFIG: /home/runner/.kube/config.local
       TARGET_TEAM_SLUGS: "pipeline-as-code,pipeline-as-code-contributors"
@@ -252,6 +253,14 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: "go.mod"
+
+      - name: Cache ko layer cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/ko-cache
+          key: ${{ runner.os }}-ko-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-ko-
 
       - uses: ko-build/setup-ko@v0.9
 
