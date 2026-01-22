@@ -662,14 +662,28 @@ func (v *Provider) handleCommitCommentEvent(ctx context.Context, event *github.C
 		if err != nil {
 			return runevent, fmt.Errorf("error getting ref for tag %s: %w", tagName, err)
 		}
-		// get the tag object to get the SHA
-		tag, _, err := wrapAPI(v, "get_tag", func() (*github.Tag, *github.Response, error) {
-			return v.Client().Git.GetTag(ctx, runevent.Organization, runevent.Repository, ref.GetObject().GetSHA())
-		})
-		if err != nil {
-			return runevent, fmt.Errorf("error getting tag %s: %w", tagName, err)
+
+		tagSha := ""
+
+		switch ref.GetObject().GetType() {
+		case "tag":
+			// annotated tag - get the tag object to resolve the commit SHA
+			tag, _, err := wrapAPI(v, "get_tag", func() (*github.Tag, *github.Response, error) {
+				return v.Client().Git.GetTag(ctx, runevent.Organization, runevent.Repository, ref.GetObject().GetSHA())
+			})
+			if err != nil {
+				return runevent, fmt.Errorf("error getting tag %s: %w", tagName, err)
+			}
+			tagSha = tag.GetObject().GetSHA()
+		case "commit":
+			// lightweight tag - ref contains the commit SHA directly.
+			// trying to get the tag object would return an error.
+			tagSha = ref.GetObject().GetSHA()
+		default:
+			return runevent, fmt.Errorf("invalid object type for tag %s: %s", tagName, ref.GetObject().GetType())
 		}
-		if tag.GetObject().GetSHA() != runevent.SHA {
+
+		if tagSha != runevent.SHA {
 			return runevent, fmt.Errorf("provided SHA %s is not the tagged commit for the tag %s", runevent.SHA, tagName)
 		}
 		runevent.HeadBranch = tagPath
