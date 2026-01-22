@@ -138,11 +138,34 @@ run_e2e_tests() {
   set +x
   target="${TEST_PROVIDER}"
   export PAC_E2E_KEEP_NS=true
+  
+  mkdir -p /tmp/logs
 
   mapfile -t tests < <(get_tests "${target}")
   echo "About to run ${#tests[@]} tests: ${tests[*]}"
   # shellcheck disable=SC2001
-  make test-e2e GO_TEST_FLAGS="-v -run \"$(echo "${tests[*]}" | sed 's/ /|/g')\""
+  test_pattern="$(echo "${tests[*]}" | sed 's/ /|/g')"
+
+  # Use gotestsum if available for better output and JUnit XML generation
+  if command -v gotestsum >/dev/null 2>&1; then
+    echo "Using gotestsum for test execution..."
+    mkdir -p /tmp/test-results
+    env GODEBUG=asynctimerchan=1 gotestsum \
+      --junitfile /tmp/test-results/e2e-tests.xml \
+      --jsonfile /tmp/test-results/e2e-tests.json \
+      --junitfile-testsuite-name short \
+      --junitfile-testcase-classname short \
+      --format standard-verbose \
+      -- \
+      -race -failfast -timeout 45m -count=1 -tags=e2e \
+      -v -run "${test_pattern}" \
+      ./test 2>&1 | tee -a /tmp/logs/e2e-test-output.log
+    return ${PIPESTATUS[0]}
+  else
+    echo "gotestsum not found, using make test-e2e..."
+    make test-e2e GO_TEST_FLAGS="-v -run \"${test_pattern}\"" 2>&1 | tee -a /tmp/logs/e2e-test-output.log
+    return ${PIPESTATUS[0]}
+  fi
 }
 
 output_logs() {
@@ -165,6 +188,12 @@ collect_logs() {
   kubectl logs -n pipelines-as-code -l app.kubernetes.io/part-of=pipelines-as-code \
     --all-containers=true --tail=1000 >/tmp/logs/pac-pods.log
   kind export logs /tmp/logs
+
+  # Collect test results from gotestsum (JUnit XML and JSON)
+  if [[ -d /tmp/test-results ]]; then
+    cp -a /tmp/test-results /tmp/logs/test-results
+    echo "Copied test results to /tmp/logs/test-results"
+  fi
 
   # Collect all gosmee data in organized directory
   mkdir -p /tmp/logs/gosmee

@@ -291,6 +291,11 @@ jobs:
         with:
           repo: chmouel/snazy
 
+      - name: Install gotestsum
+        run: |
+          go install gotest.tools/gotestsum@latest
+          echo "$HOME/go/bin" >> $GITHUB_PATH
+
       - name: Install minica
         run: |
           go install github.com/jsha/minica@latest
@@ -420,9 +425,7 @@ jobs:
           TEST_BITBUCKET_SERVER_API_URL: ${{ secrets.BITBUCKET_SERVER_API_URL }}
           TEST_BITBUCKET_SERVER_WEBHOOK_SECRET: ${{ secrets.BITBUCKET_SERVER_WEBHOOK_SECRET }}
         run: |
-          mkdir -p /tmp/logs
-          ./hack/gh-workflow-ci.sh run_e2e_tests 2>&1 | tee -a /tmp/logs/e2e-test-output.log
-          exit ${PIPESTATUS[0]}
+          ./hack/gh-workflow-ci.sh run_e2e_tests
 
       - name: Collect logs
         if: ${{ always() }}
@@ -444,11 +447,11 @@ jobs:
           name: logs-e2e-tests-${{ matrix.provider }}
           path: /tmp/logs
 
-  notify-slack:
-    name: Notify Slack on Failures
+  test-summary:
+    name: Generate Test Summary
     runs-on: ubuntu-latest
     needs: e2e-tests
-    if: ${{ always() && github.ref_name == 'main' && github.event_name == 'schedule' }}
+    if: ${{ always() }}
     steps:
       - uses: actions/checkout@v6
       - name: Download all artifacts
@@ -457,7 +460,16 @@ jobs:
           path: artifacts
           pattern: logs-e2e-tests-*
 
+      - name: Generate combined test summary
+        env:
+          ARTIFACTS_DIR: artifacts
+          SHOW_LOGS_FOR: failed
+          DEBUG_SUMMARY: "true"
+        run: |
+          python3 ./hack/e2e-ci/generate-test-summary.py
+
       - name: Send Slack notification
+        if: ${{ github.ref_name == 'main' && github.event_name == 'schedule' }}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
