@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        provider: [providers, gitea_others]
+        provider: [github, github_second_controller, gitlab_bitbucket, gitea_others, concurrency]
 
     env:
       CONTROLLER_DOMAIN_URL: paac.paac-127-0-0-1.nip.io
@@ -292,7 +292,7 @@ jobs:
           nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.TEST_GITEA_SMEEURL }} "https://${CONTROLLER_DOMAIN_URL}" &
 
       - name: Run gosmee for second controller (GHE)
-        if: matrix.provider == 'providers'
+        if: matrix.provider == 'github_second_controller' || matrix.provider == 'concurrency'
         run: |
           nohup gosmee client --saveDir /tmp/gosmee-replay-ghe ${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }} "https://ghe.paac-127-0-0-1.nip.io" &
 
