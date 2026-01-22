@@ -19,7 +19,7 @@ git tag v1.2.3
 * And pushing it directly to the repo (you need access) :
 
 ```shell
-% NOTESTS=ci git push git@github.com:openshift-pipelines/pipelines-as-code refs/tags/1.2.3
+% git push --no-verify git@github.com:openshift-pipelines/pipelines-as-code refs/tags/1.2.3
 ```
 
 * When it started you can follow it on the pac cluster :
@@ -27,23 +27,26 @@ git tag v1.2.3
 `tkn pr logs -n pipelines-as-code-ci -Lf`
 
 * After a while (gorelease takes sometime) If everything is fine you should
-  have the new version set as pre-release in
+  have the new version set as pre-release inside:
+
   <https://github.com/openshift-pipelines/pipelines-as-code/releases>
 
 * Edit the release like the other releases has been done with a snippet of the highlight of the release.
 
-* Announce it on Slack (upstream/downstream)  and twitter.
+* If you use AI:
+  * make sure to verify the content as it may contains some mistakes.
+  * don't make it overusing emojis, let's make it professional.
+  * make sure to categorize the changes properly. sometime it would expose
+  internal changes as major features.
+
+* Announce it on Slack (upstream/downstream) and twitter.
 
 ## Packages
-
-* [Arch AUR](https://aur.archlinux.org/packages/tkn-pac): Ping chmouel for an update
-
-# Issues you may see
 
 * Sometimes, there may be some issues with system or others. If you need to re-kick the release process you need to :
 
 ```shell
-   git tag --sign --force v1.2.3
+   git tag --force v1.2.3
    git push --force git@github.com:openshift-pipelines/pipelines-as-code v1.2.3
 ```
 

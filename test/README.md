@@ -128,10 +128,13 @@ Tests run on:
 
 ### Test Categories
 
-The tests are separated into two main categories (matrix strategy):
+The tests are separated into provider categories (matrix strategy):
 
-- `providers` - Tests for GitHub, GitLab, and Bitbucket
-- `gitea_others` - Tests for Gitea and other non-provider specific functionality
+- `github` - GitHub tests (excluding second controller and concurrency)
+- `github_second_controller` - GitHub second controller tests
+- `gitlab_bitbucket` - GitLab and Bitbucket tests
+- `gitea_others` - Gitea and other non-provider specific functionality
+- `concurrency` - Concurrency-specific tests
 
 This split helps reduce the load on external APIs during testing and provides more focused test results.
 
