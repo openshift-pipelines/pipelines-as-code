@@ -91,7 +91,26 @@ run_e2e_tests() {
   mapfile -t tests < <(get_tests "${target}")
   echo "About to run ${#tests[@]} tests: ${tests[*]}"
   # shellcheck disable=SC2001
-  make test-e2e GO_TEST_FLAGS="-v -run \"$(echo "${tests[*]}" | sed 's/ /|/g')\""
+  test_pattern="$(echo "${tests[*]}" | sed 's/ /|/g')"
+
+  # Use gotestsum if available for better output and JUnit XML generation
+  if command -v gotestsum >/dev/null 2>&1; then
+    echo "Using gotestsum for test execution..."
+    mkdir -p /tmp/test-results
+    env GODEBUG=asynctimerchan=1 gotestsum \
+      --junitfile /tmp/test-results/e2e-tests.xml \
+      --jsonfile /tmp/test-results/e2e-tests.json \
+      --junitfile-testsuite-name short \
+      --junitfile-testcase-classname short \
+      --format standard-verbose \
+      -- \
+      -race -failfast -timeout 45m -count=1 -tags=e2e \
+      -v -run "${test_pattern}" \
+      ./test
+  else
+    echo "gotestsum not found, using make test-e2e..."
+    make test-e2e GO_TEST_FLAGS="-v -run \"${test_pattern}\""
+  fi
 }
 
 output_logs() {

@@ -272,6 +272,11 @@ jobs:
         with:
           repo: chmouel/snazy
 
+      - name: Install gotestsum
+        run: |
+          go install gotest.tools/gotestsum@latest
+          echo "$HOME/go/bin" >> $GITHUB_PATH
+
       - name: Install minica
         run: |
           go install github.com/jsha/minica@latest
@@ -411,6 +416,25 @@ jobs:
         with:
           name: logs-e2e-tests-${{ matrix.provider }}
           path: /tmp/logs
+
+      - name: Upload test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: test-results-${{ matrix.provider }}
+          path: |
+            /tmp/test-results/*.xml
+            /tmp/test-results/*.json
+
+      - name: Generate test summary
+        if: ${{ always() }}
+        env:
+          TEST_PROVIDER: ${{ matrix.provider }}
+          TEST_RESULTS_DIR: /tmp/test-results
+          CONTROLLER_LOGS_FILE: /tmp/logs/pac-pods.log
+          SHOW_LOGS_FOR: failed
+        run: |
+          python3 ./hack/e2e-ci/generate-test-summary.py
 
       - name: Report Status
         if: ${{ always() && github.ref_name == 'main' && github.event_name == 'schedule' }}
