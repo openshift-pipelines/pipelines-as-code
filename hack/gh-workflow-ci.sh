@@ -78,31 +78,32 @@ get_tests() {
   all_tests=$(grep -hioP '^func[[:space:]]+Test[[:alnum:]_]+' "${testfiles[@]}" | sed -E 's/^func[[:space:]]+//')
 
   case "${target}" in
-    concurrency)
-      printf '%s\n' "${all_tests}" | grep -iP 'Concurrency'
-      ;;
-    github)
-      printf '%s\n' "${all_tests}" | grep -iP 'Github' | grep -ivP 'Concurrency|GithubSecond|SecondController'
-      ;;
-    github_second_controller)
-      printf '%s\n' "${all_tests}" | grep -iP 'GithubSecond|SecondController' | grep -ivP 'Concurrency'
-      ;;
-    gitlab_bitbucket)
-      printf '%s\n' "${all_tests}" | grep -iP 'Gitlab|Bitbucket' | grep -ivP 'Concurrency'
-      ;;
-    gitea_others)
-      printf '%s\n' "${all_tests}" | grep -ivP 'Github|Gitlab|Bitbucket|Concurrency'
-      ;;
-    *)
-      echo "Invalid target: ${target}"
-      echo "supported targets: github, github_second_controller, gitlab_bitbucket, gitea_others, concurrency"
-      ;;
+  concurrency)
+    printf '%s\n' "${all_tests}" | grep -iP 'Concurrency'
+    ;;
+  github)
+    printf '%s\n' "${all_tests}" | grep -iP 'Github' | grep -ivP 'Concurrency|GithubSecond'
+    ;;
+  github_second_controller)
+    printf '%s\n' "${all_tests}" | grep -iP 'GithubSecond' | grep -ivP 'Concurrency'
+    ;;
+  gitlab_bitbucket)
+    printf '%s\n' "${all_tests}" | grep -iP 'Gitlab|Bitbucket' | grep -ivP 'Concurrency'
+    ;;
+  gitea_others)
+    printf '%s\n' "${all_tests}" | grep -ivP 'Github|Gitlab|Bitbucket|Concurrency'
+    ;;
+  *)
+    echo "Invalid target: ${target}"
+    echo "supported targets: github, github_second_controller, gitlab_bitbucket, gitea_others, concurrency"
+    ;;
   esac
 }
 
 run_e2e_tests() {
   set +x
   target="${TEST_PROVIDER}"
+  export PAC_E2E_KEEP_NS=true
 
   mapfile -t tests < <(get_tests "${target}")
   echo "About to run ${#tests[@]} tests: ${tests[*]}"
