@@ -71,17 +71,33 @@ create_second_github_app_controller_on_ghe() {
 }
 
 get_tests() {
-  target=$1
+  local target="$1"
+  local -a testfiles
+  local all_tests
   mapfile -t testfiles < <(find test/ -maxdepth 1 -name '*.go')
-  ghglabre="Github|Gitlab|Bitbucket"
-  if [[ ${target} == "providers" ]]; then
-    grep -hioP "^func Test.*(${ghglabre})(\w+)\(" "${testfiles[@]}" | sed -e 's/func[ ]*//' -e 's/($//'
-    elif [[ ${target} == "gitea_others" ]]; then
-    grep -hioP '^func Test(\w+)\(' "${testfiles[@]}" | grep -iPv "(${ghglabre})" | sed -e 's/func[ ]*//' -e 's/($//'
-  else
-    echo "Invalid target: ${target}"
-    echo "supported targets: githubgitlab, others"
-  fi
+  all_tests=$(grep -hioP '^func[[:space:]]+Test[[:alnum:]_]+' "${testfiles[@]}" | sed -E 's/^func[[:space:]]+//')
+
+  case "${target}" in
+    concurrency)
+      printf '%s\n' "${all_tests}" | grep -iP 'Concurrency'
+      ;;
+    github)
+      printf '%s\n' "${all_tests}" | grep -iP 'Github' | grep -ivP 'Concurrency|GithubSecond|SecondController'
+      ;;
+    github_second_controller)
+      printf '%s\n' "${all_tests}" | grep -iP 'GithubSecond|SecondController' | grep -ivP 'Concurrency'
+      ;;
+    gitlab_bitbucket)
+      printf '%s\n' "${all_tests}" | grep -iP 'Gitlab|Bitbucket' | grep -ivP 'Concurrency'
+      ;;
+    gitea_others)
+      printf '%s\n' "${all_tests}" | grep -ivP 'Github|Gitlab|Bitbucket|Concurrency'
+      ;;
+    *)
+      echo "Invalid target: ${target}"
+      echo "supported targets: github, github_second_controller, gitlab_bitbucket, gitea_others, concurrency"
+      ;;
+  esac
 }
 
 run_e2e_tests() {
