@@ -280,28 +280,16 @@ func TestPipelineRunSortByStartTimeSameTime(t *testing.T) {
 		gotNames[i] = pr.GetName()
 	}
 
-	// Verify that "started-later" comes first (since the sort puts later times first)
-	assert.Equal(t, "started-later", gotNames[0])
-	// Verify that "started-earlier" comes last
-	assert.Equal(t, "started-earlier", gotNames[len(gotNames)-1])
-	// Verify that the three items with same start time are in positions 1-3 (any order)
-	sameTimeNames := gotNames[1:4]
-	expectedSameTime := map[string]bool{
-		"first-same-start":  false,
-		"second-same-start": false,
-		"third-same-start":  false,
+	// With stable sorting by name descending when times are equal:
+	// - "started-later" comes first (later time)
+	// - Same-time items sorted by name descending: third, second, first
+	// - "started-earlier" comes last (earlier time)
+	expectedOrder := []string{
+		"started-later",
+		"third-same-start",
+		"second-same-start",
+		"first-same-start",
+		"started-earlier",
 	}
-	for _, name := range sameTimeNames {
-		if _, exists := expectedSameTime[name]; exists {
-			expectedSameTime[name] = true
-		} else {
-			t.Errorf("Unexpected name %s in same-start-time group", name)
-		}
-	}
-	// Verify all expected names were found
-	for name, found := range expectedSameTime {
-		if !found {
-			t.Errorf("Expected name %s not found in same-start-time group", name)
-		}
-	}
+	assert.DeepEqual(t, expectedOrder, gotNames)
 }
