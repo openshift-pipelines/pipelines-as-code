@@ -41,5 +41,9 @@ func (prs byStartTime) Less(i, j int) bool {
 	if prs[i].Status.StartTime == nil {
 		return true
 	}
+	// If times are equal, sort by name descending
+	if prs[j].Status.StartTime.Time.Equal(prs[i].Status.StartTime.Time) {
+		return prs[i].GetName() > prs[j].GetName()
+	}
 	return prs[j].Status.StartTime.Before(prs[i].Status.StartTime)
 }

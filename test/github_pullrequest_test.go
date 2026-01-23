@@ -43,7 +43,7 @@ func TestGithubPullRequest(t *testing.T) {
 	defer g.TearDown(ctx, t)
 }
 
-func TestGithubPullRequestSecondController(t *testing.T) {
+func TestGithubSecondPullRequest(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label:            "Github Rerequest",
