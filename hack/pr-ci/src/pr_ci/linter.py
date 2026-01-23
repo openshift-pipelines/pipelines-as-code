@@ -4,16 +4,36 @@ from __future__ import annotations
 
 import functools
 import re
+import subprocess
 from pathlib import Path
 from typing import List, Optional, Tuple
 
 from .comments import PR_TITLE_COMMENT_MARKER, CommentManager
+from .gemini import GeminiReleaseNoteChecker
 from .github import GitHubClient
 from .pr_data import PRData
 
 DEFAULT_JIRA_PROJECT = r"(SRVKP|KONFLUX)"
 MIN_DESCRIPTION_LINES = 3
-DEFAULT_PR_TEMPLATE_PATH = Path(".github/pull_request_template.md")
+
+
+def _get_repo_root() -> Path:
+    """Get the repository root directory."""
+    # Use git rev-parse to find repo root (works in any environment)
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return Path(result.stdout.strip())
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        # Fallback: use current directory
+        return Path.cwd()
+
+
+DEFAULT_PR_TEMPLATE_PATH = _get_repo_root() / ".github" / "pull_request_template.md"
 GITHUB_ISSUE_PATTERN = re.compile(
     r"(fixes|closes|resolves)\s+(?:[\w.-]+/[\w.-]+)?#?\d+",
     re.IGNORECASE,
@@ -22,6 +42,17 @@ GITHUB_ISSUE_PATTERN = re.compile(
 JIRA_URL_PATTERN = re.compile(
     rf"https://issues\.redhat\.com/browse/{DEFAULT_JIRA_PROJECT}-\d+",
     re.IGNORECASE,
+)
+
+# Release notes section pattern - matches ```release-note block
+RELEASE_NOTE_SECTION_PATTERN = re.compile(
+    r"#\s*Release\s*Notes",
+    re.IGNORECASE,
+)
+
+RELEASE_NOTE_BLOCK_PATTERN = re.compile(
+    r"```release-note\s*\n(.*?)\n```",
+    re.DOTALL | re.IGNORECASE,
 )
 
 AI_KEYWORDS = (
@@ -70,11 +101,19 @@ CONVENTIONAL_TITLE_RE = re.compile(
 class PRLinter:
     """Lints PR title, description, and commits for conventional format and completeness."""
 
-    def __init__(self, pr_data: PRData, github: GitHubClient):
+    def __init__(
+        self,
+        pr_data: PRData,
+        github: GitHubClient,
+        gemini_api_key: Optional[str] = None,
+        gemini_model: Optional[str] = None,
+    ):
         self.pr_data = pr_data
         self.github = github
         self.comment_manager = CommentManager(github)
         self.warnings: List[Tuple[str, List[str]]] = []
+        self.gemini_api_key = gemini_api_key
+        self.gemini_model = gemini_model
 
     def check_all(self) -> None:
         """Run all lint checks."""
@@ -83,6 +122,7 @@ class PRLinter:
         self.check_template_usage()
         self.check_jira_reference()
         self.check_ai_attribution()
+        self.check_release_notes()
 
     def check_title(self) -> None:
         """Check if PR title follows conventional commit format."""
@@ -203,6 +243,91 @@ class PRLinter:
         else:
             print("All commits include AI attribution footers or matching keywords")
 
+    def check_release_notes(self) -> None:
+        """Check if PR has a valid release notes section."""
+        pr_body = self.pr_data.description
+        has_section, has_content, message = has_release_notes(pr_body)
+
+        if has_section and has_content:
+            print("PR description contains a valid release notes section")
+            return
+
+        # Use AI to check if release notes are required and get suggestions
+        is_none_acceptable = False
+        ai_reason = ""
+        suggested_note = ""
+        if self.gemini_api_key:
+            print("Using AI to check if release notes are required...")
+            ai_result = self._check_release_note_with_ai()
+            if ai_result:
+                is_none_acceptable = not ai_result.get("required", True)
+                ai_reason = ai_result.get("reason", "")
+                suggested_note = ai_result.get("suggested_release_note", "")
+                if is_none_acceptable:
+                    print(f"AI determined release notes are NOT required: {ai_reason}")
+                    return
+                print(f"AI determined release notes ARE required: {ai_reason}")
+
+        print(f"PR release notes warning: {message}")
+        release_notes_lines: List[str] = []
+
+        # Add AI reasoning and suggested note if available
+        if ai_reason:
+            release_notes_lines.extend(
+                [
+                    f"**🤖 AI Analysis:** {ai_reason}",
+                    "",
+                ]
+            )
+
+        if suggested_note:
+            release_notes_lines.extend(
+                [
+                    "**💡 Suggested release note:**",
+                    "",
+                    "    ```release-note",
+                    f"    {suggested_note}",
+                    "    ```",
+                    "",
+                ]
+            )
+
+        release_notes_lines.extend(
+            [
+                "Please update the **Release Notes** section in your PR description.",
+                "",
+                "📍 **Find the section** that looks like this:",
+                "",
+                "    # Release Notes",
+                "    ```release-note",
+                "    NONE",
+                "    ```",
+                "",
+                "✏️ **Replace `NONE`** with a brief description of what changed for users.",
+                "",
+                "**When to use `NONE`:**",
+                "- CI/pipeline fixes, test changes, internal refactoring",
+                "- Documentation-only updates",
+                "- Changes that don't affect how users interact with the product",
+            ]
+        )
+        self.warnings.append(("Release notes", release_notes_lines))
+
+    def _check_release_note_with_ai(self) -> Optional[dict]:
+        """Use Gemini AI to check if release notes are required for this PR."""
+        if not self.gemini_api_key:
+            return None
+
+        try:
+            checker = GeminiReleaseNoteChecker(
+                self.gemini_api_key,
+                self.gemini_model or "gemini-2.0-flash",
+            )
+            return checker.check_release_note_required(self.pr_data)
+        except Exception as exc:  # pylint: disable=broad-except
+            print(f"Error checking release notes with AI: {exc}")
+            return None
+
     def report(self) -> None:
         """Post or remove lint feedback comment."""
         existing_comment = self.comment_manager.find_lint_comment()
@@ -220,6 +345,7 @@ class PRLinter:
             "PR template usage": "📋",
             "Jira reference": "🎫",
             "AI attribution": "🤖",
+            "Release notes": "📰",
         }
 
         comment_lines = [
@@ -290,7 +416,7 @@ def _sanitize_template_lines(text: str) -> List[str]:
         stripped = line.strip()
         if not stripped:
             continue
-        normalized = re.sub(r"[[xX]]", "[ ]", stripped)
+        normalized = re.sub(r"\[[xX]\]", "[ ]", stripped)
         cleaned_lines.append(normalized)
     return cleaned_lines
 
@@ -357,3 +483,40 @@ def has_github_issue_reference(description: str) -> bool:
     if not description:
         return False
     return bool(GITHUB_ISSUE_PATTERN.search(description))
+
+
+def has_release_notes(description: str) -> Tuple[bool, bool, str]:
+    """Check if PR description contains a valid release notes section.
+
+    Returns:
+        Tuple of (has_section, has_content, message):
+        - has_section: True if the Release Notes header is present
+        - has_content: True if release note block has meaningful content
+        - message: Description of any issue found
+    """
+    if not description:
+        return False, False, "PR description is empty"
+
+    # Check for Release Notes section header
+    if not RELEASE_NOTE_SECTION_PATTERN.search(description):
+        return False, False, "Missing 'Release Notes' section in PR description"
+
+    # Check for release-note code block
+    match = RELEASE_NOTE_BLOCK_PATTERN.search(description)
+    if not match:
+        return True, False, "Missing ```release-note``` block in Release Notes section"
+
+    content = match.group(1).strip()
+    if not content:
+        return True, False, "Release note block is empty"
+
+    # Check if content is just the default placeholder "NONE"
+    if content.upper() == "NONE":
+        return (
+            True,
+            False,
+            "Release note is set to 'NONE' - please update with actual release notes "
+            "or confirm this PR has no user-facing changes",
+        )
+
+    return True, True, "Release notes section is valid"
