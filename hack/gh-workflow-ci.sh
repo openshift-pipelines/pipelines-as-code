@@ -90,12 +90,22 @@ get_tests() {
   gitlab_bitbucket)
     printf '%s\n' "${all_tests}" | grep -iP 'Gitlab|Bitbucket' | grep -ivP 'Concurrency'
     ;;
+  gitea_1)
+    printf '%s\n' "${all_tests}" | grep -iP 'Gitea[A-G]' | grep -ivP 'Concurrency'
+    ;;
+  gitea_2)
+    printf '%s\n' "${all_tests}" | grep -iP 'Gitea[H-P]' | grep -ivP 'Concurrency'
+    ;;
+  gitea_3)
+    printf '%s\n' "${all_tests}" | grep -iP 'Gitea[Q-Z]' | grep -ivP 'Concurrency'
+    ;;
   gitea_others)
+    # Deprecated: Use gitea_1, gitea_2, gitea_3 instead
     printf '%s\n' "${all_tests}" | grep -ivP 'Github|Gitlab|Bitbucket|Concurrency'
     ;;
   *)
     echo "Invalid target: ${target}"
-    echo "supported targets: github, github_second_controller, gitlab_bitbucket, gitea_others, concurrency"
+    echo "supported targets: github, github_second_controller, gitlab_bitbucket, gitea_1, gitea_2, gitea_3, concurrency"
     ;;
   esac
 }

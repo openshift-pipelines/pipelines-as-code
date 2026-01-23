@@ -41,7 +41,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        provider: [github, github_second_controller, gitlab_bitbucket, gitea_others, concurrency]
+        provider: [github, github_second_controller, gitlab_bitbucket, gitea_1, gitea_2, gitea_3, concurrency]
 
     env:
       CONTROLLER_DOMAIN_URL: paac.paac-127-0-0-1.nip.io
