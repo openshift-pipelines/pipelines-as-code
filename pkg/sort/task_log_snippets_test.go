@@ -38,6 +38,26 @@ func TestTaskInfos(t *testing.T) {
 			},
 			want: "before",
 		},
+		{
+			name: "same completion time sorts by name",
+			args: args{
+				taskinfos: map[string]pacv1alpha1.TaskInfos{
+					"task-zebra": {
+						Name: "zebra",
+						CompletionTime: &metav1.Time{
+							Time: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+						},
+					},
+					"task-alpha": {
+						Name: "alpha",
+						CompletionTime: &metav1.Time{
+							Time: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+						},
+					},
+				},
+			},
+			want: "alpha",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
