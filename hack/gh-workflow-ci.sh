@@ -131,7 +131,13 @@ collect_logs() {
   kubectl logs -n pipelines-as-code -l app.kubernetes.io/part-of=pipelines-as-code \
     --all-containers=true --tail=1000 >/tmp/logs/pac-pods.log
   kind export logs /tmp/logs
-  [[ -d /tmp/gosmee-replay ]] && cp -a /tmp/gosmee-replay /tmp/logs/
+
+  # Collect all gosmee data in organized directory
+  mkdir -p /tmp/logs/gosmee
+  [[ -d /tmp/gosmee-replay ]] && cp -a /tmp/gosmee-replay /tmp/logs/gosmee/replay
+  [[ -d /tmp/gosmee-replay-ghe ]] && cp -a /tmp/gosmee-replay-ghe /tmp/logs/gosmee/replay-ghe
+  [[ -f /tmp/gosmee-main.log ]] && cp /tmp/gosmee-main.log /tmp/logs/gosmee/main.log
+  [[ -f /tmp/gosmee-ghe.log ]] && cp /tmp/gosmee-ghe.log /tmp/logs/gosmee/ghe.log
 
   kubectl get pipelineruns -A -o yaml >/tmp/logs/pac-pipelineruns.yaml
   kubectl get repositories.pipelinesascode.tekton.dev -A -o yaml >/tmp/logs/pac-repositories.yaml

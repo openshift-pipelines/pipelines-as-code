@@ -294,16 +294,16 @@ jobs:
 
       - name: Run gosmee for main controller
         run: |
-          nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.PYSMEE_URL }} "https://${CONTROLLER_DOMAIN_URL}" &
+          nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.PYSMEE_URL }} "https://${CONTROLLER_DOMAIN_URL}" > /tmp/gosmee-main.log 2>&1 &
 
       - name: Run gosmee for main controller (Gitea)
         run: |
-          nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.TEST_GITEA_SMEEURL }} "https://${CONTROLLER_DOMAIN_URL}" &
+          nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.TEST_GITEA_SMEEURL }} "https://${CONTROLLER_DOMAIN_URL}" >> /tmp/gosmee-main.log 2>&1 &
 
       - name: Run gosmee for second controller (GHE)
         if: matrix.provider == 'github_second_controller' || matrix.provider == 'concurrency'
         run: |
-          nohup gosmee client --saveDir /tmp/gosmee-replay-ghe ${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }} "https://ghe.paac-127-0-0-1.nip.io" &
+          nohup gosmee client --saveDir /tmp/gosmee-replay-ghe ${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }} "https://ghe.paac-127-0-0-1.nip.io" > /tmp/gosmee-ghe.log 2>&1 &
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
