@@ -78,31 +78,32 @@ get_tests() {
   all_tests=$(grep -hioP '^func[[:space:]]+Test[[:alnum:]_]+' "${testfiles[@]}" | sed -E 's/^func[[:space:]]+//')
 
   case "${target}" in
-    concurrency)
-      printf '%s\n' "${all_tests}" | grep -iP 'Concurrency'
-      ;;
-    github)
-      printf '%s\n' "${all_tests}" | grep -iP 'Github' | grep -ivP 'Concurrency|GithubSecond|SecondController'
-      ;;
-    github_second_controller)
-      printf '%s\n' "${all_tests}" | grep -iP 'GithubSecond|SecondController' | grep -ivP 'Concurrency'
-      ;;
-    gitlab_bitbucket)
-      printf '%s\n' "${all_tests}" | grep -iP 'Gitlab|Bitbucket' | grep -ivP 'Concurrency'
-      ;;
-    gitea_others)
-      printf '%s\n' "${all_tests}" | grep -ivP 'Github|Gitlab|Bitbucket|Concurrency'
-      ;;
-    *)
-      echo "Invalid target: ${target}"
-      echo "supported targets: github, github_second_controller, gitlab_bitbucket, gitea_others, concurrency"
-      ;;
+  concurrency)
+    printf '%s\n' "${all_tests}" | grep -iP 'Concurrency'
+    ;;
+  github)
+    printf '%s\n' "${all_tests}" | grep -iP 'Github' | grep -ivP 'Concurrency|GithubSecond'
+    ;;
+  github_second_controller)
+    printf '%s\n' "${all_tests}" | grep -iP 'GithubSecond' | grep -ivP 'Concurrency'
+    ;;
+  gitlab_bitbucket)
+    printf '%s\n' "${all_tests}" | grep -iP 'Gitlab|Bitbucket' | grep -ivP 'Concurrency'
+    ;;
+  gitea_others)
+    printf '%s\n' "${all_tests}" | grep -ivP 'Github|Gitlab|Bitbucket|Concurrency'
+    ;;
+  *)
+    echo "Invalid target: ${target}"
+    echo "supported targets: github, github_second_controller, gitlab_bitbucket, gitea_others, concurrency"
+    ;;
   esac
 }
 
 run_e2e_tests() {
   set +x
   target="${TEST_PROVIDER}"
+  export PAC_E2E_KEEP_NS=true
 
   mapfile -t tests < <(get_tests "${target}")
   echo "About to run ${#tests[@]} tests: ${tests[*]}"
@@ -130,7 +131,13 @@ collect_logs() {
   kubectl logs -n pipelines-as-code -l app.kubernetes.io/part-of=pipelines-as-code \
     --all-containers=true --tail=1000 >/tmp/logs/pac-pods.log
   kind export logs /tmp/logs
-  [[ -d /tmp/gosmee-replay ]] && cp -a /tmp/gosmee-replay /tmp/logs/
+
+  # Collect all gosmee data in organized directory
+  mkdir -p /tmp/logs/gosmee
+  [[ -d /tmp/gosmee-replay ]] && cp -a /tmp/gosmee-replay /tmp/logs/gosmee/replay
+  [[ -d /tmp/gosmee-replay-ghe ]] && cp -a /tmp/gosmee-replay-ghe /tmp/logs/gosmee/replay-ghe
+  [[ -f /tmp/gosmee-main.log ]] && cp /tmp/gosmee-main.log /tmp/logs/gosmee/main.log
+  [[ -f /tmp/gosmee-ghe.log ]] && cp /tmp/gosmee-ghe.log /tmp/logs/gosmee/ghe.log
 
   kubectl get pipelineruns -A -o yaml >/tmp/logs/pac-pipelineruns.yaml
   kubectl get repositories.pipelinesascode.tekton.dev -A -o yaml >/tmp/logs/pac-repositories.yaml
