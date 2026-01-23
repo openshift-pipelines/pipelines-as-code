@@ -119,6 +119,11 @@ spec:
                       continue
                     fi
 
+                    # Skip revert commits
+                    if echo "$commit_msg" | grep -E -q '^Revert '; then
+                      echo "  Skipping revert commit: $commit_hash"
+                      continue
+                    fi
                     # Run gitlint check
                     if ! echo "$commit_body" | gitlint --staged; then
                       echo "  Gitlint failed for commit: $commit_hash"
