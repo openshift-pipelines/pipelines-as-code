@@ -403,7 +403,11 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 		if event.EventType == opscomments.RetestAllCommentEventType.String() ||
 			event.EventType == opscomments.OkToTestCommentEventType.String() {
 			logger.Debugf("MatchPipelinerunByAnnotation: filtering successful templates for event_type=%s", event.EventType)
-			return filterSuccessfulTemplates(ctx, logger, cs, event, repo, matchedPRs), nil
+			filtered := filterSuccessfulTemplates(ctx, logger, cs, event, repo, matchedPRs)
+			if len(filtered) == 0 {
+				return nil, fmt.Errorf("all PipelineRuns for this commit have already succeeded. Use /retest <pipeline-name> to re-run a specific pipeline or /test to re-run all")
+			}
+			return filtered, nil
 		}
 		return matchedPRs, nil
 	}
