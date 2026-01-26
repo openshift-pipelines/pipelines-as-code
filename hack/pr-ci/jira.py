@@ -5,11 +5,10 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, Optional
 
-import google.generativeai as genai
+from google import genai
 import requests
-
-from .config import Config, DEFAULT_MODEL
-from .pr_data import PRData
+from config import DEFAULT_MODEL, Config
+from pr_data import PRData
 
 
 class JiraClient:
@@ -69,12 +68,13 @@ class GeminiJiraGenerator:
 
     def __init__(self, api_key: str, model_name: str = DEFAULT_MODEL):
         """Initialize with Gemini credentials."""
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel(model_name)
+        self.client = genai.Client(api_key=api_key)
         self.model_name = model_name
 
     def generate_jira_ticket(
-        self, pr_data: PRData, user_query: str = ""
+        self,
+        pr_data: PRData,
+        user_query: str = "",
     ) -> Optional[Dict[str, str]]:
         """Generate JIRA ticket content for a PR."""
         # Use SRVKP JIRA template from the project rules
@@ -181,7 +181,9 @@ Generate a meaningful JIRA ticket that:
 Respond only with the JSON object."""
 
         try:
-            response = self.model.generate_content(prompt)
+            response = self.client.models.generate_content(
+                model=self.model_name, contents=prompt
+            )
             if not response:
                 return None
 
@@ -259,7 +261,7 @@ Respond only with the JSON object."""
             return "No commits available"
 
         formatted = []
-        for commit in commits[-5:]:  # Last 5 commits
+        for commit in commits[-5:]:
             # Truncate long commit messages
             if len(commit) > 100:
                 commit = commit[:97] + "..."
@@ -291,7 +293,9 @@ Respond only with the JSON object."""
 Generate a release note that clearly communicates the value of this change to end users. Respond with only the release note text, no additional formatting or explanation."""
 
         try:
-            response = self.model.generate_content(prompt)
+            response = self.client.models.generate_content(
+                model=self.model_name, contents=prompt
+            )
             if not response:
                 return None
 

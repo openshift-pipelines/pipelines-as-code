@@ -32,16 +32,16 @@ A Python package that provides automated PR (Pull Request) analysis and enhancem
 
 ```bash
 # Run all checks (lint + update)
-uv run pr-ci all
+uv run main.py all
 
 # Run only linting checks
-uv run pr-ci lint
+uv run main.py lint
 
 # Run only label updates
-uv run pr-ci update
+uv run main.py update
 
 # Generate GitHub issue content
-uv run pr-ci issue-create
+uv run main.py issue-create
 ```
 
 ### Environment Variables

@@ -5,8 +5,7 @@ from __future__ import annotations
 from typing import List, Optional, Sequence
 
 import requests
-
-from .config import Config
+from config import Config
 
 GITHUB_API_BASE = "https://api.github.com"
 
