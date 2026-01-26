@@ -3,6 +3,7 @@ package matcher
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -1806,17 +1807,30 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 	observer, log := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
 
+	pipelinePullRequestForRetest := &tektonv1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "pull_request",
+			Annotations: map[string]string{
+				keys.OnEvent:        "[pull_request]",
+				keys.OnTargetBranch: "[main]",
+			},
+		},
+	}
+
 	type args struct {
 		pruns    []*tektonv1.PipelineRun
 		runevent info.Event
 	}
 	tests := []struct {
-		name       string
-		args       args
-		wantErr    bool
-		wantPrName string
-		wantLog    []string
-		logLevel   int
+		name                          string
+		args                          args
+		wantErr                       bool
+		wantPrName                    string
+		wantLog                       []string
+		logLevel                      int
+		repo                          *v1alpha1.Repository
+		seedData                      *testclient.Data
+		wantErrNoFailedPipelineToRetest bool
 	}{
 		{
 			name: "good-match-with-only-one",
@@ -2250,6 +2264,57 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "retest when all pipelines already succeeded returns ErrNoFailedPipelineToRetest and no matches",
+			args: args{
+				pruns: []*tektonv1.PipelineRun{pipelinePullRequestForRetest},
+				runevent: info.Event{
+					EventType:     opscomments.RetestAllCommentEventType.String(),
+					SHA:           "retest-sha",
+					TriggerTarget: triggertype.PullRequest,
+					BaseBranch:    "main",
+					HeadBranch:    "source",
+					URL:           "https://github.com/org/repo",
+				},
+			},
+			wantErr:                       true,
+			wantErrNoFailedPipelineToRetest: true,
+			repo: &v1alpha1.Repository{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-repo", Namespace: "test-ns"},
+				Spec:       v1alpha1.RepositorySpec{URL: "https://github.com/org/repo"},
+			},
+			seedData: &testclient.Data{
+				PipelineRuns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "pull_request-abc123",
+							Namespace: "test-ns",
+							Labels: map[string]string{
+								keys.SHA:            "retest-sha",
+								keys.OriginalPRName: "pull_request",
+							},
+							Annotations: map[string]string{
+								keys.OriginalPRName: "pull_request",
+							},
+						},
+						Status: tektonv1.PipelineRunStatus{
+							Status: knativeduckv1.Status{
+								Conditions: knativeduckv1.Conditions{
+									apis.Condition{
+										Type:   apis.ConditionSucceeded,
+										Status: corev1.ConditionTrue,
+									},
+								},
+							},
+						},
+					},
+				},
+				Repositories: []*v1alpha1.Repository{{
+					ObjectMeta: metav1.ObjectMeta{Name: "test-repo", Namespace: "test-ns"},
+					Spec:       v1alpha1.RepositorySpec{URL: "https://github.com/org/repo"},
+				}},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -2259,15 +2324,28 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 				Clients: clients.Clients{},
 				Info:    info.Info{},
 			}
+			if tt.seedData != nil {
+				stdata, _ := testclient.SeedTestData(t, ctx, *tt.seedData)
+				cs.Clients.Tekton = stdata.Pipeline
+				cs.Clients.Kube = stdata.Kube
+			}
 
 			eventEmitter := events.NewEventEmitter(cs.Clients.Kube, logger)
-			matches, err := MatchPipelinerunByAnnotation(ctx, logger, tt.args.pruns, cs, &tt.args.runevent, &ghprovider.Provider{}, eventEmitter, nil, true)
+			repo := tt.repo
+			matches, err := MatchPipelinerunByAnnotation(ctx, logger, tt.args.pruns, cs, &tt.args.runevent, &ghprovider.Provider{}, eventEmitter, repo, true)
+			if tt.wantErrNoFailedPipelineToRetest {
+				assert.Assert(t, err != nil, "expected ErrNoFailedPipelineToRetest")
+				assert.Assert(t, errors.Is(err, ErrNoFailedPipelineToRetest), "expected ErrNoFailedPipelineToRetest, got: %v", err)
+				assert.Equal(t, len(matches), 0, "expected no matches when all pipelines already succeeded")
+				return
+			}
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MatchPipelinerunByAnnotation() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
 			if tt.wantPrName != "" {
+				assert.Assert(t, len(matches) > 0, "expected at least one match")
 				assert.Assert(t, matches[0].PipelineRun.GetName() == tt.wantPrName, "Pipelinerun hasn't been matched: %+v",
 					matches[0].PipelineRun.GetName(), tt.wantPrName)
 			}
