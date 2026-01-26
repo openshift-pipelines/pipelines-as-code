@@ -120,9 +120,9 @@ func resolveRemoteResources(ctx context.Context, rt *matcher.RemoteTasks, types 
 					}
 					// add the pipeline to the Resources fetched for the Event
 					fetchedResourcesForEvent.Pipelines[remotePipeline] = pipeline
-					// add the pipeline URL to the run specific Resources
-					fetchedResourcesForPipelineRun.PipelineURL = remotePipeline
 				}
+				// set the pipeline URL for relative task path resolution (used by both cached and newly fetched)
+				fetchedResourcesForPipelineRun.PipelineURL = remotePipeline
 			}
 		}
 		pipelineTasks := []string{}
