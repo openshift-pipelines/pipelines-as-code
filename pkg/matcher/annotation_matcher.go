@@ -2,6 +2,7 @@ package matcher
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -35,6 +36,10 @@ const (
 	// maximum number of characters to display in logs for gitops comments.
 	maxCommentLogLength = 160
 )
+
+// ErrAllPipelinesSucceeded is returned when /retest or /ok-to-test is used
+// but all matching pipelines have already succeeded for this commit.
+var ErrAllPipelinesSucceeded = errors.New("all PipelineRuns for this commit have already succeeded. Use /retest <pipeline-name> to re-run a specific pipeline or /test to re-run all")
 
 // prunBranch is value from annotations and baseBranch is event.Base value from event.
 func branchMatch(prunBranch, baseBranch string) bool {
@@ -405,7 +410,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 			logger.Debugf("MatchPipelinerunByAnnotation: filtering successful templates for event_type=%s", event.EventType)
 			filtered := filterSuccessfulTemplates(ctx, logger, cs, event, repo, matchedPRs)
 			if len(filtered) == 0 {
-				return nil, fmt.Errorf("all PipelineRuns for this commit have already succeeded. Use /retest <pipeline-name> to re-run a specific pipeline or /test to re-run all")
+				return nil, ErrAllPipelinesSucceeded
 			}
 			return filtered, nil
 		}
