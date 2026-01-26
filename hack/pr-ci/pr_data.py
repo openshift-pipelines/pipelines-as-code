@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-from .github import GitHubClient
+from github import GitHubClient
 
 MIRRORED_TAGS = ("🪞 [MIRRORED]", "[MIRRORED]")
 

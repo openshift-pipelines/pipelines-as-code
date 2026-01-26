@@ -5,8 +5,7 @@ from __future__ import annotations
 from typing import Optional
 
 import requests
-
-from .github import GitHubClient
+from github import GitHubClient
 
 PR_TITLE_COMMENT_MARKER = "<!-- pr-title-lint -->"
 

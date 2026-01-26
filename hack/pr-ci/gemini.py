@@ -1,22 +1,20 @@
-"""Analyzes PR content using Gemini AI to suggest labels."""
+"Analyzes PR content using Gemini AI to suggest labels."
 
 from __future__ import annotations
 
 import json
 from typing import List
 
-import google.generativeai as genai
-
-from .config import DEFAULT_MODEL
-from .pr_data import PRData
+from google import genai
+from config import DEFAULT_MODEL
+from pr_data import PRData
 
 
 class GeminiAnalyzer:
     """Analyzes PR content using Gemini AI to suggest labels."""
 
     def __init__(self, api_key: str, model_name: str = DEFAULT_MODEL):
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel(model_name)
+        self.client = genai.Client(api_key=api_key)
         self.model_name = model_name
 
     def suggest_labels(
@@ -28,7 +26,9 @@ class GeminiAnalyzer:
         """Analyze PR and suggest appropriate labels."""
         try:
             prompt = self._build_prompt(pr_data, available_labels, excluded_labels)
-            response = self.model.generate_content(prompt)
+            response = self.client.models.generate_content(
+                model=self.model_name, contents=prompt
+            )
             return self._parse_response(response)
         except Exception as exc:  # pylint: disable=broad-except
             print(f"Error with Gemini API: {exc}")
@@ -106,15 +106,16 @@ class GeminiIssueGenerator:
     """Generates GitHub issue content using Gemini AI."""
 
     def __init__(self, api_key: str, model_name: str = DEFAULT_MODEL):
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel(model_name)
+        self.client = genai.Client(api_key=api_key)
         self.model_name = model_name
 
     def generate_issue(self, pr_data: PRData) -> dict:
         """Analyze PR and generate GitHub issue content."""
         try:
             prompt = self._build_prompt(pr_data)
-            response = self.model.generate_content(prompt)
+            response = self.client.models.generate_content(
+                model=self.model_name, contents=prompt
+            )
             return self._parse_response(response)
         except Exception as exc:  # pylint: disable=broad-except
             print(f"Error with Gemini API: {exc}")
@@ -154,7 +155,7 @@ Focus on the PROBLEM, not the solution. Write as if you're a user reporting an i
 Example for a bug fix PR:
 {{
   "title": "Bug: User authentication fails when tokens expire",
-  "body": "### Problem Description\\n\\nUsers are experiencing authentication failures when their session tokens expire, causing them to lose their work and get logged out unexpectedly.\\n\\n### Current Behavior\\n\\nWhen a token expires, the application throws an error and immediately logs the user out without any warning or graceful handling.\\n\\n### Expected Behavior\\n\\nThe application should detect token expiration and either automatically refresh the token or provide a clear warning to the user before logging them out.\\n\\n### Additional Context\\n\\nThis affects user experience significantly as users lose unsaved work when tokens expire during active sessions."
+  "body": "### Problem Description\n\nUsers are experiencing authentication failures when their session tokens expire, causing them to lose their work and get logged out unexpectedly.\n\n### Current Behavior\n\nWhen a token expires, the application throws an error and immediately logs the user out without any warning or graceful handling.\n\n### Expected Behavior\n\nThe application should detect token expiration and either automatically refresh the token or provide a clear warning to the user before logging them out.\n\n### Additional Context\n\nThis affects user experience significantly as users lose unsaved work when tokens expire during active sessions."
 }}
 
 Respond with only valid JSON.

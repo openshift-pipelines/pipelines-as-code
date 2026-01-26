@@ -1,16 +1,24 @@
+#!/usr/bin/env -S uv --quiet run --script
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#     "requests",
+#     "google-genai",
+# ]
+# ///
 """Main entry point for PR CI utilities."""
 
 import argparse
 from typing import List
 
-from .comments import CommentManager
-from .config import Config
-from .gemini import GeminiAnalyzer, GeminiIssueGenerator
-from .github import GitHubClient
-from .jira import GeminiJiraGenerator, JiraClient
-from .linter import PRLinter
-from .pr_data import PRData
-from .utils import check_file_categories, detect_modified_providers
+from comments import CommentManager
+from config import Config
+from gemini import GeminiAnalyzer, GeminiIssueGenerator
+from github import GitHubClient
+from jira import GeminiJiraGenerator, JiraClient
+from linter import PRLinter
+from pr_data import PRData
+from utils import check_file_categories, detect_modified_providers
 
 
 def run_lint() -> None:
@@ -367,7 +375,7 @@ def run_jira_create_test() -> None:
     print("🧪 Running JIRA creation test with mock data...\n")
 
     # Mock PR data
-    from .pr_data import PRData
+    from pr_data import PRData
 
     # Mock pr_info data
     mock_pr_info = {

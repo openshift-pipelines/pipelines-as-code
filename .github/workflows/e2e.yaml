@@ -41,7 +41,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        provider: [github, github_second_controller, gitlab_bitbucket, gitea_others, concurrency]
+        provider: [github, github_second_controller, gitlab_bitbucket, gitea_1, gitea_2, gitea_3, concurrency]
 
     env:
       CONTROLLER_DOMAIN_URL: paac.paac-127-0-0-1.nip.io
@@ -256,7 +256,7 @@ jobs:
           go-version-file: "go.mod"
 
       - name: Cache ko layer cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: /tmp/ko-cache
           key: ${{ runner.os }}-ko-${{ hashFiles('go.sum') }}
