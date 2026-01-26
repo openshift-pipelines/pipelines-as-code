@@ -7,9 +7,9 @@ import re
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-from .comments import PR_TITLE_COMMENT_MARKER, CommentManager
-from .github import GitHubClient
-from .pr_data import PRData
+from comments import PR_TITLE_COMMENT_MARKER, CommentManager
+from github import GitHubClient
+from pr_data import PRData
 
 DEFAULT_JIRA_PROJECT = r"(SRVKP|KONFLUX)"
 MIN_DESCRIPTION_LINES = 3
