@@ -3,6 +3,7 @@ package sort
 import (
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -10,6 +11,7 @@ import (
 	tektontest "github.com/openshift-pipelines/pipelines-as-code/pkg/test/tekton"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"gotest.tools/v3/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestStatusTmpl(t *testing.T) {
@@ -87,4 +89,41 @@ func TestStatusTmpl(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestStatusTmplSameStartTime(t *testing.T) {
+	flattedTmpl := `{{- range $taskrun := .TaskRunList }}{{- $taskrun.ConsoleLogURL }}{{- end }}`
+	wantRegexp := regexp.MustCompile(".*alpha.*zebra.*")
+
+	// Use a single shared time to ensure Equal() returns true
+	sharedTime := &metav1.Time{Time: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)}
+
+	prTaskRunStatus := map[string]*tektonv1.PipelineRunTaskRunStatus{
+		"zebra": {
+			PipelineTaskName: "zebra",
+			Status: &tektonv1.TaskRunStatus{
+				TaskRunStatusFields: tektonv1.TaskRunStatusFields{
+					StartTime: sharedTime,
+				},
+			},
+		},
+		"alpha": {
+			PipelineTaskName: "alpha",
+			Status: &tektonv1.TaskRunStatus{
+				TaskRunStatusFields: tektonv1.TaskRunStatusFields{
+					StartTime: sharedTime,
+				},
+			},
+		},
+	}
+
+	config := &info.ProviderConfig{
+		TaskStatusTMPL: flattedTmpl,
+	}
+	runs := params.New()
+	runs.Clients.SetConsoleUI(consoleui.FallBackConsole{})
+	pr := &tektonv1.PipelineRun{}
+	output, err := TaskStatusTmpl(pr, prTaskRunStatus, runs, config)
+	assert.NilError(t, err)
+	assert.Assert(t, wantRegexp.MatchString(output), "%s != %s", output, wantRegexp.String())
 }

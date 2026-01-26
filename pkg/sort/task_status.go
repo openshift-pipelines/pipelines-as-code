@@ -38,6 +38,9 @@ func (trs taskrunList) Less(i, j int) bool {
 		return true
 	}
 
+	if trs[i].Status.StartTime.Equal(trs[j].Status.StartTime) {
+		return trs[i].PipelineTaskName > trs[j].PipelineTaskName
+	}
 	return trs[j].Status.StartTime.Before(trs[i].Status.StartTime)
 }
 
