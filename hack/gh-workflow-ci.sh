@@ -77,6 +77,23 @@ get_tests() {
   mapfile -t testfiles < <(find test/ -maxdepth 1 -name '*.go')
   all_tests=$(grep -hioP '^func[[:space:]]+Test[[:alnum:]_]+' "${testfiles[@]}" | sed -E 's/^func[[:space:]]+//')
 
+  local -a gitea_tests
+  local chunk_size remainder
+  if [[ "${target}" == *"gitea"* ]]; then
+    # Filter Gitea tests, excluding Concurrency tests
+    mapfile -t gitea_tests < <(echo "${all_tests}" | grep -iP '^TestGitea' 2>/dev/null | grep -ivP 'Concurrency' 2>/dev/null | sort 2>/dev/null)
+    # Remove any non-Gitea entries that might have been captured
+    local -a filtered_tests
+    for test in "${gitea_tests[@]}"; do
+      if [[ "${test}" =~ ^TestGitea ]] && [[ ! "${test}" =~ Concurrency ]]; then
+        filtered_tests+=("${test}")
+      fi
+    done
+    gitea_tests=("${filtered_tests[@]}")
+    chunk_size=$((${#gitea_tests[@]} / 3))
+    remainder=$((${#gitea_tests[@]} % 3))
+  fi
+
   case "${target}" in
   concurrency)
     printf '%s\n' "${all_tests}" | grep -iP 'Concurrency'
@@ -91,13 +108,20 @@ get_tests() {
     printf '%s\n' "${all_tests}" | grep -iP 'Gitlab|Bitbucket' | grep -ivP 'Concurrency'
     ;;
   gitea_1)
-    printf '%s\n' "${all_tests}" | grep -iP 'Gitea[A-G]' | grep -ivP 'Concurrency'
+    if [[ ${#gitea_tests[@]} -gt 0 ]]; then
+      printf '%s\n' "${gitea_tests[@]:0:${chunk_size}}"
+    fi
     ;;
   gitea_2)
-    printf '%s\n' "${all_tests}" | grep -iP 'Gitea[H-P]' | grep -ivP 'Concurrency'
+    if [[ ${#gitea_tests[@]} -gt 0 ]]; then
+      printf '%s\n' "${gitea_tests[@]:${chunk_size}:${chunk_size}}"
+    fi
     ;;
   gitea_3)
-    printf '%s\n' "${all_tests}" | grep -iP 'Gitea[Q-Z]' | grep -ivP 'Concurrency'
+    if [[ ${#gitea_tests[@]} -gt 0 ]]; then
+      local start_idx=$((chunk_size * 2))
+      printf '%s\n' "${gitea_tests[@]:${start_idx}:$((chunk_size + remainder))}"
+    fi
     ;;
   gitea_others)
     # Deprecated: Use gitea_1, gitea_2, gitea_3 instead
