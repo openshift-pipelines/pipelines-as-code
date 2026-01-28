@@ -121,15 +121,48 @@ func MuxListDirFiles(t *testing.T, mux *http.ServeMux, event *info.Event, dirs m
 	}
 }
 
-func MuxCommits(t *testing.T, mux *http.ServeMux, event *info.Event, commits []types.Commit) {
+// MuxCommit mocks the GetCommit API (single commit, not paginated).
+func MuxCommit(t *testing.T, mux *http.ServeMux, event *info.Event, commit types.Commit) {
 	t.Helper()
 
-	path := fmt.Sprintf("/repositories/%s/%s/commits/%s", event.Organization, event.Repository, event.SHA)
+	shas := []string{}
+	if event.SHA != "" {
+		shas = append(shas, event.SHA)
+	}
+	if commit.Hash != "" && commit.Hash != event.SHA {
+		shas = append(shas, commit.Hash)
+	}
+	if len(shas) == 0 {
+		shas = append(shas, "HEAD")
+	}
+
+	for _, sha := range shas {
+		path := fmt.Sprintf("/repositories/%s/%s/commit/%s", event.Organization, event.Repository, sha)
+		mux.HandleFunc(path, func(rw http.ResponseWriter, _ *http.Request) {
+			// GetCommit returns a single commit object, not {values: [...]}
+			b, _ := json.Marshal(commit)
+			fmt.Fprint(rw, string(b))
+		})
+	}
+}
+
+func MuxBranch(t *testing.T, mux *http.ServeMux, event *info.Event, commit types.Commit) {
+	t.Helper()
+
+	if event.HeadBranch == "" {
+		return
+	}
+
+	path := fmt.Sprintf("/repositories/%s/%s/refs/branches/%s", event.Organization, event.Repository, event.HeadBranch)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, _ *http.Request) {
-		dircontents := map[string][]types.Commit{
-			"values": commits,
+		// Return the commit hash that this branch points to
+		branch := map[string]interface{}{
+			"name": event.HeadBranch,
+			"target": map[string]interface{}{
+				"hash": commit.Hash,
+			},
 		}
-		b, _ := json.Marshal(dircontents)
+		b, _ := json.Marshal(branch)
 		fmt.Fprint(rw, string(b))
 	})
 }

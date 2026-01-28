@@ -217,31 +217,44 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, event *info.Eve
 }
 
 func (v *Provider) GetCommitInfo(_ context.Context, event *info.Event) error {
-	branchortag := event.SHA
-	if branchortag == "" {
-		branchortag = event.HeadBranch
+	// If we don't have a SHA, get it from the branch first
+	sha := event.SHA
+	if sha == "" && event.HeadBranch != "" {
+		v.Logger.Infof("fetching branch info to get commit SHA for branch: %s", event.HeadBranch)
+		branchInfo, err := v.Client().Repositories.Repository.GetBranch(&bitbucket.RepositoryBranchOptions{
+			Owner:      event.Organization,
+			RepoSlug:   event.Repository,
+			BranchName: event.HeadBranch,
+		})
+		if err != nil {
+			return err
+		}
+		// Extract hash from Target map
+		if hash, ok := branchInfo.Target["hash"].(string); ok {
+			sha = hash
+		} else {
+			return fmt.Errorf("cannot extract commit hash from branch %s", event.HeadBranch)
+		}
 	}
-	response, err := v.Client().Repositories.Commits.GetCommits(&bitbucket.CommitsOptions{
-		Owner:       event.Organization,
-		RepoSlug:    event.Repository,
-		Branchortag: branchortag,
+
+	// Use GetCommit API for direct single-commit fetch (no pagination)
+	v.Logger.Infof("fetching commit info using GetCommit API for SHA: %s", sha)
+	response, err := v.Client().Repositories.Commits.GetCommit(&bitbucket.CommitsOptions{
+		Owner:    event.Organization,
+		RepoSlug: event.Repository,
+		Revision: sha,
 	})
 	if err != nil {
 		return err
 	}
+
 	commitMap, ok := response.(map[string]any)
 	if !ok {
-		return fmt.Errorf("cannot convert")
+		return fmt.Errorf("cannot convert commit response")
 	}
-	values, ok := commitMap["values"].([]any)
-	if !ok {
-		return fmt.Errorf("cannot convert")
-	}
-	if len(values) == 0 {
-		return fmt.Errorf("we did not get commit information from commit: %s", event.SHA)
-	}
+
 	commitinfo := &types.Commit{}
-	err = mapstructure.Decode(values[0], commitinfo)
+	err = mapstructure.Decode(commitMap, commitinfo)
 	if err != nil {
 		return err
 	}
