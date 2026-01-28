@@ -324,7 +324,7 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 	return nil
 }
 
-// GetTektonDir Get all yaml files in tekton directory return as a single concated file.
+// GetTektonDir retrieves all YAML files from the .tekton directory and returns them as a single concatenated multi-document YAML file.
 func (v *Provider) GetTektonDir(ctx context.Context, runevent *info.Event, path, provenance string) (string, error) {
 	tektonDirSha := ""
 
