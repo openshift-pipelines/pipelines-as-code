@@ -2,7 +2,9 @@ package gitea
 
 import (
 	"context"
+	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -159,6 +161,115 @@ func TestProvider_CreateStatus(t *testing.T) {
 			})
 			if err := p.CreateStatus(context.Background(), tt.args.event, tt.args.statusOpts); (err != nil) != tt.wantErr {
 				t.Errorf("Provider.CreateStatus() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func computeHMACSHA256(payload, secret []byte) string {
+	mac := hmac.New(sha256.New, secret)
+	mac.Write(payload)
+	return hex.EncodeToString(mac.Sum(nil))
+}
+
+func TestProvider_Validate(t *testing.T) {
+	testPayload := []byte(`{"ref":"refs/heads/main"}`)
+	testSecret := "mysecret"
+	validSignature := computeHMACSHA256(testPayload, []byte(testSecret))
+
+	tests := []struct {
+		name            string
+		signatureHeader string
+		signature       string
+		secret          string
+		payload         []byte
+		wantErr         string
+	}{
+		{
+			name:            "valid forgejo signature",
+			signatureHeader: ForgejoSignatureHeader,
+			signature:       validSignature,
+			secret:          testSecret,
+			payload:         testPayload,
+		},
+		{
+			name:            "valid gitea signature",
+			signatureHeader: GiteaSignatureHeader,
+			signature:       validSignature,
+			secret:          testSecret,
+			payload:         testPayload,
+		},
+		{
+			name:            "invalid signature mismatch",
+			signatureHeader: ForgejoSignatureHeader,
+			signature:       computeHMACSHA256([]byte("wrong payload"), []byte(testSecret)),
+			secret:          testSecret,
+			payload:         testPayload,
+			wantErr:         "gitea/forgejo webhook signature validation failed",
+		},
+		{
+			name:            "invalid hex in signature",
+			signatureHeader: ForgejoSignatureHeader,
+			signature:       "not-valid-hex!@#$",
+			secret:          testSecret,
+			payload:         testPayload,
+			wantErr:         "gitea/forgejo webhook signature is not valid hex",
+		},
+		{
+			name:            "signature present but no secret configured",
+			signatureHeader: ForgejoSignatureHeader,
+			signature:       validSignature,
+			secret:          "",
+			payload:         testPayload,
+			wantErr:         "no webhook secret has been set, in repository CR or secret",
+		},
+		{
+			name:            "secret configured but no signature",
+			signatureHeader: "",
+			signature:       "",
+			secret:          testSecret,
+			payload:         testPayload,
+			wantErr:         "no signature has been detected, for security reason we are not allowing webhooks without a secret",
+		},
+		{
+			name:            "no secret and no signature",
+			signatureHeader: "",
+			signature:       "",
+			secret:          "",
+			payload:         testPayload,
+			wantErr:         "no signature has been detected, for security reason we are not allowing webhooks without a secret",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			observer, _ := zapobserver.New(zap.InfoLevel)
+			logger := zap.New(observer).Sugar()
+
+			header := http.Header{}
+			if tt.signatureHeader != "" && tt.signature != "" {
+				header.Set(tt.signatureHeader, tt.signature)
+			}
+
+			event := &info.Event{
+				Provider: &info.Provider{
+					WebhookSecret: tt.secret,
+				},
+				Request: &info.Request{
+					Header:  header,
+					Payload: tt.payload,
+				},
+			}
+
+			p := &Provider{Logger: logger}
+			err := p.Validate(context.Background(), nil, event)
+
+			if tt.wantErr != "" {
+				assert.Assert(t, err != nil, "expected error but got nil")
+				assert.Assert(t, strings.Contains(err.Error(), tt.wantErr),
+					"expected error to contain %q, got %q", tt.wantErr, err.Error())
+			} else {
+				assert.NilError(t, err)
 			}
 		})
 	}

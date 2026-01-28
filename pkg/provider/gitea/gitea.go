@@ -2,7 +2,11 @@ package gitea
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -40,6 +44,9 @@ const (
 </td></tr>
 {{- end }}
 </table>`
+
+	ForgejoSignatureHeader = "X-Forgejo-Signature"
+	GiteaSignatureHeader   = "X-Gitea-Signature"
 )
 
 // validate the struct to interface.
@@ -122,9 +129,36 @@ func (v *Provider) SetLogger(logger *zap.SugaredLogger) {
 	v.Logger = logger
 }
 
-func (v *Provider) Validate(_ context.Context, _ *params.Run, _ *info.Event) error {
-	// TODO: figure out why gitea doesn't work with mac validation as github which seems to be the same
-	v.Logger.Debug("no secret and signature found, skipping validation for gitea")
+func (v *Provider) Validate(_ context.Context, _ *params.Run, event *info.Event) error {
+	signature := event.Request.Header.Get(ForgejoSignatureHeader)
+	if signature == "" {
+		signature = event.Request.Header.Get(GiteaSignatureHeader)
+	}
+	if signature == "" {
+		return fmt.Errorf("no signature has been detected, for security reason we are not allowing webhooks without a secret")
+	}
+
+	secret := event.Provider.WebhookSecret
+	if secret == "" {
+		return fmt.Errorf("no webhook secret has been set, in repository CR or secret")
+	}
+
+	return validateSignature(signature, event.Request.Payload, []byte(secret))
+}
+
+func validateSignature(signature string, payload, secret []byte) error {
+	signatureBytes, err := hex.DecodeString(signature)
+	if err != nil {
+		return fmt.Errorf("gitea/forgejo webhook signature is not valid hex: %w", err)
+	}
+
+	mac := hmac.New(sha256.New, secret)
+	mac.Write(payload)
+	expectedMAC := mac.Sum(nil)
+
+	if subtle.ConstantTimeCompare(signatureBytes, expectedMAC) != 1 {
+		return fmt.Errorf("gitea/forgejo webhook signature validation failed")
+	}
 	return nil
 }
 
