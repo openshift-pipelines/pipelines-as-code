@@ -1167,10 +1167,11 @@ func TestGetFileInsideRepo(t *testing.T) {
 
 func TestValidate(t *testing.T) {
 	tests := []struct {
-		name        string
-		wantErr     bool
-		secretToken string
-		eventToken  string
+		name          string
+		wantErr       bool
+		secretToken   string
+		eventToken    string
+		errorContains string
 	}{
 		{
 			name:        "valid event",
@@ -1179,22 +1180,32 @@ func TestValidate(t *testing.T) {
 			eventToken:  "test",
 		},
 		{
-			name:        "fail validation, no secret defined",
-			wantErr:     true,
-			secretToken: "",
-			eventToken:  "test",
+			name:          "fail validation, no secret defined",
+			wantErr:       true,
+			secretToken:   "",
+			eventToken:    "test",
+			errorContains: "no webhook secret",
 		},
 		{
-			name:        "fail validation",
-			wantErr:     true,
-			secretToken: "secret",
-			eventToken:  "test",
+			name:          "fail validation, token mismatch",
+			wantErr:       true,
+			secretToken:   "secret",
+			eventToken:    "test",
+			errorContains: "doesn't match",
 		},
 		{
-			name:        "fail validation, missing event token",
-			wantErr:     true,
-			secretToken: "secret",
-			eventToken:  "",
+			name:          "fail validation, missing event token",
+			wantErr:       true,
+			secretToken:   "secret",
+			eventToken:    "",
+			errorContains: "no token",
+		},
+		{
+			name:          "fail validation, both empty (security fix)",
+			wantErr:       true,
+			secretToken:   "",
+			eventToken:    "",
+			errorContains: "no token",
 		},
 	}
 	for _, tt := range tests {
@@ -1212,8 +1223,14 @@ func TestValidate(t *testing.T) {
 				WebhookSecret: tt.secretToken,
 			}
 
-			if err := v.Validate(context.TODO(), nil, event); (err != nil) != tt.wantErr {
+			err := v.Validate(context.TODO(), nil, event)
+			if (err != nil) != tt.wantErr {
 				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr && tt.errorContains != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.errorContains) {
+					t.Errorf("Validate() error = %v, want error containing %q", err, tt.errorContains)
+				}
 			}
 		})
 	}
