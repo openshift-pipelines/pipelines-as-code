@@ -103,6 +103,8 @@ func resolveRemoteResources(ctx context.Context, rt *matcher.RemoteTasks, types 
 					rt.Logger.Debugf("skipping already fetched pipeline %s in annotations on pipelinerun %s", remotePipeline, pipelinerun.GetName())
 					// already fetched, then just get the pipeline to add to run specific Resources
 					pipeline = fetchedResourcesForEvent.Pipelines[remotePipeline]
+					// set the pipeline URL for relative task path resolution
+					fetchedResourcesForPipelineRun.PipelineURL = remotePipeline
 				} else {
 					// seems like a new pipeline, fetch it based on name in annotation
 					pipeline, err = rt.GetPipelineFromAnnotationName(ctx, remotePipeline)
