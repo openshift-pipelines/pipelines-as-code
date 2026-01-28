@@ -7,9 +7,9 @@ weight: 50
 
 Pipelines-as-Code uses policies to control which actions can be performed by
 users who belong to specific teams within an organization, as defined on GitHub
-or other supported Git providers (currently GitHub and Gitea).
+or other supported Git providers (currently GitHub and Forgejo).
 
-{{< support_matrix github_app="true" github_webhook="true" gitea="true" gitlab="false" bitbucket_cloud="false" bitbucket_datacenter="false" >}}
+{{< support_matrix github_app="true" github_webhook="true" forgejo="true" gitlab="false" bitbucket_cloud="false" bitbucket_datacenter="false" >}}
 
 ## Supported Actions
 

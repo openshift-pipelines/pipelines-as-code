@@ -10,7 +10,7 @@ Pipelines-as-Code is an opinionated CI/CD solution for Tekton and OpenShift Pipe
 
 ## Overview
 
-Pipelines-as-Code brings the [Pipelines-as-Code methodology](https://teamhub.com/blog/understanding-pipeline-as-code-in-software-development/) to Tekton. It provides a simple and declarative way to define your pipelines in your Git repository and have them automatically executed on your Kubernetes cluster. It integrates seamlessly with Git providers like GitHub, GitLab, Bitbucket, and Gitea, and provides feedback directly on your pull requests and commits.
+Pipelines-as-Code brings the [Pipelines-as-Code methodology](https://teamhub.com/blog/understanding-pipeline-as-code-in-software-development/) to Tekton. It provides a simple and declarative way to define your pipelines in your Git repository and have them automatically executed on your Kubernetes cluster. It integrates seamlessly with Git providers like GitHub, GitLab, Bitbucket, and Forgejo, and provides feedback directly on your pull requests and commits.
 
 ## Why Pipelines-as-Code?
 
@@ -54,7 +54,7 @@ Before getting started with Pipelines-as-Code, ensure you have:
 - **Git Provider**: One of:
   - GitHub (GitHub App or Webhook)
   - GitLab (Webhook)
-  - Gitea/Forgejo (Webhook)
+  - Forgejo (Webhook) - Tech Preview
   - Bitbucket Cloud/Data Center (Webhook)
 - **CLI Tool**: `kubectl` for cluster access
 - **Optional**: `tkn` CLI for Tekton operations
@@ -62,7 +62,7 @@ Before getting started with Pipelines-as-Code, ensure you have:
 ## Key Features
 
 - **Git-based workflow**: Define your Tekton pipelines in your Git repository and have them automatically triggered on Git events like push, pull request, and comments.
-- **Multi-provider support**: Works with GitHub (via GitHub App & Webhook), GitLab, Gitea, Bitbucket Data Center & Cloud via webhooks.
+- **Multi-provider support**: Works with GitHub (via GitHub App & Webhook), GitLab, Forgejo (Tech Preview), Bitbucket Data Center & Cloud via webhooks.
 - **Annotation-driven workflows**: Target specific events, branches, or CEL expressions and gate untrusted PRs with `/ok-to-test` and `OWNERS`; see [Running the PipelineRun](https://pipelinesascode.com/docs/guide/running/).
 - **ChatOps style control**: `/test`, `/retest`, `/cancel`, and branch or tag selectors let you rerun or stop PipelineRuns from PR comments or commit messages; see [GitOps Commands](https://pipelinesascode.com/docs/guide/gitops_commands/).
 - **Skip CI support**: Use `[skip ci]`, `[ci skip]`, `[skip tkn]`, or `[tkn skip]` in commit messages to skip automatic PipelineRun execution for documentation updates or minor changes; GitOps commands can still override and trigger runs manually; see [Skip CI Commands](https://pipelinesascode.com/docs/guide/gitops_commands/#skip-ci-commands).

@@ -42,7 +42,7 @@ Similar to `/retest`, the `/ok-to-test` command will only trigger new PipelineRu
 ### Requiring a SHA with `/ok-to-test`
 
 {{< tech_preview "Requiring a SHA argument to `/ok-to-test`" >}}
-{{< support_matrix github_app="true" github_webhook="false" gitea="false" gitlab="false" bitbucket_cloud="false" bitbucket_datacenter="false" >}}
+{{< support_matrix github_app="true" github_webhook="false" forgejo="false" gitlab="false" bitbucket_cloud="false" bitbucket_datacenter="false" >}}
 
 Cluster administrators can enforce SHA validation on `/ok-to-test` by setting
 `require-ok-to-test-sha: "true"` in the Pipelines-as-Code ConfigMap. This
@@ -90,7 +90,7 @@ Please be aware that GitOps commands such as `/test` and others will not functio
 
 ## GitOps Commands on Pushed Commits
 
-{{< support_matrix github_app="true" github_webhook="true" gitea="false" gitlab="true" bitbucket_cloud="false" bitbucket_server="false" >}}
+{{< support_matrix github_app="true" github_webhook="true" forgejo="false" gitlab="true" bitbucket_cloud="false" bitbucket_server="false" >}}
 
 If you want to trigger a GitOps command on a pushed commit, you can include the `GitOps` comments within your commit messages. These comments can be used to restart either all pipelines or specific ones. Here's how it works:
 
@@ -168,7 +168,7 @@ The PipelineRun will be restarted regardless of the annotations if the comment `
 
 ### Triggering PipelineRun on Git tags
 
-{{< support_matrix github_app="true" github_webhook="true" gitea="false" gitlab="true" bitbucket_cloud="false" bitbucket_server="false" >}}
+{{< support_matrix github_app="true" github_webhook="true" forgejo="false" gitlab="true" bitbucket_cloud="false" bitbucket_server="false" >}}
 
 You can retrigger a PipelineRun against a specific Git tag by commenting on
 the tagged commit using a GitOps command. Pipelines-as-Code will resolve the
