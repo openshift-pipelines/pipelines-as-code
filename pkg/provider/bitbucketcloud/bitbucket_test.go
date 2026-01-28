@@ -244,12 +244,13 @@ func TestGetCommitInfo(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
+			observer, _ := zapobserver.New(zap.InfoLevel)
+			fakelogger := zap.New(observer).Sugar()
 			bbclient, mux, tearDown := bbcloudtest.SetupBBCloudClient(t)
 			defer tearDown()
-			v := &Provider{bbClient: bbclient}
-			bbcloudtest.MuxCommits(t, mux, tt.event, []types.Commit{
-				tt.commitinfo,
-			})
+			v := &Provider{Logger: fakelogger, bbClient: bbclient}
+			bbcloudtest.MuxCommit(t, mux, tt.event, tt.commitinfo)
+			bbcloudtest.MuxBranch(t, mux, tt.event, tt.commitinfo)
 			bbcloudtest.MuxRepoInfo(t, mux, tt.event, tt.repoinfo)
 
 			if err := v.GetCommitInfo(ctx, tt.event); (err != nil) != tt.wantErr {
