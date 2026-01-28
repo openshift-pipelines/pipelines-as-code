@@ -40,55 +40,54 @@ If you need to redeploy just Pipelines as Code, you can use ko directly:
 env KO_DOCKER_REPO=localhost:5000 ko apply -f config -B
 ```
 
-## Gitea
+## Forgejo
 
-Gitea is "unofficially" supported. You just need to configure Gitea the same way
-you do for other webhook methods with a token.
+Forgejo is supported as a Tech Preview provider. See the [Forgejo installation guide](/docs/install/forgejo) for setup instructions.
 
-Here is an example of a Gitea NS/CRD/Secret (set to empty):
+Here is an example of a Forgejo NS/CRD/Secret configuration:
 
 ```yaml
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: gitea
+  name: forgejo
 
 ---
 apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
 kind: Repository
 metadata:
-  name: gitea
-  namespace: gitea
+  name: forgejo
+  namespace: forgejo
 spec:
-  url: "https://gitea.my.com/owner/repo"
+  url: "https://forgejo.example.com/owner/repo"
   git_provider:
-    user: "git"
-    url: "Your gitea installation URL, i.e: https://gitea.my.com/"
+    type: "gitea"  # Use "gitea" - Forgejo is API-compatible with Gitea
+    url: "https://forgejo.example.com/"
     secret:
-      name: "secret"
+      name: "forgejo-secret"
       key: token
     webhook_secret:
-      name: "secret"
+      name: "forgejo-secret"
       key: "webhook"
 ---
 apiVersion: v1
 kind: Secret
 metadata:
-  name: gitea-home-chmouel
-  namespace: gitea
+  name: forgejo-secret
+  namespace: forgejo
 type: Opaque
 stringData:
-  token: "your token has generated in gitea"
-  webhook: "" # make sure it's empty when you set this up on the interface and here
+  token: "your token generated in Forgejo"
+  webhook: "" # Forgejo allows empty webhook secrets
 ```
 
 There are some gotchas with the webhook validation secret. Pipelines-as-Code
-detects a Gitea install and lets the user set an empty webhook secret (by default
+detects a Forgejo install and lets the user set an empty webhook secret (by default
 it's enforced).
 
-startpaac will by default spin up a new instance of Forgejo (a Gitea fork) to play
-with and run the Gitea E2E tests.
+startpaac will by default spin up a new instance of Forgejo to play
+with and run the Forgejo E2E tests.
 
 You will need to create a Hook URL generated from <https://hook.pipelinesascode.com/new>
 into the environment variable `TEST_GITEA_SMEEURL`.
@@ -104,7 +103,7 @@ The E2E tests will automatically create a repo using the admin username for each
 ## Debugging E2E
 
 As long as you have the secrets set up, you should be able to run the e2e tests properly.
-Gitea is the easiest to run (since they are self-contained). For the rest,
+Forgejo is the easiest to run (since they are self-contained). For the rest,
 you will need to set up some environment variables.
 
 See the [e2e on kind
@@ -268,10 +267,10 @@ This shortcode creates a red warning blockquote indicating that a feature is in 
 #### support_matrix
 
 ```markdown
-  { {< support_matrix github_app="true" github_webhook="true|false" gitea="true|false" gitlab="true|false" bitbucket_cloud="true|false" bitbucket_datacenter="true|false" >}}
+  { {< support_matrix github_app="true" github_webhook="true|false" forgejo="true|false" gitlab="true|false" bitbucket_cloud="true|false" bitbucket_datacenter="true|false" >}}
 ```
 
-This shortcode generates a compatibility table showing which Git providers support a particular feature. Each parameter accepts "true" or "false" values, displaying checkmarks (✅) or cross marks (❌) accordingly. The table lists all major Git providers (GitHub App, GitHub Webhook, Gitea, GitLab, Bitbucket Cloud, and Bitbucket Data Center) with their support status for the feature.
+This shortcode generates a compatibility table showing which Git providers support a particular feature. Each parameter accepts "true" or "false" values, displaying checkmarks (✅) or cross marks (❌) accordingly. The table lists all major Git providers (GitHub App, GitHub Webhook, Forgejo, GitLab, Bitbucket Cloud, and Bitbucket Data Center) with their support status for the feature.
 
 ## Documentation when we are doing the Release Process
 
