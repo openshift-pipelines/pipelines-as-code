@@ -377,7 +377,7 @@ func (v *Provider) GetTektonDir(ctx context.Context, runevent *info.Event, path,
 	if err != nil {
 		return "", err
 	}
-	return v.concatAllYamlFiles(ctx, tektonDirObjects.Entries, runevent)
+	return v.concatAllYamlFiles(ctx, tektonDirObjects.Entries, runevent, path)
 }
 
 // GetCommitInfo get info (url and title) on a commit in runevent, this needs to
@@ -471,25 +471,58 @@ func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, 
 }
 
 // concatAllYamlFiles concat all yaml files from a directory as one big multi document yaml string.
-func (v *Provider) concatAllYamlFiles(ctx context.Context, objects []*github.TreeEntry, runevent *info.Event) (string, error) {
-	var allTemplates string
-
+// tektonDirPath is the path to the .tekton directory (e.g., ".tekton") used to construct full paths.
+func (v *Provider) concatAllYamlFiles(ctx context.Context, objects []*github.TreeEntry, runevent *info.Event, tektonDirPath string) (string, error) {
+	// Collect all YAML file paths and preserve order
+	// Tree entries have paths relative to the .tekton directory, so prepend tektonDirPath
+	var yamlFiles []string
 	for _, value := range objects {
 		if strings.HasSuffix(value.GetPath(), ".yaml") ||
 			strings.HasSuffix(value.GetPath(), ".yml") {
-			data, err := v.getObject(ctx, value.GetSHA(), runevent)
-			if err != nil {
-				return "", err
-			}
-			if err := provider.ValidateYaml(data, value.GetPath()); err != nil {
-				return "", err
-			}
-			if allTemplates != "" && !strings.HasPrefix(string(data), "---") {
-				allTemplates += "---"
-			}
-			allTemplates += "\n" + string(data) + "\n"
+			// Construct full path from repo root for GraphQL query
+			fullPath := tektonDirPath + "/" + value.GetPath()
+			yamlFiles = append(yamlFiles, fullPath)
 		}
 	}
+
+	if len(yamlFiles) == 0 {
+		return "", nil
+	}
+
+	ref := runevent.SHA
+	if v.provenance == "default_branch" {
+		ref = runevent.DefaultBranch
+	}
+
+	client, err := newGraphQLClient(v)
+	if err != nil {
+		return "", fmt.Errorf("failed to create GraphQL client: %w", err)
+	}
+	graphQLResults, err := client.fetchFiles(ctx, runevent.Organization, runevent.Repository, ref, yamlFiles)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch .tekton files via GraphQL: %w", err)
+	}
+
+	var allTemplates string
+
+	for _, path := range yamlFiles {
+		content, ok := graphQLResults[path]
+		if !ok {
+			return "", fmt.Errorf("file %s not found in GraphQL response", path)
+		}
+
+		// it used to be like that (stripped prefix) before we moved to GraphQL so
+		// let's keep it that way.
+		relativePath := strings.TrimPrefix(path, tektonDirPath+"/")
+		if err := provider.ValidateYaml(content, relativePath); err != nil {
+			return "", err
+		}
+		if allTemplates != "" && !strings.HasPrefix(string(content), "---") {
+			allTemplates += "---"
+		}
+		allTemplates += "\n" + string(content) + "\n"
+	}
+
 	return allTemplates, nil
 }
 
