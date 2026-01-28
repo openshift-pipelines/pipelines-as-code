@@ -80,6 +80,11 @@ type Event struct {
 	// GitLab
 	SourceProjectID int64
 	TargetProjectID int64
+
+	// NeedsEnrichment indicates this event requires API calls to complete parsing.
+	// This is set to true when initial parsing is done without a GitHub client (webhook mode)
+	// and needs to be enriched after the Repository CR is matched and client is initialized
+	NeedsEnrichment bool
 }
 
 type State struct {

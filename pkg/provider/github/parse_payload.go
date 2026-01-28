@@ -318,14 +318,16 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		}
 		return v.handleCheckSuites(ctx, gitEvent)
 	case *github.IssueCommentEvent:
-		if v.ghClient == nil {
-			return nil, fmt.Errorf("no github client has been initialized, " +
-				"exiting... (hint: did you forget setting a secret on your repo?)")
-		}
+		// We don't check for github client for issue comment type here to allow gitops comments
+		// support for webhook integrations without affecting any other event types.
+		// Instead of processing the event completely here (for github app installations),
+		// we use `NeedsEnrichment` flag to fetch all event details and pull request info at a
+		// later stage when github client has been initialised for the webhook flow as well.
 		if gitEvent.GetAction() != "created" {
 			return nil, fmt.Errorf("only newly created comment is supported, received: %s", gitEvent.GetAction())
 		}
-		processedEvent, err = v.handleIssueCommentEvent(ctx, gitEvent)
+		// Extract basic info without API calls
+		processedEvent, err = v.handleIssueCommentEvent(gitEvent)
 		if err != nil {
 			return nil, err
 		}
@@ -534,12 +536,13 @@ const (
 	errSHANotMatch           = "the SHA provided in the `/ok-to-test` comment (`%s`) does not match the pull request's HEAD SHA (`%s`)"
 )
 
-func (v *Provider) handleIssueCommentEvent(ctx context.Context, event *github.IssueCommentEvent) (*info.Event, error) {
+func (v *Provider) handleIssueCommentEvent(event *github.IssueCommentEvent) (*info.Event, error) {
 	action := "recheck"
 	runevent := info.NewEvent()
 	runevent.Organization = event.GetRepo().GetOwner().GetLogin()
 	runevent.Repository = event.GetRepo().GetName()
 	runevent.Sender = event.GetSender().GetLogin()
+	runevent.URL = event.GetRepo().GetHTMLURL()
 	// Always set the trigger target as pull_request on issue comment events
 	runevent.TriggerTarget = triggertype.PullRequest
 	if !event.GetIssue().IsPullRequest() {
@@ -556,54 +559,17 @@ func (v *Provider) handleIssueCommentEvent(ctx context.Context, event *github.Is
 	if err != nil {
 		return info.NewEvent(), err
 	}
+	// Store the comment body for later enrichment
+	runevent.TriggerComment = event.GetComment().GetBody()
 
-	v.Logger.Infof("issue_comment: pipelinerun %s on %s/%s#%d has been requested", action, runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
-	pr, err := v.getPullRequest(ctx, runevent)
-	if err != nil {
-		return nil, err
-	}
+	v.Logger.Infof(
+		"issue_comment: pipelinerun %s on %s/%s#%d has been requested",
+		action, runevent.Organization, runevent.Repository, runevent.PullRequestNumber,
+	)
+	// Mark that enrichment is needed
+	runevent.NeedsEnrichment = true
 
-	commentBody := event.GetComment().GetBody()
-	if opscomments.IsOkToTestComment(commentBody) && v.pacInfo.RequireOkToTestSHA {
-		shaFromCommentRaw := opscomments.GetSHAFromOkToTestComment(commentBody)
-		if shaFromCommentRaw == "" {
-			v.Logger.Errorf(errSHANotProvided)
-			if err := v.CreateComment(ctx, runevent, fmt.Sprintf(errSHANotProvidedComment, pr.SHA), ""); err != nil {
-				v.Logger.Errorf("failed to create comment: %v", err)
-			}
-			return info.NewEvent(), errors.New(errSHANotProvided)
-		}
-		shaFromComment := strings.ToLower(shaFromCommentRaw)
-		prSHALower := strings.ToLower(pr.SHA)
-		shaLen := len(shaFromCommentRaw)
-
-		// Validate SHA-1 based on length:
-		// - Short SHAs (< 40 chars): must be a prefix of PR HEAD SHA
-		// - Full SHA-1 (40 chars): must match exactly
-		if shaLen < 40 {
-			// Short SHA: verify it's a valid prefix
-			if !strings.HasPrefix(prSHALower, shaFromComment) {
-				msg := fmt.Sprintf(errSHAPrefixMismatch, shaFromCommentRaw, pr.SHA)
-				v.Logger.Errorf(msg)
-				if err := v.CreateComment(ctx, runevent, msg, ""); err != nil {
-					v.Logger.Errorf("failed to create comment: %v", err)
-				}
-				return info.NewEvent(), fmt.Errorf(errSHAPrefixMismatch, shaFromCommentRaw, pr.SHA)
-			}
-		} else if shaLen == 40 {
-			// Full SHA-1: verify exact match
-			if prSHALower != shaFromComment {
-				msg := fmt.Sprintf(errSHANotMatch, shaFromCommentRaw, pr.SHA)
-				v.Logger.Errorf(msg)
-				if err := v.CreateComment(ctx, runevent, msg, ""); err != nil {
-					v.Logger.Errorf("failed to create comment: %v", err)
-				}
-				return info.NewEvent(), fmt.Errorf(errSHANotMatch, shaFromCommentRaw, pr.SHA)
-			}
-		}
-	}
-
-	return pr, nil
+	return runevent, nil
 }
 
 func (v *Provider) handleCommitCommentEvent(ctx context.Context, event *github.CommitCommentEvent) (*info.Event, error) {
@@ -695,4 +661,90 @@ func (v *Provider) handleCommitCommentEvent(ctx context.Context, event *github.C
 
 	v.Logger.Infof("github commit_comment: pipelinerun %s on %s/%s#%s has been requested", action, runevent.Organization, runevent.Repository, runevent.SHA)
 	return runevent, nil
+}
+
+// EnrichEvent completes event parsing using GitHub API calls.
+// This is called after the Repository CR is matched and the GitHub client is initialized.
+// It fetches PR details and performs validation that requires API access.
+func (v *Provider) EnrichEvent(ctx context.Context, event *info.Event) (*info.Event, error) {
+	// If enrichment is not needed, return the event as is.
+	if !event.NeedsEnrichment {
+		return event, nil
+	}
+
+	// Ensure client is initialized before enrichment
+	if v.ghClient == nil {
+		return nil, fmt.Errorf("cannot enrich event for %s/%s PR #%d: github client not initialized",
+			event.Organization, event.Repository, event.PullRequestNumber)
+	}
+
+	// For issue comments on pull requests, fetch PR details
+	if event.TriggerTarget == triggertype.PullRequest && event.PullRequestNumber > 0 {
+		v.Logger.Infof("Enriching issue_comment event for %s/%s#%d",
+			event.Organization, event.Repository, event.PullRequestNumber)
+
+		// Fetch full PR details using GitHub API
+		pr, err := v.getPullRequest(ctx, event)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get PR details during enrichment: %w", err)
+		}
+
+		// Validate /ok-to-test SHA requirement if applicable
+		if opscomments.IsOkToTestComment(event.TriggerComment) && v.pacInfo.RequireOkToTestSHA {
+			if err := v.validateOkToTestSHA(ctx, event, pr); err != nil {
+				return nil, err
+			}
+		}
+
+		event.NeedsEnrichment = false
+		v.Logger.Infof("Event enrichment completed successfully for PR #%d", event.PullRequestNumber)
+		return pr, nil
+	}
+
+	// For other event types, just mark as enriched
+	event.NeedsEnrichment = false
+	return event, nil
+}
+
+// validateOkToTestSHA validates the SHA provided in /ok-to-test comments.
+func (v *Provider) validateOkToTestSHA(ctx context.Context, runevent, pr *info.Event) error {
+	shaFromCommentRaw := opscomments.GetSHAFromOkToTestComment(runevent.TriggerComment)
+	if shaFromCommentRaw == "" {
+		v.Logger.Errorf(errSHANotProvided)
+		if err := v.CreateComment(ctx, runevent, fmt.Sprintf(errSHANotProvidedComment, pr.SHA), ""); err != nil {
+			v.Logger.Errorf("failed to create comment: %v", err)
+		}
+		return errors.New(errSHANotProvided)
+	}
+
+	shaFromComment := strings.ToLower(shaFromCommentRaw)
+	prSHALower := strings.ToLower(pr.SHA)
+	shaLen := len(shaFromCommentRaw)
+
+	// Validate SHA-1 based on length:
+	// - Short SHAs (< 40 chars): must be a prefix of PR HEAD SHA
+	// - Full SHA-1 (40 chars): must match exactly
+	if shaLen < 40 {
+		// Short SHA: verify it's a valid prefix
+		if !strings.HasPrefix(prSHALower, shaFromComment) {
+			msg := fmt.Sprintf(errSHAPrefixMismatch, shaFromCommentRaw, pr.SHA)
+			v.Logger.Errorf(msg)
+			if err := v.CreateComment(ctx, runevent, msg, ""); err != nil {
+				v.Logger.Errorf("failed to create comment: %v", err)
+			}
+			return fmt.Errorf(errSHAPrefixMismatch, shaFromCommentRaw, pr.SHA)
+		}
+	} else if shaLen == 40 {
+		// Full SHA-1: verify exact match
+		if prSHALower != shaFromComment {
+			msg := fmt.Sprintf(errSHANotMatch, shaFromCommentRaw, pr.SHA)
+			v.Logger.Errorf(msg)
+			if err := v.CreateComment(ctx, runevent, msg, ""); err != nil {
+				v.Logger.Errorf("failed to create comment: %v", err)
+			}
+			return fmt.Errorf(errSHANotMatch, shaFromCommentRaw, pr.SHA)
+		}
+	}
+
+	return nil
 }
