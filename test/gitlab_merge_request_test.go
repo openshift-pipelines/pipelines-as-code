@@ -916,9 +916,21 @@ func TestGitlabConsistentCommitStatusOnMR(t *testing.T) {
 	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
 	runcnx.Clients.Log.Infof("Pushed good .tekton files to branch: %s", targetRefName)
 
-	// get latest MR because of last commit it is update
-	mr, _, err = glprovider.Client().MergeRequests.GetMergeRequest(projectinfo.ID, mr.IID, nil)
-	assert.NilError(t, err)
+	// Wait for GitLab API to update the MR with the new SHA.
+	// GitLab's API may return stale/cached data immediately after a push.
+	oldSHA := mr.SHA
+	for range 30 {
+		mr, _, err = glprovider.Client().MergeRequests.GetMergeRequest(projectinfo.ID, mr.IID, nil)
+		assert.NilError(t, err)
+		if mr.SHA != oldSHA {
+			runcnx.Clients.Log.Infof("MR SHA updated from %s to %s", oldSHA, mr.SHA)
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
+	if mr.SHA == oldSHA {
+		t.Fatalf("MR SHA did not update after push, still: %s", oldSHA)
+	}
 
 	sopt = twait.SuccessOpt{
 		Title:           commitTitle,
