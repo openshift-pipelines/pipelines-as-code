@@ -84,8 +84,10 @@ You can customize the regular expression used for detecting errors with the
 `error-detection-simple-regexp` setting. The regular expression uses [named
 groups](https://www.regular-expressions.info/named.html) to provide flexibility
 in specifying the matching criteria. The necessary groups for matching are
-filename, line, and error (the column group is not used). The default regular
-expression is defined in the configuration map.
+filename, line, and error (the column group is optional). The default regular
+expression is defined in the configuration map. Multiple patterns are supported
+using multi-line YAML format, allowing you to detect errors from different tools
+with various output formats.
 
 By default, Pipelines-as-Code searches for errors in only the last 50 lines of
 the container logs. However, you can increase this limit by setting the
@@ -93,6 +95,14 @@ the container logs. However, you can increase this limit by setting the
 system will search through all available lines for errors. Keep in mind that
 increasing this maximum number of lines may increase the memory usage of the
 watcher.
+
+{{< hint info >}}
+**Repository-level configuration:** You can also configure error detection
+patterns on a per-repository basis using the Repository CR. This allows you to
+define multiple patterns and customize settings for individual repositories.
+See the [Repository CR documentation]({{< relref "/docs/guide/repositorycrd.md#error-detection" >}})
+for more details.
+{{< /hint >}}
 
 ![annotations](/images/github-annotation-error-failure-detection.png)
 

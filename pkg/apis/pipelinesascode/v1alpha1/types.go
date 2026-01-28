@@ -164,6 +164,13 @@ type Settings struct {
 	// AIAnalysis contains AI/LLM analysis configuration for automated CI/CD pipeline analysis.
 	// +optional
 	AIAnalysis *AIAnalysisConfig `json:"ai,omitempty"`
+
+	// ErrorDetection configures error detection for this repository. Error detection scans
+	// container logs for error patterns and creates annotations (currently GitHub-only).
+	// The global error-detection-from-container-logs setting must be enabled for this to work.
+	// If not specified, uses only global error detection pattern.
+	// +optional
+	ErrorDetection *ErrorDetectionSettings `json:"error_detection,omitempty"`
 }
 
 type GitlabSettings struct {
@@ -184,6 +191,33 @@ type GithubSettings struct {
 	CommentStrategy string `json:"comment_strategy,omitempty"`
 }
 
+// ErrorDetectionSettings configures how errors are detected from container logs and
+// exposed as annotations on Pull Requests. Currently only supported for GitHub Apps.
+type ErrorDetectionSettings struct {
+	// Enabled controls whether error detection is active for this repository.
+	// This field is required when error_detection settings are specified.
+	// Set to true to enable or false to disable error detection for this repository.
+	Enabled bool `json:"enabled"`
+	// Patterns is an array of regular expressions used to detect errors in container logs.
+	// Each pattern must use named groups to capture: filename, line, and error.
+	// The column group is optional. Example pattern:
+	// ^(?P<filename>[^:]*):(?P<line>[0-9]+):(?P<column>[0-9]+)?([ ]*)?(?P<error>.*)
+	//
+	// Multiple patterns can be specified to match different error formats.
+	// Repository-specific patterns are tried first, followed by global patterns.
+	// If not specified or empty, only the global error-detection-simple-regexp patterns are used.
+	// +optional
+	Patterns []string `json:"patterns,omitempty"`
+
+	// MaxNumberOfLines specifies how many lines to scan from the end of container logs
+	// when looking for errors. This overrides the global error-detection-max-number-of-lines setting.
+	// Higher values may increase memory usage. Use -1 for unlimited.
+	// If not specified, uses the global setting (default: 50).
+	// +optional
+	// +kubebuilder:validation:Minimum=-1
+	MaxNumberOfLines *int `json:"max_number_of_lines,omitempty"`
+}
+
 func (s *Settings) Merge(newSettings *Settings) {
 	if newSettings.PipelineRunProvenance != "" && s.PipelineRunProvenance == "" {
 		s.PipelineRunProvenance = newSettings.PipelineRunProvenance
@@ -196,6 +230,9 @@ func (s *Settings) Merge(newSettings *Settings) {
 	}
 	if newSettings.AIAnalysis != nil && s.AIAnalysis == nil {
 		s.AIAnalysis = newSettings.AIAnalysis
+	}
+	if newSettings.ErrorDetection != nil && s.ErrorDetection == nil {
+		s.ErrorDetection = newSettings.ErrorDetection
 	}
 }
 
