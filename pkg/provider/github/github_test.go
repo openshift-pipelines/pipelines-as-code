@@ -253,8 +253,8 @@ func TestGetTektonDir(t *testing.T) {
 			filterMessageSnippet: "Using PipelineRun definition from source pull_request tekton/cat#0",
 			// 1. Get Repo root objects
 			// 2. Get Tekton Dir objects
-			// 3/4. Get object content for each object (pipelinerun.yaml, pipeline.yaml)
-			expectedGHApiCalls: 4,
+			// 3. GraphQL batch fetch for 2 files (replaces 2 REST calls)
+			expectedGHApiCalls: 3,
 		},
 		{
 			name: "test no subtree on push",
@@ -269,8 +269,8 @@ func TestGetTektonDir(t *testing.T) {
 			filterMessageSnippet: "Using PipelineRun definition from source push",
 			// 1. Get Repo root objects
 			// 2. Get Tekton Dir objects
-			// 3/4. Get object content for each object (pipelinerun.yaml, pipeline.yaml)
-			expectedGHApiCalls: 4,
+			// 3. GraphQL batch fetch for 2 files (replaces 2 REST calls)
+			expectedGHApiCalls: 3,
 		},
 		{
 			name: "test provenance default_branch ",
@@ -285,8 +285,8 @@ func TestGetTektonDir(t *testing.T) {
 			filterMessageSnippet: "Using PipelineRun definition from default_branch: main",
 			// 1. Get Repo root objects
 			// 2. Get Tekton Dir objects
-			// 3/4. Get object content for each object (pipelinerun.yaml, pipeline.yaml)
-			expectedGHApiCalls: 4,
+			// 3. GraphQL batch fetch for 2 files (replaces 2 REST calls)
+			expectedGHApiCalls: 3,
 		},
 		{
 			name: "test with subtree",
@@ -401,6 +401,122 @@ func TestGetTektonDir(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetTektonDir_GraphQLBatchFetch(t *testing.T) {
+	// Test that GraphQL is used for batch fetching multiple files
+	metricsutils.ResetMetrics()
+	observer, exporter := zapobserver.New(zap.DebugLevel)
+	fakelogger := zap.New(observer).Sugar()
+	ctx, _ := rtesting.SetupFakeContext(t)
+	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+	defer teardown()
+	gvcs := Provider{
+		ghClient:     fakeclient,
+		providerName: "github",
+		Logger:       fakelogger,
+	}
+
+	event := &info.Event{
+		Organization:  "tekton",
+		Repository:    "cat",
+		SHA:           "123",
+		TriggerTarget: triggertype.PullRequest,
+	}
+	shaDir := fmt.Sprintf("%x", sha256.Sum256([]byte("testdata/tree/simple")))
+	event.SHA = shaDir
+	ghtesthelper.SetupGitTree(t, mux, "testdata/tree/simple", event, false)
+
+	got, err := gvcs.GetTektonDir(ctx, event, ".tekton", "")
+	assert.NilError(t, err)
+	assert.Assert(t, strings.Contains(got, "PipelineRun"), "expected PipelineRun in output, got %s", got)
+
+	// Verify GraphQL was used (check logs)
+	graphQLLogs := exporter.FilterMessageSnippet("GraphQL batch fetch")
+	assert.Assert(t, graphQLLogs.Len() > 0, "expected GraphQL batch fetch log message")
+
+	// Verify reduced API calls: 1 root tree + 1 tekton tree + 1 GraphQL = 3 (instead of 4)
+	metricstest.CheckCountData(
+		t,
+		"pipelines_as_code_git_provider_api_request_count",
+		map[string]string{"provider": "github"},
+		3,
+	)
+}
+
+func TestGetTektonDir_GraphQLError(t *testing.T) {
+	// Test that GraphQL errors are properly returned
+	metricsutils.ResetMetrics()
+	observer, _ := zapobserver.New(zap.DebugLevel)
+	fakelogger := zap.New(observer).Sugar()
+	ctx, _ := rtesting.SetupFakeContext(t)
+	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+	defer teardown()
+
+	// Register error handler on this mux (SetupGitTree is not called in this test,
+	// so this is the only /api/graphql handler)
+	mux.HandleFunc("/api/graphql", func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "GraphQL endpoint not available", http.StatusNotFound)
+	})
+
+	gvcs := Provider{
+		ghClient:     fakeclient,
+		providerName: "github",
+		Logger:       fakelogger,
+	}
+
+	event := &info.Event{
+		Organization:  "tekton",
+		Repository:    "cat",
+		SHA:           "123",
+		TriggerTarget: triggertype.PullRequest,
+	}
+	shaDir := fmt.Sprintf("%x", sha256.Sum256([]byte("testdata/tree/simple")))
+	event.SHA = shaDir
+
+	// Setup tree endpoints manually (skip SetupGitTree to avoid GraphQL handler registration)
+	// Set up root tree
+	mux.HandleFunc(fmt.Sprintf("/repos/%v/%v/git/trees/%v", event.Organization, event.Repository, event.SHA),
+		func(rw http.ResponseWriter, _ *http.Request) {
+			tree := &github.Tree{
+				SHA: &event.SHA,
+				Entries: []*github.TreeEntry{
+					{
+						Path: github.Ptr(".tekton"),
+						Type: github.Ptr("tree"),
+						SHA:  github.Ptr("tektondirsha"),
+					},
+				},
+			}
+			b, _ := json.Marshal(tree)
+			fmt.Fprint(rw, string(b))
+		})
+
+	// Set up .tekton directory tree
+	tektonDirSha := "tektondirsha"
+	mux.HandleFunc(fmt.Sprintf("/repos/%v/%v/git/trees/%v", event.Organization, event.Repository, tektonDirSha),
+		func(rw http.ResponseWriter, _ *http.Request) {
+			tree := &github.Tree{
+				SHA: &tektonDirSha,
+				Entries: []*github.TreeEntry{
+					{
+						Path: github.Ptr("pipeline.yaml"),
+						Type: github.Ptr("blob"),
+						SHA:  github.Ptr("pipelinesha"),
+					},
+					{
+						Path: github.Ptr("pipelinerun.yaml"),
+						Type: github.Ptr("blob"),
+						SHA:  github.Ptr("pipelinerunsha"),
+					},
+				},
+			}
+			b, _ := json.Marshal(tree)
+			fmt.Fprint(rw, string(b))
+		})
+
+	_, err := gvcs.GetTektonDir(ctx, event, ".tekton", "")
+	assert.ErrorContains(t, err, "failed to fetch .tekton files via GraphQL")
 }
 
 func TestGetFileInsideRepo(t *testing.T) {
