@@ -19,6 +19,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	providerstatus "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/secrets"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
@@ -27,14 +28,10 @@ import (
 )
 
 const (
-	tektonDir         = ".tekton"
-	CompletedStatus   = "completed"
-	inProgressStatus  = "in_progress"
-	queuedStatus      = "queued"
-	successConclusion = "success"
-	failureConclusion = "failure"
-	pendingConclusion = "pending"
-	neutralConclusion = "neutral"
+	tektonDir        = ".tekton"
+	CompletedStatus  = "completed"
+	inProgressStatus = "in_progress"
+	queuedStatus     = "queued"
 )
 
 type PacRun struct {
@@ -74,9 +71,9 @@ func (p *PacRun) Run(ctx context.Context) error {
 
 	matchedPRs, repo, err := p.matchRepoPR(ctx)
 	if err != nil {
-		createStatusErr := p.vcx.CreateStatus(ctx, p.event, provider.StatusOpts{
+		createStatusErr := p.vcx.CreateStatus(ctx, p.event, providerstatus.StatusOpts{
 			Status:     CompletedStatus,
-			Conclusion: failureConclusion,
+			Conclusion: providerstatus.ConclusionFailure,
 			Text:       fmt.Sprintf("There was an issue validating the commit: %q", err),
 			DetailsURL: p.run.Clients.ConsoleUI().URL(),
 		})
@@ -131,12 +128,12 @@ func (p *PacRun) Run(ctx context.Context) error {
 				errMsg := fmt.Sprintf("There was an error starting the PipelineRun %s, %s", match.PipelineRun.GetGenerateName(), err.Error())
 				errMsgM := fmt.Sprintf("There was an error creating the PipelineRun: <b>%s</b>\n\n%s", match.PipelineRun.GetGenerateName(), err.Error())
 				p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryPipelineRun", errMsg)
-				createStatusErr := p.vcx.CreateStatus(ctx, p.event, provider.StatusOpts{
+				createStatusErr := p.vcx.CreateStatus(ctx, p.event, providerstatus.StatusOpts{
 					PipelineRunName:          match.PipelineRun.GetName(),
 					PipelineRun:              match.PipelineRun,
 					OriginalPipelineRunName:  match.PipelineRun.GetAnnotations()[keys.OriginalPRName],
 					Status:                   CompletedStatus,
-					Conclusion:               failureConclusion,
+					Conclusion:               providerstatus.ConclusionFailure,
 					Text:                     errMsgM,
 					DetailsURL:               p.run.Clients.ConsoleUI().URL(),
 					InstanceCountForCheckRun: i,
@@ -259,9 +256,9 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 	if err != nil {
 		return nil, fmt.Errorf("cannot create message template: %w", err)
 	}
-	status := provider.StatusOpts{
+	status := providerstatus.StatusOpts{
 		Status:                  inProgressStatus,
-		Conclusion:              pendingConclusion,
+		Conclusion:              providerstatus.ConclusionPending,
 		Text:                    msg,
 		DetailsURL:              consoleURL,
 		PipelineRunName:         pr.GetName(),

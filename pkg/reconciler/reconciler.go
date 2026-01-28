@@ -31,6 +31,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	pac "github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	providerstatus "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sync"
 )
 
@@ -313,9 +314,9 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 	if err != nil {
 		return fmt.Errorf("cannot create message template: %w", err)
 	}
-	status := provider.StatusOpts{
+	status := providerstatus.StatusOpts{
 		Status:                  "in_progress",
-		Conclusion:              "pending",
+		Conclusion:              providerstatus.ConclusionPending,
 		Text:                    msg,
 		DetailsURL:              consoleURL,
 		PipelineRunName:         pr.GetName(),
