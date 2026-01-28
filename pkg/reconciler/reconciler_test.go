@@ -314,6 +314,106 @@ func TestUpdatePipelineRunState(t *testing.T) {
 	}
 }
 
+func TestReportFinalStatus_RepositoryNotFound(t *testing.T) {
+	tests := []struct {
+		name           string
+		repoName       string
+		skipAddingRepo bool
+		wantErr        bool
+		wantNilRepo    bool
+		wantLogMsg     string
+	}{
+		{
+			name:           "repository deleted during reconcile",
+			repoName:       "deleted-repo",
+			skipAddingRepo: true,
+			wantErr:        false,
+			wantNilRepo:    true,
+			wantLogMsg:     "not found, skipping final status report",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			observer, coreObserver := zapobserver.New(zap.InfoLevel)
+			fakelogger := zap.New(observer).Sugar()
+
+			ctx, _ := rtesting.SetupFakeContext(t)
+			clock := clockwork.NewFakeClock()
+
+			pr := tektontest.MakePRCompletion(clock, "pipeline-orphan", "ns", string(tektonv1.PipelineRunReasonSuccessful), nil, make(map[string]string), 10)
+			pr.Annotations = map[string]string{
+				keys.State:          kubeinteraction.StateCompleted,
+				keys.Repository:     tt.repoName,
+				keys.URLOrg:         "random",
+				keys.URLRepository:  "app",
+				keys.OriginalPRName: pr.GetName(),
+			}
+			pr.Labels = map[string]string{
+				keys.Repository: tt.repoName,
+			}
+
+			testData := testclient.Data{
+				PipelineRuns: []*tektonv1.PipelineRun{pr},
+			}
+			if !tt.skipAddingRepo {
+				testData.Repositories = []*v1alpha1.Repository{{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      tt.repoName,
+						Namespace: pr.GetNamespace(),
+					},
+					Spec: v1alpha1.RepositorySpec{URL: randomURL},
+				}}
+			}
+			stdata, informers := testclient.SeedTestData(t, ctx, testData)
+
+			qm := sync.NewQueueManager(fakelogger)
+			r := Reconciler{
+				repoLister: informers.Repository.Lister(),
+				qm:         qm,
+				run: &params.Run{
+					Clients: clients.Clients{
+						PipelineAsCode: stdata.PipelineAsCode,
+						Tekton:         stdata.Pipeline,
+						Kube:           stdata.Kube,
+					},
+					Info: info.Info{
+						Kube:       &info.KubeOpts{},
+						Controller: &info.ControllerInfo{},
+					},
+				},
+			}
+
+			event := buildEventFromPipelineRun(pr)
+			pacInfo := &info.PacOpts{Settings: settings.Settings{}}
+
+			repo, err := r.reportFinalStatus(ctx, fakelogger, pacInfo, event, pr, nil)
+
+			if tt.wantErr {
+				assert.Assert(t, err != nil)
+			} else {
+				assert.NilError(t, err)
+			}
+
+			if tt.wantNilRepo {
+				assert.Assert(t, repo == nil, "expected nil repo")
+			}
+
+			if tt.wantLogMsg != "" {
+				logs := coreObserver.All()
+				found := false
+				for _, log := range logs {
+					if strings.Contains(log.Message, tt.wantLogMsg) {
+						found = true
+						break
+					}
+				}
+				assert.Assert(t, found, "expected log message: %s", tt.wantLogMsg)
+			}
+		})
+	}
+}
+
 func TestReconcileKind_SCMReportingLogic(t *testing.T) {
 	observer, _ := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
