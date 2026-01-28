@@ -2,6 +2,7 @@ package gitea
 
 import (
 	"context"
+	"os"
 
 	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -10,6 +11,8 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/secret"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+const webhookSecretName = "webhook-secret"
 
 // CreateToken creates gitea token with all scopes.
 func CreateToken(topts *TestOpts) (string, error) {
@@ -48,14 +51,22 @@ func CreateCRD(ctx context.Context, topts *TestOpts, spec v1alpha1.RepositorySpe
 		}
 	}
 
+	_ = topts.ParamsRun.Clients.Kube.CoreV1().Secrets(ns).Delete(ctx, webhookSecretName, metav1.DeleteOptions{})
+	webhookSecret, _ := os.LookupEnv("TEST_EL_WEBHOOK_SECRET")
+	if err := secret.Create(ctx, topts.ParamsRun, map[string]string{"secret": webhookSecret}, ns, webhookSecretName); err != nil {
+		return err
+	}
+
+	if spec.GitProvider != nil {
+		spec.GitProvider.WebhookSecret = &v1alpha1.Secret{Name: webhookSecretName, Key: "secret"}
+	}
+	repoName := ns
+	if isGlobal {
+		repoName = info.DefaultGlobalRepoName
+	}
 	repository := &v1alpha1.Repository{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: func() string {
-				if isGlobal {
-					return info.DefaultGlobalRepoName
-				}
-				return topts.TargetNS
-			}(),
+			Name: repoName,
 		},
 		Spec: spec,
 	}
