@@ -686,3 +686,438 @@ func TestProviderGetExistingCheckRunID(t *testing.T) {
 		})
 	}
 }
+
+func TestFormatPipelineComment(t *testing.T) {
+	tests := []struct {
+		name       string
+		sha        string
+		marker     string
+		statusOpts provider.StatusOpts
+		wantEmoji  string
+		wantTitle  string
+	}{
+		{
+			name:   "queued status",
+			sha:    "abc123",
+			marker: "<!-- pac-status-test -->",
+			statusOpts: provider.StatusOpts{
+				Status:                  "queued",
+				OriginalPipelineRunName: "test-pipeline",
+				Summary:                 "Pipeline queued",
+				Text:                    "Waiting to start",
+			},
+			wantEmoji: "⏳",
+			wantTitle: "Queued",
+		},
+		{
+			name:   "running status",
+			sha:    "abc123",
+			marker: "<!-- pac-status-test -->",
+			statusOpts: provider.StatusOpts{
+				Status:                  "in_progress",
+				OriginalPipelineRunName: "test-pipeline",
+				Summary:                 "Pipeline running",
+				Text:                    "In progress",
+			},
+			wantEmoji: "🚀",
+			wantTitle: "Running",
+		},
+		{
+			name:   "success status",
+			sha:    "abc123",
+			marker: "<!-- pac-status-test -->",
+			statusOpts: provider.StatusOpts{
+				Status:                  "completed",
+				Conclusion:              "success",
+				OriginalPipelineRunName: "test-pipeline",
+				Summary:                 "Pipeline succeeded",
+				Text:                    "All tasks passed",
+			},
+			wantEmoji: "✅",
+			wantTitle: "Success",
+		},
+		{
+			name:   "failure status",
+			sha:    "abc123",
+			marker: "<!-- pac-status-test -->",
+			statusOpts: provider.StatusOpts{
+				Status:                  "completed",
+				Conclusion:              "failure",
+				OriginalPipelineRunName: "test-pipeline",
+				Summary:                 "Pipeline failed",
+				Text:                    "Some tasks failed",
+			},
+			wantEmoji: "❌",
+			wantTitle: "Failed",
+		},
+		{
+			name:   "cancelled status",
+			sha:    "abc123",
+			marker: "<!-- pac-status-test -->",
+			statusOpts: provider.StatusOpts{
+				Status:                  "completed",
+				Conclusion:              "cancelled",
+				OriginalPipelineRunName: "test-pipeline",
+				Summary:                 "Pipeline cancelled",
+				Text:                    "Cancelled by user",
+			},
+			wantEmoji: "⚠️",
+			wantTitle: "Cancelled",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ghProvider := &Provider{}
+			result := ghProvider.formatPipelineComment(tt.sha, tt.marker, tt.statusOpts)
+
+			assert.Assert(t, strings.Contains(result, tt.marker), "Result should contain marker")
+			assert.Assert(t, strings.Contains(result, tt.wantEmoji), "Result should contain expected emoji")
+			assert.Assert(t, strings.Contains(result, tt.wantTitle), "Result should contain expected title")
+			assert.Assert(t, strings.Contains(result, tt.statusOpts.OriginalPipelineRunName), "Result should contain pipeline name")
+			assert.Assert(t, strings.Contains(result, tt.sha), "Result should contain SHA")
+		})
+	}
+}
+
+func TestCreateOrUpdatePipelineComment(t *testing.T) {
+	const (
+		testOrg      = "test-org"
+		testRepo     = "test-repo"
+		testPRNum    = 42
+		testSHA      = "abc123def456"
+		pipelineName = "my-pipeline"
+	)
+
+	tests := []struct {
+		name               string
+		status             provider.StatusOpts
+		event              *info.Event
+		pr                 *tektonv1.PipelineRun
+		mockResponses      map[string]func(rw http.ResponseWriter, r *http.Request)
+		wantErr            bool
+		wantErrContains    string
+		wantCommentCreated bool
+		wantCommentUpdated bool
+		wantCacheUpdated   bool
+		skipGitHubClient   bool
+		cachedCommentID    int64
+		returnedCommentID  int64
+	}{
+		{
+			name: "skip when OriginalPipelineRunName is empty",
+			status: provider.StatusOpts{
+				OriginalPipelineRunName: "",
+			},
+			event: &info.Event{
+				Organization:      testOrg,
+				Repository:        testRepo,
+				PullRequestNumber: testPRNum,
+				SHA:               testSHA,
+			},
+			wantErr:            false,
+			skipGitHubClient:   true,
+			wantCommentCreated: false,
+		},
+		{
+			name: "create new comment when no cache exists",
+			status: provider.StatusOpts{
+				OriginalPipelineRunName: pipelineName,
+				Status:                  "in_progress",
+				Summary:                 "Pipeline is running",
+				Text:                    "Details here",
+				PipelineRun: &tektonv1.PipelineRun{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-run-123",
+						Namespace: "test-ns",
+					},
+				},
+			},
+			event: &info.Event{
+				Organization:      testOrg,
+				Repository:        testRepo,
+				PullRequestNumber: testPRNum,
+				SHA:               testSHA,
+			},
+			pr: &tektonv1.PipelineRun{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pr-run-123",
+					Namespace: "test-ns",
+				},
+			},
+			mockResponses: map[string]func(rw http.ResponseWriter, r *http.Request){
+				fmt.Sprintf("/repos/%s/%s/issues/%d/comments", testOrg, testRepo, testPRNum): func(rw http.ResponseWriter, r *http.Request) {
+					if r.Method == http.MethodGet {
+						// No existing comments with marker
+						fmt.Fprint(rw, `[]`)
+						return
+					}
+					if r.Method == http.MethodPost {
+						rw.WriteHeader(http.StatusCreated)
+						fmt.Fprint(rw, `{"id": 12345}`)
+						return
+					}
+				},
+			},
+			wantErr:            false,
+			wantCommentCreated: true,
+			returnedCommentID:  12345,
+			wantCacheUpdated:   true,
+		},
+		{
+			name: "update existing comment using cached comment ID",
+			status: provider.StatusOpts{
+				OriginalPipelineRunName: pipelineName,
+				Status:                  "completed",
+				Conclusion:              "success",
+				Summary:                 "Pipeline completed successfully",
+				Text:                    "All steps passed",
+				PipelineRun: &tektonv1.PipelineRun{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-run-456",
+						Namespace: "test-ns",
+						Annotations: map[string]string{
+							fmt.Sprintf("pipelinesascode.tekton.dev/status-comment-id-%s", pipelineName): "99999",
+						},
+					},
+				},
+			},
+			event: &info.Event{
+				Organization:      testOrg,
+				Repository:        testRepo,
+				PullRequestNumber: testPRNum,
+				SHA:               testSHA,
+			},
+			pr: &tektonv1.PipelineRun{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pr-run-456",
+					Namespace: "test-ns",
+					Annotations: map[string]string{
+						fmt.Sprintf("pipelinesascode.tekton.dev/status-comment-id-%s", pipelineName): "99999",
+					},
+				},
+			},
+			mockResponses: map[string]func(rw http.ResponseWriter, r *http.Request){
+				fmt.Sprintf("/repos/%s/%s/issues/comments/99999", testOrg, testRepo): func(rw http.ResponseWriter, r *http.Request) {
+					if r.Method == http.MethodPatch {
+						rw.WriteHeader(http.StatusOK)
+						fmt.Fprint(rw, `{"id": 99999}`)
+						return
+					}
+				},
+			},
+			cachedCommentID:    99999,
+			wantErr:            false,
+			wantCommentUpdated: true,
+			returnedCommentID:  99999,
+			wantCacheUpdated:   true,
+		},
+		{
+			name: "fallback to marker search when cached comment not found",
+			status: provider.StatusOpts{
+				OriginalPipelineRunName: pipelineName,
+				Status:                  "completed",
+				Conclusion:              "failure",
+				Summary:                 "Pipeline failed",
+				Text:                    "Step X failed",
+				PipelineRun: &tektonv1.PipelineRun{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-run-789",
+						Namespace: "test-ns",
+						Annotations: map[string]string{
+							fmt.Sprintf("pipelinesascode.tekton.dev/status-comment-id-%s", pipelineName): "88888",
+						},
+					},
+				},
+			},
+			event: &info.Event{
+				Organization:      testOrg,
+				Repository:        testRepo,
+				PullRequestNumber: testPRNum,
+				SHA:               testSHA,
+			},
+			pr: &tektonv1.PipelineRun{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pr-run-789",
+					Namespace: "test-ns",
+					Annotations: map[string]string{
+						fmt.Sprintf("pipelinesascode.tekton.dev/status-comment-id-%s", pipelineName): "88888",
+					},
+				},
+			},
+			mockResponses: map[string]func(rw http.ResponseWriter, r *http.Request){
+				fmt.Sprintf("/repos/%s/%s/issues/comments/88888", testOrg, testRepo): func(rw http.ResponseWriter, _ *http.Request) {
+					// Cached comment was deleted, return 404
+					rw.WriteHeader(http.StatusNotFound)
+					fmt.Fprint(rw, `{"message": "Not Found"}`)
+				},
+				fmt.Sprintf("/repos/%s/%s/issues/%d/comments", testOrg, testRepo, testPRNum): func(rw http.ResponseWriter, r *http.Request) {
+					if r.Method == http.MethodGet {
+						// Return existing comment with marker
+						marker := fmt.Sprintf("<!-- pac-status-%s -->", pipelineName)
+						fmt.Fprintf(rw, `[{"id": 77777, "body": "%s old content"}]`, marker)
+						return
+					}
+				},
+				fmt.Sprintf("/repos/%s/%s/issues/comments/77777", testOrg, testRepo): func(rw http.ResponseWriter, r *http.Request) {
+					if r.Method == http.MethodPatch {
+						rw.WriteHeader(http.StatusOK)
+						fmt.Fprint(rw, `{"id": 77777}`)
+						return
+					}
+				},
+			},
+			cachedCommentID:    88888,
+			wantErr:            false,
+			wantCommentUpdated: true,
+			returnedCommentID:  77777,
+			wantCacheUpdated:   true,
+		},
+		{
+			name: "error when GitHub API fails",
+			status: provider.StatusOpts{
+				OriginalPipelineRunName: pipelineName,
+				Status:                  "in_progress",
+				Summary:                 "Pipeline is running",
+				Text:                    "Details here",
+				PipelineRun: &tektonv1.PipelineRun{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-run-error",
+						Namespace: "test-ns",
+					},
+				},
+			},
+			event: &info.Event{
+				Organization:      testOrg,
+				Repository:        testRepo,
+				PullRequestNumber: testPRNum,
+				SHA:               testSHA,
+			},
+			pr: &tektonv1.PipelineRun{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pr-run-error",
+					Namespace: "test-ns",
+				},
+			},
+			mockResponses: map[string]func(rw http.ResponseWriter, r *http.Request){
+				fmt.Sprintf("/repos/%s/%s/issues/%d/comments", testOrg, testRepo, testPRNum): func(rw http.ResponseWriter, r *http.Request) {
+					if r.Method == http.MethodGet {
+						fmt.Fprint(rw, `[]`)
+						return
+					}
+					if r.Method == http.MethodPost {
+						rw.WriteHeader(http.StatusInternalServerError)
+						fmt.Fprint(rw, `{"message": "Internal Server Error"}`)
+						return
+					}
+				},
+			},
+			wantErr:         true,
+			wantErrContains: "500",
+		},
+		{
+			name: "nil client error",
+			status: provider.StatusOpts{
+				OriginalPipelineRunName: pipelineName,
+				Status:                  "in_progress",
+			},
+			event: &info.Event{
+				Organization:      testOrg,
+				Repository:        testRepo,
+				PullRequestNumber: testPRNum,
+				SHA:               testSHA,
+			},
+			skipGitHubClient: true,
+			wantErr:          true,
+			wantErrContains:  "no github client has been initialized",
+		},
+		{
+			name: "not a pull request error",
+			status: provider.StatusOpts{
+				OriginalPipelineRunName: pipelineName,
+				Status:                  "in_progress",
+			},
+			event: &info.Event{
+				Organization:      testOrg,
+				Repository:        testRepo,
+				PullRequestNumber: 0, // Not a PR
+				SHA:               testSHA,
+			},
+			wantErr:         true,
+			wantErrContains: "create comment only works on pull requests",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := rtesting.SetupFakeContext(t)
+			testLogger, _ := logger.GetLogger()
+
+			var ghProvider *Provider
+			var teardown func()
+
+			if !tt.skipGitHubClient {
+				fakeclient, mux, _, td := ghtesthelper.SetupGH()
+				teardown = td
+
+				for pattern, handler := range tt.mockResponses {
+					mux.HandleFunc(pattern, handler)
+				}
+
+				ghProvider = &Provider{
+					ghClient: fakeclient,
+					Logger:   testLogger,
+					Run:      params.New(),
+				}
+
+				// Set up Tekton client if we have a PipelineRun
+				if tt.pr != nil {
+					testData := testclient.Data{
+						PipelineRuns: []*tektonv1.PipelineRun{tt.pr},
+					}
+					stdata, _ := testclient.SeedTestData(t, ctx, testData)
+					ghProvider.Run.Clients = clients.Clients{
+						Tekton: stdata.Pipeline,
+					}
+				}
+			} else {
+				ghProvider = &Provider{
+					Logger: testLogger,
+				}
+			}
+
+			if teardown != nil {
+				defer teardown()
+			}
+
+			// Update status with actual PipelineRun from test data if available
+			status := tt.status
+			if tt.pr != nil && status.PipelineRun != nil {
+				status.PipelineRun = tt.pr
+			}
+
+			err := ghProvider.createOrUpdatePipelineComment(ctx, tt.event, status)
+
+			if tt.wantErr {
+				assert.Assert(t, err != nil, "Expected error but got nil")
+				if tt.wantErrContains != "" {
+					assert.Assert(t, strings.Contains(err.Error(), tt.wantErrContains),
+						"Expected error to contain %q, got %q", tt.wantErrContains, err.Error())
+				}
+				return
+			}
+			assert.NilError(t, err)
+
+			// Verify cache was updated if expected
+			if tt.wantCacheUpdated && tt.pr != nil && ghProvider.Run != nil && ghProvider.Run.Clients.Tekton != nil {
+				// Fetch the updated PipelineRun and verify the annotation
+				updatedPR, err := ghProvider.Run.Clients.Tekton.TektonV1().PipelineRuns(tt.pr.Namespace).Get(ctx, tt.pr.Name, metav1.GetOptions{})
+				assert.NilError(t, err)
+				commentIDKey := fmt.Sprintf("pipelinesascode.tekton.dev/status-comment-id-%s", pipelineName)
+				cachedID, ok := updatedPR.Annotations[commentIDKey]
+				assert.Assert(t, ok, "Expected comment ID to be cached in annotation %s", commentIDKey)
+				assert.Assert(t, cachedID != "", "Expected cached comment ID to be non-empty")
+			}
+		})
+	}
+}

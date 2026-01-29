@@ -177,11 +177,12 @@ type GitlabSettings struct {
 }
 
 type GithubSettings struct {
-	// CommentStrategy defines how GitLab comments are handled for pipeline results.
+	// CommentStrategy defines how GitHub comments are handled for pipeline results.
 	// Options:
-	// - 'disable_all': Disables all comments on merge requests
+	// - 'disable_all': Disables all comments on pull requests
+	// - 'update': Updates a single comment per PipelineRun instead of creating new ones
 	// +optional
-	// +kubebuilder:validation:Enum="";disable_all
+	// +kubebuilder:validation:Enum="";disable_all;update
 	CommentStrategy string `json:"comment_strategy,omitempty"`
 }
 
