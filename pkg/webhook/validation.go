@@ -17,7 +17,7 @@ import (
 
 var universalDeserializer = serializer.NewCodecFactory(runtime.NewScheme()).UniversalDeserializer()
 
-var allowedGitlabDisableCommentStrategyOnMr = sets.NewString("", "disable_all")
+var allowedGitlabDisableCommentStrategyOnMr = sets.NewString("", "disable_all", "update")
 
 // Path implements AdmissionController.
 func (ac *reconciler) Path() string {

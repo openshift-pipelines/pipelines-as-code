@@ -19,7 +19,9 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/comment"
 	providerMetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/metrics"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"go.uber.org/zap"
 )
@@ -93,56 +95,9 @@ func (v *Provider) SetPacInfo(pacInfo *info.PacOpts) {
 }
 
 func (v *Provider) CreateComment(_ context.Context, event *info.Event, commit, updateMarker string) error {
-	if v.gitlabClient == nil {
-		return fmt.Errorf("no gitlab client has been initialized")
-	}
+	_, err := v.createOrUpdateComment(event, commit, updateMarker)
 
-	if event.PullRequestNumber == 0 {
-		return fmt.Errorf("create comment only works on merge requests")
-	}
-
-	// List comments of the merge request
-	if updateMarker != "" {
-		commentRe := regexp.MustCompile(updateMarker)
-		options := []gitlab.RequestOptionFunc{}
-
-		for {
-			comments, resp, err := v.Client().Notes.ListMergeRequestNotes(event.TargetProjectID, int64(event.PullRequestNumber), &gitlab.ListMergeRequestNotesOptions{ListOptions: defaultGitlabListOptions}, options...)
-			if err != nil {
-				return err
-			}
-
-			for _, comment := range comments {
-				if commentRe.MatchString(comment.Body) {
-					_, _, err := v.Client().Notes.UpdateMergeRequestNote(event.TargetProjectID, int64(event.PullRequestNumber), comment.ID, &gitlab.UpdateMergeRequestNoteOptions{
-						Body: &commit,
-					})
-					if err != nil {
-						return fmt.Errorf("unable to update merge request note: %w", err)
-					}
-					return nil
-				}
-			}
-
-			// Exit the loop when we've seen all pages.
-			if resp.NextLink == "" {
-				break
-			}
-
-			// Otherwise, set param to query the next page
-			options = []gitlab.RequestOptionFunc{
-				gitlab.WithKeysetPaginationParameters(resp.NextLink),
-			}
-		}
-	}
-
-	_, _, err := v.Client().Notes.CreateMergeRequestNote(event.TargetProjectID, int64(event.PullRequestNumber), &gitlab.CreateMergeRequestNoteOptions{
-		Body: &commit,
-	})
-	if err != nil {
-		return fmt.Errorf("unable to create merge request note: %w", err)
-	}
-	return nil
+	return err
 }
 
 // CheckPolicyAllowing TODO: Implement ME.
@@ -277,7 +232,7 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.
 }
 
 //nolint:misspell
-func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts provider.StatusOpts,
+func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOpts provider.StatusOpts,
 ) error {
 	var detailsURL string
 	if v.gitlabClient == nil {
@@ -386,6 +341,10 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	case "disable_all":
 		v.Logger.Warn("Comments related to PipelineRuns status have been disabled for GitLab merge requests")
 		return nil
+	case "update":
+		if eventType == triggertype.PullRequest || provider.Valid(event.EventType, anyMergeRequestEventType) {
+			return v.createOrUpdatePipelineComment(ctx, event, statusOpts)
+		}
 	default:
 		if eventType == triggertype.PullRequest || provider.Valid(event.EventType, anyMergeRequestEventType) {
 			mopt := &gitlab.CreateMergeRequestNoteOptions{Body: gitlab.Ptr(body)}
@@ -664,4 +623,159 @@ func (v *Provider) isHeadCommitOfBranch(runevent *info.Event, branchName string)
 
 func (v *Provider) GetTemplate(commentType provider.CommentType) string {
 	return provider.GetHTMLTemplate(commentType)
+}
+
+func (v *Provider) createOrUpdateStatusComment(_ context.Context, event *info.Event, commit, updateMarker string, cachedCommentID int64) (int64, error) {
+	if v.gitlabClient == nil {
+		return 0, fmt.Errorf("no gitlab client has been initialized")
+	}
+
+	if event.PullRequestNumber == 0 {
+		return 0, fmt.Errorf("create comment only works on merge requests")
+	}
+
+	// Try cached comment ID
+	if updateMarker != "" && cachedCommentID > 0 {
+		v.Logger.Debugf("Attempting to update status comment using cached ID: %d", cachedCommentID)
+
+		updatedComment, resp, err := v.Client().Notes.UpdateMergeRequestNote(event.TargetProjectID, int64(event.PullRequestNumber), cachedCommentID, &gitlab.UpdateMergeRequestNoteOptions{
+			Body: &commit,
+		})
+
+		if err == nil {
+			v.Logger.Debugf("Successfully updated status comment using cached ID: %d", cachedCommentID)
+			return int64(updatedComment.ID), nil
+		}
+
+		if resp != nil && resp.StatusCode == http.StatusNotFound {
+			v.Logger.Warnf("Cached status comment ID %d not found (deleted?), falling back to marker search", cachedCommentID)
+		} else {
+			return 0, err
+		}
+	}
+
+	return v.createOrUpdateComment(event, commit, updateMarker)
+}
+
+func (v *Provider) createOrUpdatePipelineComment(ctx context.Context, event *info.Event, status provider.StatusOpts) error {
+	if status.OriginalPipelineRunName == "" {
+		v.Logger.Warn("OriginalPipelineRunName is empty, cannot create pipeline comment")
+		return nil
+	}
+
+	updateMarker := fmt.Sprintf("<!-- pac-status-%s -->", status.OriginalPipelineRunName)
+	commentBody := v.formatPipelineComment(event.SHA, updateMarker, status)
+
+	cachedCommentID := v.getCachedCommentID(ctx, status.PipelineRun, status.OriginalPipelineRunName, event.PullRequestNumber)
+	if cachedCommentID > 0 {
+		v.Logger.Debugf("Found cached status comment ID for %s on MR #%d: %d", status.OriginalPipelineRunName, event.PullRequestNumber, cachedCommentID)
+	}
+
+	commentID, err := v.createOrUpdateStatusComment(ctx, event, commentBody, updateMarker, cachedCommentID)
+	if err != nil {
+		return err
+	}
+
+	if status.PipelineRun != nil && commentID > 0 {
+		if err := v.cacheCommentID(ctx, status.PipelineRun, status.OriginalPipelineRunName, commentID); err != nil {
+			// Continue even if caching fails
+			v.Logger.Warnf("Failed to cache status comment ID: %v", err)
+		}
+	}
+
+	return nil
+}
+
+//nolint:misspell
+func (v *Provider) formatPipelineComment(sha, marker string, status provider.StatusOpts) string {
+	var emoji string
+
+	switch status.Conclusion {
+	case "canceled":
+		emoji = "⚠️"
+	case "failed":
+		emoji = "❌"
+	case "success":
+		emoji = "✅"
+	case "running":
+		emoji = "🚀"
+	default:
+		emoji = "ℹ️"
+	}
+
+	return fmt.Sprintf("%s\n%s **%s: %s/%s for %s**\n\n%s\n\n<small>Full log available [here](%s)</small>",
+		marker, emoji, status.Title, v.pacInfo.ApplicationName, status.OriginalPipelineRunName, sha, status.Text, status.DetailsURL)
+}
+
+func (v *Provider) cacheCommentID(ctx context.Context, pr *tektonv1.PipelineRun, pipelineName string, commentID int64) error {
+	if v.run == nil || v.run.Clients.Tekton == nil {
+		return fmt.Errorf("kubernetes client not available")
+	}
+	return comment.CacheCommentID(ctx, v.Logger, v.run.Clients.Tekton, pr, pipelineName, commentID)
+}
+
+func (v *Provider) getCachedCommentID(ctx context.Context, pr *tektonv1.PipelineRun, pipelineName string, pullRequestNumber int) int64 {
+	if v.run == nil || v.run.Clients.Tekton == nil {
+		return 0
+	}
+	namespace := ""
+	if pr != nil {
+		namespace = pr.GetNamespace()
+	} else if v.repo != nil {
+		namespace = v.repo.GetNamespace()
+	}
+	return comment.GetCachedCommentID(ctx, v.Logger, v.run.Clients.Tekton, pr, namespace, pipelineName, pullRequestNumber)
+}
+
+func (v *Provider) createOrUpdateComment(event *info.Event, commit, updateMarker string) (int64, error) {
+	if v.gitlabClient == nil {
+		return 0, fmt.Errorf("no gitlab client has been initialized")
+	}
+
+	if event.PullRequestNumber == 0 {
+		return 0, fmt.Errorf("create comment only works on merge requests")
+	}
+
+	// List comments of the merge request
+	if updateMarker != "" {
+		commentRe := regexp.MustCompile(updateMarker)
+		options := []gitlab.RequestOptionFunc{}
+
+		for {
+			comments, resp, err := v.Client().Notes.ListMergeRequestNotes(event.TargetProjectID, int64(event.PullRequestNumber), &gitlab.ListMergeRequestNotesOptions{ListOptions: defaultGitlabListOptions}, options...)
+			if err != nil {
+				return 0, err
+			}
+
+			for _, comment := range comments {
+				if commentRe.MatchString(comment.Body) {
+					updatedComment, _, err := v.Client().Notes.UpdateMergeRequestNote(event.TargetProjectID, int64(event.PullRequestNumber), comment.ID, &gitlab.UpdateMergeRequestNoteOptions{
+						Body: &commit,
+					})
+					if err != nil {
+						return 0, fmt.Errorf("unable to update merge request note: %w", err)
+					}
+					return int64(updatedComment.ID), nil
+				}
+			}
+
+			// Exit the loop when we've seen all pages.
+			if resp.NextLink == "" {
+				break
+			}
+
+			// Otherwise, set param to query the next page
+			options = []gitlab.RequestOptionFunc{
+				gitlab.WithKeysetPaginationParameters(resp.NextLink),
+			}
+		}
+	}
+
+	createdComment, _, err := v.Client().Notes.CreateMergeRequestNote(event.TargetProjectID, int64(event.PullRequestNumber), &gitlab.CreateMergeRequestNoteOptions{
+		Body: &commit,
+	})
+	if err != nil {
+		return 0, fmt.Errorf("unable to create merge request note: %w", err)
+	}
+	return int64(createdComment.ID), nil
 }

@@ -61,6 +61,9 @@ const (
 	LogURL                 = pipelinesascode.GroupName + "/log-url"
 	ExecutionOrder         = pipelinesascode.GroupName + "/execution-order"
 	SCMReportingPLRStarted = pipelinesascode.GroupName + "/scm-reporting-plr-started"
+	// StatusCommentID stores the GitHub/GitLab comment ID for status updates.
+	// The actual annotation key will be: StatusCommentID + "-" + OriginalPipelineRunName.
+	StatusCommentID = pipelinesascode.GroupName + "/status-comment-id"
 	// PublicGithubAPIURL default is "https://api.github.com" but it can be overridden by X-GitHub-Enterprise-Host header.
 	PublicGithubAPIURL   = "https://api.github.com"
 	GithubApplicationID  = "github-application-id"
