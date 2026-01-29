@@ -23,12 +23,7 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-func PushFilesToRef(ctx context.Context, client *github.Client, commitMessage, baseBranch, targetRef, owner, repo string, files map[string]string) (string, *github.Reference, error) {
-	maintree, _, err := client.Git.GetTree(ctx, owner, repo, baseBranch, false)
-	if err != nil {
-		return "", nil, fmt.Errorf("error getting tree: %w", err)
-	}
-	mainSha := maintree.GetSHA()
+func createBlobEntries(ctx context.Context, client *github.Client, owner, repo string, files map[string]string) ([]*github.TreeEntry, error) {
 	entries := []*github.TreeEntry{}
 	defaultMode := "100644"
 	for path, fcontent := range files {
@@ -39,7 +34,7 @@ func PushFilesToRef(ctx context.Context, client *github.Client, commitMessage, b
 			Encoding: &encoding,
 		})
 		if err != nil {
-			return "", nil, fmt.Errorf("error creating blobs: %w", err)
+			return nil, fmt.Errorf("error creating blobs: %w", err)
 		}
 		sha := blob.GetSHA()
 
@@ -51,12 +46,10 @@ func PushFilesToRef(ctx context.Context, client *github.Client, commitMessage, b
 				SHA:  &sha,
 			})
 	}
+	return entries, nil
+}
 
-	tree, _, err := client.Git.CreateTree(ctx, owner, repo, mainSha, entries)
-	if err != nil {
-		return "", nil, err
-	}
-
+func createCommitOnTree(ctx context.Context, client *github.Client, owner, repo, message, parentSHA string, tree *github.Tree) (*github.Commit, error) {
 	commitAuthor := "OpenShift Pipelines E2E test"
 	commitEmail := "e2e-pipelines@redhat.com"
 	commit, _, err := client.Git.CreateCommit(ctx, owner, repo, github.Commit{
@@ -64,27 +57,82 @@ func PushFilesToRef(ctx context.Context, client *github.Client, commitMessage, b
 			Name:  &commitAuthor,
 			Email: &commitEmail,
 		},
-		Message: &commitMessage,
+		Message: &message,
 		Tree:    tree,
 		Parents: []*github.Commit{
 			{
-				SHA: &mainSha,
+				SHA: &parentSHA,
 			},
 		},
 	}, &github.CreateCommitOptions{})
 	if err != nil {
-		return "", nil, fmt.Errorf("error creating commit: %w", err)
+		return nil, fmt.Errorf("error creating commit: %w", err)
+	}
+	return commit, nil
+}
+
+func PushFilesToRef(ctx context.Context, client *github.Client, commitMessage, baseBranch, targetRef, owner, repo string, files map[string]string) (string, *github.Reference, error) {
+	maintree, _, err := client.Git.GetTree(ctx, owner, repo, baseBranch, false)
+	if err != nil {
+		return "", nil, fmt.Errorf("error getting tree: %w", err)
+	}
+	mainSha := maintree.GetSHA()
+
+	entries, err := createBlobEntries(ctx, client, owner, repo, files)
+	if err != nil {
+		return "", nil, err
 	}
 
-	createRef := github.CreateRef{
+	tree, _, err := client.Git.CreateTree(ctx, owner, repo, mainSha, entries)
+	if err != nil {
+		return "", nil, fmt.Errorf("error creating tree: %w", err)
+	}
+
+	commit, err := createCommitOnTree(ctx, client, owner, repo, commitMessage, mainSha, tree)
+	if err != nil {
+		return "", nil, err
+	}
+
+	vref, _, err := client.Git.CreateRef(ctx, owner, repo, github.CreateRef{
 		Ref: targetRef,
 		SHA: *commit.SHA,
-	}
-	vref, _, err := client.Git.CreateRef(ctx, owner, repo, createRef)
+	})
 	if err != nil {
 		return "", nil, fmt.Errorf("error creating ref: %w", err)
 	}
 	return commit.GetSHA(), vref, nil
+}
+
+func PushFilesToExistingBranch(ctx context.Context, client *github.Client, commitMessage, parentSHA, targetRef, owner, repo string, files map[string]string) (string, error) {
+	parentCommit, _, err := client.Git.GetCommit(ctx, owner, repo, parentSHA)
+	if err != nil {
+		return "", fmt.Errorf("error getting parent commit: %w", err)
+	}
+	parentTreeSHA := parentCommit.GetTree().GetSHA()
+
+	entries, err := createBlobEntries(ctx, client, owner, repo, files)
+	if err != nil {
+		return "", err
+	}
+
+	tree, _, err := client.Git.CreateTree(ctx, owner, repo, parentTreeSHA, entries)
+	if err != nil {
+		return "", fmt.Errorf("error creating tree: %w", err)
+	}
+
+	commit, err := createCommitOnTree(ctx, client, owner, repo, commitMessage, parentSHA, tree)
+	if err != nil {
+		return "", err
+	}
+
+	_, _, err = client.Git.UpdateRef(ctx, owner, repo, targetRef, github.UpdateRef{
+		SHA:   commit.GetSHA(),
+		Force: github.Ptr(false),
+	})
+	if err != nil {
+		return "", fmt.Errorf("error updating ref: %w", err)
+	}
+	return commit.GetSHA(), nil
 }
 
 func PRCreate(ctx context.Context, cs *params.Run, ghcnx *ghprovider.Provider, owner, repo, targetRef, defaultBranch, title string) (int, error) {

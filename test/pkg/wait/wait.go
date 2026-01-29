@@ -95,6 +95,49 @@ func UntilPipelineRunCreated(ctx context.Context, clients clients.Clients, opts 
 	})
 }
 
+func UntilPipelineRunCompleted(ctx context.Context, clients clients.Clients, opts Opts) error {
+	ctx, cancel := context.WithTimeout(ctx, opts.PollTimeout)
+	defer cancel()
+
+	minCompleted := opts.MinNumberStatus
+	if minCompleted == 0 {
+		minCompleted = 1
+	}
+
+	return kubeinteraction.PollImmediateWithContext(ctx, opts.PollTimeout, func() (bool, error) {
+		prs, err := clients.Tekton.TektonV1().PipelineRuns(opts.Namespace).List(ctx, metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, opts.TargetSHA),
+		})
+		if err != nil {
+			return true, err
+		}
+
+		if len(prs.Items) == 0 {
+			clients.Log.Infof("waiting for pipelinerun to be created: selector %s=%s", keys.SHA, opts.TargetSHA)
+			return false, nil
+		}
+
+		// Count PipelineRuns that have completed (condition status is True or False, not Unknown)
+		completedCount := 0
+		for _, pr := range prs.Items {
+			if len(pr.Status.Conditions) > 0 {
+				status := pr.Status.Conditions[0].Status
+				if status == corev1.ConditionTrue || status == corev1.ConditionFalse {
+					completedCount++
+					clients.Log.Infof("pipelinerun %s completed with status %s", pr.Name, status)
+				}
+			}
+		}
+
+		if completedCount >= minCompleted {
+			return true, nil
+		}
+
+		clients.Log.Infof("waiting for pipelineruns to complete: %d/%d completed, selector %s=%s", completedCount, minCompleted, keys.SHA, opts.TargetSHA)
+		return false, nil
+	})
+}
+
 // UntilPipelineRunHasReason Checks for certain reason of PipelineRuns.
 func UntilPipelineRunHasReason(ctx context.Context, clients clients.Clients, desiredReason v1.PipelineRunReason, opts Opts) error {
 	ctx, cancel := context.WithTimeout(ctx, opts.PollTimeout)
