@@ -15,9 +15,9 @@ import (
 	"gotest.tools/v3/golden"
 )
 
-func RegexpMatchingInControllerLog(ctx context.Context, clients *params.Run, reg regexp.Regexp, maxNumberOfLoop int, controllerName string, lines *int64) error {
-	labelselector := fmt.Sprintf("app.kubernetes.io/name=%s", controllerName)
-	containerName := "pac-controller"
+func RegexpMatchingInPACLog(ctx context.Context, clients *params.Run, reg regexp.Regexp, maxNumberOfLoop int, name string, lines *int64) error {
+	labelselector := fmt.Sprintf("app.kubernetes.io/name=%s", name)
+	containerName := fmt.Sprintf("pac-%s", name)
 	ns := info.GetNS(ctx)
 	clients.Clients.Log.Infof(`looking for regexp "%s" in %s for label "%s" container "%s" namespace "%s"`, reg.String(), ns, labelselector, containerName, ns)
 	for i := 0; i <= maxNumberOfLoop; i++ {

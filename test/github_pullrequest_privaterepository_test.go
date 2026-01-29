@@ -29,7 +29,7 @@ func TestGithubPullRequestGitClone(t *testing.T) {
 	assert.NilError(t, err)
 
 	maxLines := int64(50)
-	assert.NilError(t, wait.RegexpMatchingInControllerLog(ctx, g.Cnx, *regexp.MustCompile(".*fetched git-clone task"),
+	assert.NilError(t, wait.RegexpMatchingInPACLog(ctx, g.Cnx, *regexp.MustCompile(".*fetched git-clone task"),
 		10, "controller", &maxLines), "Error while checking the logs of the pipelines-as-code controller pod")
 	defer g.TearDown(ctx, t)
 }

@@ -48,7 +48,7 @@ func TestGitlabDeleteTagEvent(t *testing.T) {
 
 	logLinesToCheck := int64(100)
 	reg := regexp.MustCompile("event Delete Tag Push Hook is not supported*")
-	err = twait.RegexpMatchingInControllerLog(ctx, runcnx, *reg, 10, "controller", &logLinesToCheck)
+	err = twait.RegexpMatchingInPACLog(ctx, runcnx, *reg, 10, "controller", &logLinesToCheck)
 	assert.NilError(t, err)
 }
 
