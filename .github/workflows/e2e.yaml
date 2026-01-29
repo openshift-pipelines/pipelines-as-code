@@ -41,7 +41,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        provider: [github, github_second_controller, gitlab_bitbucket, gitea_1, gitea_2, gitea_3, concurrency]
+        provider:
+          [
+            github,
+            github_second_controller,
+            gitlab_bitbucket,
+            gitea_1,
+            gitea_2,
+            gitea_3,
+            concurrency,
+          ]
 
     env:
       CONTROLLER_DOMAIN_URL: paac.paac-127-0-0-1.nip.io
@@ -285,7 +294,7 @@ jobs:
       - name: Install minica
         run: |
           go install github.com/jsha/minica@latest
-          echo "$HOME/go/bin" >> $GITHUB_PATH
+          echo "$HOME/go/bin" >> "$GITHUB_PATH"
 
       - name: Clone startpaac
         uses: actions/checkout@v6
@@ -298,6 +307,7 @@ jobs:
           nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.PYSMEE_URL }} "https://${CONTROLLER_DOMAIN_URL}" > /tmp/gosmee-main.log 2>&1 &
 
       - name: Run gosmee for main controller (Gitea)
+        if: startsWith(matrix.provider, 'gitea')
         run: |
           nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.TEST_GITEA_SMEEURL }} "https://${CONTROLLER_DOMAIN_URL}" >> /tmp/gosmee-main.log 2>&1 &
 
