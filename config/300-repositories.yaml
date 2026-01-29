@@ -450,12 +450,14 @@ spec:
                       properties:
                         comment_strategy:
                           description: |-
-                            CommentStrategy defines how GitLab comments are handled for pipeline results.
+                            CommentStrategy defines how GitHub comments are handled for pipeline results.
                             Options:
-                            - 'disable_all': Disables all comments on merge requests
+                            - 'disable_all': Disables all comments on pull requests
+                            - 'update': Updates a single comment per PipelineRun instead of creating new ones
                           enum:
                             - ""
                             - disable_all
+                            - update
                           type: string
                       type: object
                     github_app_token_scope_repos:
