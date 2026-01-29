@@ -212,6 +212,133 @@ detect_panic() {
   fi
 }
 
+notify_slack() {
+  # Required env vars: SLACK_WEBHOOK_URL, GITHUB_REPOSITORY, GITHUB_REF_NAME, GITHUB_SERVER_URL, GITHUB_RUN_ID, GITHUB_SHA
+  # Required argument: artifacts directory path
+  local artifacts_dir="${1:-artifacts}"
+  local slack_webhook_url="${SLACK_WEBHOOK_URL}"
+
+  if [[ -z "${slack_webhook_url}" ]]; then
+    echo "SLACK_WEBHOOK_URL is not set, skipping Slack notification"
+    return 0
+  fi
+
+  if [[ ! -d "${artifacts_dir}" ]]; then
+    echo "Artifacts directory '${artifacts_dir}' not found"
+    return 1
+  fi
+
+  echo "Scanning artifacts in: ${artifacts_dir}"
+
+  local failure_details=""
+  local failed_providers=""
+
+  # Use find to get provider directories (more reliable than glob)
+  local provider_dirs
+  provider_dirs=$(find "${artifacts_dir}" -maxdepth 1 -type d -name 'logs-e2e-tests-*' | sort)
+
+  if [[ -z "${provider_dirs}" ]]; then
+    echo "No provider artifact directories found matching pattern: ${artifacts_dir}/logs-e2e-tests-*"
+    return 0
+  fi
+
+  echo "Found provider directories:"
+  echo "${provider_dirs}"
+
+  while IFS= read -r provider_dir; do
+    local provider
+    provider=$(basename "${provider_dir}" | sed 's/logs-e2e-tests-//')
+    echo "Processing provider: ${provider} (${provider_dir})"
+
+    # Extract failed test names from e2e test output log
+    local failed_tests=""
+    if [[ -f "${provider_dir}/e2e-test-output.log" ]]; then
+      echo "  Found e2e-test-output.log"
+      failed_tests=$(grep -E "^--- FAIL:" "${provider_dir}/e2e-test-output.log" 2>/dev/null | sed 's/--- FAIL: //' | cut -d' ' -f1 | sort -u | paste -sd ',' - || true)
+      if [[ -n "${failed_tests}" ]]; then
+        echo "  Failed tests: ${failed_tests}"
+      else
+        echo "  No failed tests found in log"
+      fi
+    else
+      echo "  No e2e-test-output.log found"
+      ls -la "${provider_dir}" 2>/dev/null || true
+    fi
+
+    # Check if this provider had failures
+    if [[ -n "${failed_tests}" ]]; then
+      failed_providers="${failed_providers}${provider}, "
+      # Use literal \n for Slack mrkdwn newlines (will be kept as-is in JSON)
+      failure_details="${failure_details}• *${provider}*: ${failed_tests}\\n"
+    fi
+  done <<< "${provider_dirs}"
+
+  # Remove trailing comma and space
+  failed_providers="${failed_providers%, }"
+
+  if [[ -z "${failure_details}" ]]; then
+    echo "No failures detected, skipping Slack notification"
+    return 0
+  fi
+
+  # Remove trailing \n
+  failure_details="${failure_details%\\n}"
+
+  local run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+  local commit_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}"
+  local short_sha="${GITHUB_SHA:0:7}"
+
+  # Build Slack message payload using jq to ensure proper JSON escaping
+  local payload
+  payload=$(jq -n \
+    --arg repo "${GITHUB_REPOSITORY:-unknown}" \
+    --arg branch "${GITHUB_REF_NAME:-unknown}" \
+    --arg run_url "${run_url}" \
+    --arg commit_url "${commit_url}" \
+    --arg short_sha "${short_sha:-unknown}" \
+    --arg failed_providers "${failed_providers}" \
+    --arg failure_details "${failure_details}" \
+    '{
+      "blocks": [
+        {
+          "type": "header",
+          "text": {
+            "type": "plain_text",
+            "text": "🔴 E2E Test Failures",
+            "emoji": true
+          }
+        },
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": ("*Repository:* " + $repo + "\n*Branch:* " + $branch + "\n*Commit:* <" + $commit_url + "|" + $short_sha + ">\n*Workflow:* <" + $run_url + "|View Run>")
+          }
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": ("*Failed Providers:* " + $failed_providers)
+          }
+        },
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": ("*Failure Details:*\n" + $failure_details)
+          }
+        }
+      ]
+    }')
+
+  echo "Sending Slack notification for failed providers: ${failed_providers}"
+  curl -s -X POST -H 'Content-type: application/json' --data "${payload}" "${slack_webhook_url}"
+}
+
 help() {
   cat <<EOF
   Usage: $0 <command>
@@ -239,6 +366,11 @@ help() {
   output_logs
     Will output logs using snazzy formatting when available or otherwise through a simple
     python formatter. This makes debugging easier from the GitHub Actions interface.
+
+  notify_slack <artifacts_dir>
+    Send a combined Slack notification for all failed E2E test providers.
+    Parses test output logs from artifacts to extract failed test names.
+    Required env vars: SLACK_WEBHOOK_URL, GITHUB_REPOSITORY, GITHUB_REF_NAME, GITHUB_SERVER_URL, GITHUB_RUN_ID
 EOF
 }
 
@@ -257,6 +389,9 @@ collect_logs)
   ;;
 output_logs)
   output_logs
+  ;;
+notify_slack)
+  notify_slack "${2:-artifacts}"
   ;;
 help)
   help
