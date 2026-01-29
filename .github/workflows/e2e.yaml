@@ -72,7 +72,6 @@ jobs:
       TEST_GITEA_INTERNAL_URL: http://forgejo-http.forgejo.svc.cluster.local:3000
       TEST_GITEA_PASSWORD: pac
       TEST_GITEA_REPO_OWNER: pac/pac
-      TEST_GITEA_SMEEURL: ${{ secrets.TEST_GITEA_SMEEURL }}
       TEST_GITEA_USERNAME: pac
       TEST_GITHUB_API_URL: api.github.com
       TEST_GITHUB_PRIVATE_TASK_NAME: task-remote
@@ -280,11 +279,6 @@ jobs:
         run: |
           nohup make allbinaries > /tmp/binary-build.log 2>&1 &
           echo $! > /tmp/binary-build.pid
-
-      - name: Install gosmee
-        uses: jaxxstorm/action-install-gh-release@v2.1.0
-        with:
-          repo: chmouel/gosmee
 
       - name: Install Snazy
         uses: jaxxstorm/action-install-gh-release@v2.1.0
