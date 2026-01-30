@@ -279,6 +279,10 @@ A few settings are available to configure this feature:
   and expose them as annotations on Pull Request.
 
   Only GitHub apps is supported.
+  
+  **Note:** Individual repositories can override this setting using the `error_detection.enabled`
+  field in the Repository CR. See the [Repository CRD documentation]({{< relref "/docs/guide/repositorycrd.md#error-detection" >}})
+  for more details.
 
 * `error-detection-max-number-of-lines`
 
@@ -290,6 +294,33 @@ A few settings are available to configure this feature:
 
    By default the error detection only support a simple output, the way GCC or
    Make will output error, which is supported by most linters and command line tools.
+
+   **Multiple Patterns Support:** You can now specify multiple regex patterns to
+   match different error formats. The setting supports two formats:
+
+   1. **Single pattern** (backward compatible):
+
+      ```yaml
+      error-detection-simple-regexp: '^(?P<filename>[^:]*):(?P<line>[0-9]+):(?P<column>[0-9]+)?([ ]*)?(?P<error>.*)'
+      ```
+
+   2. **Multi-line YAML** (for multiple patterns):
+
+      ```yaml
+      error-detection-simple-regexp: |-
+        ^(?P<filename>[^:]*):(?P<line>[0-9]+):(?P<column>[0-9]+)?([ ]*)?(?P<error>.*)
+        ^ERROR: (?P<filename>[^ ]+) line (?P<line>[0-9]+): (?P<error>.*)
+        ^\[(?P<filename>[^\]]+)\]:(?P<line>[0-9]+) - (?P<error>.*)
+      ```
+
+   Each pattern will be tried in order until one matches. This allows you to detect
+   errors from multiple tools with different output formats.
+
+   **Pattern Requirements:** Each pattern must use regexp named groups to capture:
+  * `(?P<filename>...)` - The file path where the error occurred
+  * `(?P<line>...)` - The line number
+  * `(?P<error>...)` - The error message
+  * `(?P<column>...)` - Column number (optional)
 
    An example of an error that is supported is :
 
