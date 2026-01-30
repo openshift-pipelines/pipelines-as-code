@@ -17,6 +17,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/comment"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 )
 
@@ -362,6 +363,11 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 	case "disable_all":
 		v.Logger.Warn("github: comments related to PipelineRuns status have been disabled for Github pull requests")
 		return nil
+	case "update":
+		if (status.Status == "completed" || (status.Status == "queued" && status.Title == pendingApproval)) &&
+			status.Text != "" && eventType == triggertype.PullRequest {
+			return v.createOrUpdatePipelineComment(ctx, runevent, status)
+		}
 	default:
 		if (status.Status == "completed" || (status.Status == "queued" && status.Title == pendingApproval)) &&
 			status.Text != "" && eventType == triggertype.PullRequest {
@@ -435,4 +441,86 @@ func (v *Provider) CreateStatus(ctx context.Context, runevent *info.Event, statu
 
 	// Otherwise use the update status commit API
 	return v.createStatusCommit(ctx, runevent, statusOpts)
+}
+
+// createOrUpdatePipelineComment creates or updates a single comment for a pipeline's lifecycle.
+// This implements the unified comment strategy where one comment per pipeline updates through all states.
+func (v *Provider) createOrUpdatePipelineComment(ctx context.Context, event *info.Event, status provider.StatusOpts) error {
+	if status.OriginalPipelineRunName == "" {
+		v.Logger.Warn("OriginalPipelineRunName is empty, cannot create pipeline comment")
+		return nil
+	}
+
+	updateMarker := fmt.Sprintf("<!-- pac-status-%s -->", status.OriginalPipelineRunName)
+	commentBody := v.formatPipelineComment(event.SHA, updateMarker, status)
+
+	cachedCommentID := v.getCachedCommentID(ctx, status.PipelineRun, status.OriginalPipelineRunName, event.PullRequestNumber)
+	if cachedCommentID > 0 {
+		v.Logger.Debugf("Found cached comment ID for %s on PR #%d: %d", status.OriginalPipelineRunName, event.PullRequestNumber, cachedCommentID)
+	}
+
+	commentID, err := v.createOrUpdateStatusComment(ctx, event, commentBody, updateMarker, cachedCommentID)
+	if err != nil {
+		return err
+	}
+
+	if status.PipelineRun != nil && commentID > 0 {
+		if err := v.cacheCommentID(ctx, status.PipelineRun, status.OriginalPipelineRunName, commentID); err != nil {
+			// continue even if caching fails
+			v.Logger.Warnf("Failed to cache comment ID: %v", err)
+		}
+	}
+
+	return nil
+}
+
+func (v *Provider) formatPipelineComment(sha, marker string, status provider.StatusOpts) string {
+	var emoji, title string
+
+	switch {
+	case status.Status == "queued":
+		emoji = "⏳"
+		title = "Queued"
+	case status.Status == "in_progress":
+		emoji = "🚀"
+		title = "Running"
+	case status.Status == "completed" && status.Conclusion == "success":
+		emoji = "✅"
+		title = "Success"
+	case status.Status == "completed" && status.Conclusion == "failure":
+		emoji = "❌"
+		title = "Failed"
+	case status.Status == "completed" && status.Conclusion == "cancelled":
+		emoji = "⚠️"
+		title = "Cancelled"
+	case status.Status == "completed" && status.Conclusion == "neutral":
+		emoji = "ℹ️"
+		title = "Completed"
+	default:
+		emoji = "ℹ️"
+		title = "Status Update"
+	}
+
+	return fmt.Sprintf("%s\n%s **%s: %s for %s**\n\n%s<br>%s",
+		marker, emoji, title, status.OriginalPipelineRunName, sha, status.Summary, status.Text)
+}
+
+func (v *Provider) cacheCommentID(ctx context.Context, pr *tektonv1.PipelineRun, pipelineName string, commentID int64) error {
+	if v.Run == nil || v.Run.Clients.Tekton == nil {
+		return fmt.Errorf("kubernetes client not available")
+	}
+	return comment.CacheCommentID(ctx, v.Logger, v.Run.Clients.Tekton, pr, pipelineName, commentID)
+}
+
+func (v *Provider) getCachedCommentID(ctx context.Context, pr *tektonv1.PipelineRun, pipelineName string, pullRequestNumber int) int64 {
+	if v.Run == nil || v.Run.Clients.Tekton == nil {
+		return 0
+	}
+	namespace := ""
+	if pr != nil {
+		namespace = pr.GetNamespace()
+	} else if v.repo != nil {
+		namespace = v.repo.GetNamespace()
+	}
+	return comment.GetCachedCommentID(ctx, v.Logger, v.Run.Clients.Tekton, pr, namespace, pipelineName, pullRequestNumber)
 }
