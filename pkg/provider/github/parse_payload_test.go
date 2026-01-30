@@ -446,11 +446,15 @@ func TestParsePayLoad(t *testing.T) {
 			payloadEventStruct: github.CheckRunEvent{Action: github.Ptr("created")},
 		},
 		{
-			name:               "bad/issue comment retest only with github apps",
-			wantErrString:      "no github client has been initialized",
-			eventType:          "issue_comment",
-			triggerTarget:      "pull_request",
-			payloadEventStruct: github.IssueCommentEvent{Action: github.Ptr("created")},
+			name:          "bad/issue comment with incomplete payload",
+			wantErrString: "issue comment is not coming from a pull_request",
+			eventType:     "issue_comment",
+			triggerTarget: "pull_request",
+			payloadEventStruct: github.IssueCommentEvent{
+				Action: github.Ptr("created"),
+				Issue:  &github.Issue{},
+				Repo:   sampleRepo,
+			},
 		},
 		{
 			name:               "bad/issue comment not coming from pull request",
@@ -1067,6 +1071,11 @@ func TestParsePayLoad(t *testing.T) {
 				return
 			}
 			assert.Assert(t, ret != nil)
+			// For issue comments, we need to enrich the event to get PR details
+			if tt.eventType == "issue_comment" && ret.NeedsEnrichment {
+				ret, err = gprovider.EnrichEvent(ctx, ret)
+				assert.NilError(t, err)
+			}
 			assert.Equal(t, tt.shaRet, ret.SHA)
 			if tt.eventType == triggertype.PullRequest.String() {
 				assert.Equal(t, "my first PR", ret.PullRequestTitle)
@@ -1239,6 +1248,286 @@ func TestAppTokenGeneration(t *testing.T) {
 
 			// Verify client was created successfully for GitHub App
 			assert.Assert(t, gprovider.Client() != nil)
+		})
+	}
+}
+
+func TestEnrichEvent(t *testing.T) {
+	tests := []struct {
+		name          string
+		event         *info.Event
+		githubClient  bool
+		requireSHA    bool
+		mockAPIs      map[string]func(rw http.ResponseWriter, r *http.Request)
+		wantErr       bool
+		wantErrString string
+		wantSHA       string
+	}{
+		{
+			name: "event does not need enrichment",
+			event: &info.Event{
+				NeedsEnrichment: false,
+				Organization:    "testorg",
+				Repository:      "testrepo",
+			},
+			githubClient: true,
+			wantErr:      false,
+		},
+		{
+			name: "enrichment without github client",
+			event: &info.Event{
+				NeedsEnrichment:   true,
+				Organization:      "testorg",
+				Repository:        "testrepo",
+				PullRequestNumber: 42,
+				TriggerTarget:     triggertype.PullRequest,
+			},
+			githubClient:  false,
+			wantErr:       true,
+			wantErrString: "cannot enrich event",
+		},
+		{
+			name: "enrich issue comment event successfully",
+			event: &info.Event{
+				NeedsEnrichment:   true,
+				Organization:      "testorg",
+				Repository:        "testrepo",
+				PullRequestNumber: 42,
+				TriggerTarget:     triggertype.PullRequest,
+				TriggerComment:    "/retest",
+			},
+			githubClient: true,
+			mockAPIs: map[string]func(rw http.ResponseWriter, r *http.Request){
+				"/repos/testorg/testrepo/pulls/42": func(rw http.ResponseWriter, _ *http.Request) {
+					pr := &github.PullRequest{
+						Number: github.Ptr(42),
+						Head: &github.PullRequestBranch{
+							SHA: github.Ptr("abc123def456"),
+							Ref: github.Ptr("feature-branch"),
+							Repo: &github.Repository{
+								Owner: &github.User{Login: github.Ptr("testorg")},
+								Name:  github.Ptr("testrepo"),
+							},
+						},
+						Base: &github.PullRequestBranch{
+							Ref: github.Ptr("main"),
+						},
+					}
+					bjeez, err := json.Marshal(pr)
+					if err != nil {
+						rw.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+					fmt.Fprint(rw, string(bjeez))
+				},
+			},
+			wantErr: false,
+			wantSHA: "abc123def456",
+		},
+		{
+			name: "PR not found during enrichment",
+			event: &info.Event{
+				NeedsEnrichment:   true,
+				Organization:      "testorg",
+				Repository:        "testrepo",
+				PullRequestNumber: 404,
+				TriggerTarget:     triggertype.PullRequest,
+				TriggerComment:    "/retest",
+			},
+			githubClient: true,
+			mockAPIs: map[string]func(rw http.ResponseWriter, r *http.Request){
+				"/repos/testorg/testrepo/pulls/404": func(rw http.ResponseWriter, _ *http.Request) {
+					rw.WriteHeader(http.StatusNotFound)
+					fmt.Fprint(rw, `{"message": "Not Found"}`)
+				},
+			},
+			wantErr:       true,
+			wantErrString: "failed to get PR details during enrichment",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := rtesting.SetupFakeContext(t)
+
+			var provider *Provider
+			if tt.githubClient {
+				fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+				defer teardown()
+
+				// Register API endpoints
+				for pattern, handler := range tt.mockAPIs {
+					mux.HandleFunc(pattern, handler)
+				}
+
+				logger, _ := logger.GetLogger()
+				provider = &Provider{
+					ghClient: fakeclient,
+					Logger:   logger,
+					pacInfo: &info.PacOpts{
+						Settings: settings.Settings{
+							RequireOkToTestSHA: tt.requireSHA,
+						},
+					},
+				}
+			} else {
+				logger, _ := logger.GetLogger()
+				provider = &Provider{
+					Logger: logger,
+					pacInfo: &info.PacOpts{
+						Settings: settings.Settings{
+							RequireOkToTestSHA: tt.requireSHA,
+						},
+					},
+				}
+			}
+
+			enrichedEvent, err := provider.EnrichEvent(ctx, tt.event)
+
+			if tt.wantErr {
+				assert.ErrorContains(t, err, tt.wantErrString)
+				return
+			}
+
+			assert.NilError(t, err)
+			assert.Assert(t, enrichedEvent != nil)
+			// After enrichment, NeedsEnrichment should be false or event returned as-is
+			if tt.event.NeedsEnrichment {
+				assert.Equal(t, enrichedEvent.NeedsEnrichment, false)
+			}
+			if tt.wantSHA != "" {
+				assert.Equal(t, enrichedEvent.SHA, tt.wantSHA)
+			}
+		})
+	}
+}
+
+func TestValidateOkToTestSHA(t *testing.T) {
+	tests := []struct {
+		name          string
+		runevent      *info.Event
+		pr            *info.Event
+		requireSHA    bool
+		mockAPIs      map[string]func(rw http.ResponseWriter, r *http.Request)
+		wantErr       bool
+		wantErrString string
+	}{
+		{
+			name: "valid short SHA (7 chars) - prefix match",
+			runevent: &info.Event{
+				TriggerComment:    "/ok-to-test abc123d",
+				Organization:      "testorg",
+				Repository:        "testrepo",
+				PullRequestNumber: 42,
+			},
+			pr: &info.Event{
+				SHA: "abc123def456789abcdef0123456789abcdef01",
+			},
+			wantErr: false,
+		},
+		{
+			name: "case insensitive SHA matching with short prefix",
+			runevent: &info.Event{
+				TriggerComment:    "/ok-to-test ABC123D",
+				Organization:      "testorg",
+				Repository:        "testrepo",
+				PullRequestNumber: 42,
+			},
+			pr: &info.Event{
+				SHA: "abc123def456789abcdef0123456789abcdef01",
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid short SHA - not a prefix",
+			runevent: &info.Event{
+				TriggerComment:    "/ok-to-test fffffff",
+				Organization:      "testorg",
+				Repository:        "testrepo",
+				PullRequestNumber: 42,
+			},
+			pr: &info.Event{
+				SHA: "abc123def456789abcdef0123456789abcdef01",
+			},
+			mockAPIs: map[string]func(rw http.ResponseWriter, r *http.Request){
+				"/repos/testorg/testrepo/issues/42/comments": func(rw http.ResponseWriter, _ *http.Request) {
+					fmt.Fprint(rw, "{}")
+				},
+			},
+			wantErr:       true,
+			wantErrString: "is not a prefix of the pull request's HEAD SHA",
+		},
+		{
+			name: "invalid full SHA - no match",
+			runevent: &info.Event{
+				TriggerComment:    "/ok-to-test 1234567890123456789012345678901234567890",
+				Organization:      "testorg",
+				Repository:        "testrepo",
+				PullRequestNumber: 42,
+			},
+			pr: &info.Event{
+				SHA: "abc123def456789abcdef0123456789abcdef01",
+			},
+			mockAPIs: map[string]func(rw http.ResponseWriter, r *http.Request){
+				"/repos/testorg/testrepo/issues/42/comments": func(rw http.ResponseWriter, _ *http.Request) {
+					fmt.Fprint(rw, "{}")
+				},
+			},
+			wantErr:       true,
+			wantErrString: "does not match the pull request's HEAD SHA",
+		},
+		{
+			name: "missing SHA in comment",
+			runevent: &info.Event{
+				TriggerComment:    "/ok-to-test",
+				Organization:      "testorg",
+				Repository:        "testrepo",
+				PullRequestNumber: 42,
+			},
+			pr: &info.Event{
+				SHA: "abc123def456789abcdef0123456789abcdef01",
+			},
+			mockAPIs: map[string]func(rw http.ResponseWriter, r *http.Request){
+				"/repos/testorg/testrepo/issues/42/comments": func(rw http.ResponseWriter, _ *http.Request) {
+					fmt.Fprint(rw, "{}")
+				},
+			},
+			wantErr:       true,
+			wantErrString: "a SHA is required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := rtesting.SetupFakeContext(t)
+
+			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+			defer teardown()
+
+			// Register API endpoints
+			for pattern, handler := range tt.mockAPIs {
+				mux.HandleFunc(pattern, handler)
+			}
+
+			logger, _ := logger.GetLogger()
+			provider := &Provider{
+				ghClient: fakeclient,
+				Logger:   logger,
+				pacInfo: &info.PacOpts{
+					Settings: settings.Settings{
+						RequireOkToTestSHA: true,
+					},
+				},
+			}
+
+			err := provider.validateOkToTestSHA(ctx, tt.runevent, tt.pr)
+
+			if tt.wantErr {
+				assert.ErrorContains(t, err, tt.wantErrString)
+				return
+			}
+
+			assert.NilError(t, err)
 		})
 	}
 }
