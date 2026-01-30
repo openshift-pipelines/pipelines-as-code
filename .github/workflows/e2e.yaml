@@ -307,7 +307,7 @@ jobs:
           nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.PYSMEE_URL }} "https://${CONTROLLER_DOMAIN_URL}" > /tmp/gosmee-main.log 2>&1 &
 
       - name: Run gosmee for main controller (Gitea)
-        if: startsWith(matrix.provider, 'gitea')
+        if: startsWith(matrix.provider, 'gitea') || matrix.provider == 'concurrency'
         run: |
           nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.TEST_GITEA_SMEEURL }} "https://${CONTROLLER_DOMAIN_URL}" >> /tmp/gosmee-main.log 2>&1 &
 
