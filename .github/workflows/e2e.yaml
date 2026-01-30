@@ -41,7 +41,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        provider: [github, github_second_controller, gitlab_bitbucket, gitea_1, gitea_2, gitea_3, concurrency]
+        provider:
+          [
+            github,
+            github_second_controller,
+            gitlab_bitbucket,
+            gitea_1,
+            gitea_2,
+            gitea_3,
+            concurrency,
+          ]
 
     env:
       CONTROLLER_DOMAIN_URL: paac.paac-127-0-0-1.nip.io
@@ -285,7 +294,7 @@ jobs:
       - name: Install minica
         run: |
           go install github.com/jsha/minica@latest
-          echo "$HOME/go/bin" >> $GITHUB_PATH
+          echo "$HOME/go/bin" >> "$GITHUB_PATH"
 
       - name: Clone startpaac
         uses: actions/checkout@v6
@@ -298,6 +307,7 @@ jobs:
           nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.PYSMEE_URL }} "https://${CONTROLLER_DOMAIN_URL}" > /tmp/gosmee-main.log 2>&1 &
 
       - name: Run gosmee for main controller (Gitea)
+        if: startsWith(matrix.provider, 'gitea')
         run: |
           nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.TEST_GITEA_SMEEURL }} "https://${CONTROLLER_DOMAIN_URL}" >> /tmp/gosmee-main.log 2>&1 &
 
@@ -339,6 +349,16 @@ jobs:
 
           cd startpaac
           ./startpaac --ci -a
+
+      - name: Enable debug logging for e2e
+        run: |
+          set -euo pipefail
+          kubectl -n pipelines-as-code patch configmap pac-config-logging --type merge -p '{"data":{"loglevel.pipelinesascode":"debug","loglevel.pac-watcher":"debug","loglevel.pipelines-as-code-webhook":"debug"}}'
+          kubectl -n pipelines-as-code rollout restart deployment/pipelines-as-code-controller deployment/pipelines-as-code-webhook deployment/pipelines-as-code-watcher
+          for name in controller webhook watcher; do
+            echo "=== Waiting for $name to be ready ==="
+            kubectl -n pipelines-as-code rollout status deployment/pipelines-as-code-$name --timeout=120s
+          done
 
       - name: Install minica CA certificate to system trust store
         run: |
@@ -400,7 +420,9 @@ jobs:
           TEST_BITBUCKET_SERVER_API_URL: ${{ secrets.BITBUCKET_SERVER_API_URL }}
           TEST_BITBUCKET_SERVER_WEBHOOK_SECRET: ${{ secrets.BITBUCKET_SERVER_WEBHOOK_SECRET }}
         run: |
-          ./hack/gh-workflow-ci.sh run_e2e_tests
+          mkdir -p /tmp/logs
+          ./hack/gh-workflow-ci.sh run_e2e_tests 2>&1 | tee -a /tmp/logs/e2e-test-output.log
+          exit ${PIPESTATUS[0]}
 
       - name: Collect logs
         if: ${{ always() }}
@@ -422,11 +444,21 @@ jobs:
           name: logs-e2e-tests-${{ matrix.provider }}
           path: /tmp/logs
 
-      - name: Report Status
-        if: ${{ always() && github.ref_name == 'main' && github.event_name == 'schedule' }}
-        uses: ravsamhq/notify-slack-action@v2
+  notify-slack:
+    name: Notify Slack on Failures
+    runs-on: ubuntu-latest
+    needs: e2e-tests
+    if: ${{ always() && github.ref_name == 'main' && github.event_name == 'schedule' }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
         with:
-          status: ${{ job.status }}
-          notify_when: "failure"
+          path: artifacts
+          pattern: logs-e2e-tests-*
+
+      - name: Send Slack notification
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          ./hack/gh-workflow-ci.sh notify_slack artifacts
