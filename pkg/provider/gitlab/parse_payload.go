@@ -50,6 +50,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		processedEvent.SHA = gitEvent.ObjectAttributes.LastCommit.ID
 		processedEvent.SHAURL = gitEvent.ObjectAttributes.LastCommit.URL
 		processedEvent.SHATitle = gitEvent.ObjectAttributes.LastCommit.Title
+		processedEvent.SHAMessage = gitEvent.ObjectAttributes.LastCommit.Message
 		processedEvent.HeadBranch = gitEvent.ObjectAttributes.SourceBranch
 		processedEvent.BaseBranch = gitEvent.ObjectAttributes.TargetBranch
 		processedEvent.HeadURL = gitEvent.ObjectAttributes.Source.WebURL

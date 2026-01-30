@@ -103,7 +103,7 @@ func (s *sinker) processEvent(ctx context.Context, request *http.Request) error 
 
 		// For PULL REQUEST events: commit message needs to be fetched via API
 		// Get commit info for skip-CI detection (only if we successfully set up client above)
-		if s.event.EventType == "pull_request" && repo != nil {
+		if (s.event.EventType == "pull_request" || s.event.EventType == "Merge Request") && repo != nil {
 			// Get commit info (including commit message) via API
 			if err := s.vcx.GetCommitInfo(ctx, s.event); err != nil {
 				return fmt.Errorf("could not get commit info: %w", err)
