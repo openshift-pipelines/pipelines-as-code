@@ -147,7 +147,7 @@ run_e2e_tests() {
 
 output_logs() {
   if command -v "snazy" >/dev/null 2>&1; then
-    snazy --extra-fields --skip-line-regexp="^(Reconcile (succeeded|error)|Updating webhook)" /tmp/logs/pac-pods.log
+    snazy --extra-fields --skip-line-regexp="^(Reconcile (succeeded|error)|Updating webhook)" -f error -f fatal /tmp/logs/pac-pods.log
   else
     # snazy for the poors
     python -c "import sys,json,datetime; [print(f'• { (lambda t: datetime.datetime.fromisoformat(t.rstrip(\"Z\")).strftime(\"%H:%M:%S\") if isinstance(t,str) else datetime.datetime.fromtimestamp(t).strftime(\"%H:%M:%S\"))(json.loads(l.strip())[\"ts\"] )} {json.loads(l.strip()).get(\"msg\",\"\")}') if l.strip().startswith('{') else print(l.strip()) for l in sys.stdin]" \
@@ -271,7 +271,7 @@ notify_slack() {
       # Use literal \n for Slack mrkdwn newlines (will be kept as-is in JSON)
       failure_details="${failure_details}• *${provider}*: ${failed_tests}\\n"
     fi
-  done <<< "${provider_dirs}"
+  done <<<"${provider_dirs}"
 
   # Remove trailing comma and space
   failed_providers="${failed_providers%, }"
