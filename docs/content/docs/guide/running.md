@@ -128,7 +128,7 @@ the pull request describing the error. The error will also be logged in the user
 Despite validation errors, Pipelines-as-Code continues to run other correctly parsed and matched PipelineRuns.
 However, if a PipelineRun has YAML syntax error, it halts the execution of all PipelineRuns, even those that are syntactically correct.
 
-{{< support_matrix github_app="true" github_webhook="true" gitea="true" gitlab="true" bitbucket_cloud="false" bitbucket_server="false" >}}
+{{< support_matrix github_app="true" github_webhook="true" forgejo="true" gitlab="true" bitbucket_cloud="false" bitbucket_server="false" >}}
 
 When an event is triggered from a Pull Request, a new comment will be created on
 the Pull Request detailing the error.
@@ -147,7 +147,7 @@ Here is an example of a YAML error being reported as a comment to a Pull Request
 ### Cancelling in-progress PipelineRuns
 
 {{< tech_preview "Cancelling in progress PipelineRuns" >}}
-{{< support_matrix github_app="true" github_webhook="true" gitea="true" gitlab="true" bitbucket_cloud="true" bitbucket_datacenter="false" >}}
+{{< support_matrix github_app="true" github_webhook="true" forgejo="true" gitlab="true" bitbucket_cloud="true" bitbucket_datacenter="false" >}}
 
 You can choose to cancel a PipelineRun that is currently in progress. This can
 be done by adding the annotation `pipelinesascode.tekton.dev/cancel-in-progress:

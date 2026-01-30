@@ -432,7 +432,7 @@ jobs:
         run: |
           ./hack/gh-workflow-ci.sh collect_logs
 
-      - name: Show controllers/watcher logs with Snazy
+      - name: Show controllers/watcher errors with Snazy
         if: ${{ always() }}
         run: |
           ./hack/gh-workflow-ci.sh output_logs
