@@ -67,9 +67,7 @@ spec:
                 #!/usr/bin/env bash
                 set -eux
                 git config --global --add safe.directory $(workspaces.source.path)
-                export GO_TEST_FLAGS="-v -race -coverprofile=coverage.txt -covermode=atomic"
-                make test
-
+                go test --covermode=atomic --coverprofile=coverage.txt ./pkg/... ./cmd/...
             - name: coverage
               image: golang:1.25
               env:
@@ -92,11 +90,12 @@ spec:
               script: |
                 #!/usr/bin/env bash
                 set -eux
+
                 # Download and extract go-better-html-coverage
                 curl -sSfL https://github.com/chmouel/go-better-html-coverage/releases/download/v1.2.0/go-better-html-coverage-1.2.0-linux-arm64.tar.gz | tar -xzf - -C /tmp
 
                 # Generate HTML coverage
-                /tmp/go-better-html-coverage -profile coverage.txt -o coverage.html -n -q
+                output="$(/tmp/go-better-html-coverage -profile coverage.txt -o coverage.html -n 2>&1|sed -n '/\(Changes\|Coverage\):/ { s/^/* /;p; }')"
 
                 # Upload to server
                 mkdir -p {{ pull_request_number }}
@@ -109,7 +108,7 @@ spec:
                 curl -H "Authorization: Bearer ${HUB_TOKEN}" \
                   -H 'Accept: application/vnd.github.v3+json' \
                   -X POST "https://api.github.com/repos/{{repo_owner}}/{{repo_name}}/statuses/{{revision}}" \
-                  -d "{\"state\": \"success\", \"target_url\": \"${UPLOADER_PUBLIC_URL}/coverage/{{ pull_request_number }}/coverage.html\", \"description\": \"HTML Coverage Report\", \"context\": \"Pipelines as Code Coverage\"}"
+                -d "{\"state\": \"success\", \"target_url\": \"${UPLOADER_PUBLIC_URL}/coverage/{{ pull_request_number }}/coverage.html\", \"description\": \"HTML Coverage Report:<br>${output}\", \"context\": \"Pipelines as Code Coverage\"}"
             - name: lint
               image: golangci/golangci-lint:latest
               workingDir: $(workspaces.source.path)
