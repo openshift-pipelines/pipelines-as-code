@@ -150,7 +150,7 @@ There are a few things you can configure through the ConfigMap
   Enabling this feature increases the risk of unauthorized access and is therefore strongly discouraged
   unless absolutely necessary. If you choose to enable it you can set it to true, you do so at your own
   risk and should be aware of the potential security vulnerabilities.
-  (only GitHub and Gitea is supported at the moment).
+  (only GitHub and Forgejo are supported at the moment).
 
 * `deduplicate-pipelineruns`
 
@@ -183,7 +183,7 @@ There are a few things you can configure through the ConfigMap
   **Note:** This setting does not apply to git tag push events. Tag push events will always trigger
   pipeline runs regardless of whether the tagged commit is part of an open pull request.
 
-{{< support_matrix github_app="true" github_webhook="true" gitea="false" gitlab="false" bitbucket_cloud="false" bitbucket_datacenter="false" >}}
+{{< support_matrix github_app="true" github_webhook="true" forgejo="false" gitlab="false" bitbucket_cloud="false" bitbucket_datacenter="false" >}}
 
 ### Global Cancel In Progress Settings
 

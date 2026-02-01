@@ -1,6 +1,6 @@
 ---
 title: Bitbucket Cloud
-weight: 14
+weight: 15
 ---
 # Use Pipelines-as-Code with Bitbucket Cloud
 
