@@ -1,8 +1,8 @@
 {{ $gitlabSupported := .Get "gitlab" }} {{ $githubAppSupported := .Get
 "github_app" }} {{ $githubWebhookSupported := .Get "github_webhook" }} {{
-$giteaSupported := .Get "gitea" }} {{ $gitlabSupported := .Get "gitlab" }} {{
-$bitbucketCloudSupported := .Get "bitbucket_cloud" }} {{
-$bitbucketDataCenterSupported := .Get "bitbucket_datacenter" }}
+$forgejoSupported := .Get "forgejo" }} {{ $bitbucketCloudSupported := .Get
+"bitbucket_cloud" }} {{ $bitbucketDataCenterSupported := .Get
+"bitbucket_datacenter" }}
 
 <blockquote class="book-hint warning">
   <p>This feature is supported on the following providers</p>
@@ -25,8 +25,8 @@ $bitbucketDataCenterSupported := .Get "bitbucket_datacenter" }}
         </td>
       </tr>
       <tr>
-        <td>Gitea</td>
-        <td>{{ if eq $giteaSupported "true" }}✅️{{ else }}❌️{{ end }}</td>
+        <td>Forgejo</td>
+        <td>{{ if eq $forgejoSupported "true" }}✅️{{ else }}❌️{{ end }}</td>
       </tr>
       <tr>
         <td>GitLab</td>
@@ -41,7 +41,8 @@ $bitbucketDataCenterSupported := .Get "bitbucket_datacenter" }}
       <tr>
         <td>Bitbucket Data Center</td>
         <td>
-          {{ if eq $bitbucketDataCenterSupported "true" }}✅️{{ else }}❌️{{ end }}
+          {{ if eq $bitbucketDataCenterSupported "true" }}✅️{{ else }}❌️{{ end
+          }}
         </td>
       </tr>
     </tbody>
