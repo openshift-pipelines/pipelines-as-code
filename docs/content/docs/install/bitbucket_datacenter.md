@@ -1,6 +1,6 @@
 ---
 title: Bitbucket Data Center
-weight: 15
+weight: 16
 ---
 # Install Pipelines-as-Code on Bitbucket Data Center
 
