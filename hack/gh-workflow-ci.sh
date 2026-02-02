@@ -141,8 +141,12 @@ run_e2e_tests() {
 
   mapfile -t tests < <(get_tests "${target}")
   echo "About to run ${#tests[@]} tests: ${tests[*]}"
+
+  mkdir -p /tmp/logs
+
   # shellcheck disable=SC2001
-  make test-e2e GO_TEST_FLAGS="-v -run \"$(echo "${tests[*]}" | sed 's/ /|/g')\""
+  make test-e2e GO_TEST_FLAGS="-v -run \"$(echo "${tests[*]}" | sed 's/ /|/g')\"" 2>&1 | tee -a /tmp/logs/e2e-test-output.log
+  return "${PIPESTATUS[0]}"
 }
 
 output_logs() {

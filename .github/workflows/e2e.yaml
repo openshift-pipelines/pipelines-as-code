@@ -420,9 +420,7 @@ jobs:
           TEST_BITBUCKET_SERVER_API_URL: ${{ secrets.BITBUCKET_SERVER_API_URL }}
           TEST_BITBUCKET_SERVER_WEBHOOK_SECRET: ${{ secrets.BITBUCKET_SERVER_WEBHOOK_SECRET }}
         run: |
-          mkdir -p /tmp/logs
-          ./hack/gh-workflow-ci.sh run_e2e_tests 2>&1 | tee -a /tmp/logs/e2e-test-output.log
-          exit ${PIPESTATUS[0]}
+          ./hack/gh-workflow-ci.sh run_e2e_tests
 
       - name: Collect logs
         if: ${{ always() }}
