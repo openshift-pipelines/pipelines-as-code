@@ -50,7 +50,7 @@ require (
 	cel.dev/expr v0.25.1 // indirect
 	github.com/42wim/httpsig v1.2.3 // indirect
 	github.com/antlr/antlr4/runtime/Go/antlr v1.4.10 // indirect
-	github.com/cert-manager/cert-manager v1.19.2 // indirect
+	github.com/cert-manager/cert-manager v1.19.3 // indirect
 	github.com/cloudevents/sdk-go/sql/v2 v2.16.2 // indirect
 	github.com/coreos/go-oidc/v3 v3.17.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
