@@ -118,7 +118,7 @@ get_tests() {
     fi
     ;;
   github_second_controller)
-    printf '%s\n' "${all_tests}" | grep -iP 'GithubSecond' | grep -ivP 'Concurrency'
+    printf '%s\n' "${all_tests}" | grep -iP 'GithubSecond|Others' | grep -ivP 'Concurrency'
     ;;
   gitlab_bitbucket)
     printf '%s\n' "${all_tests}" | grep -iP 'Gitlab|Bitbucket' | grep -ivP 'Concurrency'
