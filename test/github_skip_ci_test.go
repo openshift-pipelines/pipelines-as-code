@@ -38,7 +38,7 @@ func verifySkipCI(ctx context.Context, t *testing.T, g *tgithub.PRTest, eventTyp
 	assert.NilError(t, err)
 
 	// Verify controller logs mention skip command detection
-	numLines := int64(100)
+	numLines := int64(1000)
 	skipLogRegex := regexp.MustCompile(fmt.Sprintf("CI skipped for %s event.*contains skip command in message", eventType))
 	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *skipLogRegex, 10, "controller", &numLines)
 	assert.NilError(t, err, "Expected controller logs to mention CI skip due to skip command")
@@ -106,7 +106,7 @@ func TestGithubSkipCITestCommand(t *testing.T) {
 	assert.NilError(t, err)
 
 	// Verify controller logs mention skip command detection
-	numLines := int64(100)
+	numLines := int64(1000)
 	skipLogRegex := regexp.MustCompile("CI skipped for pull request event.*contains skip command in message")
 	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *skipLogRegex, 10, "controller", &numLines)
 	assert.NilError(t, err, "Expected controller logs to mention CI skip due to skip command")
