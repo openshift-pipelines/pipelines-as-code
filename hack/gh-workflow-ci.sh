@@ -70,7 +70,7 @@ get_tests() {
   mapfile -t testfiles < <(find test/ -maxdepth 1 -name '*.go')
   all_tests=$(grep -hioP '^func[[:space:]]+Test[[:alnum:]_]+' "${testfiles[@]}" | sed -E 's/^func[[:space:]]+//')
 
-  local -a gitea_tests
+  local -a gitea_tests=()
   if [[ "${target}" == *"gitea"* ]]; then
     # Filter Gitea tests, excluding Concurrency tests
     mapfile -t gitea_tests < <(echo "${all_tests}" | grep -iP '^TestGitea' 2>/dev/null | grep -ivP 'Concurrency' 2>/dev/null | sort 2>/dev/null)
