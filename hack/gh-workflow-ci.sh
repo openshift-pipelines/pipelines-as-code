@@ -42,15 +42,8 @@ create_second_github_app_controller_on_ghe() {
   local test_github_second_application_id="${TEST_GITHUB_SECOND_APPLICATION_ID}"
   local test_github_second_webhook_secret="${TEST_GITHUB_SECOND_WEBHOOK_SECRET}"
 
-  if [[ -n "$(type -p apt)" ]]; then
-    sudo apt update &&
-      sudo apt install -y python3-yaml
-  elif [[ -n "$(type -p dnf)" ]]; then
-    dnf install -y python3-pyyaml
-  else
-    # TODO(chmouel): setup a virtualenvironment instead
-    python3 -m pip install --break-system-packages PyYAML
-  fi
+  # install uv
+  type -p uv >/dev/null 2>&1 || { curl -LsSf https://astral.sh/uv/install.sh | sh; }
 
   ./hack/second-controller.py \
     --controller-image="ko" \
@@ -78,7 +71,6 @@ get_tests() {
   all_tests=$(grep -hioP '^func[[:space:]]+Test[[:alnum:]_]+' "${testfiles[@]}" | sed -E 's/^func[[:space:]]+//')
 
   local -a gitea_tests
-  local chunk_size remainder
   if [[ "${target}" == *"gitea"* ]]; then
     # Filter Gitea tests, excluding Concurrency tests
     mapfile -t gitea_tests < <(echo "${all_tests}" | grep -iP '^TestGitea' 2>/dev/null | grep -ivP 'Concurrency' 2>/dev/null | sort 2>/dev/null)
@@ -90,6 +82,11 @@ get_tests() {
       fi
     done
     gitea_tests=("${filtered_tests[@]}")
+  fi
+
+  # Calculate chunk sizes for splitting gitea tests into 3 parts
+  local chunk_size remainder
+  if [[ ${#gitea_tests[@]} -gt 0 ]]; then
     chunk_size=$((${#gitea_tests[@]} / 3))
     remainder=$((${#gitea_tests[@]} % 3))
   fi
@@ -122,10 +119,6 @@ get_tests() {
       local start_idx=$((chunk_size * 2))
       printf '%s\n' "${gitea_tests[@]:${start_idx}:$((chunk_size + remainder))}"
     fi
-    ;;
-  gitea_others)
-    # Deprecated: Use gitea_1, gitea_2, gitea_3 instead
-    printf '%s\n' "${all_tests}" | grep -ivP 'Github|Gitlab|Bitbucket|Concurrency'
     ;;
   *)
     echo "Invalid target: ${target}"
@@ -160,9 +153,9 @@ output_logs() {
 }
 
 collect_logs() {
-  # Read from environment variables
-  local test_gitea_smee_url="${TEST_GITEA_SMEEURL}"
-  local github_ghe_smee_url="${TEST_GITHUB_SECOND_SMEE_URL}"
+  # Read from environment variables (use default empty value for optional vars)
+  local test_gitea_smee_url="${TEST_GITEA_SMEEURL:-}"
+  local github_ghe_smee_url="${TEST_GITHUB_SECOND_SMEE_URL:-}"
 
   mkdir -p /tmp/logs
   # Output logs to stdout so we can see via the web interface directly
@@ -197,6 +190,7 @@ collect_logs() {
   fi
 
   for url in "${test_gitea_smee_url}" "${github_ghe_smee_url}"; do
+    [[ -z "${url}" ]] && continue
     find /tmp/logs -type f -exec grep -l "${url}" {} \; | xargs -r sed -i "s|${url}|SMEE_URL|g"
   done
 
@@ -365,7 +359,7 @@ help() {
 
   collect_logs
     Collect logs from the cluster
-    Required env vars: TEST_GITEA_SMEEURL, TEST_GITHUB_SECOND_SMEE_URL
+    Optional env vars: TEST_GITEA_SMEEURL, TEST_GITHUB_SECOND_SMEE_URL (for scrubbing URLs from logs)
 
   output_logs
     Will output logs using snazzy formatting when available or otherwise through a simple
