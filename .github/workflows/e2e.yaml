@@ -61,6 +61,7 @@ jobs:
       TARGET_TEAM_SLUGS: "pipeline-as-code,pipeline-as-code-contributors"
       TEST_BITBUCKET_CLOUD_API_URL: https://api.bitbucket.org/2.0
       TEST_BITBUCKET_CLOUD_E2E_REPOSITORY: cboudjna/pac-e2e-tests
+      TEST_BITBUCKET_CLOUD_TOKEN: ${{ secrets.BITBUCKET_CLOUD_TOKEN }}
       TEST_BITBUCKET_CLOUD_USER: cboudjna
       TEST_BITBUCKET_SERVER_API_URL: ${{ secrets.BITBUCKET_SERVER_API_URL }}
       TEST_BITBUCKET_SERVER_E2E_REPOSITORY: PAC/pac-e2e-tests
@@ -77,18 +78,17 @@ jobs:
       TEST_GITHUB_API_URL: api.github.com
       TEST_GITHUB_PRIVATE_TASK_NAME: task-remote
       TEST_GITHUB_PRIVATE_TASK_URL: https://github.com/openshift-pipelines/pipelines-as-code-e2e-tests-private/blob/main/remote_task.yaml
+      TEST_GITHUB_REPO_INSTALLATION_ID: ${{ vars.INSTALLATION_ID }}
       TEST_GITHUB_REPO_OWNER_GITHUBAPP: openshift-pipelines/pipelines-as-code-e2e-tests
       TEST_GITHUB_REPO_OWNER_WEBHOOK: openshift-pipelines/pipelines-as-code-e2e-tests-webhook
       TEST_GITHUB_SECOND_API_URL: ghe.pipelinesascode.com
       TEST_GITHUB_SECOND_EL_URL: http://ghe.paac-127-0-0-1.nip.io
       TEST_GITHUB_SECOND_REPO_INSTALLATION_ID: 1
       TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP: pipelines-as-code/e2e
+      TEST_GITHUB_SECOND_TOKEN: ${{ secrets.TEST_GITHUB_SECOND_TOKEN }}
+      TEST_GITHUB_TOKEN: ${{ secrets.GH_APPS_TOKEN }}
       TEST_GITLAB_API_URL: https://gitlab.com
       TEST_GITLAB_PROJECT_ID: ${{ vars.TEST_GITLAB_PROJECT_ID }}
-      TEST_BITBUCKET_CLOUD_TOKEN: ${{ secrets.BITBUCKET_CLOUD_TOKEN }}
-      TEST_GITHUB_REPO_INSTALLATION_ID: ${{ vars.INSTALLATION_ID }}
-      TEST_GITHUB_TOKEN: ${{ secrets.GH_APPS_TOKEN }}
-      TEST_GITHUB_SECOND_TOKEN: ${{ secrets.TEST_GITHUB_SECOND_TOKEN }}
       TEST_GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
     steps:
       - uses: actions/checkout@v6

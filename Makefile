@@ -83,7 +83,12 @@ html-coverage: ## generate html coverage
 
 ##@ Linting
 .PHONY: lint
-lint: lint-go lint-yaml lint-md lint-python lint-shell ## run all linters
+lint: lint-go lint-yaml lint-md lint-python lint-shell lint-e2e-naming ## run all linters
+
+.PHONY: lint-e2e-naming
+lint-e2e-naming: ## check e2e test naming conventions
+	@echo "Checking E2E test naming conventions..."
+	@./hack/check-e2e-test-naming.sh
 
 .PHONY: lint-go
 lint-go: ## runs go linter on all go files
