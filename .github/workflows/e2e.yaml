@@ -43,7 +43,8 @@ jobs:
       matrix:
         provider:
           [
-            github,
+            github_1,
+            github_2,
             github_second_controller,
             gitlab_bitbucket,
             gitea_1,

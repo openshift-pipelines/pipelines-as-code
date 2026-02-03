@@ -84,6 +84,11 @@ get_tests() {
     gitea_tests=("${filtered_tests[@]}")
   fi
 
+  local -a github_tests=()
+  if [[ "${target}" == *"github"* ]] && [[ "${target}" != "github_second_controller" ]]; then
+    mapfile -t github_tests < <(echo "${all_tests}" | grep -iP '^TestGithub' 2>/dev/null | grep -ivP 'Concurrency|GithubSecond' 2>/dev/null | sort 2>/dev/null)
+  fi
+
   # Calculate chunk sizes for splitting gitea tests into 3 parts
   local chunk_size remainder
   if [[ ${#gitea_tests[@]} -gt 0 ]]; then
@@ -91,12 +96,26 @@ get_tests() {
     remainder=$((${#gitea_tests[@]} % 3))
   fi
 
+  # Calculate chunk sizes for splitting github tests into 2 parts
+  local github_chunk_size github_remainder
+  if [[ ${#github_tests[@]} -gt 0 ]]; then
+    github_chunk_size=$((${#github_tests[@]} / 2))
+    github_remainder=$((${#github_tests[@]} % 2))
+  fi
+
   case "${target}" in
   concurrency)
     printf '%s\n' "${all_tests}" | grep -iP 'Concurrency'
     ;;
-  github)
-    printf '%s\n' "${all_tests}" | grep -iP 'Github' | grep -ivP 'Concurrency|GithubSecond'
+  github_1)
+    if [[ ${#github_tests[@]} -gt 0 ]]; then
+      printf '%s\n' "${github_tests[@]:0:${github_chunk_size}}"
+    fi
+    ;;
+  github_2)
+    if [[ ${#github_tests[@]} -gt 0 ]]; then
+      printf '%s\n' "${github_tests[@]:${github_chunk_size}:$((github_chunk_size + github_remainder))}"
+    fi
     ;;
   github_second_controller)
     printf '%s\n' "${all_tests}" | grep -iP 'GithubSecond' | grep -ivP 'Concurrency'
@@ -122,7 +141,7 @@ get_tests() {
     ;;
   *)
     echo "Invalid target: ${target}"
-    echo "supported targets: github, github_second_controller, gitlab_bitbucket, gitea_1, gitea_2, gitea_3, concurrency"
+    echo "supported targets: github_1, github_2, github_second_controller, gitlab_bitbucket, gitea_1, gitea_2, gitea_3, concurrency"
     ;;
   esac
 }
@@ -365,6 +384,9 @@ help() {
     Will output logs using snazzy formatting when available or otherwise through a simple
     python formatter. This makes debugging easier from the GitHub Actions interface.
 
+  print_tests
+    Print the list of tests that would be run for each provider target.
+
   notify_slack <artifacts_dir>
     Send a combined Slack notification for all failed E2E test providers.
     Parses test output logs from artifacts to extract failed test names.
@@ -387,6 +409,15 @@ collect_logs)
   ;;
 output_logs)
   output_logs
+  ;;
+print_tests)
+  set +x
+  for target in github_1 github_2 github_second_controller gitlab_bitbucket gitea_1 gitea_2 gitea_3 concurrency; do
+    mapfile -t tests < <(get_tests "${target}")
+    echo "Tests for target: ${target} Total: ${#tests[@]}"
+    printf '%s\n' "${tests[@]}"
+    echo
+  done
   ;;
 notify_slack)
   notify_slack "${2:-artifacts}"
