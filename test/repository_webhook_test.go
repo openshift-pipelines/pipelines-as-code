@@ -13,7 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestRepositoryCreation(t *testing.T) {
+func TestOthersRepositoryCreation(t *testing.T) {
 	ctx := context.TODO()
 	ctx, runcnx, _, _, err := ghtest.Setup(ctx, false, false)
 	assert.NilError(t, err)
