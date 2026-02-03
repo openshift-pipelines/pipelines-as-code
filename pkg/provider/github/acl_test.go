@@ -10,8 +10,10 @@ import (
 	"github.com/google/go-github/v81/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
+	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
@@ -362,7 +364,7 @@ func TestOkToTestCommentSHA(t *testing.T) {
 			name:               "good issue comment event with sha",
 			commentsReply:      `[{"body": "/ok-to-test ABCDEF1", "user": {"login": "owner"}}]`,
 			commentBody:        "/ok-to-test ABCDEF1",
-			pullRequestReply:   `{"head": {"sha": "abcdef1234567890"}}`,
+			pullRequestReply:   `{"head": {"sha": "abcdef1234567890"}, "base": {"repo": {"html_url": "http://url.com/owner/repo/1"}}}`,
 			requireOkToTestSHA: true,
 			runevent: info.Event{
 				Organization: "owner",
@@ -383,7 +385,7 @@ func TestOkToTestCommentSHA(t *testing.T) {
 			name:               "bad issue comment event with sha",
 			commentsReply:      `[{"body": "/ok-to-test 1234567", "user": {"login": "owner"}}]`,
 			commentBody:        "/ok-to-test 1234567",
-			pullRequestReply:   `{"head": {"sha": "7654321"}}`,
+			pullRequestReply:   `{"head": {"sha": "7654321"}, "base": {"repo": {"html_url": "http://url.com/owner/repo/1"}}}`,
 			requireOkToTestSHA: true,
 			runevent: info.Event{
 				Organization: "owner",
@@ -404,7 +406,7 @@ func TestOkToTestCommentSHA(t *testing.T) {
 			name:               "good issue comment event without sha",
 			commentsReply:      `[{"body": "/ok-to-test", "user": {"login": "owner"}}]`,
 			commentBody:        "/ok-to-test",
-			pullRequestReply:   `{"head": {"sha": "1234567890"}}`,
+			pullRequestReply:   `{"head": {"sha": "1234567890"}, "base": {"repo": {"html_url": "http://url.com/owner/repo/1"}}}`,
 			requireOkToTestSHA: false,
 			runevent: info.Event{
 				Organization: "owner",
@@ -425,7 +427,7 @@ func TestOkToTestCommentSHA(t *testing.T) {
 			name:               "bad issue comment event without sha when required",
 			commentsReply:      `[{"body": "/ok-to-test", "user": {"login": "owner"}}]`,
 			commentBody:        "/ok-to-test",
-			pullRequestReply:   `{"head": {"sha": "1234567890"}}`,
+			pullRequestReply:   `{"head": {"sha": "1234567890"}, "base": {"repo": {"html_url": "http://url.com/owner/repo/1"}}}`,
 			requireOkToTestSHA: true,
 			runevent: info.Event{
 				Organization: "owner",
@@ -469,20 +471,24 @@ func TestOkToTestCommentSHA(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			observer, _ := zapobserver.New(zap.InfoLevel)
 			logger := zap.New(observer).Sugar()
+			tdata := testclient.Data{}
 			repo := &v1alpha1.Repository{Spec: v1alpha1.RepositorySpec{
+				URL:      "http://url.com/owner/repo/1",
 				Settings: &v1alpha1.Settings{},
 			}}
+			tdata.Repositories = []*v1alpha1.Repository{repo}
 			pacopts := &info.PacOpts{
 				Settings: settings.Settings{
 					RequireOkToTestSHA: tt.requireOkToTestSHA,
 				},
 			}
+			stdata, _ := testclient.SeedTestData(t, ctx, tdata)
 			gprovider := Provider{
 				ghClient:      fakeclient,
 				repo:          repo,
 				Logger:        logger,
 				PaginedNumber: 1,
-				Run:           &params.Run{},
+				Run:           &params.Run{Clients: clients.Clients{PipelineAsCode: stdata.PipelineAsCode}},
 				pacInfo:       pacopts,
 			}
 
