@@ -72,7 +72,7 @@ test-e2e-cleanup: ## cleanup test e2e namespace/pr left open
 	@./hack/dev/e2e-tests-cleanup.sh
 
 .PHONY: test-e2e
-test-e2e:  test-e2e-cleanup ## run e2e tests
+test-e2e:  ## run e2e tests
 	env GODEBUG=asynctimerchan=1 \
 		$(GO) test $(DEFAULT_GO_TEST_FLAGS) $(GO_TEST_FLAGS) -timeout $(TIMEOUT_E2E)  -failfast -count=1 -tags=e2e ./test
 
