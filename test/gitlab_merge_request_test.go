@@ -512,7 +512,7 @@ func TestGitlabDisableCommentsOnMRNotCreated(t *testing.T) {
 		t.Fatalf("Repository %s not found in %s", opts.Organization, opts.Repo) // Use Fatalf to stop test on critical error
 	}
 
-	settings := v1alpha1.Settings{
+	settings := &v1alpha1.Settings{
 		Gitlab: &v1alpha1.GitlabSettings{
 			CommentStrategy: "disable_all",
 		},

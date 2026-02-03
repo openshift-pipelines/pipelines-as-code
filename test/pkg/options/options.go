@@ -11,7 +11,7 @@ type E2E struct {
 	UserName           string
 	Password           string
 	LightweightTag     bool
-	Settings           v1alpha1.Settings
+	Settings           *v1alpha1.Settings
 }
 
 var (
