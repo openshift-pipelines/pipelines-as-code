@@ -295,12 +295,6 @@ jobs:
         run: |
           nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.PYSMEE_URL }} "http://${CONTROLLER_DOMAIN_URL}" > /tmp/gosmee-main.log 2>&1 &
 
-
-      - name: Run gosmee for second controller (GHE)
-        if: matrix.provider == 'github_second_controller' || matrix.provider == 'concurrency'
-        run: |
-          nohup gosmee client --saveDir /tmp/gosmee-replay-ghe ${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }} "http://ghe.paac-127-0-0-1.nip.io" > /tmp/gosmee-ghe.log 2>&1 &
-
       - name: Generate unique gosmee URL for Gitea tests
         if: startsWith(matrix.provider, 'gitea') || matrix.provider == 'concurrency'
         id: gosmee-url
