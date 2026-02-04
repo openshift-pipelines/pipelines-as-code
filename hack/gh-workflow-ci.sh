@@ -86,7 +86,7 @@ get_tests() {
 
   local -a github_tests=()
   if [[ "${target}" == *"github"* ]] && [[ "${target}" != "github_second_controller" ]]; then
-    mapfile -t github_tests < <(echo "${all_tests}" | grep -iP '^TestGithub' 2>/dev/null | grep -ivP 'Concurrency|GithubSecond' 2>/dev/null | sort 2>/dev/null)
+    mapfile -t github_tests < <(echo "${all_tests}" | grep -iP '^TestGithub' 2>/dev/null | grep -ivP 'Concurrency|GithubSecond|Flaky' 2>/dev/null | sort 2>/dev/null)
   fi
 
   # Calculate chunk sizes for splitting gitea tests into 3 parts
@@ -104,6 +104,9 @@ get_tests() {
   fi
 
   case "${target}" in
+  flaky)
+    printf '%s\n' "${all_tests}" | grep -iP 'Flaky'
+    ;;
   concurrency)
     printf '%s\n' "${all_tests}" | grep -iP 'Concurrency'
     ;;
@@ -118,7 +121,7 @@ get_tests() {
     fi
     ;;
   github_second_controller)
-    printf '%s\n' "${all_tests}" | grep -iP 'GithubSecond|Others' | grep -ivP 'Concurrency'
+    printf '%s\n' "${all_tests}" | grep -iP 'GithubSecond|Others' | grep -ivP 'Concurrency|Flaky'
     ;;
   gitlab_bitbucket)
     printf '%s\n' "${all_tests}" | grep -iP 'Gitlab|Bitbucket' | grep -ivP 'Concurrency'
@@ -141,7 +144,7 @@ get_tests() {
     ;;
   *)
     echo "Invalid target: ${target}"
-    echo "supported targets: github_1, github_2, github_second_controller, gitlab_bitbucket, gitea_1, gitea_2, gitea_3, concurrency"
+    echo "supported targets: github_1, github_2, github_second_controller, gitlab_bitbucket, gitea_1, gitea_2, gitea_3, concurrency, flaky"
     ;;
   esac
 }
@@ -412,7 +415,7 @@ output_logs)
   ;;
 print_tests)
   set +x
-  for target in github_1 github_2 github_second_controller gitlab_bitbucket gitea_1 gitea_2 gitea_3 concurrency; do
+  for target in github_1 github_2 github_second_controller gitlab_bitbucket gitea_1 gitea_2 gitea_3 concurrency flaky; do
     mapfile -t tests < <(get_tests "${target}")
     echo "Tests for target: ${target} Total: ${#tests[@]}"
     printf '%s\n' "${tests[@]}"
