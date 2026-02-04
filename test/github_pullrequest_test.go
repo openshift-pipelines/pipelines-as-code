@@ -165,7 +165,7 @@ func TestGithubPullRequestWebhook(t *testing.T) {
 	defer g.TearDown(ctx, t)
 }
 
-func TestGithubSecondPullRequestBadYaml(t *testing.T) {
+func TestGithubSecondFlakyPullRequestBadYaml(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label:            "Github PullRequest Bad Yaml",
@@ -196,7 +196,7 @@ func TestGithubSecondPullRequestBadYaml(t *testing.T) {
 	t.Fatal("No comments with the pipelinerun error found on the pull request")
 }
 
-func TestGithubInvalidCELExpressionReportingOnPR(t *testing.T) {
+func TestGithubFlakyInvalidCELExpressionReportingOnPR(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label:         "Github PullRequest Invalid CEL expression",
@@ -231,10 +231,7 @@ func TestGithubInvalidCELExpressionReportingOnPR(t *testing.T) {
 
 // TestGithubPullRequestInvalidSpecValues tests invalid field values of a PipelinRun and
 // ensures that these validation errors are reported on UI.
-func TestGithubPullRequestInvalidSpecValues(t *testing.T) {
-	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
-		t.Skip("Skipping test since only enabled for nightly")
-	}
+func TestGithubFlakyPullRequestInvalidSpecValues(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label:            "Github Invalid Yaml",

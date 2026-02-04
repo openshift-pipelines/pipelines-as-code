@@ -440,10 +440,136 @@ jobs:
           name: logs-e2e-tests-${{ matrix.provider }}
           path: /tmp/logs
 
+  e2e-flaky-tests:
+    name: e2e flaky tests
+    runs-on: ubuntu-latest
+    needs: e2e-tests
+    if: always() && !cancelled()
+    concurrency:
+      group: ${{ github.workflow }}-flaky-${{ github.event.pull_request.number || github.ref_name }}
+      cancel-in-progress: true
+
+    env:
+      CONTROLLER_DOMAIN_URL: controller.paac-127-0-0-1.nip.io
+      KOCACHE: /tmp/ko-cache
+      KO_DOCKER_REPO: localhost:5000
+      KUBECONFIG: /home/runner/.kube/config.kind
+      TEST_EL_URL: http://controller.paac-127-0-0-1.nip.io
+      TEST_EL_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+      TEST_GITHUB_API_URL: api.github.com
+      TEST_GITHUB_PRIVATE_TASK_NAME: task-remote
+      TEST_GITHUB_PRIVATE_TASK_URL: https://github.com/openshift-pipelines/pipelines-as-code-e2e-tests-private/blob/main/remote_task.yaml
+      TEST_GITHUB_REPO_INSTALLATION_ID: ${{ vars.INSTALLATION_ID }}
+      TEST_GITHUB_REPO_OWNER_GITHUBAPP: openshift-pipelines/pipelines-as-code-e2e-tests
+      TEST_GITHUB_SECOND_API_URL: ghe.pipelinesascode.com
+      TEST_GITHUB_SECOND_EL_URL: http://ghe.paac-127-0-0-1.nip.io
+      TEST_GITHUB_SECOND_REPO_INSTALLATION_ID: 1
+      TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP: pipelines-as-code/e2e
+      TEST_GITHUB_SECOND_TOKEN: ${{ secrets.TEST_GITHUB_SECOND_TOKEN }}
+      TEST_GITHUB_TOKEN: ${{ secrets.GH_APPS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.target_ref || github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+
+      - name: Cache ko layer cache
+        uses: actions/cache@v5
+        with:
+          path: /tmp/ko-cache
+          key: ${{ runner.os }}-ko-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-ko-
+
+      - uses: ko-build/setup-ko@v0.9
+
+      - name: Build binaries in parallel with cluster installation
+        run: |
+          nohup make allbinaries > /tmp/binary-build.log 2>&1 &
+          echo $! > /tmp/binary-build.pid
+
+      - name: Install gosmee
+        uses: jaxxstorm/action-install-gh-release@v2.1.0
+        with:
+          repo: chmouel/gosmee
+
+      - name: Install Snazy
+        uses: jaxxstorm/action-install-gh-release@v2.1.0
+        with:
+          repo: chmouel/snazy
+
+      - name: Run gosmee for main controller
+        run: |
+          nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.PYSMEE_URL }} "http://${CONTROLLER_DOMAIN_URL}" > /tmp/gosmee-main.log 2>&1 &
+
+      - name: Start installing cluster
+        run: |
+          export PAC_DIR=${PWD}
+          bash -x ./hack/dev/kind/install.sh
+
+      - name: Create PAC github-app-secret
+        env:
+          PAC_GITHUB_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          PAC_GITHUB_APPLICATION_ID: ${{ vars.APPLICATION_ID }}
+          PAC_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+        run: |
+          ./hack/gh-workflow-ci.sh create_pac_github_app_secret
+
+      - name: Create second Github APP Controller on GHE
+        env:
+          TEST_GITHUB_SECOND_SMEE_URL: ${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}
+          TEST_GITHUB_SECOND_PRIVATE_KEY: ${{ secrets.TEST_GITHUB_SECOND_PRIVATE_KEY }}
+          TEST_GITHUB_SECOND_WEBHOOK_SECRET: ${{ secrets.TEST_GITHUB_SECOND_WEBHOOK_SECRET }}
+          TEST_GITHUB_SECOND_APPLICATION_ID: ${{ vars.TEST_GITHUB_SECOND_APPLICATION_ID }}
+        run: |
+          ./hack/gh-workflow-ci.sh create_second_github_app_controller_on_ghe
+
+      - name: Enable debug logging for e2e
+        run: |
+          set -euo pipefail
+          kubectl -n pipelines-as-code patch configmap pac-config-logging --type merge -p '{"data":{"loglevel.pipelinesascode":"debug","loglevel.pac-watcher":"debug","loglevel.pipelines-as-code-webhook":"debug"}}'
+          kubectl -n pipelines-as-code rollout restart deployment/pipelines-as-code-controller deployment/pipelines-as-code-webhook deployment/pipelines-as-code-watcher
+          for name in controller webhook watcher; do
+            echo "=== Waiting for $name to be ready ==="
+            kubectl -n pipelines-as-code rollout status deployment/pipelines-as-code-$name --timeout=120s
+          done
+
+      - name: Run Flaky E2E Tests
+        env:
+          TEST_PROVIDER: flaky
+          TEST_EL_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+          TEST_GITHUB_REPO_INSTALLATION_ID: ${{ vars.INSTALLATION_ID }}
+          TEST_GITHUB_TOKEN: ${{ secrets.GH_APPS_TOKEN }}
+          TEST_GITHUB_SECOND_TOKEN: ${{ secrets.TEST_GITHUB_SECOND_TOKEN }}
+        run: |
+          ./hack/gh-workflow-ci.sh run_e2e_tests
+
+      - name: Collect logs
+        if: ${{ always() }}
+        env:
+          TEST_GITHUB_SECOND_SMEE_URL: ${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}
+        run: |
+          ./hack/gh-workflow-ci.sh collect_logs
+
+      - name: Show controllers/watcher errors with Snazy
+        if: ${{ always() }}
+        run: |
+          ./hack/gh-workflow-ci.sh output_logs
+
+      - name: Upload artifacts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: logs-e2e-tests-flaky
+          path: /tmp/logs
+
   notify-slack:
     name: Notify Slack on Failures
     runs-on: ubuntu-latest
-    needs: e2e-tests
+    needs: [e2e-tests, e2e-flaky-tests]
     if: ${{ always() && github.ref_name == 'main' && github.event_name == 'schedule' }}
     steps:
       - uses: actions/checkout@v6
