@@ -152,8 +152,10 @@ type Opts struct {
 func ReadTektonTypes(ctx context.Context, log *zap.SugaredLogger, data string) (TektonTypes, error) {
 	types := NewTektonTypes()
 	decoder := k8scheme.Codecs.UniversalDeserializer()
+	docs := yamlDocSeparatorRe.Split(data, -1)
+	debugf(log, "ReadTektonTypes: data length=%d docs=%d", len(data), len(docs))
 
-	for _, doc := range yamlDocSeparatorRe.Split(data, -1) {
+	for _, doc := range docs {
 		if strings.TrimSpace(doc) == "" {
 			continue
 		}
@@ -161,6 +163,7 @@ func ReadTektonTypes(ctx context.Context, log *zap.SugaredLogger, data string) (
 		obj, _, err := decoder.Decode([]byte(doc), nil, nil)
 		if err != nil {
 			dt, dv := detectAtleastNameOrGenerateNameAndSchemaFromPipelineRun(doc)
+			debugf(log, "ReadTektonTypes: decode error for doc name=%s schema=%s err=%v", dt, dv, err)
 			types.ValidationErrors = append(types.ValidationErrors, &pacerrors.PacYamlValidations{
 				Name:   dt,
 				Err:    fmt.Errorf("error decoding yaml document: %w", err),
@@ -175,29 +178,36 @@ func ReadTektonTypes(ctx context.Context, log *zap.SugaredLogger, data string) (
 				return types, fmt.Errorf("pipeline v1beta1 %s cannot be converted as v1: err: %w", o.GetName(), err)
 			}
 			types.Pipelines = append(types.Pipelines, c)
+			debugf(log, "ReadTektonTypes: loaded pipeline v1beta1 name=%s", c.GetName())
 		case *tektonv1beta1.PipelineRun: //nolint: staticcheck // we need to support v1beta1
 			c := &tektonv1.PipelineRun{}
 			if err := o.ConvertTo(ctx, c); err != nil {
 				return types, fmt.Errorf("pipelinerun v1beta1 %s cannot be converted as v1: err: %w", o.GetName(), err)
 			}
 			types.PipelineRuns = append(types.PipelineRuns, c)
+			debugf(log, "ReadTektonTypes: loaded pipelinerun v1beta1 name=%s", c.GetName())
 		case *tektonv1beta1.Task: //nolint: staticcheck // we need to support v1beta1
 			c := &tektonv1.Task{}
 			if err := o.ConvertTo(ctx, c); err != nil {
 				return types, fmt.Errorf("task v1beta1 %s cannot be converted as v1: err: %w", o.GetName(), err)
 			}
 			types.Tasks = append(types.Tasks, c)
+			debugf(log, "ReadTektonTypes: loaded task v1beta1 name=%s", c.GetName())
 		case *tektonv1.PipelineRun:
 			types.PipelineRuns = append(types.PipelineRuns, o)
+			debugf(log, "ReadTektonTypes: loaded pipelinerun v1 name=%s", o.GetName())
 		case *tektonv1.Pipeline:
 			types.Pipelines = append(types.Pipelines, o)
+			debugf(log, "ReadTektonTypes: loaded pipeline v1 name=%s", o.GetName())
 		case *tektonv1.Task:
 			types.Tasks = append(types.Tasks, o)
+			debugf(log, "ReadTektonTypes: loaded task v1 name=%s", o.GetName())
 		default:
-			log.Info("skipping yaml document not looking like a tekton resource we can Resolve.")
+			logInfo(log, "skipping yaml document not looking like a tekton resource we can Resolve.")
 		}
 	}
 
+	debugf(log, "ReadTektonTypes: result pipelineruns=%d pipelines=%d tasks=%d validation_errors=%d", len(types.PipelineRuns), len(types.Pipelines), len(types.Tasks), len(types.ValidationErrors))
 	return types, nil
 }
 
@@ -209,6 +219,7 @@ func Resolve(ctx context.Context, cs *params.Run, logger *zap.SugaredLogger, pro
 	if len(types.PipelineRuns) == 0 {
 		return []*tektonv1.PipelineRun{}, fmt.Errorf("could not find any PipelineRun in your .tekton/ directory")
 	}
+	debugf(logger, "Resolve: pipelineruns=%d pipelines=%d tasks=%d remote_tasks=%t generate_name=%t", len(types.PipelineRuns), len(types.Pipelines), len(types.Tasks), ropt.RemoteTasks, ropt.GenerateName)
 
 	if _, err := MetadataResolve(types.PipelineRuns); err != nil {
 		return []*tektonv1.PipelineRun{}, err
@@ -225,6 +236,7 @@ func Resolve(ctx context.Context, cs *params.Run, logger *zap.SugaredLogger, pro
 	if err != nil {
 		return []*tektonv1.PipelineRun{}, err
 	}
+	debugf(logger, "Resolve: resolved pipelineruns=%d", len(fetchedResources))
 	return fetchedResources, nil
 }
 

@@ -20,11 +20,13 @@ const (
 var regexpIgnoreErrors = regexp.MustCompile(`.*no kind.*is registered for version.*in scheme.*`)
 
 func (p *PacRun) checkAccessOrError(ctx context.Context, repo *v1alpha1.Repository, status provider.StatusOpts, viamsg string) (bool, error) {
+	p.debugf("checkAccessOrError: checking access for sender=%s via=%s", p.event.Sender, viamsg)
 	allowed, err := p.vcx.IsAllowed(ctx, p.event)
 	if err != nil {
 		return false, fmt.Errorf("unable to verify event authorization: %w", err)
 	}
 	if allowed {
+		p.debugf("checkAccessOrError: access granted for sender=%s", p.event.Sender)
 		return true, nil
 	}
 	msg := fmt.Sprintf("User %s is not allowed to trigger CI %s in this repo.", p.event.Sender, viamsg)
@@ -45,6 +47,7 @@ func (p *PacRun) checkAccessOrError(ctx context.Context, repo *v1alpha1.Reposito
 // 2. Emitting error messages to the event system
 // 3. Creating a markdown formatted comment on the repository with all errors.
 func (p *PacRun) reportValidationErrors(ctx context.Context, repo *v1alpha1.Repository, validationErrors []*pacerrors.PacYamlValidations) {
+	p.debugf("reportValidationErrors: count=%d repo=%s/%s", len(validationErrors), repo.GetNamespace(), repo.GetName())
 	errorRows := make([]string, 0, len(validationErrors))
 	for _, err := range validationErrors {
 		// if the error is a TektonConversionError, we don't want to report it since it may be a file that is not a tekton resource

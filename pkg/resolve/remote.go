@@ -72,7 +72,13 @@ func resolveRemoteResources(ctx context.Context, rt *matcher.RemoteTasks, types 
 		Pipelines: map[string]*tektonv1.Pipeline{},
 	}
 	pipelineRuns := []*tektonv1.PipelineRun{}
+	rt.Logger.Debugf("resolveRemoteResources: pipelineruns=%d pipelines=%d tasks=%d remote_tasks=%t", len(types.PipelineRuns), len(types.Pipelines), len(types.Tasks), ropt.RemoteTasks)
 	for _, pipelinerun := range types.PipelineRuns {
+		prName := pipelinerun.GetName()
+		if prName == "" {
+			prName = pipelinerun.GetGenerateName()
+		}
+		rt.Logger.Debugf("resolveRemoteResources: processing pipelinerun=%s", prName)
 		// contain Resources specific to run
 		fetchedResourcesForPipelineRun := FetchedResourcesForRun{
 			Tasks:       map[string]*tektonv1.Task{},
@@ -83,10 +89,12 @@ func resolveRemoteResources(ctx context.Context, rt *matcher.RemoteTasks, types 
 		if ropt.RemoteTasks {
 			// no annotations on run, then skip
 			if pipelinerun.GetObjectMeta().GetAnnotations() == nil {
+				rt.Logger.Debugf("resolveRemoteResources: pipelinerun=%s has no annotations, skipping remote resolution", prName)
 				continue
 			}
 
 			if len(pipelinerun.GetObjectMeta().GetAnnotations()) == 0 {
+				rt.Logger.Debugf("resolveRemoteResources: pipelinerun=%s has empty annotations, skipping remote resolution", prName)
 				continue
 			}
 
@@ -98,6 +106,7 @@ func resolveRemoteResources(ctx context.Context, rt *matcher.RemoteTasks, types 
 
 			// if we got the pipeline name from annotation, we need to fetch the pipeline
 			if remotePipeline != "" {
+				rt.Logger.Debugf("resolveRemoteResources: pipelinerun=%s remote pipeline=%s", prName, remotePipeline)
 				// making sure that the pipeline with same annotation name is not fetched
 				if alreadyFetchedResource(fetchedResourcesForEvent.Pipelines, remotePipeline) {
 					rt.Logger.Debugf("skipping already fetched pipeline %s in annotations on pipelinerun %s", remotePipeline, pipelinerun.GetName())
@@ -128,6 +137,7 @@ func resolveRemoteResources(ctx context.Context, rt *matcher.RemoteTasks, types 
 			}
 			// add the pipeline to the run specific Resources
 			fetchedResourcesForPipelineRun.Pipeline = pipeline
+			rt.Logger.Debugf("resolveRemoteResources: pipelinerun=%s using pipeline=%s", prName, pipeline.GetName())
 			// grab the tasks, that we may need to fetch for this pipeline from its annotations
 			if pipeline.GetObjectMeta().GetAnnotations() != nil {
 				// get all the tasks from the pipeline annotations
@@ -135,6 +145,7 @@ func resolveRemoteResources(ctx context.Context, rt *matcher.RemoteTasks, types 
 				if err != nil {
 					return []*tektonv1.PipelineRun{}, fmt.Errorf("error getting remote task from pipeline annotations: %w", err)
 				}
+				rt.Logger.Debugf("resolveRemoteResources: pipeline=%s annotation tasks=%d", pipeline.GetName(), len(pipelineTasks))
 				// check for relative task references and assemble FQDNs
 				pipelineTasks, err = assembleTaskFQDNs(fetchedResourcesForPipelineRun.PipelineURL, pipelineTasks)
 				if err != nil {
@@ -150,6 +161,7 @@ func resolveRemoteResources(ctx context.Context, rt *matcher.RemoteTasks, types 
 			if err != nil {
 				return []*tektonv1.PipelineRun{}, fmt.Errorf("error getting remote task from pipelinerun annotations: %w", err)
 			}
+			rt.Logger.Debugf("resolveRemoteResources: pipelinerun=%s annotation tasks=%d", prName, len(remoteTasks))
 
 			// now fetch all the tasks from pipelinerun and pipeline annotations, giving preference to pipelinerun annotation tasks
 			for _, remoteTask := range append(remoteTasks, pipelineTasks...) {
@@ -185,6 +197,7 @@ func resolveRemoteResources(ctx context.Context, rt *matcher.RemoteTasks, types 
 			}
 			fetchedResourcesForPipelineRun.Tasks[task.GetName()] = task
 		}
+		rt.Logger.Debugf("resolveRemoteResources: pipelinerun=%s final task count=%d", prName, len(fetchedResourcesForPipelineRun.Tasks))
 
 		// if PipelineRef is used then, first resolve pipeline and replace all taskRef{Finally/Task} of Pipeline, then put inlinePipeline in PipelineRun
 		if pipelinerun.Spec.PipelineRef != nil && pipelinerun.Spec.PipelineRef.Resolver == "" {
@@ -203,6 +216,7 @@ func resolveRemoteResources(ctx context.Context, rt *matcher.RemoteTasks, types 
 
 			pipelinerun.Spec.PipelineRef = nil
 			pipelinerun.Spec.PipelineSpec = &pipelineResolved.Spec
+			rt.Logger.Debugf("resolveRemoteResources: pipelinerun=%s inlined pipeline tasks=%d finally=%d", prName, len(pipelineResolved.Spec.Tasks), len(pipelineResolved.Spec.Finally))
 		}
 
 		// if PipelineSpec is used then, now resolve the PipelineRun by replacing all taskRef{Finally/Task}
@@ -218,6 +232,7 @@ func resolveRemoteResources(ctx context.Context, rt *matcher.RemoteTasks, types 
 				return nil, err
 			}
 			pipelinerun.Spec.PipelineSpec.Finally = fruns
+			rt.Logger.Debugf("resolveRemoteResources: pipelinerun=%s inlined pipelineSpec tasks=%d finally=%d", prName, len(pipelinerun.Spec.PipelineSpec.Tasks), len(pipelinerun.Spec.PipelineSpec.Finally))
 		}
 
 		// Add a GenerateName based on the pipeline name and a "-"
@@ -225,9 +240,11 @@ func resolveRemoteResources(ctx context.Context, rt *matcher.RemoteTasks, types 
 		if ropt.GenerateName && pipelinerun.GenerateName == "" {
 			pipelinerun.GenerateName = pipelinerun.Name + "-"
 			pipelinerun.Name = ""
+			rt.Logger.Debugf("resolveRemoteResources: pipelinerun=%s set generateName=%s", prName, pipelinerun.GenerateName)
 		}
 		pipelineRuns = append(pipelineRuns, pipelinerun)
 	}
 	// return all resolved PipelineRuns
+	rt.Logger.Debugf("resolveRemoteResources: resolved pipelineruns=%d", len(pipelineRuns))
 	return pipelineRuns, nil
 }
