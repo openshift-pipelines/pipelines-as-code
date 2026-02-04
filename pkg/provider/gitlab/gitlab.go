@@ -103,7 +103,7 @@ func (v *Provider) CreateComment(_ context.Context, event *info.Event, commit, u
 
 	// List comments of the merge request
 	if updateMarker != "" {
-		commentRe := regexp.MustCompile(updateMarker)
+		commentRe := regexp.MustCompile(regexp.QuoteMeta(updateMarker))
 		options := []gitlab.RequestOptionFunc{}
 
 		for {
@@ -277,7 +277,7 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.
 }
 
 //nolint:misspell
-func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts provider.StatusOpts,
+func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOpts provider.StatusOpts,
 ) error {
 	var detailsURL string
 	if v.gitlabClient == nil {
@@ -383,9 +383,27 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 		commentStrategy = v.repo.Spec.Settings.Gitlab.CommentStrategy
 	}
 	switch commentStrategy {
-	case "disable_all":
+	case provider.DisableAllCommentStrategy:
 		v.Logger.Warn("Comments related to PipelineRuns status have been disabled for GitLab merge requests")
 		return nil
+	case provider.UpdateCommentStrategy:
+		if eventType == triggertype.PullRequest || provider.Valid(event.EventType, anyMergeRequestEventType) {
+			statusComment := v.formatPipelineComment(event.SHA, statusOpts)
+			// Creating the prefix that is added to the status comment for a pipeline run.
+			plrStatusCommentPrefix := fmt.Sprintf(provider.PlrStatusCommentPrefixTemplate, statusOpts.OriginalPipelineRunName)
+			// The entire markdown comment, including the prefix that is added to the pull request for the pipelinerun.
+			markdownStatusComment := fmt.Sprintf("%s\n%s", plrStatusCommentPrefix, statusComment)
+
+			if err := v.CreateComment(ctx, event, markdownStatusComment, plrStatusCommentPrefix); err != nil {
+				v.eventEmitter.EmitMessage(
+					v.repo,
+					zap.ErrorLevel,
+					"PipelineRunCommentCreationError",
+					fmt.Sprintf("failed to create comment: %s", err.Error()),
+				)
+				return err
+			}
+		}
 	default:
 		if eventType == triggertype.PullRequest || provider.Valid(event.EventType, anyMergeRequestEventType) {
 			mopt := &gitlab.CreateMergeRequestNoteOptions{Body: gitlab.Ptr(body)}
@@ -664,4 +682,25 @@ func (v *Provider) isHeadCommitOfBranch(runevent *info.Event, branchName string)
 
 func (v *Provider) GetTemplate(commentType provider.CommentType) string {
 	return provider.GetHTMLTemplate(commentType)
+}
+
+//nolint:misspell
+func (v *Provider) formatPipelineComment(sha string, status provider.StatusOpts) string {
+	var emoji string
+
+	switch status.Conclusion {
+	case "canceled":
+		emoji = "⚠️"
+	case "failed":
+		emoji = "❌"
+	case "success":
+		emoji = "✅"
+	case "running":
+		emoji = "🚀"
+	default:
+		emoji = "ℹ️"
+	}
+
+	return fmt.Sprintf("%s **%s: %s/%s for %s**\n\n%s\n\n<small>Full log available [here](%s)</small>",
+		emoji, status.Title, v.pacInfo.ApplicationName, status.OriginalPipelineRunName, sha, status.Text, status.DetailsURL)
 }

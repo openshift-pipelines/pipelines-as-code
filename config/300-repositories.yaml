@@ -476,9 +476,11 @@ spec:
                             CommentStrategy defines how GitLab comments are handled for pipeline results.
                             Options:
                             - 'disable_all': Disables all comments on merge requests
+                            - 'update': Updates a single comment per PipelineRun on every trigger.
                           enum:
                             - ""
                             - disable_all
+                            - update
                           type: string
                       type: object
                     pipelinerun_provenance:
