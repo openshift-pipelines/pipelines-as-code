@@ -192,7 +192,7 @@ func checkPipelineRunAnnotation(prun *tektonv1.PipelineRun, eventEmitter *events
 	}
 }
 
-func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger, pruns []*tektonv1.PipelineRun, cs *params.Run, event *info.Event, vcx provider.Interface, eventEmitter *events.EventEmitter, repo *apipac.Repository) ([]Match, error) {
+func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger, pruns []*tektonv1.PipelineRun, cs *params.Run, event *info.Event, vcx provider.Interface, eventEmitter *events.EventEmitter, repo *apipac.Repository, reportErrors bool) ([]Match, error) {
 	matchedPRs := []Match{}
 	infomsg := fmt.Sprintf("matching pipelineruns to event: URL=%s, target-branch=%s, source-branch=%s, target-event=%s",
 		event.URL,
@@ -381,7 +381,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 		matchedPRs = append(matchedPRs, prMatch)
 	}
 
-	if len(celValidationErrors) > 0 {
+	if len(celValidationErrors) > 0 && reportErrors {
 		reportCELValidationErrors(ctx, repo, celValidationErrors, eventEmitter, vcx, event)
 	}
 
