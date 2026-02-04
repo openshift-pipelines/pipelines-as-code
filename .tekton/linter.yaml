@@ -54,7 +54,7 @@ spec:
                 codespell -d docs/content pkg test
             - name: shellcheck
               displayName: "Shell scripts linter"
-              image: koalaman/shellcheck-alpine
+              image: docker.io/koalaman/shellcheck-alpine
               workingDir: $(workspaces.source.path)
               script: |
                 shellcheck $(find hack/ -type f -regex ".*sh" -print)
@@ -166,7 +166,7 @@ spec:
 
             - name: check-generated-schemas
               displayName: "Check generated OpenAPI schemas"
-              image: golang:1.25
+              image: docker.io/golang:1.25
               workingDir: $(workspaces.source.path)
               env:
                 - name: HUB_TOKEN
@@ -198,7 +198,7 @@ spec:
 
             - name: yamllint
               displayName: "YAML Linter"
-              image: cytopia/yamllint
+              image: docker.io/cytopia/yamllint
               workingDir: $(workspaces.source.path)
               script: |
                 set -euxo pipefail
@@ -224,7 +224,7 @@ spec:
 
             - name: markdownlint
               displayName: "Markdown Linter"
-              image: thegeeklab/markdownlint-cli
+              image: docker.io/thegeeklab/markdownlint-cli
               workingDir: $(workspaces.source.path)
               script: |
                 markdownlint $(find . -type f -regex ".*md"  -not -regex '^./vendor/.*' -not -regex "^./docs/themes/.*" -not -regex './.vale/.*' -not -regex "^./.git/.*" -print)
