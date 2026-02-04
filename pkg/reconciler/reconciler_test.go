@@ -318,6 +318,14 @@ func TestReconcileKind_SCMReportingLogic(t *testing.T) {
 	observer, _ := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
 
+	_, mux, ghTestServerURL, teardown := ghtesthelper.SetupGH()
+	defer teardown()
+
+	// Mock status endpoint
+	mux.HandleFunc("/repos/random/app/statuses/123afc", func(rw http.ResponseWriter, _ *http.Request) {
+		fmt.Fprint(rw, `{"state":"pending"}`)
+	})
+
 	tests := []struct {
 		name                         string
 		pipelineRun                  *tektonv1.PipelineRun
@@ -434,6 +442,7 @@ func TestReconcileKind_SCMReportingLogic(t *testing.T) {
 				Spec: v1alpha1.RepositorySpec{
 					URL: randomURL,
 					GitProvider: &v1alpha1.GitProvider{
+						URL: ghTestServerURL,
 						Secret: &v1alpha1.Secret{
 							Name: "pac-git-basic-auth-owner-repo",
 						},
