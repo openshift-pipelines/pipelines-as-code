@@ -175,7 +175,7 @@ fumpt: ## formats the GO code with gofumpt(excludes vendors dir)
 
 ##@ Generated files
 check-generated: # check if all files that needs to be generated are generated
-	@git status -uno |grep -E "modified:[ ]*(vendor/|.*.golden$)" && \
+	@git status -uno |grep -E "modified:[ ]*(vendor/|.*\.golden$$)" && \
 		{ echo "Vendor directory or Golden files has not been generated properly, commit the change first" ; \
 		  git status -uno ;	exit 1 ;} || true
 
