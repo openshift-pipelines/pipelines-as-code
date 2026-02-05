@@ -397,7 +397,9 @@ func (v *Provider) CreateStatus(ctx context.Context, runevent *info.Event, statu
 		statusOpts.Title = "Success"
 		statusOpts.Summary = "has <b>successfully</b> validated your commit."
 	case "failure":
-		statusOpts.Title = "Failed"
+		if statusOpts.Title == "" {
+			statusOpts.Title = "Failed"
+		}
 		statusOpts.Summary = "has <b>failed</b>."
 	case "pending":
 		// for concurrency set title as pending
