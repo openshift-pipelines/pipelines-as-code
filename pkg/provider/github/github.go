@@ -776,9 +776,13 @@ func (v *Provider) CreateComment(ctx context.Context, event *info.Event, commit,
 		re := regexp.MustCompile(regexp.QuoteMeta(updateMarker))
 		for _, comment := range comments {
 			if re.MatchString(comment.GetBody()) {
+				// No edit required if the comment is exactly the same.
+				if comment.GetBody() == commit {
+					return nil
+				}
 				if _, _, err := wrapAPI(v, "edit_comment", func() (*github.IssueComment, *github.Response, error) {
 					return v.Client().Issues.EditComment(ctx, event.Organization, event.Repository, comment.GetID(), &github.IssueComment{
-						Body: &commit,
+						Body: github.Ptr(commit),
 					})
 				}); err != nil {
 					return err
@@ -790,7 +794,7 @@ func (v *Provider) CreateComment(ctx context.Context, event *info.Event, commit,
 
 	_, _, err := wrapAPI(v, "create_comment", func() (*github.IssueComment, *github.Response, error) {
 		return v.Client().Issues.CreateComment(ctx, event.Organization, event.Repository, event.PullRequestNumber, &github.IssueComment{
-			Body: &commit,
+			Body: github.Ptr(commit),
 		})
 	})
 	return err
