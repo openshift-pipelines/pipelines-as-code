@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: StepAction
 metadata:
   name: git-clone
@@ -106,46 +106,46 @@ spec:
       description: The epoch timestamp of the commit that was fetched by this StepAction.
   image: "$(params.gitInitImage)"
   env:
-  - name: HOME
-    value: "$(params.userHome)"
-  - name: PARAM_URL
-    value: $(params.url)
-  - name: PARAM_REVISION
-    value: $(params.revision)
-  - name: PARAM_REFSPEC
-    value: $(params.refspec)
-  - name: PARAM_SUBMODULES
-    value: $(params.submodules)
-  - name: PARAM_DEPTH
-    value: $(params.depth)
-  - name: PARAM_SSL_VERIFY
-    value: $(params.sslVerify)
-  - name: PARAM_CRT_FILENAME
-    value: $(params.crtFileName)
-  - name: PARAM_SUBDIRECTORY
-    value: $(params.subdirectory)
-  - name: PARAM_DELETE_EXISTING
-    value: $(params.deleteExisting)
-  - name: PARAM_HTTP_PROXY
-    value: $(params.httpProxy)
-  - name: PARAM_HTTPS_PROXY
-    value: $(params.httpsProxy)
-  - name: PARAM_NO_PROXY
-    value: $(params.noProxy)
-  - name: PARAM_VERBOSE
-    value: $(params.verbose)
-  - name: PARAM_SPARSE_CHECKOUT_DIRECTORIES
-    value: $(params.sparseCheckoutDirectories)
-  - name: PARAM_USER_HOME
-    value: $(params.userHome)
-  - name: PARAM_OUTPUT_PATH
-    value: $(params.output-path)
-  - name: PARAM_SSH_DIRECTORY_PATH
-    value: $(params.ssh-directory-path)
-  - name: PARAM_BASIC_AUTH_DIRECTORY_PATH
-    value: $(params.basic-auth-path)
-  - name: PARAM_SSL_CA_DIRECTORY_PATH
-    value: $(params.ssl-ca-directory-path)
+    - name: HOME
+      value: "$(params.userHome)"
+    - name: PARAM_URL
+      value: $(params.url)
+    - name: PARAM_REVISION
+      value: $(params.revision)
+    - name: PARAM_REFSPEC
+      value: $(params.refspec)
+    - name: PARAM_SUBMODULES
+      value: $(params.submodules)
+    - name: PARAM_DEPTH
+      value: $(params.depth)
+    - name: PARAM_SSL_VERIFY
+      value: $(params.sslVerify)
+    - name: PARAM_CRT_FILENAME
+      value: $(params.crtFileName)
+    - name: PARAM_SUBDIRECTORY
+      value: $(params.subdirectory)
+    - name: PARAM_DELETE_EXISTING
+      value: $(params.deleteExisting)
+    - name: PARAM_HTTP_PROXY
+      value: $(params.httpProxy)
+    - name: PARAM_HTTPS_PROXY
+      value: $(params.httpsProxy)
+    - name: PARAM_NO_PROXY
+      value: $(params.noProxy)
+    - name: PARAM_VERBOSE
+      value: $(params.verbose)
+    - name: PARAM_SPARSE_CHECKOUT_DIRECTORIES
+      value: $(params.sparseCheckoutDirectories)
+    - name: PARAM_USER_HOME
+      value: $(params.userHome)
+    - name: PARAM_OUTPUT_PATH
+      value: $(params.output-path)
+    - name: PARAM_SSH_DIRECTORY_PATH
+      value: $(params.ssh-directory-path)
+    - name: PARAM_BASIC_AUTH_DIRECTORY_PATH
+      value: $(params.basic-auth-path)
+    - name: PARAM_SSL_CA_DIRECTORY_PATH
+      value: $(params.ssl-ca-directory-path)
   securityContext:
     runAsNonRoot: true
     runAsUser: 65532
