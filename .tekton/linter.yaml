@@ -164,6 +164,13 @@ spec:
 
                 exit $exit_code
 
+            - name: check-e2e-tests-naming
+              displayName: "Check e2e tests naming convention"
+              image: docker.io/golang:1.25
+              workingDir: $(workspaces.source.path)
+              script: |
+                make lint-e2e-naming
+
             - name: check-generated-schemas
               displayName: "Check generated OpenAPI schemas"
               image: docker.io/golang:1.25
