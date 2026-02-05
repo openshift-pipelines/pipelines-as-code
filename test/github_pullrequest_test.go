@@ -165,7 +165,7 @@ func TestGithubPullRequestWebhook(t *testing.T) {
 	defer g.TearDown(ctx, t)
 }
 
-func TestGithubSecondPullRequestBadYaml(t *testing.T) {
+func TestGithubSecondFlakyPullRequestBadYaml(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label:            "Github PullRequest Bad Yaml",
@@ -196,7 +196,7 @@ func TestGithubSecondPullRequestBadYaml(t *testing.T) {
 	t.Fatal("No comments with the pipelinerun error found on the pull request")
 }
 
-func TestGithubInvalidCELExpressionReportingOnPR(t *testing.T) {
+func TestGithubFlakyInvalidCELExpressionReportingOnPR(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label:         "Github PullRequest Invalid CEL expression",
@@ -231,10 +231,7 @@ func TestGithubInvalidCELExpressionReportingOnPR(t *testing.T) {
 
 // TestGithubPullRequestInvalidSpecValues tests invalid field values of a PipelinRun and
 // ensures that these validation errors are reported on UI.
-func TestGithubPullRequestInvalidSpecValues(t *testing.T) {
-	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
-		t.Skip("Skipping test since only enabled for nightly")
-	}
+func TestGithubFlakyPullRequestInvalidSpecValues(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label:            "Github Invalid Yaml",
@@ -683,7 +680,7 @@ func TestGithubPullandPushMatchTriggerOnlyPull(t *testing.T) {
 	ctx = info.StoreNS(ctx, globalNs)
 
 	reg := regexp.MustCompile(fmt.Sprintf("Skipping push event for commit.*as it belongs to pull request #%d", g.PRNumber))
-	maxLines := int64(100)
+	maxLines := int64(1000)
 	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 20, "controller", &maxLines)
 	assert.NilError(t, err)
 }
@@ -743,7 +740,7 @@ func TestGithubIgnoreTagPushCommitsFromSkipPushEventsSetting(t *testing.T) {
 	ctx = info.StoreNS(ctx, globalNs)
 
 	reg := regexp.MustCompile(fmt.Sprintf("Processing tag push event for commit %s despite skip-push-events-for-pr-commits being enabled.*", g.SHA))
-	maxLines := int64(100)
+	maxLines := int64(1000)
 	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 20, "controller", &maxLines)
 	assert.NilError(t, err)
 

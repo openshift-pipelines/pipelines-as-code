@@ -192,7 +192,7 @@ func TestGithubPushRequestGitOpsCommentCancel(t *testing.T) {
 
 	// this went too fast so at least we check it was requested for it
 	if !cancelled {
-		numLines := int64(20)
+		numLines := int64(1000)
 		reg := regexp.MustCompile(".*pipelinerun.*skipping cancelling pipelinerun.*on-push.*already done.*")
 		err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 10, "controller", &numLines)
 		if err != nil {

@@ -42,15 +42,8 @@ create_second_github_app_controller_on_ghe() {
   local test_github_second_application_id="${TEST_GITHUB_SECOND_APPLICATION_ID}"
   local test_github_second_webhook_secret="${TEST_GITHUB_SECOND_WEBHOOK_SECRET}"
 
-  if [[ -n "$(type -p apt)" ]]; then
-    sudo apt update &&
-      sudo apt install -y python3-yaml
-  elif [[ -n "$(type -p dnf)" ]]; then
-    dnf install -y python3-pyyaml
-  else
-    # TODO(chmouel): setup a virtualenvironment instead
-    python3 -m pip install --break-system-packages PyYAML
-  fi
+  # install uv
+  type -p uv >/dev/null 2>&1 || { curl -LsSf https://astral.sh/uv/install.sh | sh; }
 
   ./hack/second-controller.py \
     --controller-image="ko" \
@@ -77,8 +70,7 @@ get_tests() {
   mapfile -t testfiles < <(find test/ -maxdepth 1 -name '*.go')
   all_tests=$(grep -hioP '^func[[:space:]]+Test[[:alnum:]_]+' "${testfiles[@]}" | sed -E 's/^func[[:space:]]+//')
 
-  local -a gitea_tests
-  local chunk_size remainder
+  local -a gitea_tests=()
   if [[ "${target}" == *"gitea"* ]]; then
     # Filter Gitea tests, excluding Concurrency tests
     mapfile -t gitea_tests < <(echo "${all_tests}" | grep -iP '^TestGitea' 2>/dev/null | grep -ivP 'Concurrency' 2>/dev/null | sort 2>/dev/null)
@@ -90,19 +82,46 @@ get_tests() {
       fi
     done
     gitea_tests=("${filtered_tests[@]}")
+  fi
+
+  local -a github_tests=()
+  if [[ "${target}" == *"github"* ]] && [[ "${target}" != "github_second_controller" ]]; then
+    mapfile -t github_tests < <(echo "${all_tests}" | grep -iP '^TestGithub' 2>/dev/null | grep -ivP 'Concurrency|GithubSecond|Flaky' 2>/dev/null | sort 2>/dev/null)
+  fi
+
+  # Calculate chunk sizes for splitting gitea tests into 3 parts
+  local chunk_size remainder
+  if [[ ${#gitea_tests[@]} -gt 0 ]]; then
     chunk_size=$((${#gitea_tests[@]} / 3))
     remainder=$((${#gitea_tests[@]} % 3))
   fi
 
+  # Calculate chunk sizes for splitting github tests into 2 parts
+  local github_chunk_size github_remainder
+  if [[ ${#github_tests[@]} -gt 0 ]]; then
+    github_chunk_size=$((${#github_tests[@]} / 2))
+    github_remainder=$((${#github_tests[@]} % 2))
+  fi
+
   case "${target}" in
+  flaky)
+    printf '%s\n' "${all_tests}" | grep -iP 'Flaky'
+    ;;
   concurrency)
     printf '%s\n' "${all_tests}" | grep -iP 'Concurrency'
     ;;
-  github)
-    printf '%s\n' "${all_tests}" | grep -iP 'Github' | grep -ivP 'Concurrency|GithubSecond'
+  github_1)
+    if [[ ${#github_tests[@]} -gt 0 ]]; then
+      printf '%s\n' "${github_tests[@]:0:${github_chunk_size}}"
+    fi
+    ;;
+  github_2)
+    if [[ ${#github_tests[@]} -gt 0 ]]; then
+      printf '%s\n' "${github_tests[@]:${github_chunk_size}:$((github_chunk_size + github_remainder))}"
+    fi
     ;;
   github_second_controller)
-    printf '%s\n' "${all_tests}" | grep -iP 'GithubSecond' | grep -ivP 'Concurrency'
+    printf '%s\n' "${all_tests}" | grep -iP 'GithubSecond|Others' | grep -ivP 'Concurrency|Flaky'
     ;;
   gitlab_bitbucket)
     printf '%s\n' "${all_tests}" | grep -iP 'Gitlab|Bitbucket' | grep -ivP 'Concurrency'
@@ -123,13 +142,9 @@ get_tests() {
       printf '%s\n' "${gitea_tests[@]:${start_idx}:$((chunk_size + remainder))}"
     fi
     ;;
-  gitea_others)
-    # Deprecated: Use gitea_1, gitea_2, gitea_3 instead
-    printf '%s\n' "${all_tests}" | grep -ivP 'Github|Gitlab|Bitbucket|Concurrency'
-    ;;
   *)
     echo "Invalid target: ${target}"
-    echo "supported targets: github, github_second_controller, gitlab_bitbucket, gitea_1, gitea_2, gitea_3, concurrency"
+    echo "supported targets: github_1, github_2, github_second_controller, gitlab_bitbucket, gitea_1, gitea_2, gitea_3, concurrency, flaky"
     ;;
   esac
 }
@@ -141,8 +156,12 @@ run_e2e_tests() {
 
   mapfile -t tests < <(get_tests "${target}")
   echo "About to run ${#tests[@]} tests: ${tests[*]}"
+
+  mkdir -p /tmp/logs
+
   # shellcheck disable=SC2001
-  make test-e2e GO_TEST_FLAGS="-v -run \"$(echo "${tests[*]}" | sed 's/ /|/g')\""
+  make test-e2e GO_TEST_FLAGS="-v -run \"$(echo "${tests[*]}" | sed 's/ /|/g')\"" 2>&1 | tee -a /tmp/logs/e2e-test-output.log
+  return "${PIPESTATUS[0]}"
 }
 
 output_logs() {
@@ -156,9 +175,9 @@ output_logs() {
 }
 
 collect_logs() {
-  # Read from environment variables
-  local test_gitea_smee_url="${TEST_GITEA_SMEEURL}"
-  local github_ghe_smee_url="${TEST_GITHUB_SECOND_SMEE_URL}"
+  # Read from environment variables (use default empty value for optional vars)
+  local test_gitea_smee_url="${TEST_GITEA_SMEEURL:-}"
+  local github_ghe_smee_url="${TEST_GITHUB_SECOND_SMEE_URL:-}"
 
   mkdir -p /tmp/logs
   # Output logs to stdout so we can see via the web interface directly
@@ -193,6 +212,7 @@ collect_logs() {
   fi
 
   for url in "${test_gitea_smee_url}" "${github_ghe_smee_url}"; do
+    [[ -z "${url}" ]] && continue
     find /tmp/logs -type f -exec grep -l "${url}" {} \; | xargs -r sed -i "s|${url}|SMEE_URL|g"
   done
 
@@ -361,11 +381,14 @@ help() {
 
   collect_logs
     Collect logs from the cluster
-    Required env vars: TEST_GITEA_SMEEURL, TEST_GITHUB_SECOND_SMEE_URL
+    Optional env vars: TEST_GITEA_SMEEURL, TEST_GITHUB_SECOND_SMEE_URL (for scrubbing URLs from logs)
 
   output_logs
     Will output logs using snazzy formatting when available or otherwise through a simple
     python formatter. This makes debugging easier from the GitHub Actions interface.
+
+  print_tests
+    Print the list of tests that would be run for each provider target.
 
   notify_slack <artifacts_dir>
     Send a combined Slack notification for all failed E2E test providers.
@@ -389,6 +412,15 @@ collect_logs)
   ;;
 output_logs)
   output_logs
+  ;;
+print_tests)
+  set +x
+  for target in github_1 github_2 github_second_controller gitlab_bitbucket gitea_1 gitea_2 gitea_3 concurrency flaky; do
+    mapfile -t tests < <(get_tests "${target}")
+    echo "Tests for target: ${target} Total: ${#tests[@]}"
+    printf '%s\n' "${tests[@]}"
+    echo
+  done
   ;;
 notify_slack)
   notify_slack "${2:-artifacts}"

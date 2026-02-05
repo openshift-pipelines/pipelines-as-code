@@ -43,7 +43,8 @@ jobs:
       matrix:
         provider:
           [
-            github,
+            github_1,
+            github_2,
             github_second_controller,
             gitlab_bitbucket,
             gitea_1,
@@ -53,42 +54,41 @@ jobs:
           ]
 
     env:
-      CONTROLLER_DOMAIN_URL: paac.paac-127-0-0-1.nip.io
+      CONTROLLER_DOMAIN_URL: controller.paac-127-0-0-1.nip.io
       KOCACHE: /tmp/ko-cache
-      KO_DOCKER_REPO: registry.paac-127-0-0-1.nip.io
-      KUBECONFIG: /home/runner/.kube/config.local
+      KO_DOCKER_REPO: localhost:5000
+      KUBECONFIG: /home/runner/.kube/config.kind
       TARGET_TEAM_SLUGS: "pipeline-as-code,pipeline-as-code-contributors"
       TEST_BITBUCKET_CLOUD_API_URL: https://api.bitbucket.org/2.0
       TEST_BITBUCKET_CLOUD_E2E_REPOSITORY: cboudjna/pac-e2e-tests
+      TEST_BITBUCKET_CLOUD_TOKEN: ${{ secrets.BITBUCKET_CLOUD_TOKEN }}
       TEST_BITBUCKET_CLOUD_USER: cboudjna
       TEST_BITBUCKET_SERVER_API_URL: ${{ secrets.BITBUCKET_SERVER_API_URL }}
       TEST_BITBUCKET_SERVER_E2E_REPOSITORY: PAC/pac-e2e-tests
       TEST_BITBUCKET_SERVER_TOKEN: ${{ secrets.BITBUCKET_SERVER_TOKEN }}
       TEST_BITBUCKET_SERVER_USER: pipelines
       TEST_BITBUCKET_SERVER_WEBHOOK_SECRET: ${{ secrets.BITBUCKET_SERVER_WEBHOOK_SECRET }}
-      TEST_EL_URL: https://paac.paac-127-0-0-1.nip.io
+      TEST_EL_URL: http://controller.paac-127-0-0-1.nip.io
       TEST_EL_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
       TEST_GITEA_API_URL: http://localhost:3000
-      TEST_GITEA_INTERNAL_URL: http://forgejo-http.forgejo.svc.cluster.local:3000
+      TEST_GITEA_INTERNAL_URL: http://gitea.gitea:3000
       TEST_GITEA_PASSWORD: pac
       TEST_GITEA_REPO_OWNER: pac/pac
-      TEST_GITEA_SMEEURL: ${{ secrets.TEST_GITEA_SMEEURL }}
       TEST_GITEA_USERNAME: pac
       TEST_GITHUB_API_URL: api.github.com
       TEST_GITHUB_PRIVATE_TASK_NAME: task-remote
       TEST_GITHUB_PRIVATE_TASK_URL: https://github.com/openshift-pipelines/pipelines-as-code-e2e-tests-private/blob/main/remote_task.yaml
+      TEST_GITHUB_REPO_INSTALLATION_ID: ${{ vars.INSTALLATION_ID }}
       TEST_GITHUB_REPO_OWNER_GITHUBAPP: openshift-pipelines/pipelines-as-code-e2e-tests
       TEST_GITHUB_REPO_OWNER_WEBHOOK: openshift-pipelines/pipelines-as-code-e2e-tests-webhook
       TEST_GITHUB_SECOND_API_URL: ghe.pipelinesascode.com
-      TEST_GITHUB_SECOND_EL_URL: https://ghe.paac-127-0-0-1.nip.io
+      TEST_GITHUB_SECOND_EL_URL: http://ghe.paac-127-0-0-1.nip.io
       TEST_GITHUB_SECOND_REPO_INSTALLATION_ID: 1
       TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP: pipelines-as-code/e2e
+      TEST_GITHUB_SECOND_TOKEN: ${{ secrets.TEST_GITHUB_SECOND_TOKEN }}
+      TEST_GITHUB_TOKEN: ${{ secrets.GH_APPS_TOKEN }}
       TEST_GITLAB_API_URL: https://gitlab.com
       TEST_GITLAB_PROJECT_ID: ${{ vars.TEST_GITLAB_PROJECT_ID }}
-      TEST_BITBUCKET_CLOUD_TOKEN: ${{ secrets.BITBUCKET_CLOUD_TOKEN }}
-      TEST_GITHUB_REPO_INSTALLATION_ID: ${{ vars.INSTALLATION_ID }}
-      TEST_GITHUB_TOKEN: ${{ secrets.GH_APPS_TOKEN }}
-      TEST_GITHUB_SECOND_TOKEN: ${{ secrets.TEST_GITHUB_SECOND_TOKEN }}
       TEST_GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
     steps:
       - uses: actions/checkout@v6
@@ -291,64 +291,88 @@ jobs:
         with:
           repo: chmouel/snazy
 
-      - name: Install minica
-        run: |
-          go install github.com/jsha/minica@latest
-          echo "$HOME/go/bin" >> "$GITHUB_PATH"
-
-      - name: Clone startpaac
-        uses: actions/checkout@v6
-        with:
-          repository: openshift-pipelines/startpaac
-          path: startpaac
-
       - name: Run gosmee for main controller
         run: |
-          nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.PYSMEE_URL }} "https://${CONTROLLER_DOMAIN_URL}" > /tmp/gosmee-main.log 2>&1 &
+          nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.PYSMEE_URL }} "http://${CONTROLLER_DOMAIN_URL}" > /tmp/gosmee-main.log 2>&1 &
 
-      - name: Run gosmee for main controller (Gitea)
+      - name: Generate unique gosmee URL for Gitea tests
         if: startsWith(matrix.provider, 'gitea') || matrix.provider == 'concurrency'
+        id: gosmee-url
         run: |
-          nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.TEST_GITEA_SMEEURL }} "https://${CONTROLLER_DOMAIN_URL}" >> /tmp/gosmee-main.log 2>&1 &
-
-      - name: Run gosmee for second controller (GHE)
-        if: matrix.provider == 'github_second_controller' || matrix.provider == 'concurrency'
-        run: |
-          nohup gosmee client --saveDir /tmp/gosmee-replay-ghe ${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }} "https://ghe.paac-127-0-0-1.nip.io" > /tmp/gosmee-ghe.log 2>&1 &
+          SMEE_URL=$(curl -s https://hook.pipelinesascode.com -o /dev/null -w '%{redirect_url}')
+          echo "Generated unique smee URL: ${SMEE_URL}"
+          echo "url=${SMEE_URL}" >> "$GITHUB_OUTPUT"
+          echo "TEST_GITEA_SMEEURL=${SMEE_URL}" >> "$GITHUB_ENV"
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
+        # add all environment so we can debug easily
+        env:
+          CONTROLLER_DOMAIN_URL: controller.paac-127-0-0-1.nip.io
+          KOCACHE: /tmp/ko-cache
+          KO_DOCKER_REPO: localhost:5000
+          KUBECONFIG: /home/runner/.kube/config.kind
+          TARGET_TEAM_SLUGS: "pipeline-as-code,pipeline-as-code-contributors"
+          TEST_BITBUCKET_CLOUD_API_URL: https://api.bitbucket.org/2.0
+          TEST_BITBUCKET_CLOUD_E2E_REPOSITORY: cboudjna/pac-e2e-tests
+          TEST_BITBUCKET_CLOUD_TOKEN: ${{ secrets.BITBUCKET_CLOUD_TOKEN }}
+          TEST_BITBUCKET_CLOUD_USER: cboudjna
+          TEST_BITBUCKET_SERVER_API_URL: ${{ secrets.BITBUCKET_SERVER_API_URL }}
+          TEST_BITBUCKET_SERVER_E2E_REPOSITORY: PAC/pac-e2e-tests
+          TEST_BITBUCKET_SERVER_TOKEN: ${{ secrets.BITBUCKET_SERVER_TOKEN }}
+          TEST_BITBUCKET_SERVER_USER: pipelines
+          TEST_BITBUCKET_SERVER_WEBHOOK_SECRET: ${{ secrets.BITBUCKET_SERVER_WEBHOOK_SECRET }}
+          TEST_EL_URL: http://controller.paac-127-0-0-1.nip.io
+          TEST_EL_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+          TEST_GITEA_API_URL: http://localhost:3000
+          TEST_GITEA_PASSWORD: pac
+          TEST_GITEA_REPO_OWNER: pac/pac
+          TEST_GITEA_USERNAME: pac
+          TEST_GITHUB_API_URL: api.github.com
+          TEST_GITHUB_PRIVATE_TASK_NAME: task-remote
+          TEST_GITHUB_PRIVATE_TASK_URL: https://github.com/openshift-pipelines/pipelines-as-code-e2e-tests-private/blob/main/remote_task.yaml
+          TEST_GITHUB_REPO_INSTALLATION_ID: ${{ vars.INSTALLATION_ID }}
+          TEST_GITHUB_REPO_OWNER_GITHUBAPP: openshift-pipelines/pipelines-as-code-e2e-tests
+          TEST_GITHUB_REPO_OWNER_WEBHOOK: openshift-pipelines/pipelines-as-code-e2e-tests-webhook
+          TEST_GITHUB_SECOND_API_URL: ghe.pipelinesascode.com
+          TEST_GITHUB_SECOND_APPLICATION_ID: ${{ vars.TEST_GITHUB_SECOND_APPLICATION_ID }}
+          TEST_GITHUB_SECOND_EL_URL: http://ghe.paac-127-0-0-1.nip.io
+          TEST_GITHUB_SECOND_REPO_INSTALLATION_ID: 1
+          TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP: pipelines-as-code/e2e
+          TEST_GITHUB_SECOND_TOKEN: ${{ secrets.TEST_GITHUB_SECOND_TOKEN }}
+          TEST_GITHUB_SECOND_SMEE_URL: ${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}
+          TEST_GITHUB_SECOND_WEBHOOK_SECRET: ${{ secrets.TEST_GITHUB_SECOND_WEBHOOK_SECRET }}
+          TEST_GITHUB_TOKEN: ${{ secrets.GH_APPS_TOKEN }}
+          TEST_GITLAB_API_URL: https://gitlab.com
+          TEST_GITLAB_PROJECT_ID: ${{ vars.TEST_GITLAB_PROJECT_ID }}
+          TEST_GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+          TEST_PROVIDER: ${{ matrix.provider }}
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
         with:
           detached: true
           limit-access-to-actor: true
 
-      - name: Start installing cluster with startpaac
-        env:
-          PAC_DIR: ${{ github.workspace }}
-          PAAC_DOMAIN: paac-127-0-0-1.nip.io
-          TEST_GITEA_SMEEURL: ${{ secrets.TEST_GITEA_SMEEURL }}
+      - name: Start installing cluster
         run: |
-          # Create real secrets for startpaac (not dummy)
-          mkdir -p ~/secrets
-          echo "${{ vars.APPLICATION_ID }}" > ~/secrets/github-application-id
-          echo "${{ secrets.APP_PRIVATE_KEY }}" > ~/secrets/github-private-key
-          echo "${{ secrets.WEBHOOK_SECRET }}" > ~/secrets/webhook.secret
-          echo "${{ secrets.PYSMEE_URL }}" > ~/secrets/smee
+          export PAC_DIR=${PWD}
+          bash -x ./hack/dev/kind/install.sh
 
-          # Create second controller secrets
-          mkdir -p ~/secrets-second
-          echo "${{ vars.TEST_GITHUB_SECOND_APPLICATION_ID }}" > ~/secrets-second/github-application-id
-          echo "${{ secrets.TEST_GITHUB_SECOND_PRIVATE_KEY }}" > ~/secrets-second/github-private-key
-          echo "${{ secrets.TEST_GITHUB_SECOND_WEBHOOK_SECRET }}" > ~/secrets-second/webhook.secret
-          echo "${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}" > ~/secrets-second/smee
+      - name: Create PAC github-app-secret
+        env:
+          PAC_GITHUB_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          PAC_GITHUB_APPLICATION_ID: ${{ vars.APPLICATION_ID }}
+          PAC_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+        run: |
+          ./hack/gh-workflow-ci.sh create_pac_github_app_secret
 
-          export PAC_SECRET_FOLDER=~/secrets
-          export PAC_SECOND_SECRET_FOLDER=~/secrets-second
-          export TARGET_HOST=local
-
-          cd startpaac
-          ./startpaac --ci -a
+      - name: Create second Github APP Controller on GHE
+        env:
+          TEST_GITHUB_SECOND_SMEE_URL: ${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}
+          TEST_GITHUB_SECOND_PRIVATE_KEY: ${{ secrets.TEST_GITHUB_SECOND_PRIVATE_KEY }}
+          TEST_GITHUB_SECOND_WEBHOOK_SECRET: ${{ secrets.TEST_GITHUB_SECOND_WEBHOOK_SECRET }}
+          TEST_GITHUB_SECOND_APPLICATION_ID: ${{ vars.TEST_GITHUB_SECOND_APPLICATION_ID }}
+        run: |
+          ./hack/gh-workflow-ci.sh create_second_github_app_controller_on_ghe
 
       - name: Enable debug logging for e2e
         run: |
@@ -360,29 +384,6 @@ jobs:
             kubectl -n pipelines-as-code rollout status deployment/pipelines-as-code-$name --timeout=120s
           done
 
-      - name: Install minica CA certificate to system trust store
-        run: |
-          set -x
-          echo "=== Installing minica CA certificate to system trust store ==="
-          if [ -f /tmp/certs/minica.pem ]; then
-            sudo mkdir -p /usr/local/share/ca-certificates/
-            sudo cp /tmp/certs/minica.pem /usr/local/share/ca-certificates/minica.crt
-            sudo update-ca-certificates
-            echo "✓ CA certificate installed to system trust store"
-
-            # Verify installation
-            ls -la /usr/local/share/ca-certificates/minica.crt
-            echo "System will now trust HTTPS connections to *.127-0-0-1.nip.io domains"
-          else
-            echo "✗ ERROR: /tmp/certs/minica.pem not found"
-            echo "startpaac should have created this file"
-            exit 1
-          fi
-
-      - name: Configure git to skip TLS verification
-        run: |
-          git config --global http.sslVerify false
-
       # Adjusted step-level conditions based on the new job-level logic
       - name: Run E2E Tests
         # This step runs for schedule, PR target (if job started), or workflow_dispatch (if job started)
@@ -392,7 +393,6 @@ jobs:
           TEST_PROVIDER: ${{ matrix.provider }}
           TEST_BITBUCKET_CLOUD_TOKEN: ${{ secrets.BITBUCKET_CLOUD_TOKEN }}
           TEST_EL_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
-          TEST_GITEA_SMEEURL: ${{ secrets.TEST_GITEA_SMEEURL }}
           TEST_GITHUB_REPO_INSTALLATION_ID: ${{ vars.INSTALLATION_ID }}
           TEST_GITHUB_TOKEN: ${{ secrets.GH_APPS_TOKEN }}
           TEST_GITHUB_SECOND_TOKEN: ${{ secrets.TEST_GITHUB_SECOND_TOKEN }}
@@ -411,7 +411,6 @@ jobs:
           TEST_PROVIDER: ${{ matrix.provider }}
           TEST_BITBUCKET_CLOUD_TOKEN: ${{ secrets.BITBUCKET_CLOUD_TOKEN }}
           TEST_EL_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
-          TEST_GITEA_SMEEURL: ${{ secrets.TEST_GITEA_SMEEURL }}
           TEST_GITHUB_REPO_INSTALLATION_ID: ${{ vars.INSTALLATION_ID }}
           TEST_GITHUB_TOKEN: ${{ secrets.GH_APPS_TOKEN }}
           TEST_GITHUB_SECOND_TOKEN: ${{ secrets.TEST_GITHUB_SECOND_TOKEN }}
@@ -420,14 +419,11 @@ jobs:
           TEST_BITBUCKET_SERVER_API_URL: ${{ secrets.BITBUCKET_SERVER_API_URL }}
           TEST_BITBUCKET_SERVER_WEBHOOK_SECRET: ${{ secrets.BITBUCKET_SERVER_WEBHOOK_SECRET }}
         run: |
-          mkdir -p /tmp/logs
-          ./hack/gh-workflow-ci.sh run_e2e_tests 2>&1 | tee -a /tmp/logs/e2e-test-output.log
-          exit ${PIPESTATUS[0]}
+          ./hack/gh-workflow-ci.sh run_e2e_tests
 
       - name: Collect logs
         if: ${{ always() }}
         env:
-          TEST_GITEA_SMEEURL: ${{ secrets.TEST_GITEA_SMEEURL }}
           TEST_GITHUB_SECOND_SMEE_URL: ${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}
         run: |
           ./hack/gh-workflow-ci.sh collect_logs
@@ -444,10 +440,136 @@ jobs:
           name: logs-e2e-tests-${{ matrix.provider }}
           path: /tmp/logs
 
+  e2e-flaky-tests:
+    name: e2e flaky tests
+    runs-on: ubuntu-latest
+    needs: e2e-tests
+    if: always() && !cancelled()
+    concurrency:
+      group: ${{ github.workflow }}-flaky-${{ github.event.pull_request.number || github.ref_name }}
+      cancel-in-progress: true
+
+    env:
+      CONTROLLER_DOMAIN_URL: controller.paac-127-0-0-1.nip.io
+      KOCACHE: /tmp/ko-cache
+      KO_DOCKER_REPO: localhost:5000
+      KUBECONFIG: /home/runner/.kube/config.kind
+      TEST_EL_URL: http://controller.paac-127-0-0-1.nip.io
+      TEST_EL_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+      TEST_GITHUB_API_URL: api.github.com
+      TEST_GITHUB_PRIVATE_TASK_NAME: task-remote
+      TEST_GITHUB_PRIVATE_TASK_URL: https://github.com/openshift-pipelines/pipelines-as-code-e2e-tests-private/blob/main/remote_task.yaml
+      TEST_GITHUB_REPO_INSTALLATION_ID: ${{ vars.INSTALLATION_ID }}
+      TEST_GITHUB_REPO_OWNER_GITHUBAPP: openshift-pipelines/pipelines-as-code-e2e-tests
+      TEST_GITHUB_SECOND_API_URL: ghe.pipelinesascode.com
+      TEST_GITHUB_SECOND_EL_URL: http://ghe.paac-127-0-0-1.nip.io
+      TEST_GITHUB_SECOND_REPO_INSTALLATION_ID: 1
+      TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP: pipelines-as-code/e2e
+      TEST_GITHUB_SECOND_TOKEN: ${{ secrets.TEST_GITHUB_SECOND_TOKEN }}
+      TEST_GITHUB_TOKEN: ${{ secrets.GH_APPS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.target_ref || github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+
+      - name: Cache ko layer cache
+        uses: actions/cache@v5
+        with:
+          path: /tmp/ko-cache
+          key: ${{ runner.os }}-ko-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-ko-
+
+      - uses: ko-build/setup-ko@v0.9
+
+      - name: Build binaries in parallel with cluster installation
+        run: |
+          nohup make allbinaries > /tmp/binary-build.log 2>&1 &
+          echo $! > /tmp/binary-build.pid
+
+      - name: Install gosmee
+        uses: jaxxstorm/action-install-gh-release@v2.1.0
+        with:
+          repo: chmouel/gosmee
+
+      - name: Install Snazy
+        uses: jaxxstorm/action-install-gh-release@v2.1.0
+        with:
+          repo: chmouel/snazy
+
+      - name: Run gosmee for main controller
+        run: |
+          nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.PYSMEE_URL }} "http://${CONTROLLER_DOMAIN_URL}" > /tmp/gosmee-main.log 2>&1 &
+
+      - name: Start installing cluster
+        run: |
+          export PAC_DIR=${PWD}
+          bash -x ./hack/dev/kind/install.sh
+
+      - name: Create PAC github-app-secret
+        env:
+          PAC_GITHUB_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          PAC_GITHUB_APPLICATION_ID: ${{ vars.APPLICATION_ID }}
+          PAC_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+        run: |
+          ./hack/gh-workflow-ci.sh create_pac_github_app_secret
+
+      - name: Create second Github APP Controller on GHE
+        env:
+          TEST_GITHUB_SECOND_SMEE_URL: ${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}
+          TEST_GITHUB_SECOND_PRIVATE_KEY: ${{ secrets.TEST_GITHUB_SECOND_PRIVATE_KEY }}
+          TEST_GITHUB_SECOND_WEBHOOK_SECRET: ${{ secrets.TEST_GITHUB_SECOND_WEBHOOK_SECRET }}
+          TEST_GITHUB_SECOND_APPLICATION_ID: ${{ vars.TEST_GITHUB_SECOND_APPLICATION_ID }}
+        run: |
+          ./hack/gh-workflow-ci.sh create_second_github_app_controller_on_ghe
+
+      - name: Enable debug logging for e2e
+        run: |
+          set -euo pipefail
+          kubectl -n pipelines-as-code patch configmap pac-config-logging --type merge -p '{"data":{"loglevel.pipelinesascode":"debug","loglevel.pac-watcher":"debug","loglevel.pipelines-as-code-webhook":"debug"}}'
+          kubectl -n pipelines-as-code rollout restart deployment/pipelines-as-code-controller deployment/pipelines-as-code-webhook deployment/pipelines-as-code-watcher
+          for name in controller webhook watcher; do
+            echo "=== Waiting for $name to be ready ==="
+            kubectl -n pipelines-as-code rollout status deployment/pipelines-as-code-$name --timeout=120s
+          done
+
+      - name: Run Flaky E2E Tests
+        env:
+          TEST_PROVIDER: flaky
+          TEST_EL_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+          TEST_GITHUB_REPO_INSTALLATION_ID: ${{ vars.INSTALLATION_ID }}
+          TEST_GITHUB_TOKEN: ${{ secrets.GH_APPS_TOKEN }}
+          TEST_GITHUB_SECOND_TOKEN: ${{ secrets.TEST_GITHUB_SECOND_TOKEN }}
+        run: |
+          ./hack/gh-workflow-ci.sh run_e2e_tests
+
+      - name: Collect logs
+        if: ${{ always() }}
+        env:
+          TEST_GITHUB_SECOND_SMEE_URL: ${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}
+        run: |
+          ./hack/gh-workflow-ci.sh collect_logs
+
+      - name: Show controllers/watcher errors with Snazy
+        if: ${{ always() }}
+        run: |
+          ./hack/gh-workflow-ci.sh output_logs
+
+      - name: Upload artifacts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: logs-e2e-tests-flaky
+          path: /tmp/logs
+
   notify-slack:
     name: Notify Slack on Failures
     runs-on: ubuntu-latest
-    needs: e2e-tests
+    needs: [e2e-tests, e2e-flaky-tests]
     if: ${{ always() && github.ref_name == 'main' && github.event_name == 'schedule' }}
     steps:
       - uses: actions/checkout@v6

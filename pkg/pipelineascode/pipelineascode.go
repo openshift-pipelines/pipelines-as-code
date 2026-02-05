@@ -58,16 +58,29 @@ func NewPacs(event *info.Event, vcx provider.Interface, run *params.Run, pacInfo
 }
 
 func (p *PacRun) Run(ctx context.Context) error {
+	p.debugf("run start: trigger_target=%s event_type=%s repo_url=%s sha=%s pr=%d has_skip=%t cancel_pipeline_runs=%t",
+		p.event.TriggerTarget,
+		p.event.EventType,
+		p.event.URL,
+		p.event.SHA,
+		p.event.PullRequestNumber,
+		p.event.HasSkipCommand,
+		p.event.CancelPipelineRuns,
+	)
 	// For PullRequestClosed events, skip matching logic and go straight to cancellation
 	if p.event.TriggerTarget == triggertype.PullRequestClosed {
+		p.debugf("pull request closed: verifying repo and cancelling in-progress pipelineRuns")
 		repo, err := p.verifyRepoAndUser(ctx)
 		if err != nil {
 			return err
 		}
 		if repo != nil {
+			p.debugf("repo verified: name=%s namespace=%s", repo.GetName(), repo.GetNamespace())
 			if err := p.cancelAllInProgressBelongingToClosedPullRequest(ctx, repo); err != nil {
 				return fmt.Errorf("error cancelling in progress pipelineRuns belonging to pull request %d: %w", p.event.PullRequestNumber, err)
 			}
+		} else {
+			p.debugf("pull request closed: no repo match found for event url=%s", p.event.URL)
 		}
 		return nil
 	}
@@ -85,10 +98,19 @@ func (p *PacRun) Run(ctx context.Context) error {
 			p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryCreateStatus", fmt.Sprintf("cannot create status: %s: %s", err, createStatusErr))
 		}
 	}
+	repoName := "<nil>"
+	repoNamespace := "<nil>"
+	if repo != nil {
+		repoName = repo.GetName()
+		repoNamespace = repo.GetNamespace()
+	}
+	p.debugf("match results: matched=%d repo=%s/%s", len(matchedPRs), repoNamespace, repoName)
 	if len(matchedPRs) == 0 {
+		p.debugf("no pipelineruns matched; returning without starting any runs")
 		return nil
 	}
 	if repo.Spec.ConcurrencyLimit != nil && *repo.Spec.ConcurrencyLimit != 0 {
+		p.debugf("enabling concurrency manager with limit=%d", *repo.Spec.ConcurrencyLimit)
 		p.manager.Enable()
 	}
 
@@ -102,11 +124,14 @@ func (p *PacRun) Run(ctx context.Context) error {
 	}
 
 	// set params for the console driver, only used for the custom console ones
+	p.debugf("resolving custom params for console UI")
 	cp := customparams.NewCustomParams(p.event, repo, p.run, p.k8int, p.eventEmitter, p.vcx)
 	maptemplate, _, err := cp.GetParams(ctx)
 	if err != nil {
 		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "ParamsError",
 			fmt.Sprintf("error processing repository CR custom params: %s", err.Error()))
+	} else {
+		p.debugf("resolved %d custom params for console UI", len(maptemplate))
 	}
 	p.run.Clients.ConsoleUI().SetParams(maptemplate)
 
@@ -126,6 +151,7 @@ func (p *PacRun) Run(ctx context.Context) error {
 
 		go func(match matcher.Match, i int) {
 			defer wg.Done()
+			p.debugf("starting pipelinerun %s (index=%d)", match.PipelineRun.GetGenerateName(), i)
 			pr, err := p.startPR(ctx, match)
 			if err != nil {
 				errMsg := fmt.Sprintf("There was an error starting the PipelineRun %s, %s", match.PipelineRun.GetGenerateName(), err.Error())
@@ -145,16 +171,21 @@ func (p *PacRun) Run(ctx context.Context) error {
 					p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryCreateStatus", fmt.Sprintf("Cannot create status: %s: %s", err, createStatusErr))
 				}
 			}
+			if pr != nil {
+				p.debugf("pipelinerun started: name=%s namespace=%s", pr.GetName(), pr.GetNamespace())
+			}
 			p.manager.AddPipelineRun(pr)
 			if err := p.cancelInProgressMatchingPipelineRun(ctx, pr, repo); err != nil {
 				p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryPipelineRun", fmt.Sprintf("error cancelling in progress pipelineRuns: %s", err))
 			}
+			p.debugf("finished processing pipelinerun start: name=%s", match.PipelineRun.GetGenerateName())
 		}(match, i)
 	}
 	wg.Wait()
 
 	order, prs := p.manager.GetExecutionOrder()
 	if order != "" {
+		p.debugf("patching execution order for %d pipelineruns: %s", len(prs), order)
 		for _, pr := range prs {
 			wg.Add(1)
 
@@ -174,11 +205,22 @@ func (p *PacRun) Run(ctx context.Context) error {
 
 func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.PipelineRun, error) {
 	var gitAuthSecretName string
+	prName := match.PipelineRun.GetName()
+	if prName == "" {
+		prName = match.PipelineRun.GetGenerateName()
+	}
+	p.debugf("startPR: pipelinerun=%s namespace=%s event_sha=%s target_branch=%s",
+		prName,
+		match.Repo.GetNamespace(),
+		p.event.SHA,
+		p.event.BaseBranch,
+	)
 
 	// Automatically create a secret with the token to be reused by git-clone task
 	if p.pacInfo.SecretAutoCreation {
 		if annotation, ok := match.PipelineRun.GetAnnotations()[keys.GitAuthSecret]; ok {
 			gitAuthSecretName = annotation
+			p.debugf("startPR: using git auth secret from annotation=%s", gitAuthSecretName)
 		} else {
 			return nil, fmt.Errorf("cannot get annotation %s as set on PR", keys.GitAuthSecret)
 		}
@@ -200,6 +242,8 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 			} else {
 				return nil, fmt.Errorf("creating basic auth secret: %s has failed: %w ", authSecret.GetName(), err)
 			}
+		} else {
+			p.debugf("startPR: created git auth secret %s in namespace %s", authSecret.GetName(), match.Repo.GetNamespace())
 		}
 	}
 
@@ -207,15 +251,19 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 	err := kubeinteraction.AddLabelsAndAnnotations(p.event, match.PipelineRun, match.Repo, p.vcx.GetConfig(), p.run)
 	if err != nil {
 		p.logger.Errorf("Error adding labels/annotations to PipelineRun '%s' in namespace '%s': %v", match.PipelineRun.GetName(), match.Repo.GetNamespace(), err)
+	} else {
+		p.debugf("startPR: added labels/annotations to pipelinerun=%s", prName)
 	}
 
 	// if concurrency is defined then start the pipelineRun in pending state
 	if match.Repo.Spec.ConcurrencyLimit != nil && *match.Repo.Spec.ConcurrencyLimit != 0 {
 		// pending status
 		match.PipelineRun.Spec.Status = tektonv1.PipelineRunSpecStatusPending
+		p.debugf("startPR: marking pipelinerun=%s as pending due to concurrency limit", prName)
 	}
 
 	// Create the actual pipelineRun
+	p.debugf("startPR: creating pipelinerun=%s in namespace=%s", prName, match.Repo.GetNamespace())
 	pr, err := p.run.Clients.Tekton.TektonV1().PipelineRuns(match.Repo.GetNamespace()).Create(ctx,
 		match.PipelineRun, metav1.CreateOptions{})
 	if err != nil {
@@ -239,6 +287,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 			// unneeded SIGSEGV's
 			return pr, fmt.Errorf("cannot update pipelinerun %s with ownerRef: %w", pr.GetGenerateName(), err)
 		}
+		p.debugf("startPR: updated secret ownerRef for pipelinerun=%s secret=%s", pr.GetName(), gitAuthSecretName)
 	}
 
 	// Create status with the log url
@@ -301,6 +350,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 		// unneeded SIGSEGV's
 		return pr, fmt.Errorf("cannot use the API on the provider platform to create a in_progress status: %w", err)
 	}
+	p.debugf("startPR: created status for pipelinerun=%s status=%s conclusion=%s", pr.GetName(), status.Status, status.Conclusion)
 
 	// Patch pipelineRun with logURL annotation, skips for GitHub App as we patch logURL while patching CheckrunID
 	if _, ok := pr.Annotations[keys.InstallationID]; !ok {
@@ -309,6 +359,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 	}
 
 	if len(patchAnnotations) > 0 || len(patchLabels) > 0 {
+		p.debugf("startPR: patching pipelinerun=%s patches=%s annotations=%d labels=%d", pr.GetName(), whatPatching, len(patchAnnotations), len(patchLabels))
 		pr, err = action.PatchPipelineRun(ctx, p.logger, whatPatching, p.run.Clients.Tekton, pr, getMergePatch(patchAnnotations, patchLabels))
 		if err != nil {
 			// if PipelineRun patch is failed then do not return error, just log the error
