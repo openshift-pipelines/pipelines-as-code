@@ -124,7 +124,7 @@ get_tests() {
     printf '%s\n' "${all_tests}" | grep -iP 'GithubSecond|Others' | grep -ivP 'Concurrency|Flaky'
     ;;
   gitlab_bitbucket)
-    printf '%s\n' "${all_tests}" | grep -iP 'Gitlab|Bitbucket' | grep -ivP 'Concurrency'
+    printf '%s\n' "${all_tests}" | grep -iP 'Gitlab|Bitbucket' | grep -ivP 'Concurrency|Flaky'
     ;;
   gitea_1)
     if [[ ${#gitea_tests[@]} -gt 0 ]]; then

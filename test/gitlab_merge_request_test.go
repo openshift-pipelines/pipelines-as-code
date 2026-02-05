@@ -810,7 +810,7 @@ func TestGitlabMergeRequestValidationErrorsFromFork(t *testing.T) {
 	assert.Assert(t, foundValidationComment, "Validation error comment should appear on original project's MR. ")
 }
 
-func TestGitlabConsistentCommitStatusOnMR(t *testing.T) {
+func TestGitlabFlakyConsistentCommitStatusOnMR(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
 	runcnx, opts, glprovider, err := tgitlab.Setup(ctx)
