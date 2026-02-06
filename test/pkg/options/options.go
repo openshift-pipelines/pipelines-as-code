@@ -10,7 +10,7 @@ type E2E struct {
 	Concurrency        int
 	UserName           string
 	Password           string
-	Settings           v1alpha1.Settings
+	Settings           *v1alpha1.Settings
 }
 
 var (
