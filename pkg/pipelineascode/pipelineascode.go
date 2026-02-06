@@ -157,12 +157,17 @@ func (p *PacRun) Run(ctx context.Context) error {
 				errMsg := fmt.Sprintf("There was an error starting the PipelineRun %s, %s", match.PipelineRun.GetGenerateName(), err.Error())
 				errMsgM := fmt.Sprintf("There was an error creating the PipelineRun: <b>%s</b>\n\n%s", match.PipelineRun.GetGenerateName(), err.Error())
 				p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryPipelineRun", errMsg)
+				prName := match.PipelineRun.GetName()
+				if prName == "" {
+					prName = match.PipelineRun.GetGenerateName()
+				}
 				createStatusErr := p.vcx.CreateStatus(ctx, p.event, provider.StatusOpts{
-					PipelineRunName:          match.PipelineRun.GetName(),
+					PipelineRunName:          prName,
 					PipelineRun:              match.PipelineRun,
 					OriginalPipelineRunName:  match.PipelineRun.GetAnnotations()[keys.OriginalPRName],
 					Status:                   CompletedStatus,
 					Conclusion:               failureConclusion,
+					Title:                    "pipelinerun start failure",
 					Text:                     errMsgM,
 					DetailsURL:               p.run.Clients.ConsoleUI().URL(),
 					InstanceCountForCheckRun: i,
