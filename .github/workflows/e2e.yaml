@@ -281,11 +281,6 @@ jobs:
           nohup make allbinaries > /tmp/binary-build.log 2>&1 &
           echo $! > /tmp/binary-build.pid
 
-      - name: Install gosmee
-        uses: jaxxstorm/action-install-gh-release@v2.1.0
-        with:
-          repo: chmouel/gosmee
-
       - name: Install Snazy
         uses: jaxxstorm/action-install-gh-release@v2.1.0
         with:
