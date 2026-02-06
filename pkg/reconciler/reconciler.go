@@ -11,6 +11,7 @@ import (
 	tektonv1lister "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
@@ -187,6 +188,14 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 	repoName := pr.GetAnnotations()[keys.Repository]
 	repo, err := r.repoLister.Repositories(pr.Namespace).Get(repoName)
 	if err != nil {
+		// Repository was deleted (e.g., during test cleanup) - skip gracefully
+		if errors.IsNotFound(err) {
+			logger.Infof("repository %s/%s not found, skipping final status report", pr.Namespace, repoName)
+			r.qm.RemoveRepository(&v1alpha1.Repository{
+				ObjectMeta: metav1.ObjectMeta{Name: repoName, Namespace: pr.Namespace},
+			})
+			return nil, nil
+		}
 		return nil, fmt.Errorf("reportFinalStatus: %w", err)
 	}
 

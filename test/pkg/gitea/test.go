@@ -155,7 +155,11 @@ func TestPR(t *testing.T, topts *TestOpts) (context.Context, func()) {
 		topts.DefaultBranch = options.MainBranch
 	}
 
-	repoInfo, err := CreateGiteaRepo(topts.GiteaCNX.Client(), topts.Opts.Organization, topts.TargetRepoName, topts.DefaultBranch, hookURL, topts.OnOrg, topts.ParamsRun.Clients.Log)
+	webhookSecret := os.Getenv("TEST_EL_WEBHOOK_SECRET")
+	repoInfo, err := CreateGiteaRepo(topts.GiteaCNX.Client(), topts.Opts.Organization,
+		topts.TargetRepoName, topts.DefaultBranch, hookURL,
+		webhookSecret, topts.OnOrg,
+		topts.ParamsRun.Clients.Log)
 	assert.NilError(t, err)
 	topts.Opts.Repo = repoInfo.Name
 	topts.Opts.Organization = repoInfo.Owner.UserName
