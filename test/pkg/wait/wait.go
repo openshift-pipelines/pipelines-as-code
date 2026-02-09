@@ -74,6 +74,18 @@ func UntilRepositoryUpdated(ctx context.Context, clients clients.Clients, opts O
 
 		clients.Log.Infof("Still waiting for repository status to be updated: %d/%d", len(repo.Status), opts.MinNumberStatus)
 		time.Sleep(2 * time.Second)
+		if opts.TargetSHA != "" {
+			hasSHAStatus := false
+			for _, s := range repo.Status {
+				if s.SHA != nil && *s.SHA == opts.TargetSHA {
+					hasSHAStatus = true
+					break
+				}
+			}
+			if !hasSHAStatus {
+				return false, nil
+			}
+		}
 		return len(repo.Status) >= opts.MinNumberStatus, nil
 	})
 }
