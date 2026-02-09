@@ -48,6 +48,14 @@ func Succeeded(ctx context.Context, t *testing.T, runcnx *params.Run, opts optio
 	assert.NilError(t, err)
 
 	laststatus := repo.Status[len(repo.Status)-1]
+	if sopt.SHA != "" {
+		for i := len(repo.Status) - 1; i >= 0; i-- {
+			if repo.Status[i].SHA != nil && *repo.Status[i].SHA == sopt.SHA {
+				laststatus = repo.Status[i]
+				break
+			}
+		}
+	}
 	assert.Equal(t, corev1.ConditionTrue, laststatus.Conditions[0].Status)
 	if sopt.SHA != "" {
 		assert.Equal(t, sopt.SHA, *laststatus.SHA)
