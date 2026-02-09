@@ -47,13 +47,27 @@ func Succeeded(ctx context.Context, t *testing.T, runcnx *params.Run, opts optio
 	repo, err := runcnx.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(sopt.TargetNS).Get(ctx, sopt.TargetNS, v1.GetOptions{})
 	assert.NilError(t, err)
 
+	assert.Assert(t, len(repo.Status) > 0, "repository status is empty")
 	laststatus := repo.Status[len(repo.Status)-1]
 	if sopt.SHA != "" {
+		found := false
 		for i := len(repo.Status) - 1; i >= 0; i-- {
 			if repo.Status[i].SHA != nil && *repo.Status[i].SHA == sopt.SHA {
 				laststatus = repo.Status[i]
+				found = true
 				break
 			}
+		}
+		if !found {
+			availableSHAs := make([]string, 0, len(repo.Status))
+			for _, st := range repo.Status {
+				if st.SHA != nil {
+					availableSHAs = append(availableSHAs, *st.SHA)
+				} else {
+					availableSHAs = append(availableSHAs, "<nil>")
+				}
+			}
+			assert.Assert(t, false, "no matching status found for SHA %s; available SHAs: %v", sopt.SHA, availableSHAs)
 		}
 	}
 	assert.Equal(t, corev1.ConditionTrue, laststatus.Conditions[0].Status)
