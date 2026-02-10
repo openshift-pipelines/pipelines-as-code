@@ -190,6 +190,11 @@ func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 			l.writeResponse(response, http.StatusOK, err.Error())
 			return
 		}
+
+		// return accepted response early as event has been verified at this point
+		// and we don't need to wait for Run func to trigger PipelineRuns.
+		l.writeResponse(response, http.StatusAccepted, "accepted")
+
 		gitProvider.SetPacInfo(&pacInfo)
 
 		s := sinker{
@@ -204,7 +209,9 @@ func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 		}
 
 		// clone the request to use it further
-		localRequest := request.Clone(request.Context())
+		// use the long-lived ctx instead of request.Context() to avoid cancellation
+		// after the handler returns (since we now respond early)
+		localRequest := request.Clone(ctx)
 
 		go func() {
 			err := s.processEvent(ctx, localRequest)
@@ -212,8 +219,6 @@ func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 				logger.Errorf("an error occurred: %v", err)
 			}
 		}()
-
-		l.writeResponse(response, http.StatusAccepted, "accepted")
 	}
 }
 
