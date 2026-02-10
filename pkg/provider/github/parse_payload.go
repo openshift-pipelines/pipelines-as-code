@@ -200,7 +200,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 // getPullRequestsWithCommit lists the all pull requests associated with given commit.
 // It implements retry logic with exponential backoff to handle cases where GitHub's API
 // hasn't yet indexed the PR-to-commit association (e.g., immediately after a merge commit).
-func (v *Provider) getPullRequestsWithCommit(ctx context.Context, sha, org, repo string, isMergeCommit bool) ([]*github.PullRequest, error) {
+func (v *Provider) getPullRequestsWithCommit(ctx context.Context, sha, org, repo string) ([]*github.PullRequest, error) {
 	if v.ghClient == nil {
 		return nil, fmt.Errorf("github client is not initialized")
 	}
@@ -216,16 +216,9 @@ func (v *Provider) getPullRequestsWithCommit(ctx context.Context, sha, org, repo
 		return nil, fmt.Errorf("repository cannot be empty")
 	}
 
-	// For merge commits, retry the API call to handle potential delays in GitHub's API indexing the PR-to-commit association.
-	maxRetries := 0
-
-	if isMergeCommit {
-		maxRetries = maxRetriesForMergeCommit
-	}
-
 	const initialBackoff = 1 * time.Second
 
-	for attempt := 0; attempt <= maxRetries; attempt++ {
+	for attempt := 0; attempt <= maxRetriesForMergeCommit; attempt++ {
 		opts := &github.ListOptions{
 			PerPage: 100, // GitHub's maximum per page
 		}
@@ -260,9 +253,9 @@ func (v *Provider) getPullRequestsWithCommit(ctx context.Context, sha, org, repo
 		// If this is not the last attempt and we got an empty result, retry with exponential backoff
 		// This handles the case where GitHub's API hasn't indexed the PR-to-commit association yet
 		// (common when a PR is merged via Merge Commit strategy)
-		if attempt < maxRetries {
+		if attempt < maxRetriesForMergeCommit {
 			backoff := time.Duration(1<<uint(attempt)) * initialBackoff // #nosec G115
-			v.Logger.Debugf("No pull requests found for commit %s in %s/%s (attempt %d/%d), retrying after %v", sha, org, repo, attempt+1, maxRetries+1, backoff)
+			v.Logger.Debugf("No pull requests found for commit %s in %s/%s (attempt %d/%d), retrying after %v", sha, org, repo, attempt+1, maxRetriesForMergeCommit+1, backoff)
 
 			// Wait with exponential backoff, but respect context cancellation
 			select {
@@ -361,13 +354,12 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		repoName := gitEvent.GetRepo().GetName()
 
 		// when the commit is a merge commit, either email is 'noreply@github.com' or name is 'web-flow'
-		isMergeCommit := gitEvent.GetHeadCommit().GetCommitter().GetEmail() == githubNoreplyEmail ||
-			gitEvent.GetHeadCommit().GetCommitter().GetName() == githubWebFlowUser
-
 		// First get all the pull requests associated with this commit so that we can reuse the output to check
 		// whether the commit is included in any PR or not, and if this push is generated on PR merge event, we can
 		// assign PR number to `pull_request_number` variable.
-		prs, err := v.getPullRequestsWithCommit(ctx, sha, org, repoName, isMergeCommit)
+		prs, err := func() ([]*github.PullRequest, error) {
+			return v.getPullRequestsWithCommit(ctx, sha, org, repoName)
+		}()
 		if err != nil {
 			v.Logger.Warnf("Error getting pull requests associated with the commit in this push event: %v", err)
 		}

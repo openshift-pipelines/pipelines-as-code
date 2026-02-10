@@ -89,15 +89,15 @@ var samplePRAnother = github.PullRequest{
 func TestGetPullRequestsWithCommit(t *testing.T) {
 	apiHitCount := 0
 	tests := []struct {
-		name          string
-		sha           string
-		org           string
-		repo          string
-		hasClient     bool
-		mockAPIs      map[string]func(rw http.ResponseWriter, r *http.Request)
-		wantPRsCount  int
-		isMergeCommit bool
-		wantErr       bool
+		name         string
+		sha          string
+		org          string
+		repo         string
+		hasClient    bool
+		mockAPIs     map[string]func(rw http.ResponseWriter, r *http.Request)
+		wantPRsCount int
+		shouldRetry  bool
+		wantErr      bool
 	}{
 		{
 			name:      "nil client returns error",
@@ -231,9 +231,9 @@ func TestGetPullRequestsWithCommit(t *testing.T) {
 					}
 				},
 			},
-			wantPRsCount:  1,
-			isMergeCommit: true,
-			wantErr:       false,
+			wantPRsCount: 1,
+			shouldRetry:  true,
+			wantErr:      false,
 		},
 	}
 
@@ -263,11 +263,11 @@ func TestGetPullRequestsWithCommit(t *testing.T) {
 				}
 			}
 
-			prs, err := provider.getPullRequestsWithCommit(ctx, tt.sha, tt.org, tt.repo, tt.isMergeCommit)
+			prs, err := provider.getPullRequestsWithCommit(ctx, tt.sha, tt.org, tt.repo)
 			assert.Equal(t, err != nil, tt.wantErr)
 			assert.Equal(t, len(prs), tt.wantPRsCount)
 
-			if tt.isMergeCommit {
+			if tt.shouldRetry {
 				assert.Equal(t, apiHitCount, 3)
 			}
 
