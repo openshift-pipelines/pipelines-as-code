@@ -583,4 +583,4 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
-          ./hack/gh-workflow-ci.sh notify_slack artifacts
+          ./hack/notify-slack.sh artifacts
