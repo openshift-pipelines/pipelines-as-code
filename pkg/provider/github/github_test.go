@@ -1436,6 +1436,7 @@ func TestCreateComment(t *testing.T) {
 		mockResponses map[string]func(rw http.ResponseWriter, _ *http.Request)
 		wantErr       string
 		clientNil     bool
+		postCheck     func(t *testing.T)
 	}{
 		{
 			name:      "nil client error",
@@ -1491,6 +1492,103 @@ func TestCreateComment(t *testing.T) {
 				},
 			},
 		},
+		func() struct {
+			name          string
+			event         *info.Event
+			updateMarker  string
+			mockResponses map[string]func(rw http.ResponseWriter, _ *http.Request)
+			wantErr       string
+			clientNil     bool
+			postCheck     func(t *testing.T)
+		} {
+			getCount := 0
+			deleteCount := 0
+			return struct {
+				name          string
+				event         *info.Event
+				updateMarker  string
+				mockResponses map[string]func(rw http.ResponseWriter, _ *http.Request)
+				wantErr       string
+				clientNil     bool
+				postCheck     func(t *testing.T)
+			}{
+				name:         "cleanup duplicate comments after creation",
+				event:        &info.Event{Organization: "org", Repository: "repo", PullRequestNumber: 123},
+				updateMarker: "MARKER",
+				mockResponses: map[string]func(rw http.ResponseWriter, _ *http.Request){
+					"/repos/org/repo/issues/123/comments": func(rw http.ResponseWriter, r *http.Request) {
+						if r.Method == http.MethodGet {
+							getCount++
+							if getCount == 1 {
+								// First GET: no existing comment
+								fmt.Fprint(rw, `[]`)
+								return
+							}
+							// Second GET (cleanup): return duplicates
+							fmt.Fprint(rw, `[{"id": 100, "body": "MARKER first"}, {"id": 101, "body": "MARKER duplicate"}]`)
+							return
+						}
+						assert.Equal(t, r.Method, http.MethodPost)
+						rw.WriteHeader(http.StatusCreated)
+					},
+					"/repos/org/repo/issues/comments/100": func(rw http.ResponseWriter, r *http.Request) {
+						assert.Equal(t, r.Method, http.MethodDelete)
+						deleteCount++
+						rw.WriteHeader(http.StatusNoContent)
+					},
+				},
+				postCheck: func(t *testing.T) {
+					t.Helper()
+					assert.Equal(t, deleteCount, 1)
+				},
+			}
+		}(),
+		func() struct {
+			name          string
+			event         *info.Event
+			updateMarker  string
+			mockResponses map[string]func(rw http.ResponseWriter, _ *http.Request)
+			wantErr       string
+			clientNil     bool
+			postCheck     func(t *testing.T)
+		} {
+			getCount := 0
+			deleteCount := 0
+			return struct {
+				name          string
+				event         *info.Event
+				updateMarker  string
+				mockResponses map[string]func(rw http.ResponseWriter, _ *http.Request)
+				wantErr       string
+				clientNil     bool
+				postCheck     func(t *testing.T)
+			}{
+				name:         "no cleanup when single comment after creation",
+				event:        &info.Event{Organization: "org", Repository: "repo", PullRequestNumber: 123},
+				updateMarker: "MARKER",
+				mockResponses: map[string]func(rw http.ResponseWriter, _ *http.Request){
+					"/repos/org/repo/issues/123/comments": func(rw http.ResponseWriter, r *http.Request) {
+						if r.Method == http.MethodGet {
+							getCount++
+							if getCount == 1 {
+								// First GET: no existing comment
+								fmt.Fprint(rw, `[]`)
+								return
+							}
+							// Second GET (cleanup): only one matching comment
+							fmt.Fprint(rw, `[{"id": 100, "body": "MARKER only"}]`)
+							return
+						}
+						assert.Equal(t, r.Method, http.MethodPost)
+						rw.WriteHeader(http.StatusCreated)
+					},
+				},
+				postCheck: func(t *testing.T) {
+					t.Helper()
+					assert.Equal(t, deleteCount, 0)
+				},
+			}
+		}(),
 	}
 
 	for _, tt := range tests {
@@ -1498,10 +1596,11 @@ func TestCreateComment(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 
 			var provider *Provider
+			testLogger, _ := logger.GetLogger()
 			if !tt.clientNil {
 				fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 				defer teardown()
-				provider = &Provider{ghClient: fakeclient}
+				provider = &Provider{ghClient: fakeclient, Logger: testLogger}
 
 				for pattern, handler := range tt.mockResponses {
 					mux.HandleFunc(pattern, handler)
@@ -1517,6 +1616,9 @@ func TestCreateComment(t *testing.T) {
 				return
 			}
 			assert.NilError(t, err)
+			if tt.postCheck != nil {
+				tt.postCheck(t)
+			}
 		})
 	}
 }

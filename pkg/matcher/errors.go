@@ -48,7 +48,7 @@ func reportCELValidationErrors(ctx context.Context, repo *apipac.Repository, val
 	}
 	markdownErrMessage := fmt.Sprintf(`%s
 %s`, provider.ValidationErrorTemplate, strings.Join(errorRows, "\n"))
-	if err := vcx.CreateComment(ctx, event, markdownErrMessage, provider.ValidationErrorTemplate); err != nil {
+	if err := vcx.CreateComment(ctx, event, markdownErrMessage, provider.ValidationErrorMarker); err != nil {
 		eventEmitter.EmitMessage(repo, zap.ErrorLevel, "PipelineRunCommentCreationError",
 			fmt.Sprintf("failed to create comment: %s", err.Error()))
 	}

@@ -11,7 +11,10 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const ValidationErrorTemplate = `> [!CAUTION]
+const ValidationErrorMarker = "<!-- pac-validation-errors -->"
+
+const ValidationErrorTemplate = ValidationErrorMarker + `
+> [!CAUTION]
 > There are some errors in your PipelineRun template.
 
 | PipelineRun | Error |

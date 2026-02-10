@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -803,34 +802,6 @@ func (v *Provider) CreateComment(ctx context.Context, event *info.Event, commit,
 			}
 			return nil
 		}
-
-		// HACK: Workaround for duplicate comment creation issue.
-		// In E2E tests, we occasionally see two identical comments created on a PR when
-		// there should only be one. The root cause is unclear, despite only one
-		// create_comment API call being logged, two comments appear on the PR.
-		//
-		// This workaround adds a random sleep (0-500ms) before re-checking for existing
-		// comments. This reduces the window where parallel processes might both
-		// see no existing comment and both decide to create one.
-		//nolint:gosec // No need for crypto/rand here, just reducing timing window
-		jitter := time.Duration(rand.Intn(500)) * time.Millisecond
-		timer := time.NewTimer(jitter)
-		defer timer.Stop()
-
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-timer.C:
-		}
-
-		// Re-check if a comment exists now
-		existingComment, err = v.listAndFindComment(ctx, event, updateMarker)
-		if err != nil {
-			return err
-		}
-		if existingComment != nil {
-			return nil
-		}
 	}
 
 	_, _, err := wrapAPI(v, "create_comment", func() (*github.IssueComment, *github.Response, error) {
@@ -838,5 +809,43 @@ func (v *Provider) CreateComment(ctx context.Context, event *info.Event, commit,
 			Body: github.Ptr(commit),
 		})
 	})
-	return err
+	if err != nil {
+		return err
+	}
+
+	if updateMarker != "" {
+		v.cleanupDuplicateComments(ctx, event, updateMarker)
+	}
+	return nil
+}
+
+// cleanupDuplicateComments removes duplicate comments matching the given marker,
+// keeping only the most recent one. This handles the case where GitHub's API
+// occasionally creates duplicate comments from a single CreateComment call.
+func (v *Provider) cleanupDuplicateComments(ctx context.Context, event *info.Event, marker string) {
+	comments, _, err := v.Client().Issues.ListComments(ctx, event.Organization, event.Repository, event.PullRequestNumber, &github.IssueListCommentsOptions{
+		ListOptions: github.ListOptions{Page: 1, PerPage: 100},
+	})
+	if err != nil {
+		v.Logger.Infof("cleanupDuplicateComments: failed to list comments: %v", err)
+		return
+	}
+
+	var matched []*github.IssueComment
+	for _, c := range comments {
+		if strings.Contains(c.GetBody(), marker) {
+			matched = append(matched, c)
+		}
+	}
+
+	if len(matched) <= 1 {
+		return
+	}
+
+	// Keep the last (newest), delete the rest
+	for _, c := range matched[:len(matched)-1] {
+		if _, err := v.Client().Issues.DeleteComment(ctx, event.Organization, event.Repository, c.GetID()); err != nil {
+			v.Logger.Infof("cleanupDuplicateComments: failed to delete comment %d: %v", c.GetID(), err)
+		}
+	}
 }
