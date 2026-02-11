@@ -1,4 +1,4 @@
-package sync
+package queue
 
 import (
 	"container/heap"

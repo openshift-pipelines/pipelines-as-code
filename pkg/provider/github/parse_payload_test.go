@@ -409,6 +409,7 @@ func TestParsePayLoad(t *testing.T) {
 		wantedTagName              string
 		isCancelPipelineRunEnabled bool
 		skipPushEventForPRCommits  bool
+		objectType                 string
 	}{
 		{
 			name:          "bad/unknown event",
@@ -766,6 +767,7 @@ func TestParsePayLoad(t *testing.T) {
 				},
 			},
 			shaRet:           "samplePRsha",
+			objectType:       "tag",
 			wantedBranchName: "refs/tags/v1.0.0",
 		},
 		{
@@ -783,7 +785,45 @@ func TestParsePayLoad(t *testing.T) {
 			},
 			shaRet:            "samplePRsha",
 			targetPipelinerun: "dummy",
+			objectType:        "tag",
 			wantedBranchName:  "refs/tags/v1.0.0",
+		},
+		{
+			name:          "good/commit comment for test tag with object type commit",
+			eventType:     "commit_comment",
+			triggerTarget: "push",
+			githubClient:  true,
+			payloadEventStruct: github.CommitCommentEvent{
+				Repo: sampleRepo,
+				Comment: &github.RepositoryComment{
+					CommitID: github.Ptr("samplePRsha"),
+					HTMLURL:  github.Ptr("/777"),
+					Body:     github.Ptr("/test dummy tag:v1.0.0"),
+				},
+			},
+			shaRet:            "samplePRsha",
+			targetPipelinerun: "dummy",
+			objectType:        "commit",
+			wantedBranchName:  "refs/tags/v1.0.0",
+		},
+		{
+			name:          "bad/commit comment for test tag invalid object type",
+			eventType:     "commit_comment",
+			triggerTarget: "push",
+			githubClient:  true,
+			payloadEventStruct: github.CommitCommentEvent{
+				Repo: sampleRepo,
+				Comment: &github.RepositoryComment{
+					CommitID: github.Ptr("samplePRsha"),
+					HTMLURL:  github.Ptr("/777"),
+					Body:     github.Ptr("/test dummy tag:v1.0.0"),
+				},
+			},
+			shaRet:            "samplePRsha",
+			targetPipelinerun: "dummy",
+			wantedBranchName:  "refs/tags/v1.0.0",
+			objectType:        "blob",
+			wantErrString:     "invalid object type for tag v1.0.0: blob",
 		},
 		{
 			name:          "bad/commit comment for test with pipelinerun name and wrong tag keyword",
@@ -1020,7 +1060,8 @@ func TestParsePayLoad(t *testing.T) {
 				mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/git/ref/tags/v1.0.0", "owner", "reponame"), func(rw http.ResponseWriter, _ *http.Request) {
 					ref := &github.Reference{
 						Object: &github.GitObject{
-							SHA: github.Ptr("samplePRsha"),
+							SHA:  github.Ptr("samplePRsha"),
+							Type: github.Ptr(tt.objectType),
 						},
 					}
 					bjeez, _ := json.Marshal(ref)

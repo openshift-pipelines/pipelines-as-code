@@ -20,14 +20,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestGithubPushRequestGitOpsCommentOnComment(t *testing.T) {
+func TestGithubSecondPushRequestGitOpsCommentOnComment(t *testing.T) {
 	opsComment := "/hello-world"
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:         "Github GitOps push/retest request",
-		YamlFiles:     []string{"testdata/pipelinerun-on-comment-annotation.yaml"},
-		NoStatusCheck: true,
-		TargetRefName: options.MainBranch,
+		Label:            "Github GitOps push/retest request",
+		YamlFiles:        []string{"testdata/pipelinerun-on-comment-annotation.yaml"},
+		NoStatusCheck:    true,
+		TargetRefName:    options.MainBranch,
+		SecondController: true,
 	}
 	g.RunPushRequest(ctx, t)
 	defer g.TearDown(ctx, t)
@@ -81,13 +82,14 @@ func TestGithubPushRequestGitOpsCommentOnComment(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestGithubPushRequestGitOpsCommentRetest(t *testing.T) {
+func TestGithubSecondPushRequestGitOpsCommentRetest(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label: "Github GitOps push/retest request",
 		YamlFiles: []string{
 			"testdata/pipelinerun-on-push.yaml", "testdata/pipelinerun.yaml",
 		},
+		SecondController: true,
 	}
 	g.RunPushRequest(ctx, t)
 	defer g.TearDown(ctx, t)
@@ -137,12 +139,12 @@ func TestGithubPushRequestGitOpsCommentRetest(t *testing.T) {
 	}
 }
 
-func TestGithubPushRequestGitOpsCommentCancel(t *testing.T) {
+func TestGithubSecondPushRequestGitOpsCommentCancel(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label:            "GitHub Gitops push/cancel request",
 		YamlFiles:        []string{"testdata/pipelinerun-on-push.yaml", "testdata/pipelinerun.yaml"},
-		SecondController: false,
+		SecondController: true,
 	}
 	g.RunPushRequest(ctx, t)
 	defer g.TearDown(ctx, t)
@@ -194,7 +196,7 @@ func TestGithubPushRequestGitOpsCommentCancel(t *testing.T) {
 	if !cancelled {
 		numLines := int64(1000)
 		reg := regexp.MustCompile(".*pipelinerun.*skipping cancelling pipelinerun.*on-push.*already done.*")
-		err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 10, "controller", &numLines)
+		err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 10, "ghe-controller", &numLines)
 		if err != nil {
 			t.Errorf("neither a cancelled pipelinerun in repo status or a request to skip the cancellation in the controller log was found: %s", err.Error())
 		}

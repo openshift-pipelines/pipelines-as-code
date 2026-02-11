@@ -1,13 +1,13 @@
-package metrics
+package providermetrics
 
 import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
+	prmetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/pipelinerunmetrics"
 	"go.uber.org/zap"
 )
 
 func RecordAPIUsage(logger *zap.SugaredLogger, provider, eventType string, repo *v1alpha1.Repository) {
-	recorder, err := metrics.NewRecorder()
+	recorder, err := prmetrics.NewRecorder()
 	if err != nil {
 		logger.Errorf("Error initializing metrics recorder: %v", err)
 	}
