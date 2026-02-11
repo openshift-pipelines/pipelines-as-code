@@ -22,7 +22,7 @@ import (
 	thelp "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab/test"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/metrics"
+	metricsutils "github.com/openshift-pipelines/pipelines-as-code/pkg/test/metricstest"
 
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"go.uber.org/zap"
@@ -1340,7 +1340,7 @@ func TestGetFiles(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			metrics.ResetMetrics()
+			metricsutils.ResetMetrics()
 			fakeclient, mux, teardown := thelp.Setup(t)
 			defer teardown()
 			if tt.event.TriggerTarget == "pull_request" {
@@ -1424,7 +1424,7 @@ func TestGetFilesPaging(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			metrics.ResetMetrics()
+			metricsutils.ResetMetrics()
 			fakeclient, mux, teardown := thelp.Setup(t)
 			defer teardown()
 

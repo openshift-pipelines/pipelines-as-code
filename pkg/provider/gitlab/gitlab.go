@@ -19,7 +19,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
-	providerMetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/metrics"
+	providerMetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/providermetrics"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"go.uber.org/zap"
 )
