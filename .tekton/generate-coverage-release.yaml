@@ -112,8 +112,8 @@ spec:
                 git checkout -B nightly origin/main
                 echo nightly > docs/content/VERSION
                 echo ${allversions} > docs/content/ALLVERSIONS
-                echo "nightly-$ssa-$(date +%Y%m%d)" > pkg/params/version/version.txt
-                git add release.yaml release.k8s.yaml docs/content/VERSION docs/content/ALLVERSIONS pkg/params/version/version.txt
+                echo "nightly-$ssa-$(date +%Y%m%d)" > pkg/params/versiondata/version.txt
+                git add release.yaml release.k8s.yaml docs/content/VERSION docs/content/ALLVERSIONS pkg/params/versiondata/version.txt
                 git config --global user.email "pac-dev@redhat.com"
                 git config --global user.name "Pipelines as Code CI Robot"
                 git commit -m "Release yaml generated from {{repo_url}}/commit/{{revision}}"
