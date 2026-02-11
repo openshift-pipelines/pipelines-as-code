@@ -1,4 +1,4 @@
-package sync
+package queue
 
 import (
 	"context"
@@ -23,14 +23,14 @@ const (
 	creationTimestamp = "{.metadata.creationTimestamp}"
 )
 
-type QueueManager struct {
+type Manager struct {
 	queueMap map[string]Semaphore
 	lock     *sync.Mutex
 	logger   *zap.SugaredLogger
 }
 
-func NewQueueManager(logger *zap.SugaredLogger) *QueueManager {
-	return &QueueManager{
+func NewManager(logger *zap.SugaredLogger) *Manager {
+	return &Manager{
 		queueMap: make(map[string]Semaphore),
 		lock:     &sync.Mutex{},
 		logger:   logger,
@@ -41,7 +41,7 @@ func NewQueueManager(logger *zap.SugaredLogger) *QueueManager {
 // a new one with limit provided in repository
 // Semaphore: nothing but a waiting and a running queue for a repository
 // with limit deciding how many should be running at a time.
-func (qm *QueueManager) getSemaphore(repo *v1alpha1.Repository) (Semaphore, error) {
+func (qm *Manager) getSemaphore(repo *v1alpha1.Repository) (Semaphore, error) {
 	repoKey := RepoKey(repo)
 
 	if sema, found := qm.queueMap[repoKey]; found {
@@ -61,7 +61,7 @@ func (qm *QueueManager) getSemaphore(repo *v1alpha1.Repository) (Semaphore, erro
 	return qm.queueMap[repoKey], nil
 }
 
-func (qm *QueueManager) checkAndUpdateSemaphoreSize(repo *v1alpha1.Repository, semaphore Semaphore) error {
+func (qm *Manager) checkAndUpdateSemaphoreSize(repo *v1alpha1.Repository, semaphore Semaphore) error {
 	limit := *repo.Spec.ConcurrencyLimit
 	if limit != semaphore.getLimit() {
 		if semaphore.resize(limit) {
@@ -76,7 +76,7 @@ func (qm *QueueManager) checkAndUpdateSemaphoreSize(repo *v1alpha1.Repository, s
 // and if it is at the top and ready to run which means currently running pipelineRun < limit
 // then move it to running queue
 // This adds the pipelineRuns in the same order as in the list.
-func (qm *QueueManager) AddListToRunningQueue(repo *v1alpha1.Repository, list []string) ([]string, error) {
+func (qm *Manager) AddListToRunningQueue(repo *v1alpha1.Repository, list []string) ([]string, error) {
 	qm.lock.Lock()
 	defer qm.lock.Unlock()
 
@@ -110,7 +110,7 @@ func (qm *QueueManager) AddListToRunningQueue(repo *v1alpha1.Repository, list []
 	return acquiredList, nil
 }
 
-func (qm *QueueManager) AddToPendingQueue(repo *v1alpha1.Repository, list []string) error {
+func (qm *Manager) AddToPendingQueue(repo *v1alpha1.Repository, list []string) error {
 	qm.lock.Lock()
 	defer qm.lock.Unlock()
 
@@ -127,7 +127,7 @@ func (qm *QueueManager) AddToPendingQueue(repo *v1alpha1.Repository, list []stri
 	return nil
 }
 
-func (qm *QueueManager) RemoveFromQueue(repoKey, prKey string) bool {
+func (qm *Manager) RemoveFromQueue(repoKey, prKey string) bool {
 	qm.lock.Lock()
 	defer qm.lock.Unlock()
 
@@ -142,7 +142,7 @@ func (qm *QueueManager) RemoveFromQueue(repoKey, prKey string) bool {
 	return true
 }
 
-func (qm *QueueManager) RemoveAndTakeItemFromQueue(repo *v1alpha1.Repository, run *tektonv1.PipelineRun) string {
+func (qm *Manager) RemoveAndTakeItemFromQueue(repo *v1alpha1.Repository, run *tektonv1.PipelineRun) string {
 	repoKey := RepoKey(repo)
 	prKey := PrKey(run)
 	if !qm.RemoveFromQueue(repoKey, prKey) {
@@ -191,7 +191,7 @@ func FilterPipelineRunByState(ctx context.Context, tekton versioned2.Interface, 
 
 // InitQueues rebuild all the queues for all repository if concurrency is defined before
 // reconciler started reconciling them.
-func (qm *QueueManager) InitQueues(ctx context.Context, tekton versioned2.Interface, pac versioned.Interface) error {
+func (qm *Manager) InitQueues(ctx context.Context, tekton versioned2.Interface, pac versioned.Interface) error {
 	// fetch all repos
 	repos, err := pac.PipelinesascodeV1alpha1().Repositories("").List(ctx, v1.ListOptions{})
 	if err != nil {
@@ -259,7 +259,7 @@ func (qm *QueueManager) InitQueues(ctx context.Context, tekton versioned2.Interf
 	return nil
 }
 
-func (qm *QueueManager) RemoveRepository(repo *v1alpha1.Repository) {
+func (qm *Manager) RemoveRepository(repo *v1alpha1.Repository) {
 	qm.lock.Lock()
 	defer qm.lock.Unlock()
 
@@ -267,7 +267,7 @@ func (qm *QueueManager) RemoveRepository(repo *v1alpha1.Repository) {
 	delete(qm.queueMap, repoKey)
 }
 
-func (qm *QueueManager) QueuedPipelineRuns(repo *v1alpha1.Repository) []string {
+func (qm *Manager) QueuedPipelineRuns(repo *v1alpha1.Repository) []string {
 	qm.lock.Lock()
 	defer qm.lock.Unlock()
 
@@ -278,7 +278,7 @@ func (qm *QueueManager) QueuedPipelineRuns(repo *v1alpha1.Repository) []string {
 	return []string{}
 }
 
-func (qm *QueueManager) RunningPipelineRuns(repo *v1alpha1.Repository) []string {
+func (qm *Manager) RunningPipelineRuns(repo *v1alpha1.Repository) []string {
 	qm.lock.Lock()
 	defer qm.lock.Unlock()
 

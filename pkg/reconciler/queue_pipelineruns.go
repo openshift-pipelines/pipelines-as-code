@@ -8,7 +8,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	pacAPIv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/sync"
+	queuepkg "github.com/openshift-pipelines/pipelines-as-code/pkg/queue"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -66,7 +66,7 @@ func (r *Reconciler) queuePipelineRun(ctx context.Context, logger *zap.SugaredLo
 	var itered int
 	maxIterations := 5
 
-	orderedList := sync.FilterPipelineRunByState(ctx, r.run.Clients.Tekton, strings.Split(order, ","), tektonv1.PipelineRunSpecStatusPending, kubeinteraction.StateQueued)
+	orderedList := queuepkg.FilterPipelineRunByState(ctx, r.run.Clients.Tekton, strings.Split(order, ","), tektonv1.PipelineRunSpecStatusPending, kubeinteraction.StateQueued)
 	for {
 		acquired, err := r.qm.AddListToRunningQueue(repo, orderedList)
 		if err != nil {
@@ -79,7 +79,7 @@ func (r *Reconciler) queuePipelineRun(ctx context.Context, logger *zap.SugaredLo
 
 		for _, prKeys := range acquired {
 			nsName := strings.Split(prKeys, "/")
-			repoKey := sync.RepoKey(repo)
+			repoKey := queuepkg.RepoKey(repo)
 			pr, err = r.run.Clients.Tekton.TektonV1().PipelineRuns(nsName[0]).Get(ctx, nsName[1], metav1.GetOptions{})
 			if err != nil {
 				logger.Info("failed to get pr with namespace and name: ", nsName[0], nsName[1])
