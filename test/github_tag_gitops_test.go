@@ -16,9 +16,9 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-func TestGithubGitOpsCommentOnTag(t *testing.T) {
+func TestGithubSecondGitOpsCommentOnTag(t *testing.T) {
 	ctx := context.Background()
-	ctx, runcnx, opts, ghcnx, err := tgithub.Setup(ctx, false, false)
+	ctx, runcnx, opts, ghcnx, err := tgithub.Setup(ctx, true, false)
 	assert.NilError(t, err)
 	var g *tgithub.PRTest
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-tag")
