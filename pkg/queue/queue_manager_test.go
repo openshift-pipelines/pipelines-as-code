@@ -1,4 +1,4 @@
-package sync
+package queue
 
 import (
 	"fmt"
@@ -37,7 +37,7 @@ func TestSomeoneElseSetPendingWithNoConcurrencyLimit(t *testing.T) {
 	observer, _ := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
 
-	qm := NewQueueManager(logger)
+	qm := NewManager(logger)
 	repo := newTestRepo(1)
 	// unset concurrency limit
 	repo.Spec.ConcurrencyLimit = nil
@@ -59,7 +59,7 @@ func TestAddToPendingQueueDirectly(t *testing.T) {
 	observer, _ := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
 
-	qm := NewQueueManager(logger)
+	qm := NewManager(logger)
 	repo := newTestRepo(1)
 	// unset concurrency limit
 	repo.Spec.ConcurrencyLimit = nil
@@ -79,13 +79,13 @@ func TestAddToPendingQueueDirectly(t *testing.T) {
 	assert.Equal(t, len(sema.getCurrentPending()), 1)
 }
 
-func TestNewQueueManagerForList(t *testing.T) {
+func TestNewManagerForList(t *testing.T) {
 	// Skip if we are running on OSX, there is a problem with ordering only happening on arm64
 	skipOnOSX64(t)
 	observer, _ := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
 
-	qm := NewQueueManager(logger)
+	qm := NewManager(logger)
 
 	// repository for which pipelineRun are created
 	repo := newTestRepo(1)
@@ -137,11 +137,11 @@ func TestNewQueueManagerForList(t *testing.T) {
 	assert.Equal(t, started[0], PrKey(prFourth))
 }
 
-func TestNewQueueManagerReListing(t *testing.T) {
+func TestNewManagerReListing(t *testing.T) {
 	observer, _ := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
 
-	qm := NewQueueManager(logger)
+	qm := NewManager(logger)
 
 	// repository for which pipelineRun are created
 	repo := newTestRepo(2)
@@ -250,7 +250,7 @@ func TestQueueManager_InitQueues(t *testing.T) {
 	}
 	stdata, _ := testclient.SeedTestData(t, ctx, tdata)
 
-	qm := NewQueueManager(logger)
+	qm := NewManager(logger)
 
 	err := qm.InitQueues(ctx, stdata.Pipeline, stdata.PipelineAsCode)
 	assert.NilError(t, err)

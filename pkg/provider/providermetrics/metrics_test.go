@@ -1,4 +1,4 @@
-package metrics
+package providermetrics
 
 import (
 	"testing"
@@ -9,7 +9,7 @@ import (
 	"knative.dev/pkg/metrics/metricstest"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	metricsutils "github.com/openshift-pipelines/pipelines-as-code/pkg/test/metrics"
+	metricsutils "github.com/openshift-pipelines/pipelines-as-code/pkg/test/metricstest"
 
 	_ "knative.dev/pkg/metrics/testing"
 )

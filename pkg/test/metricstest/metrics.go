@@ -1,7 +1,7 @@
-package metrics
+package metricstest
 
 import (
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
+	prmetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/pipelinerunmetrics"
 	"knative.dev/pkg/metrics/metricstest"
 )
 
@@ -14,5 +14,5 @@ func ResetMetrics() {
 	)
 
 	// have to reset sync.Once to allow recreation of Recorder.
-	metrics.ResetRecorder()
+	prmetrics.ResetRecorder()
 }
