@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/google/go-github/v81/github"
@@ -144,4 +145,62 @@ func TestGithubSecondPullRequestGitopsCommentCancel(t *testing.T) {
 	assert.Equal(t, cancelledCount, 1, "should have one cancelled PipelineRun")
 	assert.Equal(t, succeededCount, 2, "should have two succeeded PipelineRuns")
 	assert.Equal(t, unknownCount, 0, "should have zero unknown PipelineRuns: %+v", pruns.Items)
+}
+
+func TestGithubRetestWithMultipleFailedPipelineRuns(t *testing.T) {
+	ctx := context.Background()
+	g := &tgithub.PRTest{
+		Label: "Github Retest with multiple failed PipelineRuns",
+		YamlFiles: []string{
+			"testdata/pipelinerun-tekton-validation.yaml",
+			"testdata/failures/pipelinerun-exit-1.yaml", // failed pipelinerun to be re-trigger after retest
+		},
+		NoStatusCheck: true,
+	}
+	g.RunPullRequest(ctx, t)
+	defer g.TearDown(ctx, t)
+
+	err := twait.UntilPipelineRunCreated(ctx, g.Cnx.Clients, twait.Opts{
+		RepoName:        g.TargetNamespace,
+		Namespace:       g.TargetNamespace,
+		MinNumberStatus: 1,
+		TargetSHA:       g.SHA,
+		PollTimeout:     twait.DefaultTimeout,
+	})
+	assert.NilError(t, err)
+
+	pruns, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, g.SHA),
+	})
+	assert.NilError(t, err)
+	assert.Equal(t, len(pruns.Items), 1)
+
+	_, _, err = g.Provider.Client().Issues.CreateComment(ctx,
+		g.Options.Organization,
+		g.Options.Repo,
+		g.PRNumber,
+		&github.IssueComment{Body: github.Ptr("/retest")},
+	)
+	assert.NilError(t, err)
+
+	// here we only need to check that we have two failed check runs and nothing is gone
+	// after making the retest comment.
+	res, _, err := g.Provider.Client().Checks.ListCheckRunsForRef(ctx,
+		g.Options.Organization,
+		g.Options.Repo,
+		g.SHA,
+		&github.ListCheckRunsOptions{},
+	)
+	assert.NilError(t, err)
+
+	assert.Equal(t, len(res.CheckRuns), 2)
+
+	containsFailedPLRName := false
+	for _, checkRun := range res.CheckRuns {
+		// check if the check run is for the validation failed pipelinerun
+		if strings.Contains(checkRun.GetExternalID(), "pipelinerun-tekton-validation") {
+			containsFailedPLRName = true
+		}
+	}
+	assert.Equal(t, containsFailedPLRName, true)
 }
