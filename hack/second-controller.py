@@ -199,7 +199,7 @@ spec:
               "-o",
               "json",
               "--saveDir",
-              "/tmp/save",
+              "/tmp/gosmee-replay-ghe",
               "{args.smee_url}",
               "http://{args.label}-controller.{args.namespace}:8080",
             ]
