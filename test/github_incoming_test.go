@@ -33,7 +33,7 @@ const (
 // TestGithubAppIncoming tests that a Pipelinerun with the incoming event
 // gets created despite the presence of multiple Pipelineruns in the .tekton directory with
 // eventType as incoming.
-func TestGithubAppIncoming(t *testing.T) {
+func TestGithubSecondAppIncoming(t *testing.T) {
 	randomedString := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 
 	entries, err := payload.GetEntries(map[string]string{
@@ -41,7 +41,7 @@ func TestGithubAppIncoming(t *testing.T) {
 	}, randomedString, randomedString, triggertype.Incoming.String(), map[string]string{})
 	assert.NilError(t, err)
 
-	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, []string{randomedString}, false, false, 1)
+	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, []string{randomedString}, false, true, 1)
 }
 
 func TestGithubSecondIncoming(t *testing.T) {
@@ -84,7 +84,7 @@ func TestGithubWebhookIncoming(t *testing.T) {
 // TestGithubAppIncomingForDifferentEvent tests that a Pipelinerun with the incoming event
 // gets created despite the presence of multiple Pipelineruns in the .tekton directory,
 // where one has an eventType as incoming and another as pull_request.
-func TestGithubAppIncomingForDifferentEvent(t *testing.T) {
+func TestGithubSecondAppIncomingForDifferentEvent(t *testing.T) {
 	randomedString := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 
 	entries, err := payload.GetEntries(map[string]string{
@@ -92,11 +92,11 @@ func TestGithubAppIncomingForDifferentEvent(t *testing.T) {
 	}, randomedString, randomedString, triggertype.PullRequest.String(), map[string]string{})
 	assert.NilError(t, err)
 
-	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming-", entries, []string{randomedString}, false, false, 1)
+	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming-", entries, []string{randomedString}, false, true, 1)
 }
 
 // TestGithubAppIncomingGlobPattern tests incoming webhook with glob pattern matching.
-func TestGithubAppIncomingGlobPattern(t *testing.T) {
+func TestGithubSecondAppIncomingGlobPattern(t *testing.T) {
 	randomedString := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 
 	entries, err := payload.GetEntries(map[string]string{
@@ -106,11 +106,11 @@ func TestGithubAppIncomingGlobPattern(t *testing.T) {
 
 	// Test with glob pattern that matches the branch name
 	// Pattern: pac-e2e-ns* should match branch pac-e2e-ns-xxxxx
-	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, []string{"pac-e2e-ns*"}, false, false, 1)
+	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, []string{"pac-e2e-ns*"}, false, true, 1)
 }
 
 // TestGithubAppIncomingGlobPrefixPattern tests incoming webhook with prefix glob pattern.
-func TestGithubAppIncomingGlobPrefixPattern(t *testing.T) {
+func TestGithubSecondAppIncomingGlobPrefixPattern(t *testing.T) {
 	// Create a branch name with "feature-" prefix (using hyphen instead of slash for Kubernetes compliance)
 	randomedString := fmt.Sprintf("feature-%s", names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e"))
 
@@ -120,11 +120,11 @@ func TestGithubAppIncomingGlobPrefixPattern(t *testing.T) {
 	assert.NilError(t, err)
 
 	// Test with glob pattern that matches feature branches
-	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, []string{"feature-*"}, false, false, 1)
+	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, []string{"feature-*"}, false, true, 1)
 }
 
 // TestGithubAppIncomingGlobFirstMatchWins tests first-match-wins with multiple glob targets.
-func TestGithubAppIncomingGlobFirstMatchWins(t *testing.T) {
+func TestGithubSecondAppIncomingGlobFirstMatchWins(t *testing.T) {
 	randomedString := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 
 	entries, err := payload.GetEntries(map[string]string{
@@ -134,11 +134,11 @@ func TestGithubAppIncomingGlobFirstMatchWins(t *testing.T) {
 
 	// Multiple patterns - first one that matches should win
 	// Both pac-e2e-ns* and * will match, but first should win
-	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, []string{"pac-e2e-ns*", "*"}, false, false, 1)
+	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, []string{"pac-e2e-ns*", "*"}, false, true, 1)
 }
 
 // TestGithubAppIncomingNoMatch tests that incoming webhook fails when branch doesn't match any target.
-func TestGithubAppIncomingNoMatch(t *testing.T) {
+func TestGithubSecondAppIncomingNoMatch(t *testing.T) {
 	randomedString := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 
 	entries, err := payload.GetEntries(map[string]string{
@@ -148,11 +148,11 @@ func TestGithubAppIncomingNoMatch(t *testing.T) {
 
 	// Test with glob pattern that will NOT match the branch
 	// Pattern: production-* should NOT match branch pac-e2e-ns-xxxxx
-	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, []string{"production-*"}, false, false, 0)
+	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, []string{"production-*"}, false, true, 0)
 }
 
 // TestGithubAppIncomingMultiplePatternsNoMatch tests that incoming webhook fails when none of the patterns match.
-func TestGithubAppIncomingMultiplePatternsNoMatch(t *testing.T) {
+func TestGithubSecondAppIncomingMultiplePatternsNoMatch(t *testing.T) {
 	randomedString := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 
 	entries, err := payload.GetEntries(map[string]string{
@@ -161,11 +161,11 @@ func TestGithubAppIncomingMultiplePatternsNoMatch(t *testing.T) {
 	assert.NilError(t, err)
 
 	// Multiple patterns that all don't match the branch
-	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, []string{"production-*", "staging-*", "release-*"}, false, false, 0)
+	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, []string{"production-*", "staging-*", "release-*"}, false, true, 0)
 }
 
 // TestGithubAppIncomingNoMatchExactName tests that exact non-matching string doesn't match.
-func TestGithubAppIncomingNoMatchExactName(t *testing.T) {
+func TestGithubSecondAppIncomingNoMatchExactName(t *testing.T) {
 	randomedString := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 
 	entries, err := payload.GetEntries(map[string]string{
@@ -174,7 +174,7 @@ func TestGithubAppIncomingNoMatchExactName(t *testing.T) {
 	assert.NilError(t, err)
 
 	// Test with exact branch name that doesn't match
-	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, []string{"main", "develop", "staging"}, false, false, 0)
+	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, []string{"main", "develop", "staging"}, false, true, 0)
 }
 
 func verifyIncomingWebhook(t *testing.T, randomedString, pipelinerunName string, entries map[string]string, targets []string, onWebhook, onSecondController bool, numberOfPR int) {

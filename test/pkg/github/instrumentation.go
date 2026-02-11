@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	tlogs "github.com/openshift-pipelines/pipelines-as-code/test/pkg/podlogs"
 )
 
 // InstrumentationAPICall represents a single GitHub API call with its metadata.
@@ -54,85 +54,26 @@ func (g *PRTest) collectGitHubAPICalls(ctx context.Context, _ *testing.T) {
 	if g.SecondController {
 		controllerName = "ghe-controller"
 	}
-	labelselector := fmt.Sprintf("app.kubernetes.io/name=%s", controllerName)
-	containerName := "pac-controller"
+	ns := info.GetNS(ctx)
 
-	g.Logger.Infof("Attempting to collect GitHub API calls from controller: %s", controllerName)
+	g.Logger.Infof(
+		"Attempting to collect GitHub API calls from controller: %s in namespace: %s",
+		controllerName, ns,
+	)
 
-	// Get controller logs using the existing pattern
-	logs, err := g.Cnx.Clients.Kube.CoreV1().Pods("").List(ctx, metav1.ListOptions{
-		LabelSelector: labelselector,
-	})
+	logContent, source, err := tlogs.GetControllerLogByName(
+		ctx, g.Cnx.Clients.Kube.CoreV1(), ns, controllerName, &numLines,
+	)
 	if err != nil {
-		g.Logger.Warnf("Failed to get controller pods with label selector '%s': %v", labelselector, err)
+		g.Logger.Warnf("Failed to get controller logs: %v", err)
 		return
 	}
 
-	g.Logger.Infof("Found %d pods with label selector '%s'", len(logs.Items), labelselector)
+	g.Logger.Infof(
+		"Collected controller logs using label selector %q and container %q",
+		source.LabelSelector, source.ContainerName,
+	)
 
-	if len(logs.Items) == 0 {
-		g.Logger.Warnf("No controller pods found with label selector: %s", labelselector)
-		// Try to list all pods to see what's available
-		allPods, err := g.Cnx.Clients.Kube.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
-		if err != nil {
-			g.Logger.Warnf("Failed to list all pods: %v", err)
-			return
-		}
-		g.Logger.Infof("Available pods: %d total", len(allPods.Items))
-		for _, pod := range allPods.Items {
-			if strings.Contains(pod.Name, "controller") {
-				g.Logger.Infof("  - %s (namespace: %s, labels: %v)", pod.Name, pod.Namespace, pod.Labels)
-			}
-		}
-		return
-	}
-
-	// Log details about the found pods
-	for i, pod := range logs.Items {
-		g.Logger.Infof("Pod %d: %s (namespace: %s, status: %s)", i+1, pod.Name, pod.Namespace, pod.Status.Phase)
-	}
-
-	// Get logs from the first controller pod
-	selectedPod := logs.Items[0]
-	g.Logger.Infof("Attempting to get logs from pod: %s in namespace: %s", selectedPod.Name, selectedPod.Namespace)
-
-	// Try to get logs with more specific options
-	podLogs, err := g.Cnx.Clients.Kube.CoreV1().Pods(selectedPod.Namespace).GetLogs(selectedPod.Name, &corev1.PodLogOptions{
-		Container: containerName,
-		TailLines: &numLines,
-		Previous:  false, // Don't get previous container logs
-	}).Do(ctx).Raw()
-	if err != nil {
-		g.Logger.Warnf("Failed to get controller logs from pod %s: %v", selectedPod.Name, err)
-
-		// Try to get pod details to understand the issue
-		podDetails, err := g.Cnx.Clients.Kube.CoreV1().Pods(selectedPod.Namespace).Get(ctx, selectedPod.Name, metav1.GetOptions{})
-		if err != nil {
-			g.Logger.Warnf("Failed to get pod details for %s: %v", selectedPod.Name, err)
-		} else {
-			g.Logger.Infof("Pod %s status: %s, containers: %v", selectedPod.Name, podDetails.Status.Phase, podDetails.Status.ContainerStatuses)
-
-			// Check if the container exists and is ready
-			for _, container := range podDetails.Status.ContainerStatuses {
-				if container.Name == containerName {
-					g.Logger.Infof("Container %s ready: %v, restart count: %d", container.Name, container.Ready, container.RestartCount)
-				}
-			}
-		}
-
-		// Try alternative approach - get logs without specifying container
-		g.Logger.Infof("Trying to get logs without specifying container name...")
-		podLogs, err = g.Cnx.Clients.Kube.CoreV1().Pods(selectedPod.Namespace).GetLogs(selectedPod.Name, &corev1.PodLogOptions{
-			TailLines: &numLines,
-		}).Do(ctx).Raw()
-		if err != nil {
-			g.Logger.Warnf("Failed to get logs without container specification: %v", err)
-			return
-		}
-		g.Logger.Infof("Successfully got logs without container specification")
-	}
-
-	logContent := string(podLogs)
 	logLines := strings.Split(logContent, "\n")
 	g.Logger.Infof("Collected %d lines from controller logs", len(logLines))
 
