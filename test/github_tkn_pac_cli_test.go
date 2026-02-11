@@ -24,10 +24,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestGithubPacCli(t *testing.T) {
+func TestGithubSecondPacCli(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
-	ctx, runcnx, opts, ghprovider, err := tgithub.Setup(ctx, false, false)
+	ctx, runcnx, opts, ghprovider, err := tgithub.Setup(ctx, true, false)
 	assert.NilError(t, err)
 
 	entries := map[string]string{

@@ -147,7 +147,7 @@ func TestGithubSecondPullRequestGitopsCommentCancel(t *testing.T) {
 	assert.Equal(t, unknownCount, 0, "should have zero unknown PipelineRuns: %+v", pruns.Items)
 }
 
-func TestGithubRetestWithMultipleFailedPipelineRuns(t *testing.T) {
+func TestGithubSecondRetestWithMultipleFailedPipelineRuns(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label: "Github Retest with multiple failed PipelineRuns",
@@ -155,7 +155,8 @@ func TestGithubRetestWithMultipleFailedPipelineRuns(t *testing.T) {
 			"testdata/pipelinerun-tekton-validation.yaml",
 			"testdata/failures/pipelinerun-exit-1.yaml", // failed pipelinerun to be re-trigger after retest
 		},
-		NoStatusCheck: true,
+		NoStatusCheck:    true,
+		SecondController: true,
 	}
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)

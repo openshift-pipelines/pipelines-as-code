@@ -21,9 +21,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestGithubGitOpsCommentOnTag(t *testing.T) {
+func TestGithubSecondGitOpsCommentOnTag(t *testing.T) {
 	ctx := context.Background()
-	ctx, runcnx, opts, ghcnx, err := tgithub.Setup(ctx, false, false)
+	ctx, runcnx, opts, ghcnx, err := tgithub.Setup(ctx, true, false)
 	assert.NilError(t, err)
 	tagName := "v1.0.0"
 	comment := "/test tag:" + tagName
