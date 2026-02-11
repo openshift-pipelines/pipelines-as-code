@@ -254,7 +254,7 @@ metadata:
   annotations:
     pipelinesascode.tekton.dev/on-event: "[pull_request]"
     pipelinesascode.tekton.dev/on-target-branch: "[main]"
-    pipelinesascode.tekton.dev/on-path-changed: "[docs/**, **.md]"
+    pipelinesascode.tekton.dev/on-path-change: "[docs/**, **.md]"
 spec:
   pipelineSpec:
     tasks:

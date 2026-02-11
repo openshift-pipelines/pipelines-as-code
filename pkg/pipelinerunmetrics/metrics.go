@@ -1,4 +1,4 @@
-package metrics
+package pipelinerunmetrics
 
 import (
 	"context"

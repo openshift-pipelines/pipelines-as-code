@@ -14,14 +14,14 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
+	prmetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/pipelinerunmetrics"
 	ghprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
+	queuepkg "github.com/openshift-pipelines/pipelines-as-code/pkg/queue"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/secrets"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/sync"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	testkubernetestint "github.com/openshift-pipelines/pipelines-as-code/pkg/test/kubernetestint"
@@ -184,12 +184,12 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 			}
 			stdata, informers := testclient.SeedTestData(t, ctx, testData)
 
-			metrics, err := metrics.NewRecorder()
+			metrics, err := prmetrics.NewRecorder()
 			assert.NilError(t, err)
 
 			r := Reconciler{
 				repoLister: informers.Repository.Lister(),
-				qm:         sync.NewQueueManager(fakelogger),
+				qm:         queuepkg.NewManager(fakelogger),
 				run: &params.Run{
 					Clients: clients.Clients{
 						PipelineAsCode: stdata.PipelineAsCode,

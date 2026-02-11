@@ -17,11 +17,12 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-func TestGithubMaxKeepRuns(t *testing.T) {
+func TestGithubSecondMaxKeepRuns(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:     "Github MaxKeepRun config",
-		YamlFiles: []string{"testdata/pipelinerun-max-keep-run-1.yaml"},
+		Label:            "Github MaxKeepRun config",
+		YamlFiles:        []string{"testdata/pipelinerun-max-keep-run-1.yaml"},
+		SecondController: true,
 	}
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)

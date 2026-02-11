@@ -17,7 +17,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func TestGithubPullRequestTest(t *testing.T) {
+func TestGithubSecondPullRequestTest(t *testing.T) {
 	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
 		t.Skip("Skipping test since only enabled for nightly")
 	}
@@ -25,7 +25,7 @@ func TestGithubPullRequestTest(t *testing.T) {
 	g := &tgithub.PRTest{
 		Label:            "Github test implicit comment",
 		YamlFiles:        []string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-clone.yaml"},
-		SecondController: false,
+		SecondController: true,
 	}
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)

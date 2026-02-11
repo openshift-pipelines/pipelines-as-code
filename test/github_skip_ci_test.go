@@ -38,9 +38,13 @@ func verifySkipCI(ctx context.Context, t *testing.T, g *tgithub.PRTest, eventTyp
 	assert.NilError(t, err)
 
 	// Verify controller logs mention skip command detection
+	controllerName := "controller"
+	if g.SecondController {
+		controllerName = "ghe-controller"
+	}
 	numLines := int64(1000)
 	skipLogRegex := regexp.MustCompile(fmt.Sprintf("CI skipped for %s event.*contains skip command in message", eventType))
-	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *skipLogRegex, 10, "controller", &numLines)
+	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *skipLogRegex, 10, controllerName, &numLines)
 	assert.NilError(t, err, "Expected controller logs to mention CI skip due to skip command")
 
 	g.Cnx.Clients.Log.Infof("✓ Verified controller logs mention skip command detection")
@@ -48,12 +52,13 @@ func verifySkipCI(ctx context.Context, t *testing.T, g *tgithub.PRTest, eventTyp
 
 // TestGithubSkipCIPullRequest tests that [skip ci] in commit message prevents
 // PipelineRun execution on pull requests.
-func TestGithubSkipCIPullRequest(t *testing.T) {
+func TestGithubSecondSkipCIPullRequest(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:         "Github Skip CI Pull Request [skip ci]",
-		YamlFiles:     []string{"testdata/pipelinerun.yaml"},
-		NoStatusCheck: true, // Don't wait for success since we expect no PipelineRun
+		Label:            "Github Skip CI Pull Request [skip ci]",
+		YamlFiles:        []string{"testdata/pipelinerun.yaml"},
+		NoStatusCheck:    true, // Don't wait for success since we expect no PipelineRun
+		SecondController: true,
 	}
 
 	// The CommitTitle will be used as the commit message, so [skip ci] is included
@@ -65,12 +70,13 @@ func TestGithubSkipCIPullRequest(t *testing.T) {
 
 // TestGithubSkipCIPush tests that [skip ci] in commit message prevents
 // PipelineRun execution on push events.
-func TestGithubSkipCIPush(t *testing.T) {
+func TestGithubSecondSkipCIPush(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:         "Github Skip CI Push [skip ci]",
-		YamlFiles:     []string{"testdata/pipelinerun-on-push.yaml"},
-		NoStatusCheck: true, // Don't wait for success since we expect no PipelineRun
+		Label:            "Github Skip CI Push [skip ci]",
+		YamlFiles:        []string{"testdata/pipelinerun-on-push.yaml"},
+		NoStatusCheck:    true, // Don't wait for success since we expect no PipelineRun
+		SecondController: true,
 	}
 
 	g.RunPushRequest(ctx, t)
@@ -80,12 +86,13 @@ func TestGithubSkipCIPush(t *testing.T) {
 }
 
 // TestGithubSkipCITestCommand tests that /test command can override [skip tkn].
-func TestGithubSkipCITestCommand(t *testing.T) {
+func TestGithubSecondSkipCITestCommand(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:         "Github Skip CI Test Command [skip tkn]",
-		YamlFiles:     []string{"testdata/pipelinerun.yaml"},
-		NoStatusCheck: true,
+		Label:            "Github Skip CI Test Command [skip tkn]",
+		YamlFiles:        []string{"testdata/pipelinerun.yaml"},
+		NoStatusCheck:    true,
+		SecondController: true,
 	}
 
 	g.RunPullRequest(ctx, t)
@@ -108,7 +115,7 @@ func TestGithubSkipCITestCommand(t *testing.T) {
 	// Verify controller logs mention skip command detection
 	numLines := int64(1000)
 	skipLogRegex := regexp.MustCompile("CI skipped for pull request event.*contains skip command in message")
-	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *skipLogRegex, 10, "controller", &numLines)
+	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *skipLogRegex, 10, "ghe-controller", &numLines)
 	assert.NilError(t, err, "Expected controller logs to mention CI skip due to skip command")
 
 	g.Cnx.Clients.Log.Infof("✓ Verified controller logs mention skip command detection")

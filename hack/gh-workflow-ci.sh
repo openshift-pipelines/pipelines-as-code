@@ -108,7 +108,7 @@ get_tests() {
     printf '%s\n' "${all_tests}" | grep -iP 'Flaky'
     ;;
   concurrency)
-    printf '%s\n' "${all_tests}" | grep -iP 'Concurrency'
+    printf '%s\n' "${all_tests}" | grep -iP 'Concurrency|Others'
     ;;
   github_1)
     if [[ ${#github_tests[@]} -gt 0 ]]; then
@@ -121,7 +121,7 @@ get_tests() {
     fi
     ;;
   github_second_controller)
-    printf '%s\n' "${all_tests}" | grep -iP 'GithubSecond|Others' | grep -ivP 'Concurrency|Flaky'
+    printf '%s\n' "${all_tests}" | grep -iP 'GithubSecond' | grep -ivP 'Concurrency|Flaky'
     ;;
   gitlab_bitbucket)
     printf '%s\n' "${all_tests}" | grep -iP 'Gitlab|Bitbucket' | grep -ivP 'Concurrency'

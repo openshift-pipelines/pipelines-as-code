@@ -54,38 +54,41 @@ func TestGithubSecondPullRequest(t *testing.T) {
 	defer g.TearDown(ctx, t)
 }
 
-func TestGithubPullRequestMultiples(t *testing.T) {
+func TestGithubSecondPullRequestMultiples(t *testing.T) {
 	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
 		t.Skip("Skipping test since only enabled for nightly")
 	}
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:     "Github multiple PullRequest",
-		YamlFiles: []string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-clone.yaml"},
+		Label:            "Github multiple PullRequest",
+		YamlFiles:        []string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-clone.yaml"},
+		SecondController: true,
 	}
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
 }
 
-func TestGithubPullRequestMatchOnCEL(t *testing.T) {
+func TestGithubSecondPullRequestMatchOnCEL(t *testing.T) {
 	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
 		t.Skip("Skipping test since only enabled for nightly")
 	}
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:     "Github CEL Match",
-		YamlFiles: []string{"testdata/pipelinerun-cel-annotation.yaml"},
+		Label:            "Github CEL Match",
+		YamlFiles:        []string{"testdata/pipelinerun-cel-annotation.yaml"},
+		SecondController: true,
 	}
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
 }
 
-func TestGithubPullRequestOnLabel(t *testing.T) {
+func TestGithubSecondPullRequestOnLabel(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:         "Github On Label",
-		YamlFiles:     []string{"testdata/pipelinerun-on-label.yaml"},
-		NoStatusCheck: true,
+		Label:            "Github On Label",
+		YamlFiles:        []string{"testdata/pipelinerun-on-label.yaml"},
+		NoStatusCheck:    true,
+		SecondController: true,
 	}
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
@@ -136,11 +139,12 @@ func TestGithubPullRequestOnLabel(t *testing.T) {
 	assert.Assert(t, strings.HasPrefix(checkName, expected), "checkName %s != expected %s", checkName, expected)
 }
 
-func TestGithubPullRequestCELMatchOnTitle(t *testing.T) {
+func TestGithubSecondPullRequestCELMatchOnTitle(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:     "Github CEL Match on Title",
-		YamlFiles: []string{"testdata/pipelinerun-cel-annotation-for-title-match.yaml"},
+		Label:            "Github CEL Match on Title",
+		YamlFiles:        []string{"testdata/pipelinerun-cel-annotation-for-title-match.yaml"},
+		SecondController: true,
 	}
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
@@ -422,11 +426,12 @@ func TestGithubSecondCancelInProgressPRClosed(t *testing.T) {
 	assert.Equal(t, res.CheckRuns[0].GetConclusion(), "cancelled")
 }
 
-func TestGithubPullRequestNoOnLabelAnnotation(t *testing.T) {
+func TestGithubSecondPullRequestNoOnLabelAnnotation(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:     "Github PullRequest",
-		YamlFiles: []string{"testdata/pipelinerun-pr-cel-expression.yaml"},
+		Label:            "Github PullRequest",
+		YamlFiles:        []string{"testdata/pipelinerun-pr-cel-expression.yaml"},
+		SecondController: true,
 	}
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
@@ -450,12 +455,13 @@ func TestGithubPullRequestNoOnLabelAnnotation(t *testing.T) {
 	}
 }
 
-func TestGithubPullRequestCELLabelEvent(t *testing.T) {
+func TestGithubSecondPullRequestCELLabelEvent(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:         "Github CEL Label Event",
-		YamlFiles:     []string{"testdata/pipelinerun-cel-label-event.yaml"},
-		NoStatusCheck: true,
+		Label:            "Github CEL Label Event",
+		YamlFiles:        []string{"testdata/pipelinerun-cel-label-event.yaml"},
+		NoStatusCheck:    true,
+		SecondController: true,
 	}
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
@@ -514,12 +520,13 @@ func TestGithubPullRequestCELLabelEvent(t *testing.T) {
 	assert.Assert(t, strings.HasPrefix(checkName, expected), "checkName %s != expected %s", checkName, expected)
 }
 
-func TestGithubPullRequestNoPipelineRunCancelledOnPRClosed(t *testing.T) {
+func TestGithubSecondPullRequestNoPipelineRunCancelledOnPRClosed(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:         "Github PullRequest",
-		YamlFiles:     []string{"testdata/pipelinerun-gitops.yaml"},
-		NoStatusCheck: true,
+		Label:            "Github PullRequest",
+		YamlFiles:        []string{"testdata/pipelinerun-gitops.yaml"},
+		NoStatusCheck:    true,
+		SecondController: true,
 	}
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
@@ -666,11 +673,12 @@ func TestGithubCancelInProgressSettingFromConfigMapOnPush(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestGithubPullandPushMatchTriggerOnlyPull(t *testing.T) {
+func TestGithubSecondPullandPushMatchTriggerOnlyPull(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:     "Github PullRequest",
-		YamlFiles: []string{"testdata/pipelinerun-match-push-pullr.yaml"},
+		Label:            "Github PullRequest",
+		YamlFiles:        []string{"testdata/pipelinerun-match-push-pullr.yaml"},
+		SecondController: true,
 	}
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
@@ -681,7 +689,7 @@ func TestGithubPullandPushMatchTriggerOnlyPull(t *testing.T) {
 
 	reg := regexp.MustCompile(fmt.Sprintf("Skipping push event for commit.*as it belongs to pull request #%d", g.PRNumber))
 	maxLines := int64(1000)
-	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 20, "controller", &maxLines)
+	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 20, "ghe-controller", &maxLines)
 	assert.NilError(t, err)
 }
 
@@ -719,12 +727,13 @@ func TestGithubDisableCommentsOnPR(t *testing.T) {
 	assert.Equal(t, 0, successCommentsPost)
 }
 
-func TestGithubIgnoreTagPushCommitsFromSkipPushEventsSetting(t *testing.T) {
+func TestGithubSecondIgnoreTagPushCommitsFromSkipPushEventsSetting(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:         "Github PullRequest",
-		YamlFiles:     []string{"testdata/pipelinerun.yaml"},
-		NoStatusCheck: true,
+		Label:            "Github PullRequest",
+		YamlFiles:        []string{"testdata/pipelinerun.yaml"},
+		NoStatusCheck:    true,
+		SecondController: true,
 	}
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
@@ -741,7 +750,7 @@ func TestGithubIgnoreTagPushCommitsFromSkipPushEventsSetting(t *testing.T) {
 
 	reg := regexp.MustCompile(fmt.Sprintf("Processing tag push event for commit %s despite skip-push-events-for-pr-commits being enabled.*", g.SHA))
 	maxLines := int64(1000)
-	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 20, "controller", &maxLines)
+	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 20, "ghe-controller", &maxLines)
 	assert.NilError(t, err)
 
 	g.Cnx.Clients.Log.Infof("Deleting tag %s", tag)
@@ -752,11 +761,12 @@ func TestGithubIgnoreTagPushCommitsFromSkipPushEventsSetting(t *testing.T) {
 
 // TestGithubPullRequestCelPrefix tests the cel: prefix for arbitrary CEL expressions.
 // The cel: prefix allows evaluating full CEL expressions with access to body, headers, files, and pac namespaces.
-func TestGithubPullRequestCelPrefix(t *testing.T) {
+func TestGithubSecondPullRequestCelPrefix(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:     "Github CEL Prefix",
-		YamlFiles: []string{"testdata/pipelinerun-cel-prefix-github.yaml"},
+		Label:            "Github CEL Prefix",
+		YamlFiles:        []string{"testdata/pipelinerun-cel-prefix-github.yaml"},
+		SecondController: true,
 	}
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
