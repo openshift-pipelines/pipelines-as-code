@@ -1,4 +1,4 @@
-package sync
+package queue
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	tektonVersionedClient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 )
 
-type QueueManagerInterface interface {
+type ManagerInterface interface {
 	InitQueues(ctx context.Context, tekton tektonVersionedClient.Interface, pac versioned.Interface) error
 	RemoveRepository(repo *v1alpha1.Repository)
 	QueuedPipelineRuns(repo *v1alpha1.Repository) []string

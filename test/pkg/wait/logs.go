@@ -10,7 +10,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	tlogs "github.com/openshift-pipelines/pipelines-as-code/test/pkg/logs"
+	tlogs "github.com/openshift-pipelines/pipelines-as-code/test/pkg/podlogs"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/golden"
 )
