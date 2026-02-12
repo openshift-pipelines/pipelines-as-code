@@ -349,9 +349,16 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 	if p.event.TargetTestPipelineRun != "" {
 		p.eventEmitter.EmitMessage(repo, zap.InfoLevel, "RepositoryMatchedPipelineRun", fmt.Sprintf("explicit testing via /test of PipelineRun %s", p.event.TargetTestPipelineRun))
 		selectedPr := filterRunningPipelineRunOnTargetTest(p.event.TargetTestPipelineRun, pipelineRuns)
+		if selectedPr == nil {
+			msg := fmt.Sprintf("cannot find the targeted pipelinerun %s in this repository", p.event.TargetTestPipelineRun)
+			p.eventEmitter.EmitMessage(repo, zap.InfoLevel, "RepositoryCannotLocatePipelineRun", msg)
+			return nil, nil
+		}
+		selectedRepo := p.resolveTargetNamespaceRepo(ctx, repo, selectedPr)
+		p.debugf("getPipelineRunsFromRepo: explicit /test using repo=%s/%s for pipelinerun=%s", selectedRepo.GetNamespace(), selectedRepo.GetName(), pipelineRunIdentifier(selectedPr))
 		return []matcher.Match{{
 			PipelineRun: selectedPr,
-			Repo:        repo,
+			Repo:        selectedRepo,
 		}}, nil
 	}
 
@@ -375,6 +382,50 @@ func filterRunningPipelineRunOnTargetTest(testPipeline string, prs []*tektonv1.P
 		}
 	}
 	return nil
+}
+
+func pipelineRunIdentifier(pr *tektonv1.PipelineRun) string {
+	if pr == nil {
+		return "<nil>"
+	}
+	if pr.GetName() != "" {
+		return pr.GetName()
+	}
+	if pr.GetGenerateName() != "" {
+		return pr.GetGenerateName()
+	}
+	return "<unnamed>"
+}
+
+func (p *PacRun) resolveTargetNamespaceRepo(ctx context.Context, fallbackRepo *v1alpha1.Repository, pr *tektonv1.PipelineRun) *v1alpha1.Repository {
+	if fallbackRepo == nil || pr == nil {
+		return fallbackRepo
+	}
+
+	targetNS, ok := pr.GetAnnotations()[apipac.TargetNamespace]
+	if !ok || targetNS == "" {
+		return fallbackRepo
+	}
+	if targetNS == fallbackRepo.GetNamespace() {
+		return fallbackRepo
+	}
+
+	targetRepo, err := matcher.MatchEventURLRepo(ctx, p.run, p.event, targetNS)
+	if err != nil {
+		if p.logger != nil {
+			p.logger.Warnf("resolveTargetNamespaceRepo: failed to lookup target namespace=%s for pipelinerun=%s: %v", targetNS, pipelineRunIdentifier(pr), err)
+		}
+		return fallbackRepo
+	}
+	if targetRepo == nil {
+		if p.logger != nil {
+			p.logger.Warnf("resolveTargetNamespaceRepo: no repository found in target namespace=%s for pipelinerun=%s", targetNS, pipelineRunIdentifier(pr))
+		}
+		return fallbackRepo
+	}
+
+	p.debugf("resolveTargetNamespaceRepo: resolved pipelinerun=%s to repo=%s/%s via target-namespace=%s", pipelineRunIdentifier(pr), targetRepo.GetNamespace(), targetRepo.GetName(), targetNS)
+	return targetRepo
 }
 
 // changePipelineRun go over each pipelineruns and modify things into it.

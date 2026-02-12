@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -176,6 +177,8 @@ func (p *PacRun) cancelInProgressMatchingPipelineRun(ctx context.Context, matchP
 // cancelPipelineRunsOpsComment cancels all PipelineRuns associated with a given repository and pull request.
 // when the user issue a cancel comment.
 func (p *PacRun) cancelPipelineRunsOpsComment(ctx context.Context, repo *v1alpha1.Repository) error {
+	repo = p.resolveRepoForTargetCancelPipelineRun(ctx, repo)
+
 	labelSelector := getLabelSelector(map[string]string{
 		keys.URLRepository: formatting.CleanValueKubernetes(p.event.Repository),
 		keys.SHA:           formatting.CleanValueKubernetes(p.event.SHA),
@@ -183,7 +186,8 @@ func (p *PacRun) cancelPipelineRunsOpsComment(ctx context.Context, repo *v1alpha
 
 	if p.event.TriggerTarget == triggertype.PullRequest {
 		labelSelector = getLabelSelector(map[string]string{
-			keys.PullRequest: strconv.Itoa(p.event.PullRequestNumber),
+			keys.URLRepository: formatting.CleanValueKubernetes(p.event.Repository),
+			keys.PullRequest:   strconv.Itoa(p.event.PullRequestNumber),
 		}, selection.Equals)
 	}
 
@@ -212,6 +216,49 @@ func (p *PacRun) cancelPipelineRunsOpsComment(ctx context.Context, repo *v1alpha
 	})
 
 	return nil
+}
+
+func (p *PacRun) resolveRepoForTargetCancelPipelineRun(ctx context.Context, repo *v1alpha1.Repository) *v1alpha1.Repository {
+	if repo == nil || p.event.TargetCancelPipelineRun == "" || p.vcx == nil {
+		return repo
+	}
+
+	provenance := "source"
+	if repo.Spec.Settings != nil && repo.Spec.Settings.PipelineRunProvenance != "" {
+		provenance = repo.Spec.Settings.PipelineRunProvenance
+	}
+
+	rawTemplates, err := p.vcx.GetTektonDir(ctx, p.event, tektonDir, provenance)
+	if err != nil || rawTemplates == "" {
+		return repo
+	}
+
+	allTemplates := p.makeTemplate(ctx, repo, rawTemplates)
+	types, err := resolve.ReadTektonTypes(ctx, p.logger, allTemplates)
+	if err != nil {
+		return repo
+	}
+
+	pipelineRuns, err := resolve.MetadataResolve(types.PipelineRuns)
+	if err != nil || len(pipelineRuns) == 0 {
+		return repo
+	}
+
+	targetPR := filterRunningPipelineRunOnTargetTest(p.event.TargetCancelPipelineRun, pipelineRuns)
+	if targetPR == nil {
+		for _, pr := range pipelineRuns {
+			prName := strings.TrimSuffix(pipelineRunIdentifier(pr), "-")
+			if prName == p.event.TargetCancelPipelineRun {
+				targetPR = pr
+				break
+			}
+		}
+	}
+	if targetPR == nil {
+		return repo
+	}
+
+	return p.resolveTargetNamespaceRepo(ctx, repo, targetPR)
 }
 
 func (p *PacRun) cancelPipelineRuns(ctx context.Context, prs *tektonv1.PipelineRunList, repo *v1alpha1.Repository, condition matchingCond) {
