@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/google/go-github/v81/github"
-	providerMetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/metrics"
+	providerMetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/providermetrics"
 )
 
 const (

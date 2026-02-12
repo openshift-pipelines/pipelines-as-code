@@ -19,6 +19,8 @@ func (p *PacRun) makeTemplate(ctx context.Context, repo *v1alpha1.Repository, te
 	if err != nil {
 		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "ParamsError",
 			fmt.Sprintf("error processing repository CR custom params: %s", err.Error()))
+	} else {
+		p.debugf("makeTemplate: resolved %d params and %d changed file groups", len(maptemplate), len(changedFiles))
 	}
 
 	// convert pull request number to string

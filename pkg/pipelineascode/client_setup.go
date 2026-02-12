@@ -37,13 +37,16 @@ func SetupAuthenticatedClient(
 		globalRepo != nil && globalRepo.Spec.GitProvider != nil && globalRepo.Spec.GitProvider.Secret != nil {
 		secretNS = globalRepo.GetNamespace()
 	}
+	logger.Debugf("setupAuthenticatedClient: repo=%s/%s secret_namespace=%s", repo.GetNamespace(), repo.GetName(), secretNS)
 	// merge global repo settings into local repo (after determining secret namespace)
 	if globalRepo != nil {
+		logger.Debugf("setupAuthenticatedClient: merging global repo settings from %s/%s", globalRepo.GetNamespace(), globalRepo.GetName())
 		repo.Spec.Merge(globalRepo.Spec)
 	}
 
 	// GitHub Apps use controller secret, not Repository git_provider
 	if event.InstallationID > 0 {
+		logger.Debugf("setupAuthenticatedClient: github app installation id=%d, using controller webhook secret", event.InstallationID)
 		event.Provider.WebhookSecret, _ = GetCurrentNSWebhookSecret(ctx, kint, run)
 	} else {
 		// Non-GitHub App providers use git_provider section in Repository spec
@@ -59,6 +62,7 @@ func SetupAuthenticatedClient(
 		if err := scm.Get(ctx); err != nil {
 			return fmt.Errorf("cannot get secret from repository: %w", err)
 		}
+		logger.Debugf("setupAuthenticatedClient: loaded git provider credentials for repo=%s/%s", repo.GetNamespace(), repo.GetName())
 	}
 
 	// Set up the authenticated client
@@ -66,6 +70,7 @@ func SetupAuthenticatedClient(
 
 	// Validate payload with webhook secret (skip for incoming webhooks)
 	if event.EventType != "incoming" {
+		logger.Debugf("setupAuthenticatedClient: validating webhook payload for event_type=%s", event.EventType)
 		if err := vcx.Validate(ctx, run, event); err != nil {
 			// check that webhook secret has no /n or space into it
 			if strings.ContainsAny(event.Provider.WebhookSecret, "\n ") {
@@ -81,9 +86,11 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	if err := vcx.SetClient(ctx, run, event, repo, eventEmitter); err != nil {
 		return fmt.Errorf("failed to set client: %w", err)
 	}
+	logger.Debugf("setupAuthenticatedClient: provider client initialized")
 
 	// Handle GitHub App token scoping for both global and repo-level configuration
 	if event.InstallationID > 0 {
+		logger.Debugf("setupAuthenticatedClient: scoping github app token")
 		token, err := github.ScopeTokenToListOfRepos(ctx, vcx, pacInfo, repo, run, event, eventEmitter, logger)
 		if err != nil {
 			return fmt.Errorf("failed to scope token: %w", err)

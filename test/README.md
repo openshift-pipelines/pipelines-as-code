@@ -202,8 +202,8 @@ for example:
 
 Log source details:
 
-- Parses controller pod logs from the `pac-controller` container.
-- Uses label selector `app.kubernetes.io/name=controller` (or `ghe-controller` when testing against GHE).
+- Parses controller pod logs by resolving the controller label and container name dynamically.
+- Tries known controller labels first (for example `app.kubernetes.io/name=controller` or `ghe-controller`) and then falls back to the standard PAC controller labels.
 - Considers only log lines after the last occurrence of `github-app: initialized OAuth2 client`.
 - Matches lines containing `GitHub API call completed` and extracts the embedded JSON payload.
 

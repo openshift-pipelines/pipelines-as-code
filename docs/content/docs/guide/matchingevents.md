@@ -189,7 +189,7 @@ files.
 ## Matching a PipelineRun on a Regex in a comment
 
 {{< tech_preview "Matching PipelineRun on regex in comments" >}}
-{{< support_matrix github_app="true" github_webhook="true" gitea="true" gitlab="true" bitbucket_cloud="false" bitbucket_datacenter="false" >}}
+{{< support_matrix github_app="true" github_webhook="true" forgejo="true" gitlab="true" bitbucket_cloud="false" bitbucket_datacenter="false" >}}
 
 You can trigger a PipelineRun based on a comment on a Pull Request or a [Pushed
 Commit]({{< relref
@@ -239,7 +239,7 @@ relref "/docs/guide/gitops_commands.md#gitops-commands-on-pushed-commits" >}}).
 ## Matching PipelineRun to a Pull Request labels
 
 {{< tech_preview "Matching PipelineRun to a Pull-Request label" >}}
-{{< support_matrix github_app="true" github_webhook="true" gitea="true" gitlab="true" bitbucket_cloud="false" bitbucket_datacenter="false" >}}
+{{< support_matrix github_app="true" github_webhook="true" forgejo="true" gitlab="true" bitbucket_cloud="false" bitbucket_datacenter="false" >}}
 
 Using the annotation `pipelinesascode.tekton.dev/on-label`, you can match a
 PipelineRun to a Pull Request label. For example, if you want to match the
@@ -261,7 +261,7 @@ metadata:
   targeted branch.
 * The `on-event` is still needed to match the Pull Request event on the
   proper targeted event.
-* This annotation is currently supported only on GitHub, Gitea, and GitLab
+* This annotation is currently supported only on GitHub, Forgejo, and GitLab
   providers. Bitbucket Cloud and Bitbucket Data Center do not support adding labels
   to Pull Requests.
 * When you add a label to a Pull Request, the corresponding PipelineRun is

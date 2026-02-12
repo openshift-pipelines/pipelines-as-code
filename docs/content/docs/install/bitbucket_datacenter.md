@@ -1,6 +1,6 @@
 ---
 title: Bitbucket Data Center
-weight: 15
+weight: 16
 ---
 # Install Pipelines-as-Code on Bitbucket Data Center
 
@@ -15,6 +15,17 @@ After following the [installation](/docs/install/installation):
 <https://confluence.atlassian.com/bitbucketserver/personal-access-tokens-939515499.html>
 
 The token will need to have the `PROJECT_ADMIN` and `REPOSITORY_ADMIN` permissions.
+
+{{< hint info >}}
+
+The service account user that owns the token must be a **licensed Bitbucket
+user** (i.e., granted the `LICENSED_USER` global permission) for group-based
+permission checks to work. If the service account is an unlicensed technical
+user, group membership cannot be resolved and users with group-only access
+will not be able to trigger builds. As a workaround, add those users
+individually to the project or repository permissions.
+
+{{< /hint >}}
 
 Note that the token needs to be able to have access to the forked repository in
 pull requests, or it would not be able to process and access the pull request.

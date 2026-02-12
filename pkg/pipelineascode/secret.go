@@ -40,6 +40,7 @@ func (s *SecretFromRepository) Get(ctx context.Context) error {
 	} else {
 		s.Event.Provider.URL = s.Repo.Spec.GitProvider.URL
 	}
+	s.Logger.Debugf("secretFromRepository: repo=%s/%s provider_url=%s namespace=%s", s.Repo.Namespace, s.Repo.Name, s.Repo.Spec.GitProvider.URL, s.Namespace)
 
 	if s.Repo.Spec.GitProvider.Secret == nil {
 		return fmt.Errorf("failed to find secret in git_provider section in repository spec: %v/%v", s.Repo.Namespace, s.Repo.Name)
@@ -48,6 +49,7 @@ func (s *SecretFromRepository) Get(ctx context.Context) error {
 	if gitProviderSecretKey == "" {
 		gitProviderSecretKey = DefaultGitProviderSecretKey
 	}
+	s.Logger.Debugf("secretFromRepository: reading provider token secret=%s key=%s", s.Repo.Spec.GitProvider.Secret.Name, gitProviderSecretKey)
 
 	if s.Event.Provider.Token, err = s.K8int.GetSecret(ctx, ktypes.GetSecretOpt{
 		Namespace: s.Namespace,
@@ -74,6 +76,7 @@ func (s *SecretFromRepository) Get(ctx context.Context) error {
 	if gitProviderWebhookSecretKey == "" {
 		gitProviderWebhookSecretKey = DefaultGitProviderWebhookSecretKey
 	}
+	s.Logger.Debugf("secretFromRepository: reading webhook secret=%s key=%s", s.Repo.Spec.GitProvider.WebhookSecret.Name, gitProviderWebhookSecretKey)
 	logmsg := fmt.Sprintf("Using git provider %s: apiurl=%s user=%s token-secret=%s token-key=%s",
 		s.WebhookType,
 		s.Repo.Spec.GitProvider.URL,

@@ -22,7 +22,7 @@ import (
 	thelp "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab/test"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/metrics"
+	metricsutils "github.com/openshift-pipelines/pipelines-as-code/pkg/test/metricstest"
 
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"go.uber.org/zap"
@@ -1168,32 +1168,38 @@ func TestGetFileInsideRepo(t *testing.T) {
 func TestValidate(t *testing.T) {
 	tests := []struct {
 		name        string
-		wantErr     bool
+		wantErr     string
 		secretToken string
 		eventToken  string
 	}{
 		{
-			name:        "valid event",
-			wantErr:     false,
+			name:        "valid event with matching tokens",
+			wantErr:     "",
 			secretToken: "test",
 			eventToken:  "test",
 		},
 		{
-			name:        "fail validation, no secret defined",
-			wantErr:     true,
+			name:        "invalid when webhook secret not configured",
+			wantErr:     "no webhook secret configured",
 			secretToken: "",
 			eventToken:  "test",
 		},
 		{
-			name:        "fail validation",
-			wantErr:     true,
+			name:        "invalid when tokens do not match",
+			wantErr:     "token does not match configured secret",
 			secretToken: "secret",
 			eventToken:  "test",
 		},
 		{
-			name:        "fail validation, missing event token",
-			wantErr:     true,
+			name:        "invalid when X-Gitlab-Token header missing",
+			wantErr:     "no X-Gitlab-Token header detected",
 			secretToken: "secret",
+			eventToken:  "",
+		},
+		{
+			name:        "invalid when both token and secret are empty (security fix)",
+			wantErr:     "no X-Gitlab-Token header detected",
+			secretToken: "",
 			eventToken:  "",
 		},
 	}
@@ -1212,8 +1218,12 @@ func TestValidate(t *testing.T) {
 				WebhookSecret: tt.secretToken,
 			}
 
-			if err := v.Validate(context.TODO(), nil, event); (err != nil) != tt.wantErr {
-				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			err := v.Validate(context.TODO(), nil, event)
+			if tt.wantErr != "" {
+				assert.Assert(t, err != nil)
+				assert.ErrorContains(t, err, tt.wantErr)
+			} else {
+				assert.NilError(t, err)
 			}
 		})
 	}
@@ -1330,7 +1340,7 @@ func TestGetFiles(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			metrics.ResetMetrics()
+			metricsutils.ResetMetrics()
 			fakeclient, mux, teardown := thelp.Setup(t)
 			defer teardown()
 			if tt.event.TriggerTarget == "pull_request" {
@@ -1414,7 +1424,7 @@ func TestGetFilesPaging(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			metrics.ResetMetrics()
+			metricsutils.ResetMetrics()
 			fakeclient, mux, teardown := thelp.Setup(t)
 			defer teardown()
 

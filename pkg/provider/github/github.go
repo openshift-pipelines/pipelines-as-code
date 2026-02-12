@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -324,7 +325,7 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 	return nil
 }
 
-// GetTektonDir Get all yaml files in tekton directory return as a single concated file.
+// GetTektonDir retrieves all YAML files from the .tekton directory and returns them as a single concatenated multi-document YAML file.
 func (v *Provider) GetTektonDir(ctx context.Context, runevent *info.Event, path, provenance string) (string, error) {
 	tektonDirSha := ""
 
@@ -749,6 +750,29 @@ func (v *Provider) GetTemplate(commentType provider.CommentType) string {
 	return provider.GetHTMLTemplate(commentType)
 }
 
+// listAndFindComment lists comments on a PR and returns the first one matching the marker.
+func (v *Provider) listAndFindComment(ctx context.Context, event *info.Event, marker string) (*github.IssueComment, error) {
+	comments, _, err := wrapAPI(v, "list_comments", func() ([]*github.IssueComment, *github.Response, error) {
+		return v.Client().Issues.ListComments(ctx, event.Organization, event.Repository, event.PullRequestNumber, &github.IssueListCommentsOptions{
+			ListOptions: github.ListOptions{
+				Page:    1,
+				PerPage: 100,
+			},
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	re := regexp.MustCompile(regexp.QuoteMeta(marker))
+	for _, comment := range comments {
+		if re.MatchString(comment.GetBody()) {
+			return comment, nil
+		}
+	}
+	return nil, nil
+}
+
 // CreateComment creates a comment on a Pull Request.
 func (v *Provider) CreateComment(ctx context.Context, event *info.Event, commit, updateMarker string) error {
 	if v.ghClient == nil {
@@ -759,38 +783,59 @@ func (v *Provider) CreateComment(ctx context.Context, event *info.Event, commit,
 		return fmt.Errorf("create comment only works on pull requests")
 	}
 
-	// List last page of the comments of the PR
 	if updateMarker != "" {
-		comments, _, err := wrapAPI(v, "list_comments", func() ([]*github.IssueComment, *github.Response, error) {
-			return v.Client().Issues.ListComments(ctx, event.Organization, event.Repository, event.PullRequestNumber, &github.IssueListCommentsOptions{
-				ListOptions: github.ListOptions{
-					Page:    1,
-					PerPage: 100,
-				},
-			})
-		})
+		existingComment, err := v.listAndFindComment(ctx, event, updateMarker)
 		if err != nil {
 			return err
 		}
 
-		re := regexp.MustCompile(regexp.QuoteMeta(updateMarker))
-		for _, comment := range comments {
-			if re.MatchString(comment.GetBody()) {
-				if _, _, err := wrapAPI(v, "edit_comment", func() (*github.IssueComment, *github.Response, error) {
-					return v.Client().Issues.EditComment(ctx, event.Organization, event.Repository, comment.GetID(), &github.IssueComment{
-						Body: &commit,
-					})
-				}); err != nil {
-					return err
-				}
+		if existingComment != nil {
+			// No edit required if the comment is exactly the same.
+			if existingComment.GetBody() == commit {
 				return nil
 			}
+			if _, _, err := wrapAPI(v, "edit_comment", func() (*github.IssueComment, *github.Response, error) {
+				return v.Client().Issues.EditComment(ctx, event.Organization, event.Repository, existingComment.GetID(), &github.IssueComment{
+					Body: github.Ptr(commit),
+				})
+			}); err != nil {
+				return err
+			}
+			return nil
+		}
+
+		// HACK: Workaround for duplicate comment creation issue.
+		// In E2E tests, we occasionally see two identical comments created on a PR when
+		// there should only be one. The root cause is unclear, despite only one
+		// create_comment API call being logged, two comments appear on the PR.
+		//
+		// This workaround adds a random sleep (0-500ms) before re-checking for existing
+		// comments. This reduces the window where parallel processes might both
+		// see no existing comment and both decide to create one.
+		//nolint:gosec // No need for crypto/rand here, just reducing timing window
+		jitter := time.Duration(rand.Intn(500)) * time.Millisecond
+		timer := time.NewTimer(jitter)
+		defer timer.Stop()
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-timer.C:
+		}
+
+		// Re-check if a comment exists now
+		existingComment, err = v.listAndFindComment(ctx, event, updateMarker)
+		if err != nil {
+			return err
+		}
+		if existingComment != nil {
+			return nil
 		}
 	}
 
 	_, _, err := wrapAPI(v, "create_comment", func() (*github.IssueComment, *github.Response, error) {
 		return v.Client().Issues.CreateComment(ctx, event.Organization, event.Repository, event.PullRequestNumber, &github.IssueComment{
-			Body: &commit,
+			Body: github.Ptr(commit),
 		})
 	})
 	return err

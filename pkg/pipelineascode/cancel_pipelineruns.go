@@ -38,6 +38,7 @@ func (p *PacRun) cancelAllInProgressBelongingToClosedPullRequest(ctx context.Con
 	}
 	operator := selection.Equals
 	cancelInProgress := fmt.Sprintf("%t", p.pacInfo.EnableCancelInProgressOnPullRequests)
+	p.debugf("cancelAllInProgress: repo=%s/%s pr=%d cancel_in_progress=%s", repo.GetNamespace(), repo.GetName(), p.event.PullRequestNumber, cancelInProgress)
 
 	// First, build the label selector based on the URLRepository and PullRequest fields,
 	// followed by applying filtering logic for the 'cancel-in-progress' annotation.
@@ -63,6 +64,7 @@ func (p *PacRun) cancelAllInProgressBelongingToClosedPullRequest(ctx context.Con
 	}
 	// Append the label selector filter for the 'cancel-in-progress' annotation.
 	labelSelector += fmt.Sprintf(",%s", getLabelSelector(labelsMap, operator))
+	p.debugf("cancelAllInProgress: labelSelector=%s", labelSelector)
 
 	prs, err := p.run.Clients.Tekton.TektonV1().PipelineRuns(repo.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labelSelector,
@@ -77,6 +79,7 @@ func (p *PacRun) cancelAllInProgressBelongingToClosedPullRequest(ctx context.Con
 		p.eventEmitter.EmitMessage(repo, zap.InfoLevel, "CancelInProgress", msg)
 		return nil
 	}
+	p.debugf("cancelAllInProgress: found %d pipelineruns to consider", len(prs.Items))
 
 	p.cancelPipelineRuns(ctx, prs, repo, func(_ tektonv1.PipelineRun) bool {
 		return true
@@ -112,15 +115,18 @@ func (p *PacRun) cancelInProgressMatchingPipelineRun(ctx context.Context, matchP
 	}
 
 	if cancelInProgress != "true" {
+		p.debugf("cancelInProgress: disabled for pipelinerun=%s via=%s", matchPR.GetName(), cancellingVia)
 		return nil
 	}
 
 	p.run.Clients.Log.Infof("cancel-in-progress for event %s is enabled %s", string(p.event.TriggerTarget), cancellingVia)
+	p.debugf("cancelInProgress: enabled for pipelinerun=%s", matchPR.GetName())
 
 	// As PipelineRuns are filtered by name, OriginalPRName should be taken from
 	// labels instead of annotations because of constraints imposed by kube API.
 	prName, ok := matchPR.GetLabels()[keys.OriginalPRName]
 	if !ok {
+		p.debugf("cancelInProgress: missing original PR name label for pipelinerun=%s", matchPR.GetName())
 		return nil
 	}
 
@@ -141,6 +147,7 @@ func (p *PacRun) cancelInProgressMatchingPipelineRun(ctx context.Context, matchP
 		labelSelector += fmt.Sprintf(",%s in (pull_request, Merge_Request, %s)", keys.EventType, opscomments.AnyOpsKubeLabelInSelector())
 	}
 	p.run.Clients.Log.Infof("cancel-in-progress: selecting pipelineRuns to cancel with labels: %v", labelSelector)
+	p.debugf("cancelInProgress: labelSelector=%s", labelSelector)
 	prs, err := p.run.Clients.Tekton.TektonV1().PipelineRuns(matchPR.GetNamespace()).List(ctx, metav1.ListOptions{
 		LabelSelector: labelSelector,
 	})
@@ -193,6 +200,7 @@ func (p *PacRun) cancelPipelineRunsOpsComment(ctx context.Context, repo *v1alpha
 		p.eventEmitter.EmitMessage(repo, zap.InfoLevel, "CancelInProgress", msg)
 		return nil
 	}
+	p.debugf("cancelPipelineRunsOpsComment: found %d pipelineruns to consider", len(prs.Items))
 
 	p.cancelPipelineRuns(ctx, prs, repo, func(pr tektonv1.PipelineRun) bool {
 		if p.event.TargetCancelPipelineRun != "" {
@@ -208,6 +216,7 @@ func (p *PacRun) cancelPipelineRunsOpsComment(ctx context.Context, repo *v1alpha
 
 func (p *PacRun) cancelPipelineRuns(ctx context.Context, prs *tektonv1.PipelineRunList, repo *v1alpha1.Repository, condition matchingCond) {
 	var wg sync.WaitGroup
+	p.debugf("cancelPipelineRuns: evaluating %d pipelineruns", len(prs.Items))
 	for _, pr := range prs.Items {
 		if !condition(pr) {
 			continue
