@@ -133,6 +133,54 @@ func TestMergeSpecs(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "forgejo local merges with gitea global",
+			local: &RepositorySpec{
+				GitProvider: &GitProvider{
+					Type: "forgejo",
+				},
+			},
+			global: RepositorySpec{
+				GitProvider: &GitProvider{
+					Type:   "gitea",
+					URL:    "https://gitea.example.com",
+					User:   "user",
+					Secret: &Secret{Name: "secret"},
+				},
+			},
+			expected: &RepositorySpec{
+				GitProvider: &GitProvider{
+					Type:   "forgejo",
+					URL:    "https://gitea.example.com",
+					User:   "user",
+					Secret: &Secret{Name: "secret"},
+				},
+			},
+		},
+		{
+			name: "gitea local merges with forgejo global",
+			local: &RepositorySpec{
+				GitProvider: &GitProvider{
+					Type: "gitea",
+				},
+			},
+			global: RepositorySpec{
+				GitProvider: &GitProvider{
+					Type:   "forgejo",
+					URL:    "https://forgejo.example.com",
+					User:   "user",
+					Secret: &Secret{Name: "secret"},
+				},
+			},
+			expected: &RepositorySpec{
+				GitProvider: &GitProvider{
+					Type:   "gitea",
+					URL:    "https://forgejo.example.com",
+					User:   "user",
+					Secret: &Secret{Name: "secret"},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

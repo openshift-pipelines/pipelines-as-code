@@ -286,15 +286,25 @@ type GitProvider struct {
 	// - 'gitlab': GitLab.com or self-hosted GitLab
 	// - 'bitbucket-datacenter': Bitbucket Data Center (self-hosted)
 	// - 'bitbucket-cloud': Bitbucket Cloud (bitbucket.org)
-	// - 'gitea': Gitea instances
+	// - 'forgejo': Forgejo instances
+	// - 'gitea': Gitea instances (alias for forgejo, kept for backwards compatibility)
 	// +optional
-	// +kubebuilder:validation:Enum=github;gitlab;bitbucket-datacenter;bitbucket-cloud;gitea
+	// +kubebuilder:validation:Enum=github;gitlab;bitbucket-datacenter;bitbucket-cloud;gitea;forgejo
 	Type string `json:"type,omitempty"`
 }
 
+// areEquivalentProviderTypes checks if gitea/forgejo aliases refer to the same provider.
+func areEquivalentProviderTypes(a, b string) bool {
+	if a == b {
+		return true
+	}
+	giteaTypes := map[string]bool{"gitea": true, "forgejo": true}
+	return giteaTypes[a] && giteaTypes[b]
+}
+
 func (g *GitProvider) Merge(newGitProvider *GitProvider) {
-	// only merge of the same type
-	if newGitProvider.Type != "" && g.Type != "" && g.Type != newGitProvider.Type {
+	// only merge of the same type (gitea and forgejo are equivalent)
+	if newGitProvider.Type != "" && g.Type != "" && !areEquivalentProviderTypes(g.Type, newGitProvider.Type) {
 		return
 	}
 	if newGitProvider.URL != "" && g.URL == "" {
