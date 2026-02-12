@@ -407,7 +407,9 @@ func TestParsePayLoad(t *testing.T) {
 		targetCancelPipelinerun    string
 		wantedBranchName           string
 		wantedTagName              string
+		wantedPullRequestNumber    int
 		isCancelPipelineRunEnabled bool
+		isMergeCommit              bool
 		skipPushEventForPRCommits  bool
 		objectType                 string
 	}{
@@ -937,6 +939,28 @@ func TestParsePayLoad(t *testing.T) {
 			isCancelPipelineRunEnabled: true,
 		},
 		{
+			name:          "good/commit comment want pull request number",
+			eventType:     "commit_comment",
+			triggerTarget: "push",
+			githubClient:  true,
+			payloadEventStruct: github.CommitCommentEvent{
+				Repo: sampleRepo,
+				Comment: &github.RepositoryComment{
+					CommitID: github.Ptr("samplePRsha"),
+					HTMLURL:  github.Ptr("/888"),
+					Body:     github.Ptr("/retest dummy"),
+				},
+			},
+			muxReplies: map[string]any{
+				"/repos/owner/reponame/pulls/8881":                samplePR,
+				"/repos/owner/reponame/commits/samplePRsha/pulls": []*github.PullRequest{&samplePR},
+			},
+			shaRet:                  "samplePRsha",
+			targetPipelinerun:       "dummy",
+			wantedBranchName:        "main",
+			wantedPullRequestNumber: 54321,
+		},
+		{
 			name:          "bad/commit comment for cancel a pr with invalid branch name",
 			eventType:     "commit_comment",
 			triggerTarget: "push",
@@ -974,6 +998,25 @@ func TestParsePayLoad(t *testing.T) {
 			targetPipelinerun: "dummy",
 			wantedBranchName:  "main",
 			wantErrString:     "provided SHA samplePRshanew is not the HEAD commit of the branch main",
+		},
+		{
+			name:          "commit comment to retest a pr with a merge commit",
+			eventType:     "commit_comment",
+			triggerTarget: "push",
+			githubClient:  true,
+			payloadEventStruct: github.CommitCommentEvent{
+				Repo: sampleRepo,
+				Comment: &github.RepositoryComment{
+					CommitID: github.Ptr("samplePRsha"),
+					HTMLURL:  github.Ptr("/777"),
+					Body:     github.Ptr("/retest dummy"),
+				},
+			},
+			muxReplies:        map[string]any{"/repos/owner/reponame/pulls/777": samplePR},
+			shaRet:            "samplePRsha",
+			targetPipelinerun: "dummy",
+			wantedBranchName:  "main",
+			isMergeCommit:     true,
 		},
 		{
 			name:          "good/skip push event for skip-pr-commits setting",
@@ -1076,6 +1119,24 @@ func TestParsePayLoad(t *testing.T) {
 					bjeez, _ := json.Marshal(tag)
 					fmt.Fprint(rw, string(bjeez))
 				})
+
+				mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/git/commits/%s", "owner", "reponame", tt.shaRet), func(rw http.ResponseWriter, _ *http.Request) {
+					name := "test"
+					email := "test@test.com"
+					if tt.isMergeCommit {
+						name = "web-flow"
+						email = "noreply@github.com"
+					}
+					commit := &github.Commit{
+						SHA: github.Ptr(tt.shaRet),
+						Committer: &github.CommitAuthor{
+							Email: github.Ptr(email),
+							Name:  github.Ptr(name),
+						},
+					}
+					bjeez, _ := json.Marshal(commit)
+					fmt.Fprint(rw, string(bjeez))
+				})
 			}
 
 			logger, _ := logger.GetLogger()
@@ -1116,6 +1177,9 @@ func TestParsePayLoad(t *testing.T) {
 				assert.Equal(t, tt.wantedBranchName, ret.HeadBranch)
 				assert.Equal(t, tt.wantedBranchName, ret.BaseBranch)
 				assert.Equal(t, tt.isCancelPipelineRunEnabled, ret.CancelPipelineRuns)
+			}
+			if tt.wantedPullRequestNumber != 0 {
+				assert.Equal(t, tt.wantedPullRequestNumber, ret.PullRequestNumber)
 			}
 			if tt.targetPipelinerun != "" {
 				assert.Equal(t, tt.targetPipelinerun, ret.TargetTestPipelineRun)
