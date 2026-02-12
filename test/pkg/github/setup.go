@@ -65,6 +65,11 @@ func Setup(ctx context.Context, onSecondController, viaDirectWebhook bool) (cont
 		return ctx, nil, options.E2E{}, github.New(), err
 	}
 	run.Info.Controller = info.GetControllerInfoFromEnvOrDefault()
+	ctxWithInfo, err := cctx.GetControllerCtxInfo(ctx, run)
+	if err != nil {
+		return ctx, nil, options.E2E{}, github.New(), err
+	}
+	ctx = ctxWithInfo
 	e2eoptions := options.E2E{Organization: split[0], Repo: split[1], DirectWebhook: viaDirectWebhook, ControllerURL: controllerURL}
 	gprovider := github.New()
 	gprovider.Run = run
@@ -72,11 +77,6 @@ func Setup(ctx context.Context, onSecondController, viaDirectWebhook bool) (cont
 
 	if githubToken == "" && !viaDirectWebhook {
 		var err error
-
-		ctx, err = cctx.GetControllerCtxInfo(ctx, run)
-		if err != nil {
-			return ctx, nil, options.E2E{}, github.New(), err
-		}
 
 		envGithubRepoInstallationID, err := setup.GetRequiredEnv("TEST_GITHUB_REPO_INSTALLATION_ID")
 		if err != nil {

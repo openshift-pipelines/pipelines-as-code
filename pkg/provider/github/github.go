@@ -750,8 +750,7 @@ func (v *Provider) GetTemplate(commentType provider.CommentType) string {
 	return provider.GetHTMLTemplate(commentType)
 }
 
-// listAndFindComment lists comments on a PR and returns the first one matching the marker.
-func (v *Provider) listAndFindComment(ctx context.Context, event *info.Event, marker string) (*github.IssueComment, error) {
+func (v *Provider) listCommentsByMarker(ctx context.Context, event *info.Event, marker string) ([]*github.IssueComment, error) {
 	comments, _, err := wrapAPI(v, "list_comments", func() ([]*github.IssueComment, *github.Response, error) {
 		return v.Client().Issues.ListComments(ctx, event.Organization, event.Repository, event.PullRequestNumber, &github.IssueListCommentsOptions{
 			ListOptions: github.ListOptions{
@@ -765,12 +764,57 @@ func (v *Provider) listAndFindComment(ctx context.Context, event *info.Event, ma
 	}
 
 	re := regexp.MustCompile(regexp.QuoteMeta(marker))
+	matchedComments := make([]*github.IssueComment, 0, len(comments))
 	for _, comment := range comments {
 		if re.MatchString(comment.GetBody()) {
-			return comment, nil
+			matchedComments = append(matchedComments, comment)
 		}
 	}
-	return nil, nil
+	return matchedComments, nil
+}
+
+func (v *Provider) ensureSingleMarkerComment(
+	ctx context.Context,
+	event *info.Event,
+	comments []*github.IssueComment,
+	commit string,
+) error {
+	if len(comments) == 0 {
+		return nil
+	}
+
+	primaryComment := comments[0]
+	for _, comment := range comments {
+		if comment.GetBody() == commit {
+			primaryComment = comment
+			break
+		}
+	}
+
+	if primaryComment.GetBody() != commit {
+		if _, _, err := wrapAPI(v, "edit_comment", func() (*github.IssueComment, *github.Response, error) {
+			return v.Client().Issues.EditComment(ctx, event.Organization, event.Repository, primaryComment.GetID(), &github.IssueComment{
+				Body: github.Ptr(commit),
+			})
+		}); err != nil {
+			return err
+		}
+	}
+
+	// Best-effort cleanup to collapse duplicates into a single canonical marker comment.
+	for _, comment := range comments {
+		if comment.GetID() == primaryComment.GetID() {
+			continue
+		}
+		if _, _, err := wrapAPI(v, "delete_comment", func() (struct{}, *github.Response, error) {
+			resp, err := v.Client().Issues.DeleteComment(ctx, event.Organization, event.Repository, comment.GetID())
+			return struct{}{}, resp, err
+		}); err != nil && v.Logger != nil {
+			v.Logger.Warnf("failed to delete duplicate comment %d on %s/%s#%d: %v",
+				comment.GetID(), event.Organization, event.Repository, event.PullRequestNumber, err)
+		}
+	}
+	return nil
 }
 
 // CreateComment creates a comment on a Pull Request.
@@ -784,34 +828,15 @@ func (v *Provider) CreateComment(ctx context.Context, event *info.Event, commit,
 	}
 
 	if updateMarker != "" {
-		existingComment, err := v.listAndFindComment(ctx, event, updateMarker)
+		existingComments, err := v.listCommentsByMarker(ctx, event, updateMarker)
 		if err != nil {
 			return err
 		}
 
-		if existingComment != nil {
-			// No edit required if the comment is exactly the same.
-			if existingComment.GetBody() == commit {
-				return nil
-			}
-			if _, _, err := wrapAPI(v, "edit_comment", func() (*github.IssueComment, *github.Response, error) {
-				return v.Client().Issues.EditComment(ctx, event.Organization, event.Repository, existingComment.GetID(), &github.IssueComment{
-					Body: github.Ptr(commit),
-				})
-			}); err != nil {
-				return err
-			}
-			return nil
+		if len(existingComments) > 0 {
+			return v.ensureSingleMarkerComment(ctx, event, existingComments, commit)
 		}
 
-		// HACK: Workaround for duplicate comment creation issue.
-		// In E2E tests, we occasionally see two identical comments created on a PR when
-		// there should only be one. The root cause is unclear, despite only one
-		// create_comment API call being logged, two comments appear on the PR.
-		//
-		// This workaround adds a random sleep (0-500ms) before re-checking for existing
-		// comments. This reduces the window where parallel processes might both
-		// see no existing comment and both decide to create one.
 		//nolint:gosec // No need for crypto/rand here, just reducing timing window
 		jitter := time.Duration(rand.Intn(500)) * time.Millisecond
 		timer := time.NewTimer(jitter)
@@ -823,13 +848,13 @@ func (v *Provider) CreateComment(ctx context.Context, event *info.Event, commit,
 		case <-timer.C:
 		}
 
-		// Re-check if a comment exists now
-		existingComment, err = v.listAndFindComment(ctx, event, updateMarker)
+		// Re-check after jitter in case another processor already created the marker comment.
+		existingComments, err = v.listCommentsByMarker(ctx, event, updateMarker)
 		if err != nil {
 			return err
 		}
-		if existingComment != nil {
-			return nil
+		if len(existingComments) > 0 {
+			return v.ensureSingleMarkerComment(ctx, event, existingComments, commit)
 		}
 	}
 
@@ -838,5 +863,19 @@ func (v *Provider) CreateComment(ctx context.Context, event *info.Event, commit,
 			Body: github.Ptr(commit),
 		})
 	})
-	return err
+	if err != nil {
+		return err
+	}
+
+	if updateMarker == "" {
+		return nil
+	}
+
+	// Best-effort post-create reconciliation to collapse duplicates created by
+	// concurrent processors handling the same event.
+	matchedComments, listErr := v.listCommentsByMarker(ctx, event, updateMarker)
+	if listErr != nil {
+		return nil
+	}
+	return v.ensureSingleMarkerComment(ctx, event, matchedComments, commit)
 }
