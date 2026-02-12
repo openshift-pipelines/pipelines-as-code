@@ -44,6 +44,8 @@ const (
 
 var _ provider.Interface = (*Provider)(nil)
 
+var syncMap = sync.Map{}
+
 type Provider struct {
 	ghClient      *github.Client
 	Logger        *zap.SugaredLogger
@@ -792,13 +794,6 @@ func compactCommentIDs(comments []*github.IssueComment) []string {
 	return out
 }
 
-func responseStatusCode(resp *github.Response) int {
-	if resp == nil {
-		return 0
-	}
-	return resp.StatusCode
-}
-
 func eventID(event *info.Event) string {
 	if event == nil || event.Request == nil {
 		return "unknown"
@@ -892,69 +887,6 @@ func (v *Provider) listCommentsByMarker(
 	return matchedComments, nil
 }
 
-func (v *Provider) ensureSingleMarkerComment(
-	ctx context.Context,
-	event *info.Event,
-	comments []*github.IssueComment,
-	commit string,
-	trace commentTraceLogContext,
-) error {
-	if len(comments) == 0 {
-		return nil
-	}
-
-	if len(comments) > 1 {
-		v.debugCommentPhase(event, trace, "duplicate_detected", "matched_count", len(comments))
-	}
-
-	primaryComment := comments[0]
-	for _, comment := range comments {
-		if comment.GetBody() == commit {
-			primaryComment = comment
-			break
-		}
-	}
-
-	v.debugCommentPhase(event, trace, "dedup_select_primary",
-		"matched_count", len(comments),
-		"primary_comment_id", primaryComment.GetID(),
-	)
-
-	if primaryComment.GetBody() != commit {
-		if _, _, err := wrapAPI(v, "edit_comment", func() (*github.IssueComment, *github.Response, error) {
-			return v.Client().Issues.EditComment(ctx, event.Organization, event.Repository, primaryComment.GetID(), &github.IssueComment{
-				Body: github.Ptr(commit),
-			})
-		}); err != nil {
-			return err
-		}
-	}
-
-	// Best-effort cleanup to collapse duplicates into a single canonical marker comment.
-	for _, comment := range comments {
-		if comment.GetID() == primaryComment.GetID() {
-			continue
-		}
-
-		v.debugCommentPhase(event, trace, "dedup_delete_attempt", "delete_comment_id", comment.GetID())
-		_, resp, err := wrapAPI(v, "delete_comment", func() (struct{}, *github.Response, error) {
-			resp, err := v.Client().Issues.DeleteComment(ctx, event.Organization, event.Repository, comment.GetID())
-			return struct{}{}, resp, err
-		})
-		v.debugCommentPhase(event, trace, "dedup_delete_done",
-			"delete_comment_id", comment.GetID(),
-			"status_code", responseStatusCode(resp),
-			"delete_error", err != nil,
-		)
-		if err != nil && v.Logger != nil {
-			v.Logger.Warnf("failed to delete duplicate comment %d on %s/%s#%d: %v",
-				comment.GetID(), event.Organization, event.Repository, event.PullRequestNumber, err)
-		}
-	}
-	v.debugCommentPhase(event, trace, "dedup_complete", "final_expected_count", 1)
-	return nil
-}
-
 // CreateComment creates a comment on a Pull Request.
 func (v *Provider) CreateComment(ctx context.Context, event *info.Event, commit, updateMarker string) error {
 	if v.ghClient == nil {
@@ -975,69 +907,45 @@ func (v *Provider) CreateComment(ctx context.Context, event *info.Event, commit,
 
 		if len(existingComments) > 1 {
 			v.debugCommentPhase(event, trace, "duplicate_detected", "matched_count", len(existingComments))
+			if _, _, err := wrapAPI(v, "edit_comment", func() (*github.IssueComment, *github.Response, error) {
+				return v.Client().Issues.EditComment(ctx, event.Organization, event.Repository, existingComments[0].GetID(), &github.IssueComment{
+					Body: github.Ptr(commit),
+				})
+			}); err != nil {
+				return err
+			}
+			return nil
 		}
-
-		if len(existingComments) > 0 {
-			return v.ensureSingleMarkerComment(ctx, event, existingComments, commit, trace)
-		}
-
-		//nolint:gosec // No need for crypto/rand here, just reducing timing window
-		jitter := time.Duration(rand.Intn(500)) * time.Millisecond
-		v.debugCommentPhase(event, trace, "jitter_wait", "jitter_ms", jitter.Milliseconds())
-		timer := time.NewTimer(jitter)
-		defer timer.Stop()
-
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-timer.C:
-		}
-
-		// Re-check after jitter in case another processor already created the marker comment.
-		existingComments, err = v.listCommentsByMarker(ctx, event, updateMarker, "post_jitter_list", trace)
-		if err != nil {
-			return err
-		}
-		if len(existingComments) > 1 {
-			v.debugCommentPhase(event, trace, "duplicate_detected", "matched_count", len(existingComments))
-		}
-		if len(existingComments) > 0 {
-			return v.ensureSingleMarkerComment(ctx, event, existingComments, commit, trace)
-		}
-
-		v.debugCommentPhase(event, trace, "pre_create_race_window", "matched_count", len(existingComments))
 	}
 
-	v.debugCommentPhase(event, trace, "create_comment_start")
-	createdComment, createResp, err := wrapAPI(v, "create_comment", func() (*github.IssueComment, *github.Response, error) {
+	_, _, err := wrapAPI(v, "create_comment", func() (*github.IssueComment, *github.Response, error) {
 		return v.Client().Issues.CreateComment(ctx, event.Organization, event.Repository, event.PullRequestNumber, &github.IssueComment{
 			Body: github.Ptr(commit),
 		})
 	})
 	if err != nil {
-		v.debugCommentPhase(event, trace, "create_comment_done",
-			"status_code", responseStatusCode(createResp),
-			"create_error", err.Error(),
-		)
 		return err
 	}
-	v.debugCommentPhase(event, trace, "create_comment_done",
-		"status_code", responseStatusCode(createResp),
-		"created_comment_id", createdComment.GetID(),
-	)
 
-	if updateMarker == "" {
-		return nil
+	var once *sync.Once
+	if event.TriggerTarget == triggertype.PullRequest {
+		key := fmt.Sprintf("%s/%s/%d", event.Organization, event.Repository, event.PullRequestNumber)
+		value, _ := syncMap.LoadOrStore(key, &sync.Once{})
+		var ok bool
+		once, ok = value.(*sync.Once)
+		if !ok {
+			return fmt.Errorf("unexpected type in sync map for key %s", key)
+		}
+	} else {
+		once = &sync.Once{}
 	}
 
-	// Best-effort post-create reconciliation to collapse duplicates created by
-	// concurrent processors handling the same event.
-	matchedComments, listErr := v.listCommentsByMarker(ctx, event, updateMarker, "post_create_list", trace)
-	if listErr != nil {
-		return nil
-	}
-	if len(matchedComments) > 1 {
-		v.debugCommentPhase(event, trace, "duplicate_detected", "matched_count", len(matchedComments))
-	}
-	return v.ensureSingleMarkerComment(ctx, event, matchedComments, commit, trace)
+	once.Do(func() {
+		_, _, err = wrapAPI(v, "create_comment", func() (*github.IssueComment, *github.Response, error) {
+			return v.Client().Issues.CreateComment(ctx, event.Organization, event.Repository, event.PullRequestNumber, &github.IssueComment{
+				Body: github.Ptr(commit),
+			})
+		})
+	})
+	return err
 }
