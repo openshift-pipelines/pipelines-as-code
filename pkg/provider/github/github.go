@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -41,6 +40,8 @@ const (
 )
 
 var _ provider.Interface = (*Provider)(nil)
+
+var syncMap = sync.Map{}
 
 type Provider struct {
 	ghClient      *github.Client
@@ -803,39 +804,27 @@ func (v *Provider) CreateComment(ctx context.Context, event *info.Event, commit,
 			}
 			return nil
 		}
-
-		// HACK: Workaround for duplicate comment creation issue.
-		// In E2E tests, we occasionally see two identical comments created on a PR when
-		// there should only be one. The root cause is unclear, despite only one
-		// create_comment API call being logged, two comments appear on the PR.
-		//
-		// This workaround adds a random sleep (0-500ms) before re-checking for existing
-		// comments. This reduces the window where parallel processes might both
-		// see no existing comment and both decide to create one.
-		//nolint:gosec // No need for crypto/rand here, just reducing timing window
-		jitter := time.Duration(rand.Intn(500)) * time.Millisecond
-		timer := time.NewTimer(jitter)
-		defer timer.Stop()
-
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-timer.C:
-		}
-
-		// Re-check if a comment exists now
-		existingComment, err = v.listAndFindComment(ctx, event, updateMarker)
-		if err != nil {
-			return err
-		}
-		if existingComment != nil {
-			return nil
-		}
 	}
 
-	_, _, err := wrapAPI(v, "create_comment", func() (*github.IssueComment, *github.Response, error) {
-		return v.Client().Issues.CreateComment(ctx, event.Organization, event.Repository, event.PullRequestNumber, &github.IssueComment{
-			Body: github.Ptr(commit),
+	var once *sync.Once
+	var err error
+	if event.TriggerTarget == triggertype.PullRequest {
+		key := fmt.Sprintf("%s/%s/%d", event.Organization, event.Repository, event.PullRequestNumber)
+		value, _ := syncMap.LoadOrStore(key, &sync.Once{})
+		var ok bool
+		once, ok = value.(*sync.Once)
+		if !ok {
+			return fmt.Errorf("unexpected type in sync map for key %s", key)
+		}
+	} else {
+		once = &sync.Once{}
+	}
+
+	once.Do(func() {
+		_, _, err = wrapAPI(v, "create_comment", func() (*github.IssueComment, *github.Response, error) {
+			return v.Client().Issues.CreateComment(ctx, event.Organization, event.Repository, event.PullRequestNumber, &github.IssueComment{
+				Body: github.Ptr(commit),
+			})
 		})
 	})
 	return err
