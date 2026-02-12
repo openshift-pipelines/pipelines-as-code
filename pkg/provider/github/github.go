@@ -61,6 +61,7 @@ type Provider struct {
 	skippedRun
 	triggerEvent       string
 	cachedChangedFiles *changedfiles.ChangedFiles
+	commitInfo         *github.Commit
 }
 
 type skippedRun struct {
@@ -401,11 +402,17 @@ func (v *Provider) GetCommitInfo(ctx context.Context, runevent *info.Event) erro
 		sha = branchinfo.Commit.GetSHA()
 	}
 	var err error
-	commit, _, err = wrapAPI(v, "get_commit", func() (*github.Commit, *github.Response, error) {
-		return v.Client().Git.GetCommit(ctx, runevent.Organization, runevent.Repository, sha)
-	})
-	if err != nil {
-		return err
+
+	// check if the commit info is already cached in provider
+	if v.commitInfo == nil {
+		commit, _, err = wrapAPI(v, "get_commit", func() (*github.Commit, *github.Response, error) {
+			return v.Client().Git.GetCommit(ctx, runevent.Organization, runevent.Repository, sha)
+		})
+		if err != nil {
+			return err
+		}
+	} else {
+		commit = v.commitInfo
 	}
 
 	runevent.SHAURL = commit.GetHTMLURL()
