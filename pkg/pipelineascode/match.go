@@ -412,15 +412,11 @@ func (p *PacRun) resolveTargetNamespaceRepo(ctx context.Context, fallbackRepo *v
 
 	targetRepo, err := matcher.MatchEventURLRepo(ctx, p.run, p.event, targetNS)
 	if err != nil {
-		if p.logger != nil {
-			p.logger.Warnf("resolveTargetNamespaceRepo: failed to lookup target namespace=%s for pipelinerun=%s: %v", targetNS, pipelineRunIdentifier(pr), err)
-		}
+		p.logger.Warnf("resolveTargetNamespaceRepo: failed to lookup target namespace=%s for pipelinerun=%s: %v", targetNS, pipelineRunIdentifier(pr), err)
 		return fallbackRepo
 	}
 	if targetRepo == nil {
-		if p.logger != nil {
-			p.logger.Warnf("resolveTargetNamespaceRepo: no repository found in target namespace=%s for pipelinerun=%s", targetNS, pipelineRunIdentifier(pr))
-		}
+		p.logger.Warnf("resolveTargetNamespaceRepo: no repository found in target namespace=%s for pipelinerun=%s", targetNS, pipelineRunIdentifier(pr))
 		return fallbackRepo
 	}
 
