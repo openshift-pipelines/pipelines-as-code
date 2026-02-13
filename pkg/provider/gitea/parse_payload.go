@@ -88,7 +88,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.Repository = gitEvent.Repository.Name
 		processedEvent.Sender = gitEvent.Sender.UserName
 		processedEvent.TriggerTarget = triggertype.PullRequest
-		opscomments.SetEventTypeAndTargetPR(processedEvent, gitEvent.Comment.Body)
+		opscomments.SetEventTypeAndTargetPR(processedEvent, gitEvent.Comment.Body, "/")
 		processedEvent.PullRequestNumber, err = convertPullRequestURLtoNumber(gitEvent.Issue.URL)
 		if err != nil {
 			return nil, err

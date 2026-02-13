@@ -289,6 +289,7 @@ func TestGetPipelineRunAndBranchNameFromTestComment(t *testing.T) {
 		comment    string
 		branchName string
 		prName     string
+		prefix     string
 		wantError  bool
 	}{
 		{
@@ -373,11 +374,38 @@ func TestGetPipelineRunAndBranchNameFromTestComment(t *testing.T) {
 			prName:    "abc-01-pr",
 			wantError: false,
 		},
+		{
+			name:       "test a pipeline with prefix",
+			comment:    "/pac-test abc-01-pr",
+			prName:     "abc-01-pr",
+			branchName: "",
+			prefix:     "/pac-",
+			wantError:  false,
+		},
+		{
+			name:       "retest a pipeline with prefix",
+			comment:    "/pac-retest abc-01-pr",
+			prName:     "abc-01-pr",
+			branchName: "",
+			prefix:     "/pac-",
+			wantError:  false,
+		},
+		{
+			name:       "test a pipeline with prefix and key value",
+			comment:    "/pac-test abc-01-pr key=value",
+			prName:     "abc-01-pr",
+			branchName: "",
+			prefix:     "/pac-",
+			wantError:  false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			prName, branchName, _, err := GetPipelineRunAndBranchOrTagNameFromTestComment(tt.comment)
+			if tt.prefix == "" {
+				tt.prefix = "/"
+			}
+			prName, branchName, _, err := GetPipelineRunAndBranchOrTagNameFromTestComment(tt.comment, tt.prefix)
 			assert.Equal(t, tt.wantError, err != nil)
 			assert.Equal(t, tt.branchName, branchName)
 			assert.Equal(t, tt.prName, prName)
@@ -391,6 +419,7 @@ func TestGetPipelineRunAndBranchNameFromCancelComment(t *testing.T) {
 		comment    string
 		branchName string
 		prName     string
+		prefix     string
 		wantError  bool
 	}{
 		{
@@ -461,11 +490,49 @@ func TestGetPipelineRunAndBranchNameFromCancelComment(t *testing.T) {
 			comment:   "/cancel invalidname:nightly",
 			wantError: true,
 		},
+		{
+			name:      "cancel all with prefix",
+			comment:   "/pac-cancel",
+			prefix:    "/pac-",
+			wantError: false,
+		},
+		{
+			name:      "cancel single with prefix",
+			comment:   "/pac-cancel abc-pr",
+			prName:    "abc-pr",
+			prefix:    "/pac-",
+			wantError: false,
+		},
+		{
+			name:       "cancel with branch and prefix",
+			comment:    "/pac-cancel branch:test",
+			branchName: "test",
+			prefix:     "/pac-",
+			wantError:  false,
+		},
+		{
+			name:       "cancel single with branch and prefix",
+			comment:    "/pac-cancel abc-pr branch:test",
+			prName:     "abc-pr",
+			branchName: "test",
+			prefix:     "/pac-",
+			wantError:  false,
+		},
+		{
+			name:      "different prefix cancel single",
+			comment:   "/myteam-cancel xyz-pr",
+			prName:    "xyz-pr",
+			prefix:    "/myteam-",
+			wantError: false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			prName, branchName, _, err := GetPipelineRunAndBranchOrTagNameFromCancelComment(tt.comment)
+			if tt.prefix == "" {
+				tt.prefix = "/"
+			}
+			prName, branchName, _, err := GetPipelineRunAndBranchOrTagNameFromCancelComment(tt.comment, tt.prefix)
 			assert.Equal(t, tt.wantError, err != nil)
 			assert.Equal(t, tt.branchName, branchName)
 			assert.Equal(t, tt.prName, prName)
