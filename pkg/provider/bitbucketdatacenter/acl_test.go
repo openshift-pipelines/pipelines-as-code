@@ -35,6 +35,8 @@ func TestIsAllowed(t *testing.T) {
 		projectMembers            []*bbv1test.UserPermission
 		repoMembers               []*bbv1test.UserPermission
 		projGroups                []*bbv1test.ProjGroup
+		repoGroups                []*bbv1test.ProjGroup
+		groupMembers              map[string][]bbv1test.GroupMember
 		activities                []*bbv1test.Activity
 		filescontents             map[string]string
 		defaultBranchLatestCommit string
@@ -138,6 +140,69 @@ func TestIsAllowed(t *testing.T) {
 			isAllowed: false,
 		},
 		{
+			name:  "allowed/user is in project group",
+			event: bbv1test.MakeEvent(&info.Event{Sender: "sender", AccountID: fmt.Sprintf("%d", otherAccountID)}),
+			fields: fields{
+				projGroups: []*bbv1test.ProjGroup{
+					{
+						Group:      bbv1test.Group{Name: "project-devs"},
+						Permission: "PROJECT_WRITE",
+					},
+				},
+				groupMembers: map[string][]bbv1test.GroupMember{
+					"project-devs": {
+						{Name: "sender", Slug: "sender"},
+					},
+				},
+			},
+			isAllowed: true,
+		},
+		{
+			name:  "allowed/user is in repo group",
+			event: bbv1test.MakeEvent(&info.Event{Sender: "sender", AccountID: fmt.Sprintf("%d", otherAccountID)}),
+			fields: fields{
+				repoGroups: []*bbv1test.ProjGroup{
+					{
+						Group:      bbv1test.Group{Name: "repo-devs"},
+						Permission: "REPO_WRITE",
+					},
+				},
+				groupMembers: map[string][]bbv1test.GroupMember{
+					"repo-devs": {
+						{Name: "sender", Slug: "sender"},
+					},
+				},
+			},
+			isAllowed: true,
+		},
+		{
+			name:  "disallowed/user not in any group members",
+			event: bbv1test.MakeEvent(&info.Event{Sender: "outsider", AccountID: fmt.Sprintf("%d", otherAccountID)}),
+			fields: fields{
+				projGroups: []*bbv1test.ProjGroup{
+					{
+						Group:      bbv1test.Group{Name: "project-devs"},
+						Permission: "PROJECT_WRITE",
+					},
+				},
+				repoGroups: []*bbv1test.ProjGroup{
+					{
+						Group:      bbv1test.Group{Name: "repo-devs"},
+						Permission: "REPO_WRITE",
+					},
+				},
+				groupMembers: map[string][]bbv1test.GroupMember{
+					"project-devs": {
+						{Name: "someone-else", Slug: "someone-else"},
+					},
+					"repo-devs": {
+						{Name: "another-person", Slug: "another-person"},
+					},
+				},
+			},
+			isAllowed: false,
+		},
+		{
 			name:  "disallowed/same nickname different account id",
 			event: bbv1test.MakeEvent(&info.Event{Sender: "Bouffon", AccountID: "6666"}),
 			fields: fields{
@@ -213,6 +278,8 @@ func TestIsAllowed(t *testing.T) {
 			bbv1test.MuxProjectMemberShip(t, mux, tt.event, tt.fields.projectMembers)
 			bbv1test.MuxRepoMemberShip(t, mux, tt.event, tt.fields.repoMembers)
 			bbv1test.MuxProjectGroupMembership(t, mux, tt.event, tt.fields.projGroups)
+			bbv1test.MuxRepoGroupMembership(t, mux, tt.event, tt.fields.repoGroups)
+			bbv1test.MuxGroupMembers(t, mux, tt.fields.groupMembers)
 			bbv1test.MuxPullRequestActivities(t, mux, tt.event, tt.fields.pullRequestNumber, tt.fields.activities)
 			bbv1test.MuxFiles(t, mux, tt.event, tt.fields.defaultBranchLatestCommit, "", tt.fields.filescontents, false)
 

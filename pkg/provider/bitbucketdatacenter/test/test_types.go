@@ -34,6 +34,13 @@ type Group struct {
 	Name string `json:"name"`
 }
 
+// GroupMember matches the member struct in go-scm's stash driver,
+// returned by the /admin/groups/more-members endpoint.
+type GroupMember struct {
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+}
+
 // kept these structs here because these are only used in tests
 
 type Comment struct {

@@ -16,7 +16,7 @@ require (
 	github.com/google/go-github/v75 v75.0.0
 	github.com/google/go-github/v81 v81.0.0
 	github.com/hako/durafmt v0.0.0-20210608085754-5c1018a4e16b
-	github.com/jenkins-x/go-scm v1.15.16
+	github.com/jenkins-x/go-scm v1.15.17
 	github.com/jonboulle/clockwork v0.5.0
 	github.com/juju/ansiterm v1.0.0
 	github.com/ktrysmt/go-bitbucket v0.9.88
