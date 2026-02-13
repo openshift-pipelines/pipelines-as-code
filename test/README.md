@@ -130,11 +130,12 @@ Tests run on:
 
 The tests are separated into provider categories (matrix strategy):
 
-- `github` - GitHub tests (excluding second controller and concurrency)
-- `github_second_controller` - GitHub second controller tests
+- `github_public` - Public GitHub tests (excluding GHE, concurrency, and flaky)
+- `github_ghe` - GitHub Enterprise (GHE) tests
 - `gitlab_bitbucket` - GitLab and Bitbucket tests
-- `gitea_others` - Gitea and other non-provider specific functionality
+- `gitea_1`, `gitea_2`, `gitea_3` - Gitea tests (split into 3 chunks)
 - `concurrency` - Concurrency-specific tests
+- `flaky` - Flaky tests (run in parallel with other providers)
 
 This split helps reduce the load on external APIs during testing and provides more focused test results.
 

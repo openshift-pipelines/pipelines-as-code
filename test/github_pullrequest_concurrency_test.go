@@ -27,7 +27,7 @@ import (
 
 const pipelineRunFileNamePrefix = "prlongrunnning-"
 
-func TestGithubSecondPullRequestConcurrency1by1(t *testing.T) {
+func TestGithubGHEPullRequestConcurrency1by1(t *testing.T) {
 	ctx := context.Background()
 	label := "Github PullRequest Concurrent, sequentially one by one"
 	numberOfPipelineRuns := 5
@@ -39,10 +39,10 @@ func TestGithubSecondPullRequestConcurrency1by1(t *testing.T) {
 	testGithubConcurrency(ctx, t, g, numberOfPipelineRuns, checkOrdering)
 }
 
-// TestGithubSecondPullRequestConcurrencyRestartedWhenWatcherIsUp tests that
+// TestGithubGHEPullRequestConcurrencyRestartedWhenWatcherIsUp tests that
 // when the watcher is down and a PR is created, the PipelineRuns are kept in
 // Pending state. When the watcher is up again, the PipelineRuns are restarted.
-func TestGithubSecondPullRequestConcurrencyRestartedWhenWatcherIsUp(t *testing.T) {
+func TestGithubGHEPullRequestConcurrencyRestartedWhenWatcherIsUp(t *testing.T) {
 	ctx := context.Background()
 	label := "Github PullRequest Concurrent, sequentially one by one"
 	numberOfPipelineRuns := 2
@@ -88,7 +88,7 @@ func TestGithubSecondPullRequestConcurrencyRestartedWhenWatcherIsUp(t *testing.T
 	testGithubConcurrency(ctx, t, g, numberOfPipelineRuns, checkOrdering)
 }
 
-func TestGithubSecondPullRequestConcurrency3by3(t *testing.T) {
+func TestGithubGHEPullRequestConcurrency3by3(t *testing.T) {
 	ctx := context.Background()
 	label := "Github PullRequest Concurrent three at time"
 	numberOfPipelineRuns := 10
@@ -101,7 +101,7 @@ func TestGithubSecondPullRequestConcurrency3by3(t *testing.T) {
 	testGithubConcurrency(ctx, t, g, numberOfPipelineRuns, checkOrdering)
 }
 
-func TestGithubSecondPullRequestConcurrency1by1WithError(t *testing.T) {
+func TestGithubGHEPullRequestConcurrency1by1WithError(t *testing.T) {
 	ctx := context.Background()
 	label := "Github PullRequest Concurrent, sequentially one by one with one bad apple"
 	numberOfPipelineRuns := 1

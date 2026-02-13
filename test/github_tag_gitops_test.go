@@ -16,7 +16,7 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-func TestGithubSecondGitOpsCommentOnTag(t *testing.T) {
+func TestGithubGHEGitOpsCommentOnTag(t *testing.T) {
 	ctx := context.Background()
 	ctx, runcnx, opts, ghcnx, err := tgithub.Setup(ctx, true, false)
 	assert.NilError(t, err)
