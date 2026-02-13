@@ -1430,12 +1430,13 @@ func TestIsHeadCommitOfBranch(t *testing.T) {
 
 func TestCreateComment(t *testing.T) {
 	tests := []struct {
-		name          string
-		event         *info.Event
-		updateMarker  string
-		mockResponses map[string]func(rw http.ResponseWriter, _ *http.Request)
-		wantErr       string
-		clientNil     bool
+		name         string
+		event        *info.Event
+		updateMarker string
+		commentBody  string
+		clientNil    bool
+		wantErr      string
+		setup        func(t *testing.T, mux *http.ServeMux) func(t *testing.T)
 	}{
 		{
 			name:      "nil client error",
@@ -1452,43 +1453,114 @@ func TestCreateComment(t *testing.T) {
 			name:         "create new comment",
 			event:        &info.Event{Organization: "org", Repository: "repo", PullRequestNumber: 123},
 			updateMarker: "",
-			mockResponses: map[string]func(rw http.ResponseWriter, _ *http.Request){
-				"/repos/org/repo/issues/123/comments": func(rw http.ResponseWriter, r *http.Request) {
+			setup: func(t *testing.T, mux *http.ServeMux) func(t *testing.T) {
+				t.Helper()
+				mux.HandleFunc("/repos/org/repo/issues/123/comments", func(rw http.ResponseWriter, r *http.Request) {
 					assert.Equal(t, r.Method, http.MethodPost)
 					rw.WriteHeader(http.StatusCreated)
-				},
+				})
+				return nil
 			},
 		},
 		{
 			name:         "update existing comment",
 			event:        &info.Event{Organization: "org", Repository: "repo", PullRequestNumber: 123},
 			updateMarker: "MARKER",
-			mockResponses: map[string]func(rw http.ResponseWriter, _ *http.Request){
-				"/repos/org/repo/issues/123/comments": func(rw http.ResponseWriter, r *http.Request) {
+			setup: func(t *testing.T, mux *http.ServeMux) func(t *testing.T) {
+				t.Helper()
+				mux.HandleFunc("/repos/org/repo/issues/123/comments", func(rw http.ResponseWriter, r *http.Request) {
 					if r.Method == http.MethodGet {
 						fmt.Fprint(rw, `[{"id": 555, "body": "MARKER"}]`)
 						return
 					}
-				},
-				"/repos/org/repo/issues/comments/555": func(rw http.ResponseWriter, r *http.Request) {
+				})
+				mux.HandleFunc("/repos/org/repo/issues/comments/555", func(rw http.ResponseWriter, r *http.Request) {
 					assert.Equal(t, r.Method, http.MethodPatch)
 					rw.WriteHeader(http.StatusOK)
-				},
+				})
+				return nil
 			},
 		},
 		{
 			name:         "no matching comment creates new",
 			event:        &info.Event{Organization: "org", Repository: "repo", PullRequestNumber: 123},
 			updateMarker: "MARKER",
-			mockResponses: map[string]func(rw http.ResponseWriter, _ *http.Request){
-				"/repos/org/repo/issues/123/comments": func(rw http.ResponseWriter, r *http.Request) {
+			setup: func(t *testing.T, mux *http.ServeMux) func(t *testing.T) {
+				t.Helper()
+				mux.HandleFunc("/repos/org/repo/issues/123/comments", func(rw http.ResponseWriter, r *http.Request) {
 					if r.Method == http.MethodGet {
 						fmt.Fprint(rw, `[{"id": 555, "body": "NO_MATCH"}]`)
 						return
 					}
 					assert.Equal(t, r.Method, http.MethodPost)
 					rw.WriteHeader(http.StatusCreated)
-				},
+				})
+				return nil
+			},
+		},
+		{
+			name:         "deduplicates existing marker comments",
+			event:        &info.Event{Organization: "org", Repository: "repo", PullRequestNumber: 123},
+			updateMarker: "MARKER",
+			commentBody:  "new body MARKER",
+			setup: func(t *testing.T, mux *http.ServeMux) func(t *testing.T) {
+				t.Helper()
+				editedPrimary := false
+				deletedDuplicate := false
+				mux.HandleFunc("/repos/org/repo/issues/123/comments", func(rw http.ResponseWriter, r *http.Request) {
+					assert.Equal(t, r.Method, http.MethodGet)
+					fmt.Fprint(rw, `[{"id": 111, "body": "MARKER old"}, {"id": 222, "body": "MARKER old"}]`)
+				})
+				mux.HandleFunc("/repos/org/repo/issues/comments/111", func(rw http.ResponseWriter, r *http.Request) {
+					assert.Equal(t, r.Method, http.MethodPatch)
+					editedPrimary = true
+					rw.WriteHeader(http.StatusOK)
+				})
+				mux.HandleFunc("/repos/org/repo/issues/comments/222", func(rw http.ResponseWriter, r *http.Request) {
+					assert.Equal(t, r.Method, http.MethodDelete)
+					deletedDuplicate = true
+					rw.WriteHeader(http.StatusNoContent)
+				})
+				return func(t *testing.T) {
+					t.Helper()
+					assert.Assert(t, editedPrimary)
+					assert.Assert(t, deletedDuplicate)
+				}
+			},
+		},
+		{
+			name:         "deduplicates post-create marker comments",
+			event:        &info.Event{Organization: "org", Repository: "repo", PullRequestNumber: 123},
+			updateMarker: "MARKER",
+			commentBody:  "body MARKER",
+			setup: func(t *testing.T, mux *http.ServeMux) func(t *testing.T) {
+				t.Helper()
+				listCalls := 0
+				deletedDuplicate := false
+				mux.HandleFunc("/repos/org/repo/issues/123/comments", func(rw http.ResponseWriter, r *http.Request) {
+					switch r.Method {
+					case http.MethodGet:
+						listCalls++
+						if listCalls <= 2 {
+							fmt.Fprint(rw, `[]`)
+							return
+						}
+						fmt.Fprint(rw, `[{"id": 111, "body": "body MARKER"}, {"id": 222, "body": "body MARKER"}]`)
+					case http.MethodPost:
+						rw.WriteHeader(http.StatusCreated)
+					default:
+						t.Fatalf("unexpected method: %s", r.Method)
+					}
+				})
+				mux.HandleFunc("/repos/org/repo/issues/comments/222", func(rw http.ResponseWriter, r *http.Request) {
+					assert.Equal(t, r.Method, http.MethodDelete)
+					deletedDuplicate = true
+					rw.WriteHeader(http.StatusNoContent)
+				})
+				return func(t *testing.T) {
+					t.Helper()
+					assert.Assert(t, deletedDuplicate)
+				}
 			},
 		},
 	}
@@ -1498,25 +1570,34 @@ func TestCreateComment(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 
 			var provider *Provider
+			var postAssert func(t *testing.T)
 			if !tt.clientNil {
 				fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 				defer teardown()
 				provider = &Provider{ghClient: fakeclient}
 
-				for pattern, handler := range tt.mockResponses {
-					mux.HandleFunc(pattern, handler)
+				if tt.setup != nil {
+					postAssert = tt.setup(t, mux)
 				}
 			} else {
 				provider = &Provider{} // nil client
 			}
 
-			err := provider.CreateComment(ctx, tt.event, "comment body", tt.updateMarker)
+			body := tt.commentBody
+			if body == "" {
+				body = "comment body"
+			}
+
+			err := provider.CreateComment(ctx, tt.event, body, tt.updateMarker)
 
 			if tt.wantErr != "" {
 				assert.ErrorContains(t, err, tt.wantErr)
 				return
 			}
 			assert.NilError(t, err)
+			if postAssert != nil {
+				postAssert(t)
+			}
 		})
 	}
 }

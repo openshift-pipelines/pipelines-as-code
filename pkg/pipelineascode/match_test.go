@@ -24,6 +24,7 @@ import (
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	kitesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/kubernetestint"
+	testprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/test/provider"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
@@ -147,6 +148,125 @@ func TestFilterRunningPipelineRunOnTargetTest(t *testing.T) {
 	prs = []*tektonv1.PipelineRun{}
 	ret = filterRunningPipelineRunOnTargetTest(testPipeline, prs)
 	assert.Assert(t, ret == nil)
+}
+
+func TestGetPipelineRunsFromRepoExplicitTestUsesTargetNamespaceRepo(t *testing.T) {
+	observerCore, _ := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observerCore).Sugar()
+
+	tests := []struct {
+		name                string
+		targetNamespaceLine string
+		wantRepositoryNS    string
+		wantRepositoryName  string
+	}{
+		{
+			name:                "uses target namespace repo from annotation",
+			targetNamespaceLine: "    pipelinesascode.tekton.dev/target-namespace: \"bar\"",
+			wantRepositoryNS:    "bar",
+			wantRepositoryName:  "bar",
+		},
+		{
+			name:                "falls back to matched repo when annotation is absent",
+			targetNamespaceLine: "",
+			wantRepositoryNS:    "foo",
+			wantRepositoryName:  "foo",
+		},
+	}
+
+	template := `apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: pr-gitops-comment
+  annotations:
+    pipelinesascode.tekton.dev/on-target-branch: "[main]"
+    pipelinesascode.tekton.dev/on-event: "[pull_request]"
+%s
+spec:
+  pipelineSpec:
+    tasks:
+    - name: task
+      taskSpec:
+        steps:
+        - name: task
+          image: quay.io/prometheus/busybox
+          script: |
+            echo "HELLOMOTO"
+            exit 0
+`
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := rtesting.SetupFakeContext(t)
+
+			repositories := []*v1alpha1.Repository{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "foo",
+						Namespace: "foo",
+					},
+					Spec: v1alpha1.RepositorySpec{
+						URL: "https://ghe.pipelinesascode.com/pipelines-as-code/e2e",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "bar",
+						Namespace: "bar",
+					},
+					Spec: v1alpha1.RepositorySpec{
+						URL: "https://ghe.pipelinesascode.com/pipelines-as-code/e2e",
+					},
+				},
+			}
+			stdata, _ := testclient.SeedTestData(t, ctx, testclient.Data{
+				Repositories: repositories,
+			})
+
+			cs := &params.Run{
+				Clients: clients.Clients{
+					PipelineAsCode: stdata.PipelineAsCode,
+					Kube:           stdata.Kube,
+					Tekton:         stdata.Pipeline,
+					Log:            logger,
+				},
+				Info: info.Info{},
+			}
+			cs.Clients.SetConsoleUI(consoleui.FallBackConsole{})
+
+			event := &info.Event{
+				URL:           "https://ghe.pipelinesascode.com/pipelines-as-code/e2e",
+				Organization:  "pipelines-as-code",
+				Repository:    "e2e",
+				Sender:        "foo",
+				SHA:           "abc123",
+				HeadBranch:    "main",
+				BaseBranch:    "main",
+				EventType:     opscomments.TestSingleCommentEventType.String(),
+				TriggerTarget: triggertype.PullRequest,
+				State: info.State{
+					TargetTestPipelineRun: "pr-gitops-comment",
+				},
+			}
+
+			p := NewPacs(
+				event,
+				&testprovider.TestProviderImp{TektonDirTemplate: fmt.Sprintf(template, tt.targetNamespaceLine)},
+				cs,
+				&info.PacOpts{},
+				nil,
+				logger,
+				nil,
+			)
+
+			matchedPRs, err := p.getPipelineRunsFromRepo(ctx, repositories[0])
+			assert.NilError(t, err)
+			assert.Equal(t, len(matchedPRs), 1)
+			assert.Assert(t, matchedPRs[0].Repo != nil)
+			assert.Equal(t, matchedPRs[0].Repo.GetNamespace(), tt.wantRepositoryNS)
+			assert.Equal(t, matchedPRs[0].Repo.GetName(), tt.wantRepositoryName)
+		})
+	}
 }
 
 func TestGetPipelineRunsFromRepo(t *testing.T) {

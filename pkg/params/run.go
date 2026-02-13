@@ -28,7 +28,7 @@ func (r *Run) UpdatePacConfig(ctx context.Context) error {
 		return err
 	}
 
-	updatedPacInfo, err := r.Info.UpdatePacOpts(r.Clients.Log, cfg.Data)
+	updatedPacInfo, err := r.Info.UpdatePacOpts(r.Clients.Log, cfg.Data, &r.Clients.HTTP)
 	if err != nil {
 		return err
 	}

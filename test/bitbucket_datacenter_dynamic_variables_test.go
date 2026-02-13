@@ -20,6 +20,7 @@ import (
 )
 
 func TestBitbucketDataCenterDynamicVariables(t *testing.T) {
+	t.Skip("skipping test for now, until we ge the bitbucket infra back")
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
 	bitbucketWSOwner := os.Getenv("TEST_BITBUCKET_SERVER_E2E_REPOSITORY")
