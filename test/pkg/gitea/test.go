@@ -65,6 +65,7 @@ type TestOpts struct {
 	SHA                   string
 	FileChanges           []scm.FileChange
 	CreateSecret          []corev1.Secret
+	ProviderType          string // defaults to "forgejo" if empty
 }
 
 func PostCommentOnPullRequest(t *testing.T, topt *TestOpts, body string) {
@@ -178,8 +179,12 @@ func TestPR(t *testing.T, topts *TestOpts) (context.Context, func()) {
 		assert.NilError(t, err, "failed to create secret %s in namespace %s: %v", sec.GetName(), ns, err)
 	}
 
+	providerType := topts.ProviderType
+	if providerType == "" {
+		providerType = "forgejo"
+	}
 	gp := &v1alpha1.GitProvider{
-		Type: "gitea",
+		Type: providerType,
 		// caveat this assume gitea running on the same cluster, which
 		// we do and need for e2e tests but that may be changed somehow
 		URL:    topts.InternalGiteaURL,
@@ -194,7 +199,7 @@ func TestPR(t *testing.T, topts *TestOpts) (context.Context, func()) {
 	if topts.GlobalRepoCRParams == nil {
 		spec.GitProvider = gp
 	} else {
-		spec.GitProvider = &v1alpha1.GitProvider{Type: "gitea"}
+		spec.GitProvider = &v1alpha1.GitProvider{Type: providerType}
 	}
 	assert.NilError(t, CreateCRD(ctx, topts, spec, false))
 

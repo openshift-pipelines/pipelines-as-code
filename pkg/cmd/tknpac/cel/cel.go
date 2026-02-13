@@ -634,7 +634,7 @@ that would be used in PipelineRun configurations.`,
 					return err
 				}
 				pacParams = pacParamsFromEvent(event)
-			case "gitea":
+			case "gitea", "forgejo":
 				event, err := eventFromGitea(bodyBytes, headers)
 				if err != nil {
 					return err
@@ -738,7 +738,7 @@ that would be used in PipelineRun configurations.`,
 
 	cmd.Flags().StringVarP(&bodyFile, bodyFileFlag, "b", "", "path to JSON body file (required)")
 	cmd.Flags().StringVarP(&headersFile, headersFileFlag, "H", "", "path to headers file (required, JSON, HTTP format, or gosmee-generated shell script)")
-	cmd.Flags().StringVarP(&provider, providerFlag, "p", "auto", "payload provider (auto, github, gitlab, bitbucket-cloud, bitbucket-datacenter, gitea)")
+	cmd.Flags().StringVarP(&provider, providerFlag, "p", "auto", "payload provider (auto, github, gitlab, bitbucket-cloud, bitbucket-datacenter, gitea, forgejo)")
 	cmd.Flags().StringVarP(&githubToken, githubTokenFlag, "t", "", "GitHub personal access token for API enrichment (enables full event processing)")
 	// Mark body and headers flags as required.
 	// These errors are safe to ignore as the flags are defined above.

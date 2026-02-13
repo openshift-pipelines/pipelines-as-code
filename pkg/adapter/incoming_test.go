@@ -934,6 +934,20 @@ func Test_listener_processIncoming(t *testing.T) {
 			},
 		},
 		{
+			name:     "process/forgejo",
+			want:     &gitea.Provider{},
+			wantOrg:  "owner",
+			wantRepo: "repo",
+			targetRepo: &v1alpha1.Repository{
+				Spec: v1alpha1.RepositorySpec{
+					URL: "https://forge/owner/repo",
+					GitProvider: &v1alpha1.GitProvider{
+						Type: "forgejo",
+					},
+				},
+			},
+		},
+		{
 			name:    "error/unknown provider",
 			wantErr: true,
 			targetRepo: &v1alpha1.Repository{

@@ -210,13 +210,15 @@ spec:
                         - 'gitlab': GitLab.com or self-hosted GitLab
                         - 'bitbucket-datacenter': Bitbucket Data Center (self-hosted)
                         - 'bitbucket-cloud': Bitbucket Cloud (bitbucket.org)
-                        - 'gitea': Gitea instances
+                        - 'forgejo': Forgejo instances
+                        - 'gitea': Gitea instances (alias for forgejo, kept for backwards compatibility)
                       enum:
                         - github
                         - gitlab
                         - bitbucket-datacenter
                         - bitbucket-cloud
                         - gitea
+                        - forgejo
                       type: string
                     url:
                       description: |-

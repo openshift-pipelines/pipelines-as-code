@@ -452,7 +452,7 @@ tkn pac cel -b <body.json> -H <headers.txt>
 
 * `-b, --body`: Path to JSON body file (webhook payload) **[required]**
 * `-H, --headers`: Path to headers file (plain text, JSON, or gosmee script) **[required]**
-* `-p, --provider`: Provider (auto, github, gitlab, bitbucket-cloud, bitbucket-datacenter, gitea)
+* `-p, --provider`: Provider (auto, github, gitlab, bitbucket-cloud, bitbucket-datacenter, gitea, forgejo)
 
 #### Interactive Mode
 

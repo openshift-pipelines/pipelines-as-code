@@ -29,7 +29,10 @@ values are:
 
 - github
 - gitlab
+- forgejo
+- gitea (alias for forgejo)
 - bitbucket-cloud
+- bitbucket-datacenter
 
 Whereas for `github-apps` this does not need to be added.
 {{< /hint >}}

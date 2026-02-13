@@ -23,7 +23,7 @@ import (
 // interface, event information, and an error if any occurs during detection or
 // initialization.
 //
-// Supported providers: github, gitlab, bitbucket-cloud, bitbucket-datacenter, gitea
+// Supported providers: github, gitlab, bitbucket-cloud, bitbucket-datacenter, forgejo (gitea)
 // any new provider should be added to the switch case below.
 func (r *Reconciler) detectProvider(ctx context.Context, logger *zap.SugaredLogger, pr *tektonv1.PipelineRun) (provider.Interface, *info.Event, error) {
 	gitProvider, ok := pr.GetAnnotations()[keys.GitProvider]
@@ -51,7 +51,7 @@ func (r *Reconciler) detectProvider(ctx context.Context, logger *zap.SugaredLogg
 		provider = &bitbucketcloud.Provider{}
 	case "bitbucket-datacenter":
 		provider = &bitbucketdatacenter.Provider{}
-	case "gitea":
+	case "gitea", "forgejo":
 		provider = &gitea.Provider{}
 	default:
 		return nil, nil, fmt.Errorf("failed to detect provider for pipelinerun: %s : unknown provider", pr.GetName())
