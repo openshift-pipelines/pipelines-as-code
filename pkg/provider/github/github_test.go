@@ -1602,6 +1602,169 @@ func TestCreateComment(t *testing.T) {
 	}
 }
 
+func TestCreateCommentDedupLogging(t *testing.T) {
+	tests := []struct {
+		name            string
+		commitBody      string
+		setup           func(t *testing.T, mux *http.ServeMux)
+		expectedPhases  []string
+		unexpectedPhase []string
+	}{
+		{
+			name:       "logs full create flow when marker comment does not exist",
+			commitBody: "new body MARKER",
+			setup: func(t *testing.T, mux *http.ServeMux) {
+				t.Helper()
+				listCalls := 0
+				mux.HandleFunc("/repos/org/repo/issues/123/comments", func(rw http.ResponseWriter, r *http.Request) {
+					switch r.Method {
+					case http.MethodGet:
+						listCalls++
+						switch listCalls {
+						case 1, 2:
+							fmt.Fprint(rw, `[]`)
+						default:
+							fmt.Fprint(rw, `[{"id": 333, "body": "new body MARKER", "created_at": "2024-01-01T00:00:00Z"}]`)
+						}
+					case http.MethodPost:
+						rw.WriteHeader(http.StatusCreated)
+						fmt.Fprint(rw, `{"id": 333, "body": "new body MARKER"}`)
+					default:
+						t.Fatalf("unexpected method %s", r.Method)
+					}
+				})
+			},
+			expectedPhases: []string{
+				"initial_list",
+				"jitter_wait",
+				"post_jitter_list",
+				"pre_create_race_window",
+				"create_comment_start",
+				"create_comment_done",
+				"post_create_list",
+				"dedup_select_primary",
+				"dedup_complete",
+			},
+			unexpectedPhase: []string{"dedup_delete_attempt"},
+		},
+		{
+			name:       "logs dedup select without delete for one existing marker comment",
+			commitBody: "new body MARKER",
+			setup: func(t *testing.T, mux *http.ServeMux) {
+				t.Helper()
+				mux.HandleFunc("/repos/org/repo/issues/123/comments", func(rw http.ResponseWriter, r *http.Request) {
+					assert.Equal(t, r.Method, http.MethodGet)
+					fmt.Fprint(rw, `[{"id": 111, "body": "MARKER old", "created_at": "2024-01-01T00:00:00Z"}]`)
+				})
+				mux.HandleFunc("/repos/org/repo/issues/comments/111", func(rw http.ResponseWriter, r *http.Request) {
+					assert.Equal(t, r.Method, http.MethodPatch)
+					rw.WriteHeader(http.StatusOK)
+				})
+			},
+			expectedPhases: []string{
+				"initial_list",
+				"dedup_select_primary",
+				"dedup_complete",
+			},
+			unexpectedPhase: []string{"create_comment_start", "dedup_delete_attempt"},
+		},
+		{
+			name:       "logs duplicate detection and delete phases for multiple markers",
+			commitBody: "new body MARKER",
+			setup: func(t *testing.T, mux *http.ServeMux) {
+				t.Helper()
+				mux.HandleFunc("/repos/org/repo/issues/123/comments", func(rw http.ResponseWriter, r *http.Request) {
+					assert.Equal(t, r.Method, http.MethodGet)
+					fmt.Fprint(rw, `[{"id": 111, "body": "MARKER old", "created_at": "2024-01-01T00:00:00Z"}, {"id": 222, "body": "MARKER old", "created_at": "2024-01-01T00:01:00Z"}]`)
+				})
+				mux.HandleFunc("/repos/org/repo/issues/comments/111", func(rw http.ResponseWriter, r *http.Request) {
+					assert.Equal(t, r.Method, http.MethodPatch)
+					rw.WriteHeader(http.StatusOK)
+				})
+				mux.HandleFunc("/repos/org/repo/issues/comments/222", func(rw http.ResponseWriter, r *http.Request) {
+					assert.Equal(t, r.Method, http.MethodDelete)
+					rw.WriteHeader(http.StatusNoContent)
+				})
+			},
+			expectedPhases: []string{
+				"initial_list",
+				"duplicate_detected",
+				"dedup_select_primary",
+				"dedup_delete_attempt",
+				"dedup_delete_done",
+				"dedup_complete",
+			},
+			unexpectedPhase: []string{"create_comment_start"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := rtesting.SetupFakeContext(t)
+			ctx = info.StoreCurrentControllerName(ctx, "controller-test")
+
+			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+			defer teardown()
+			tt.setup(t, mux)
+
+			core, observedLogs := zapobserver.New(zap.DebugLevel)
+			provider := &Provider{
+				ghClient: fakeclient,
+				Logger:   zap.New(core).Sugar(),
+			}
+			event := &info.Event{
+				Organization:      "org",
+				Repository:        "repo",
+				PullRequestNumber: 123,
+				Request: &info.Request{
+					Header: http.Header{
+						"X-Github-Delivery": []string{"evt-123"},
+					},
+				},
+			}
+
+			err := provider.CreateComment(ctx, event, tt.commitBody, "MARKER")
+			assert.NilError(t, err)
+
+			logEntries := observedLogs.FilterMessage("github comment dedup flow").All()
+			assert.Assert(t, len(logEntries) > 0, "expected debug comment logs to be emitted")
+
+			phaseCounts := map[string]int{}
+			seenDedupTrace := ""
+			for _, entry := range logEntries {
+				fields := entry.ContextMap()
+				phase := fmt.Sprint(fields["phase"])
+				phaseCounts[phase]++
+
+				traceID := fmt.Sprint(fields["dedup_trace"])
+				assert.Assert(t, traceID != "" && traceID != "<nil>")
+				if seenDedupTrace == "" {
+					seenDedupTrace = traceID
+				}
+				assert.Equal(t, seenDedupTrace, traceID)
+
+				eventID, hasEventID := fields["event_id"]
+				assert.Assert(t, hasEventID, "event_id field should be present in %+v", fields)
+				assert.Equal(t, "evt-123", fmt.Sprint(eventID), "event_id should match X-GitHub-Delivery header")
+				assert.Equal(t, "123", fmt.Sprint(fields["pr"]))
+				assert.Equal(t, "controller-test", fmt.Sprint(fields["controller_label"]))
+
+				if phase == "initial_list" || phase == "post_jitter_list" || phase == "post_create_list" {
+					_, hasMatchedCount := fields["matched_count"]
+					assert.Assert(t, hasMatchedCount, "phase=%s should include matched_count fields=%+v", phase, fields)
+				}
+			}
+
+			for _, phase := range tt.expectedPhases {
+				assert.Assert(t, phaseCounts[phase] > 0, "missing phase %s in logs: %+v", phase, phaseCounts)
+			}
+			for _, phase := range tt.unexpectedPhase {
+				assert.Assert(t, phaseCounts[phase] == 0, "unexpected phase %s in logs: %+v", phase, phaseCounts)
+			}
+		})
+	}
+}
+
 func TestSkipPushEventForPRCommits(t *testing.T) {
 	iid := int64(1234)
 	tests := []struct {
