@@ -250,6 +250,22 @@ func MuxProjectGroupMembership(t *testing.T, mux *http.ServeMux, event *info.Eve
 	})
 }
 
+func MuxRepoGroupMembership(t *testing.T, mux *http.ServeMux, event *info.Event, groups []*ProjGroup) {
+	path := fmt.Sprintf("/projects/%s/repos/%s/permissions/groups", event.Organization, event.Repository)
+	mux.HandleFunc(path, func(rw http.ResponseWriter, _ *http.Request) {
+		if groups == nil {
+			fmt.Fprintf(rw, "{\"values\": []}")
+		}
+		resp := map[string]any{
+			"values": groups,
+		}
+		b, err := json.Marshal(resp)
+		assert.NilError(t, err)
+
+		fmt.Fprint(rw, string(b))
+	})
+}
+
 func MuxRepoMemberShip(t *testing.T, mux *http.ServeMux, event *info.Event, userperms []*UserPermission) {
 	path := fmt.Sprintf("/projects/%s/repos/%s/permissions/users", event.Organization, event.Repository)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, _ *http.Request) {
