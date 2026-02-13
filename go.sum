@@ -313,8 +313,8 @@ github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpO
 github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
-github.com/jenkins-x/go-scm v1.15.16 h1:fdmMcjlA+VOpWO1lS8V7jzxIGvwgJ6Ls286FUpHoUSk=
-github.com/jenkins-x/go-scm v1.15.16/go.mod h1:RU3n2g3nxbIkjjm7cg7iOUh/7Wr1V+bTr/YM8qZeAr0=
+github.com/jenkins-x/go-scm v1.15.17 h1:mQU/ixf5YsPFLEJT71/hVWsfp2YAjowwWcEThKK6kZg=
+github.com/jenkins-x/go-scm v1.15.17/go.mod h1:RU3n2g3nxbIkjjm7cg7iOUh/7Wr1V+bTr/YM8qZeAr0=
 github.com/jonboulle/clockwork v0.5.0 h1:Hyh9A8u51kptdkR+cqRpT1EebBwTn1oK9YfGYbdFz6I=
 github.com/jonboulle/clockwork v0.5.0/go.mod h1:3mZlmanh0g2NDKO5TWZVJAfofYk64M7XN3SzBPjZF60=
 github.com/jpillora/backoff v1.0.0/go.mod h1:J/6gKK9jxlEcS3zixgDgUAsiuZ7yrSoa/FX5e0EB2j4=
