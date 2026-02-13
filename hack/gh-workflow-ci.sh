@@ -4,6 +4,7 @@
 set -exufo pipefail
 
 export PAC_API_INSTRUMENTATION_DIR=/tmp/api-instrumentation
+export TEST_GITEA_API_URL=http://pipelines-as-code-controller.pipelines-as-code.svc.cluster.local:8080
 
 create_pac_github_app_secret() {
   # Read from environment variables instead of arguments
