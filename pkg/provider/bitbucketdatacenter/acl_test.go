@@ -35,6 +35,7 @@ func TestIsAllowed(t *testing.T) {
 		projectMembers            []*bbv1test.UserPermission
 		repoMembers               []*bbv1test.UserPermission
 		projGroups                []*bbv1test.ProjGroup
+		repoGroups                []*bbv1test.ProjGroup
 		activities                []*bbv1test.Activity
 		filescontents             map[string]string
 		defaultBranchLatestCommit string
@@ -213,6 +214,7 @@ func TestIsAllowed(t *testing.T) {
 			bbv1test.MuxProjectMemberShip(t, mux, tt.event, tt.fields.projectMembers)
 			bbv1test.MuxRepoMemberShip(t, mux, tt.event, tt.fields.repoMembers)
 			bbv1test.MuxProjectGroupMembership(t, mux, tt.event, tt.fields.projGroups)
+			bbv1test.MuxRepoGroupMembership(t, mux, tt.event, tt.fields.repoGroups)
 			bbv1test.MuxPullRequestActivities(t, mux, tt.event, tt.fields.pullRequestNumber, tt.fields.activities)
 			bbv1test.MuxFiles(t, mux, tt.event, tt.fields.defaultBranchLatestCommit, "", tt.fields.filescontents, false)
 
