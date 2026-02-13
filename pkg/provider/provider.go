@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"gopkg.in/yaml.v2"
@@ -223,4 +224,25 @@ var skipCIRegex = regexp.MustCompile(`\[(skip ci|ci skip|skip tkn|tkn skip)\]`)
 // SkipCI returns true if the given commit message contains any skip command.
 func SkipCI(commitMessage string) bool {
 	return skipCIRegex.MatchString(commitMessage)
+}
+
+// PlrStatusCommentPrefixTemplate is used to add a prefix to comments which include the status details
+// of a PipelineRun.
+// The %s placeholder must be replaced with the OriginalPipelineRunName of the associated PipelineRun.
+const PlrStatusCommentPrefixTemplate string = "<!-- pac-status-%s -->"
+
+const (
+	// Updates a single comment per PipelineRun on every trigger.
+	UpdateCommentStrategy string = "update"
+	// Disables all comments on merge requests.
+	DisableAllCommentStrategy string = "disable_all"
+)
+
+func IsCommentStrategyUpdate(repo *v1alpha1.Repository) bool {
+	var commentStrategy string
+	if repo != nil && repo.Spec.Settings != nil && repo.Spec.Settings.Gitlab != nil {
+		commentStrategy = repo.Spec.Settings.Gitlab.CommentStrategy
+	}
+
+	return commentStrategy == UpdateCommentStrategy
 }
