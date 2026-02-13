@@ -87,6 +87,42 @@ func UntilRepositoryUpdated(ctx context.Context, clients clients.Clients, opts O
 	})
 }
 
+func UntilRepositoryHasStatusReason(ctx context.Context, clients clients.Clients, opts Opts, reason string) (*pacv1alpha1.Repository, error) {
+	ctx, cancel := context.WithTimeout(ctx, opts.PollTimeout)
+	defer cancel()
+	var repo *pacv1alpha1.Repository
+	return repo, kubeinteraction.PollImmediateWithContext(ctx, opts.PollTimeout, func() (bool, error) {
+		var err error
+		if repo, err = clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(opts.Namespace).Get(ctx, opts.RepoName, metav1.GetOptions{}); err != nil {
+			return true, err
+		}
+
+		matchingStatuses := 0
+		reasons := []string{}
+		for _, status := range repo.Status {
+			if opts.TargetSHA != "" {
+				if status.SHA == nil || *status.SHA != opts.TargetSHA {
+					continue
+				}
+			}
+			matchingStatuses++
+			if len(status.Conditions) == 0 {
+				continue
+			}
+			reasons = append(reasons, status.Conditions[0].Reason)
+			if status.Conditions[0].Reason == reason {
+				return true, nil
+			}
+		}
+
+		clients.Log.Infof(
+			"Still waiting for repository status reason to be updated: wanted=%q matching statuses=%d reasons=%v",
+			reason, matchingStatuses, reasons,
+		)
+		return false, nil
+	})
+}
+
 func UntilPipelineRunCreated(ctx context.Context, clients clients.Clients, opts Opts) error {
 	ctx, cancel := context.WithTimeout(ctx, opts.PollTimeout)
 	defer cancel()
