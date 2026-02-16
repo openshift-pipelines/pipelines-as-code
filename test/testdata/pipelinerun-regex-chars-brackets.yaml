@@ -1,0 +1,19 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: test-pipeline[0]
+  annotations:
+    pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
+    pipelinesascode.tekton.dev/on-cel-expression: "true"
+spec:
+  pipelineSpec:
+    tasks:
+      - name: task-with-brackets
+        taskSpec:
+          steps:
+            - name: echo
+              image: registry.access.redhat.com/ubi10/ubi-micro
+              script: |
+                echo "Testing PLR name with brackets: test-pipeline[0]"
+                echo "This tests that brackets in PLR names don't break marker matching"
