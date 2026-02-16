@@ -258,7 +258,17 @@ func (p *PacRun) resolveRepoForTargetCancelPipelineRun(ctx context.Context, repo
 		return repo
 	}
 
-	return p.resolveTargetNamespaceRepo(ctx, repo, targetPR)
+	targetRepo := p.resolveTargetNamespaceRepo(ctx, repo, targetPR)
+	if targetRepo == nil {
+		p.logger.Warnf(
+			"resolveRepoForTargetCancelPipelineRun: target repo not found for pipelinerun=%s, falling back to repo=%s/%s",
+			pipelineRunIdentifier(targetPR),
+			repo.GetNamespace(),
+			repo.GetName(),
+		)
+		return repo
+	}
+	return targetRepo
 }
 
 func (p *PacRun) cancelPipelineRuns(ctx context.Context, prs *tektonv1.PipelineRunList, repo *v1alpha1.Repository, condition matchingCond) {

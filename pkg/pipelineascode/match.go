@@ -355,6 +355,11 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 			return nil, nil
 		}
 		selectedRepo := p.resolveTargetNamespaceRepo(ctx, repo, selectedPr)
+		if selectedRepo == nil {
+			msg := fmt.Sprintf("skipping pipelinerun %s: target-namespace repo not found", pipelineRunIdentifier(selectedPr))
+			p.eventEmitter.EmitMessage(repo, zap.InfoLevel, "RepositoryTargetNamespaceNotFound", msg)
+			return nil, nil
+		}
 		p.debugf("getPipelineRunsFromRepo: explicit /test using repo=%s/%s for pipelinerun=%s", selectedRepo.GetNamespace(), selectedRepo.GetName(), pipelineRunIdentifier(selectedPr))
 		return []matcher.Match{{
 			PipelineRun: selectedPr,
@@ -413,11 +418,11 @@ func (p *PacRun) resolveTargetNamespaceRepo(ctx context.Context, fallbackRepo *v
 	targetRepo, err := matcher.MatchEventURLRepo(ctx, p.run, p.event, targetNS)
 	if err != nil {
 		p.logger.Warnf("resolveTargetNamespaceRepo: failed to lookup target namespace=%s for pipelinerun=%s: %v", targetNS, pipelineRunIdentifier(pr), err)
-		return fallbackRepo
+		return nil
 	}
 	if targetRepo == nil {
 		p.logger.Warnf("resolveTargetNamespaceRepo: no repository found in target namespace=%s for pipelinerun=%s", targetNS, pipelineRunIdentifier(pr))
-		return fallbackRepo
+		return nil
 	}
 
 	p.debugf("resolveTargetNamespaceRepo: resolved pipelinerun=%s to repo=%s/%s via target-namespace=%s", pipelineRunIdentifier(pr), targetRepo.GetNamespace(), targetRepo.GetName(), targetNS)
