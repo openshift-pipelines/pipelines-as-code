@@ -63,6 +63,28 @@ func (p *PacRun) reportValidationErrors(ctx context.Context, repo *v1alpha1.Repo
 	}
 	markdownErrMessage := fmt.Sprintf(`%s
 %s`, provider.ValidationErrorTemplate, strings.Join(errorRows, "\n"))
+
+	eventID := "unknown"
+	org := "unknown"
+	repository := "unknown"
+	sourceBranch := "unknown"
+	targetBranch := "unknown"
+	pr := 0
+	if p.event != nil {
+		org = p.event.Organization
+		repository = p.event.Repository
+		sourceBranch = p.event.HeadBranch
+		targetBranch = p.event.BaseBranch
+		pr = p.event.PullRequestNumber
+		if p.event.Request != nil {
+			if id := p.event.Request.Header.Get("X-GitHub-Delivery"); id != "" {
+				eventID = id
+			}
+		}
+	}
+	p.debugf("reportValidationErrors: create_comment validation_error_count=%d event_id=%s pr=%d repo=%s/%s namespace=%s source_branch=%s target_branch=%s",
+		len(errorRows), eventID, pr, org, repository, repo.GetNamespace(), sourceBranch, targetBranch)
+
 	if err := p.vcx.CreateComment(ctx, p.event, markdownErrMessage, provider.ValidationErrorTemplate); err != nil {
 		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "PipelineRunCommentCreationError",
 			fmt.Sprintf("failed to create comment: %s", err.Error()))
