@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -556,48 +557,10 @@ func (v *Provider) fetchChangedFiles(_ context.Context, runevent *info.Event) (c
 
 	switch runevent.TriggerTarget {
 	case triggertype.PullRequest:
-		opt := &gitlab.ListMergeRequestDiffsOptions{
-			ListOptions: gitlab.ListOptions{
-				OrderBy:    "id",
-				Pagination: "keyset",
-				PerPage:    defaultGitlabListOptions.PerPage,
-				Sort:       "asc",
-			},
-		}
-		options := []gitlab.RequestOptionFunc{}
-
-		for {
-			mrchanges, resp, err := v.Client().MergeRequests.ListMergeRequestDiffs(v.targetProjectID, int64(runevent.PullRequestNumber), opt, options...)
-			if err != nil {
-				// TODO: Should this return the files found so far?
-				return changedfiles.ChangedFiles{}, err
-			}
-
-			for _, change := range mrchanges {
-				changedFiles.All = append(changedFiles.All, change.NewPath)
-				if change.NewFile {
-					changedFiles.Added = append(changedFiles.Added, change.NewPath)
-				}
-				if change.DeletedFile {
-					changedFiles.Deleted = append(changedFiles.Deleted, change.NewPath)
-				}
-				if !change.RenamedFile && !change.DeletedFile && !change.NewFile {
-					changedFiles.Modified = append(changedFiles.Modified, change.NewPath)
-				}
-				if change.RenamedFile {
-					changedFiles.Renamed = append(changedFiles.Renamed, change.NewPath)
-				}
-			}
-
-			// Exit the loop when we've seen all pages.
-			if resp.NextLink == "" {
-				break
-			}
-
-			// Otherwise, set param to query the next page
-			options = []gitlab.RequestOptionFunc{
-				gitlab.WithKeysetPaginationParameters(resp.NextLink),
-			}
+		var err error
+		changedFiles, err = v.mergeRequestFilesChanged(runevent)
+		if err != nil {
+			return changedfiles.ChangedFiles{}, err
 		}
 	case triggertype.Push:
 		options := gitlab.GetCommitDiffOptions{ListOptions: defaultGitlabListOptions}
@@ -638,6 +601,116 @@ func (v *Provider) fetchChangedFiles(_ context.Context, runevent *info.Event) (c
 		// No action necessary
 	}
 	return changedFiles, nil
+}
+
+func (v *Provider) mergeRequestFilesChanged(runevent *info.Event) (changedfiles.ChangedFiles, error) {
+	diffTruncated, changeCount, err := v.isMergeRequestDiffTruncated(v.targetProjectID, int64(runevent.PullRequestNumber))
+	if err != nil {
+		return changedfiles.ChangedFiles{}, err
+	}
+
+	changedFiles := changedfiles.ChangedFiles{
+		All:     make([]string, 0, changeCount),
+		Added:   []string{},
+		Deleted: []string{},
+		Renamed: []string{},
+	}
+
+	options := []gitlab.RequestOptionFunc{}
+
+	// Only use the repository/compare API if the standard merge_request/diff API endpoint will
+	// return a truncated set of changes. The repository/compare API returns the entire set of
+	// changes without paging, so it can have a significantly heavier memory footprint if used
+	// in all cases.
+	if diffTruncated {
+		compareOpts := &gitlab.CompareOptions{
+			From: &runevent.BaseBranch,
+			To:   &runevent.HeadBranch,
+		}
+		comparison, _, err := v.Client().Repositories.Compare(v.targetProjectID, compareOpts, options...)
+		if err != nil {
+			return changedfiles.ChangedFiles{}, err
+		}
+
+		for _, change := range comparison.Diffs {
+			changedFiles.All = append(changedFiles.All, change.NewPath)
+			if change.NewFile {
+				changedFiles.Added = append(changedFiles.Added, change.NewPath)
+			}
+			if change.DeletedFile {
+				changedFiles.Deleted = append(changedFiles.Deleted, change.NewPath)
+			}
+			if !change.RenamedFile && !change.DeletedFile && !change.NewFile {
+				changedFiles.Modified = append(changedFiles.Modified, change.NewPath)
+			}
+			if change.RenamedFile {
+				changedFiles.Renamed = append(changedFiles.Renamed, change.NewPath)
+			}
+		}
+	} else {
+		diffOpts := &gitlab.ListMergeRequestDiffsOptions{
+			ListOptions: gitlab.ListOptions{
+				OrderBy:    "id",
+				Pagination: "keyset",
+				PerPage:    defaultGitlabListOptions.PerPage,
+				Sort:       "asc",
+			},
+		}
+		for {
+			mrchanges, resp, err := v.Client().MergeRequests.ListMergeRequestDiffs(v.targetProjectID, int64(runevent.PullRequestNumber), diffOpts, options...)
+			if err != nil {
+				// TODO: Should this return the files found so far?
+				return changedfiles.ChangedFiles{}, err
+			}
+			for _, change := range mrchanges {
+				changedFiles.All = append(changedFiles.All, change.NewPath)
+				if change.NewFile {
+					changedFiles.Added = append(changedFiles.Added, change.NewPath)
+				}
+				if change.DeletedFile {
+					changedFiles.Deleted = append(changedFiles.Deleted, change.NewPath)
+				}
+				if !change.RenamedFile && !change.DeletedFile && !change.NewFile {
+					changedFiles.Modified = append(changedFiles.Modified, change.NewPath)
+				}
+				if change.RenamedFile {
+					changedFiles.Renamed = append(changedFiles.Renamed, change.NewPath)
+				}
+			}
+
+			// Exit the loop when we've seen all pages.
+			if resp.NextLink == "" {
+				break
+			}
+
+			// Otherwise, set param to query the next page
+			options = []gitlab.RequestOptionFunc{
+				gitlab.WithKeysetPaginationParameters(resp.NextLink),
+			}
+		}
+	}
+	return changedFiles, nil
+}
+
+// isMergeRequestDiffTruncated checks if the merge request is affected by the Gitlab API's Diff Limits.
+// This is determined by the Get Merge Request API's returning a ChangeCount number with a "+" suffix.
+// See also: https://docs.gitlab.com/administration/diff_limits/
+// Returns (bool: isTruncated, int: changeCount, err: error)
+func (v *Provider) isMergeRequestDiffTruncated(projectId int64, mergeRequestID int64) (bool, int, error) {
+	out, _, err := v.Client().MergeRequests.GetMergeRequest(projectId, mergeRequestID, &gitlab.GetMergeRequestsOptions{})
+	if err != nil {
+		return false, 0, fmt.Errorf("Error getting merge request %d: %w", mergeRequestID, err)
+	}
+	fileCount := 0
+	truncated := strings.HasSuffix(out.ChangesCount, "+")
+	if out.ChangesCount != "" {
+		countStr := strings.TrimSuffix(out.ChangesCount, "+")
+		fileCount, err = strconv.Atoi(countStr)
+		if err != nil {
+			return false, 0, err
+		}
+	}
+	return truncated, fileCount, nil
 }
 
 func (v *Provider) CreateToken(_ context.Context, _ []string, _ *info.Event) (string, error) {
