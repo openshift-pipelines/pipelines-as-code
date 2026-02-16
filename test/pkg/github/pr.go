@@ -76,15 +76,21 @@ func PushFilesToRef(ctx context.Context, client *github.Client, commitMessage, b
 		return "", nil, fmt.Errorf("error creating commit: %w", err)
 	}
 
-	createRef := github.CreateRef{
-		Ref: targetRef,
-		SHA: *commit.SHA,
+	// Only create a new ref if targetRef is provided
+	// If empty, caller is responsible for updating an existing ref
+	if targetRef != "" {
+		createRef := github.CreateRef{
+			Ref: targetRef,
+			SHA: *commit.SHA,
+		}
+		vref, _, err := client.Git.CreateRef(ctx, owner, repo, createRef)
+		if err != nil {
+			return "", nil, fmt.Errorf("error creating ref: %w", err)
+		}
+		return commit.GetSHA(), vref, nil
 	}
-	vref, _, err := client.Git.CreateRef(ctx, owner, repo, createRef)
-	if err != nil {
-		return "", nil, fmt.Errorf("error creating ref: %w", err)
-	}
-	return commit.GetSHA(), vref, nil
+
+	return commit.GetSHA(), nil, nil
 }
 
 func PRCreate(ctx context.Context, cs *params.Run, ghcnx *ghprovider.Provider, owner, repo, targetRef, defaultBranch, title string) (int, error) {
@@ -284,4 +290,27 @@ func (g *PRTest) RunPushRequest(ctx context.Context, t *testing.T) {
 	g.TargetRefName = targetRefName
 	g.PRNumber = -1
 	g.SHA = sha
+}
+
+func UpdateFilesInRef(ctx context.Context, client *github.Client, owner, repo, branch, commitMessage string, files map[string]string) (string, error) {
+	refName := "heads/" + branch
+	ref, _, err := client.Git.GetRef(ctx, owner, repo, refName)
+	if err != nil {
+		return "", fmt.Errorf("error getting ref: %w", err)
+	}
+	baseSHA := ref.Object.GetSHA()
+
+	// Pass empty targetRef and update the ref manually instead of creating it
+	commitSHA, _, err := PushFilesToRef(ctx, client, commitMessage, baseSHA, "", owner, repo, files)
+	if err != nil {
+		return "", fmt.Errorf("error creating commit: %w", err)
+	}
+
+	updateRef := github.UpdateRef{SHA: commitSHA}
+	_, _, err = client.Git.UpdateRef(ctx, owner, repo, refName, updateRef)
+	if err != nil {
+		return "", fmt.Errorf("error updating ref: %w", err)
+	}
+
+	return commitSHA, nil
 }
