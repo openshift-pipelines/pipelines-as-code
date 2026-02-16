@@ -135,16 +135,20 @@ help reduce notification volume for repositories that use long-lasting
 Pull/Merge requests with many PipelineRuns.
 
 Acceptable values for `spec.<provider>.comment_strategy` are `""`
-(default) and `"disable_all"`.
+(default), `"update"` and `"disable_all"`.
+
+Setting `comment_strategy` to `update` adds a single comment for
+each PipelineRun. When the status is updated or the PipelineRun is re-executed,
+this comment is updated with the new status and the associated commit SHA.
 
 When you set the value of `comment_strategy` to `disable_all`, Pipelines
 as Code will not add any comment on the Pull/Merge Request related to
 PipelineRun status.
 
-Note: The `disable_all` strategy applies only to comments about a
-PipelineRun's status (e.g., "started," "succeeded"). Comments may still
-appear if there are errors validating PipelineRuns in the `.tekton`
-directory. (See [Running the PipelineRun docs](../running/#errors-when-parsing-pipelinerun-yaml) for details)
+Note: The `update` and `disable_all` strategy applies only to
+comments about a PipelineRun's status (e.g., "started," "succeeded").
+Comments may still appear if there are errors validating PipelineRuns in
+the `.tekton` directory. (See [Running the PipelineRun docs](../running/#errors-when-parsing-pipelinerun-yaml) for details)
 
 ### GitLab
 
