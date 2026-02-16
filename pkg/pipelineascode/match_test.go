@@ -159,6 +159,7 @@ func TestGetPipelineRunsFromRepoExplicitTestUsesTargetNamespaceRepo(t *testing.T
 		targetNamespaceLine string
 		wantRepositoryNS    string
 		wantRepositoryName  string
+		wantNoMatch         bool
 	}{
 		{
 			name:                "uses target namespace repo from annotation",
@@ -171,6 +172,11 @@ func TestGetPipelineRunsFromRepoExplicitTestUsesTargetNamespaceRepo(t *testing.T
 			targetNamespaceLine: "",
 			wantRepositoryNS:    "foo",
 			wantRepositoryName:  "foo",
+		},
+		{
+			name:                "skips pipelinerun when target namespace repo not found",
+			targetNamespaceLine: "    pipelinesascode.tekton.dev/target-namespace: \"nonexistent\"",
+			wantNoMatch:         true,
 		},
 	}
 
@@ -261,6 +267,10 @@ spec:
 
 			matchedPRs, err := p.getPipelineRunsFromRepo(ctx, repositories[0])
 			assert.NilError(t, err)
+			if tt.wantNoMatch {
+				assert.Equal(t, len(matchedPRs), 0)
+				return
+			}
 			assert.Equal(t, len(matchedPRs), 1)
 			assert.Assert(t, matchedPRs[0].Repo != nil)
 			assert.Equal(t, matchedPRs[0].Repo.GetNamespace(), tt.wantRepositoryNS)
