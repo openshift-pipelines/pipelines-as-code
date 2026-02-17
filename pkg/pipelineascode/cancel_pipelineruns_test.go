@@ -461,6 +461,90 @@ spec:
 	assert.Equal(t, string(got.Spec.Status), pipelinev1.PipelineRunSpecStatusCancelledRunFinally)
 }
 
+func TestCancelPipelineRunsOpsCommentFallsBackWhenTargetNamespaceRepoMissing(t *testing.T) {
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observer).Sugar()
+	ctx, _ := rtesting.SetupFakeContext(t)
+
+	fooRepo := &v1alpha1.Repository{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "foo",
+			Name:      "foo",
+		},
+		Spec: v1alpha1.RepositorySpec{
+			URL: "https://ghe.pipelinesascode.com/pipelines-as-code/e2e",
+		},
+	}
+
+	targetPR := &pipelinev1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pr-gitops-comment-ztrg2",
+			Namespace: "foo",
+			Labels: map[string]string{
+				keys.URLRepository: formatting.CleanValueKubernetes("e2e"),
+				keys.PullRequest:   strconv.Itoa(pullReqNumber),
+			},
+			Annotations: map[string]string{
+				keys.OriginalPRName: "pr-gitops-comment",
+			},
+		},
+		Spec: pipelinev1.PipelineRunSpec{},
+	}
+
+	stdata, _ := testclient.SeedTestData(t, ctx, testclient.Data{
+		Repositories: []*v1alpha1.Repository{fooRepo},
+		PipelineRuns: []*pipelinev1.PipelineRun{targetPR},
+	})
+
+	run := &params.Run{
+		Clients: clients.Clients{
+			Log:            logger,
+			Tekton:         stdata.Pipeline,
+			Kube:           stdata.Kube,
+			PipelineAsCode: stdata.PipelineAsCode,
+		},
+	}
+
+	event := &info.Event{
+		Repository:        "e2e",
+		URL:               "https://ghe.pipelinesascode.com/pipelines-as-code/e2e",
+		SHA:               "123",
+		TriggerTarget:     triggertype.PullRequest,
+		PullRequestNumber: pullReqNumber,
+		State: info.State{
+			CancelPipelineRuns:      true,
+			TargetCancelPipelineRun: "pr-gitops-comment",
+		},
+	}
+
+	template := `apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: pr-gitops-comment
+  annotations:
+    pipelinesascode.tekton.dev/target-namespace: "does-not-exist"
+spec:
+  pipelineSpec:
+    tasks:
+    - name: task
+      taskSpec:
+        steps:
+        - name: task
+          image: quay.io/prometheus/busybox
+          script: |
+            echo "HELLOMOTO"
+            exit 0
+`
+
+	pac := NewPacs(event, &testprovider.TestProviderImp{TektonDirTemplate: template}, run, &info.PacOpts{}, nil, logger, nil)
+	err := pac.cancelPipelineRunsOpsComment(ctx, fooRepo)
+	assert.NilError(t, err)
+
+	got, err := run.Clients.Tekton.TektonV1().PipelineRuns("foo").Get(ctx, targetPR.GetName(), metav1.GetOptions{})
+	assert.NilError(t, err)
+	assert.Equal(t, string(got.Spec.Status), pipelinev1.PipelineRunSpecStatusCancelledRunFinally)
+}
+
 func TestCancelInProgressMatchingPipelineRun(t *testing.T) {
 	observer, catcher := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()

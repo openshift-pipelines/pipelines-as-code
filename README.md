@@ -2,7 +2,7 @@
 
 [![Latest Release](https://img.shields.io/github/v/release/openshift-pipelines/pipelines-as-code)](https://github.com/openshift-pipelines/pipelines-as-code/releases/latest)
 [![Container Repository on GHCR](https://img.shields.io/badge/GHCR-image-87DCC0.svg?logo=GitHub)](https://github.com/openshift-pipelines/pipelines-as-code/pkgs/container/pipelines-as-code)
-[![Go Report Card](https://goreportcard.com/badge/google/ko)](https://goreportcard.com/report/openshift-pipelines/pipelines-as-code)
+[![Go Report Card](https://goreportcard.com/badge/openshift-pipelines/pipelines-as-code)](https://goreportcard.com/report/openshift-pipelines/pipelines-as-code)
 [![E2E Tests](https://github.com/openshift-pipelines/pipelines-as-code/actions/workflows/e2e.yaml/badge.svg)](https://github.com/openshift-pipelines/pipelines-as-code/actions/workflows/e2e.yaml)
 [![License](https://img.shields.io/github/license/openshift-pipelines/pipelines-as-code)](LICENSE)
 

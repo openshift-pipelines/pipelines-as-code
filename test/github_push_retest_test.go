@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/google/go-github/v81/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
@@ -183,22 +184,21 @@ func TestGithubSecondPushRequestGitOpsCommentCancel(t *testing.T) {
 		&github.RepositoryComment{Body: github.Ptr(comment)})
 	assert.NilError(t, err)
 
-	g.Cnx.Clients.Log.Infof("Waiting for Repository to be updated still to %d since it has been cancelled", numberOfStatus)
-	repo, _ := twait.UntilRepositoryUpdated(ctx, g.Cnx.Clients, waitOpts) // don't check for error, because cancelled is not success and this will fail
-	cancelled := false
-	for _, c := range repo.Status {
-		if c.Conditions[0].Reason == tektonv1.TaskRunReasonCancelled.String() {
-			cancelled = true
-		}
-	}
+	cancelWaitOpts := waitOpts
+	cancelWaitOpts.MinNumberStatus = 1
+	cancelWaitOpts.PollTimeout = 90 * time.Second
 
-	// this went too fast so at least we check it was requested for it
-	if !cancelled {
+	// wait for the cancellation to propagate through PipelineRun status and repository status
+	err = twait.UntilPipelineRunHasReason(ctx, g.Cnx.Clients, tektonv1.PipelineRunReasonCancelled, cancelWaitOpts)
+	if err == nil {
+		_, err = twait.UntilRepositoryHasStatusReason(ctx, g.Cnx.Clients, cancelWaitOpts, tektonv1.PipelineRunReasonCancelled.String())
+	}
+	if err != nil {
 		numLines := int64(1000)
-		reg := regexp.MustCompile(".*pipelinerun.*skipping cancelling pipelinerun.*on-push.*already done.*")
-		err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 10, "ghe-controller", &numLines)
-		if err != nil {
-			t.Errorf("neither a cancelled pipelinerun in repo status or a request to skip the cancellation in the controller log was found: %s", err.Error())
+		reg := regexp.MustCompile(".*cancel-in-progress:.*pipelinerun.*on-push.*")
+		logErr := twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 10, "ghe-controller", &numLines)
+		if logErr != nil {
+			t.Errorf("neither a cancelled pipelinerun in repo status or a cancellation request in the controller log was found: status wait error: %s, log wait error: %s", err.Error(), logErr.Error())
 		}
 		return
 	}
@@ -209,9 +209,9 @@ func TestGithubSecondPushRequestGitOpsCommentCancel(t *testing.T) {
 	})
 	assert.NilError(t, err)
 	assert.Equal(t, len(pruns.Items), numberOfStatus)
-	cancelled = false
+	cancelled := false
 	for _, pr := range pruns.Items {
-		if pr.Status.Conditions[0].Reason == tektonv1.TaskRunReasonCancelled.String() {
+		if len(pr.Status.Conditions) > 0 && pr.Status.Conditions[0].Reason == tektonv1.PipelineRunReasonCancelled.String() {
 			cancelled = true
 		}
 	}
