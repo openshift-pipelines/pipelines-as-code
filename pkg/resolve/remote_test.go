@@ -464,3 +464,68 @@ func TestRemote(t *testing.T) {
 		})
 	}
 }
+
+func TestAssembleTaskFQDNs(t *testing.T) {
+	tests := []struct {
+		name        string
+		pipelineURL string
+		tasks       []string
+		expected    []string
+	}{
+		{
+			name:        "hub catalog URL returns tasks unchanged",
+			pipelineURL: "suva://python-build-test-tag-suva:1.2",
+			tasks:       []string{"task-a", "task-b"},
+			expected:    []string{"task-a", "task-b"},
+		},
+		{
+			name:        "custom hub without version returns tasks unchanged",
+			pipelineURL: "anotherHub://chmouzie",
+			tasks:       []string{"task-a"},
+			expected:    []string{"task-a"},
+		},
+		{
+			name:        "empty pipeline URL returns tasks unchanged",
+			pipelineURL: "",
+			tasks:       []string{"task-a", "task-b"},
+			expected:    []string{"task-a", "task-b"},
+		},
+		{
+			name:        "http URL resolves relative tasks",
+			pipelineURL: "http://example.com/pipelines/my-pipeline.yaml",
+			tasks:       []string{"../tasks/my-task.yaml"},
+			expected:    []string{"http://example.com/tasks/my-task.yaml"},
+		},
+		{
+			name:        "https URL resolves relative tasks",
+			pipelineURL: "https://example.com/repo/pipelines/pipeline.yaml",
+			tasks:       []string{"./task.yaml", "https://other.com/task2.yaml"},
+			expected:    []string{"https://example.com/repo/pipelines/task.yaml", "https://other.com/task2.yaml"},
+		},
+		{
+			name:        "uppercase HTTP URL resolves relative tasks",
+			pipelineURL: "HTTP://example.com/pipelines/pipeline.yaml",
+			tasks:       []string{"../tasks/my-task.yaml"},
+			expected:    []string{"http://example.com/tasks/my-task.yaml"},
+		},
+		{
+			name:        "mixed-case HTTPS URL resolves relative tasks",
+			pipelineURL: "HtTpS://example.com/repo/pipeline.yaml",
+			tasks:       []string{"./task.yaml"},
+			expected:    []string{"https://example.com/repo/task.yaml"},
+		},
+		{
+			name:        "repository file path URL returns tasks unchanged",
+			pipelineURL: "share/pipelines/build.yaml",
+			tasks:       []string{"../tasks/t.yaml", "tasks/other-task.yaml"},
+			expected:    []string{"../tasks/t.yaml", "tasks/other-task.yaml"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := assembleTaskFQDNs(tt.pipelineURL, tt.tasks)
+			assert.NilError(t, err)
+			assert.DeepEqual(t, tt.expected, result)
+		})
+	}
+}
