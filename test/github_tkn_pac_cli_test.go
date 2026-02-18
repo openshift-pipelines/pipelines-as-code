@@ -24,7 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestGithubSecondPacCli(t *testing.T) {
+func TestGithubGHEPacCli(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
 	ctx, runcnx, opts, ghprovider, err := tgithub.Setup(ctx, true, false)

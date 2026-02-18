@@ -25,9 +25,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// TestGithubSecondPullRequestConcurrencyMultiplePR concurrency for the same Repository over multiples PR including a /retest
+// TestGithubGHEPullRequestConcurrencyMultiplePR concurrency for the same Repository over multiples PR including a /retest
 // and a max-keep-run, may be a bit slow (180s at least) but it's worth it.
-func TestGithubSecondPullRequestConcurrencyMultiplePR(t *testing.T) {
+func TestGithubGHEPullRequestConcurrencyMultiplePR(t *testing.T) {
 	ctx := context.Background()
 	label := "Github Multiple PullRequest Concurrency-1 MaxKeepRun-1 Multiple"
 	numberOfPullRequest := 3

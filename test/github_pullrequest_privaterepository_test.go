@@ -34,12 +34,12 @@ func TestGithubPullRequestGitClone(t *testing.T) {
 	defer g.TearDown(ctx, t)
 }
 
-func TestGithubSecondPullRequestGitClone(t *testing.T) {
+func TestGithubGHEPullRequestGitClone(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:            "Github GHE - Private Repo",
-		YamlFiles:        []string{"testdata/pipelinerun_git_clone_private.yaml"},
-		SecondController: true,
+		Label:     "Github GHE - Private Repo",
+		YamlFiles: []string{"testdata/pipelinerun_git_clone_private.yaml"},
+		GHE:       true,
 	}
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
