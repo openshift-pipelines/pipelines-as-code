@@ -81,8 +81,10 @@ func printBanner(ioStreams *cli.IOStreams, provider, bodyFile, headersFile strin
 
 	fmt.Fprintf(ioStreams.Out, "%s %s\n", cs.Yellow("⚠"), cs.Bold("Important Notice"))
 	fmt.Fprint(ioStreams.Out, "\n")
-	fmt.Fprintf(ioStreams.Out, "This tool provides an interactive environment for testing CEL expressions.\n")
-	fmt.Fprintf(ioStreams.Out, "However, please note the following important differences:\n")
+	fmt.Fprintf(ioStreams.Out, "This is a %s feature for testing CEL expressions.\n", cs.Yellow("tech preview"))
+	fmt.Fprintf(ioStreams.Out, "%s\n", cs.Bold("The evaluator may not always produce the same output as in actual PipelineRuns."))
+	fmt.Fprint(ioStreams.Out, "\n")
+	fmt.Fprintf(ioStreams.Out, "Please note the following important differences:\n")
 	fmt.Fprint(ioStreams.Out, "\n")
 
 	differences := []string{
