@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -96,7 +97,9 @@ func MuxDiscussionsNote(mux *http.ServeMux, pid, mrID int, author string, author
 }
 
 func MuxGetFile(mux *http.ServeMux, pid int, fname, content string) {
-	mux.HandleFunc(fmt.Sprintf("/projects/%d/repository/files/%s/raw", pid, fname), func(rw http.ResponseWriter, _ *http.Request) {
+	// URL-encode the filename to match how go-gitlab encodes paths
+	encodedFname := url.PathEscape(fname)
+	mux.HandleFunc(fmt.Sprintf("/projects/%d/repository/files/%s/raw", pid, encodedFname), func(rw http.ResponseWriter, _ *http.Request) {
 		fmt.Fprint(rw, content)
 	})
 }
