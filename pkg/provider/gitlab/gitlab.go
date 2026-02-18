@@ -66,6 +66,7 @@ type Provider struct {
 	// current provider instance lifecycle to avoid repeated API calls.
 	memberCache        map[int64]bool
 	cachedChangedFiles *changedfiles.ChangedFiles
+	pacUserID          int64 // user login used by PAC
 }
 
 var defaultGitlabListOptions = gitlab.ListOptions{
@@ -114,6 +115,22 @@ func (v *Provider) CreateComment(_ context.Context, event *info.Event, commit, u
 
 			for _, comment := range comments {
 				if commentRe.MatchString(comment.Body) {
+					// Get the UserID for the PAC user.
+					if v.pacUserID == 0 {
+						pacUser, _, err := v.Client().Users.CurrentUser()
+						if err != nil {
+							return fmt.Errorf("unable to fetch user info: %w", err)
+						}
+						v.pacUserID = pacUser.ID
+					}
+					// Only edit comments created by this PAC installation's credentials.
+					// Prevents accidentally modifying comments from other users/bots.
+					if comment.Author.ID != v.pacUserID {
+						v.Logger.Debugf("This comment was not created by PAC, skipping comment edit :%d, created by user %d, PAC user: %d",
+							comment.ID, comment.Author.ID, v.pacUserID)
+						continue
+					}
+
 					_, _, err := v.Client().Notes.UpdateMergeRequestNote(event.TargetProjectID, int64(event.PullRequestNumber), comment.ID, &gitlab.UpdateMergeRequestNoteOptions{
 						Body: &commit,
 					})
