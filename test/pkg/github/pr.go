@@ -102,11 +102,11 @@ func PRCreate(ctx context.Context, cs *params.Run, ghcnx *ghprovider.Provider, o
 }
 
 type PRTest struct {
-	Label            string
-	YamlFiles        []string
-	SecondController bool
-	Webhook          bool
-	NoStatusCheck    bool
+	Label         string
+	YamlFiles     []string
+	GHE           bool
+	Webhook       bool
+	NoStatusCheck bool
 
 	Cnx             *params.Run
 	Options         options.E2E
@@ -122,7 +122,7 @@ type PRTest struct {
 func (g *PRTest) RunPullRequest(ctx context.Context, t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 
-	ctx, runcnx, opts, ghcnx, err := Setup(ctx, g.SecondController, g.Webhook)
+	ctx, runcnx, opts, ghcnx, err := Setup(ctx, g.GHE, g.Webhook)
 	assert.NilError(t, err)
 	g.Logger = runcnx.Clients.Log
 
@@ -219,7 +219,7 @@ func (g *PRTest) RunPushRequest(ctx context.Context, t *testing.T) {
 		targetBranch = targetNS
 	}
 	targetEvent := "push"
-	ctx, runcnx, opts, ghcnx, err := Setup(ctx, g.SecondController, g.Webhook)
+	ctx, runcnx, opts, ghcnx, err := Setup(ctx, g.GHE, g.Webhook)
 	assert.NilError(t, err)
 	g.Logger = runcnx.Clients.Log
 

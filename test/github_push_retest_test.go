@@ -27,15 +27,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestGithubSecondPushRequestGitOpsCommentOnComment(t *testing.T) {
+func TestGithubGHEPushRequestGitOpsCommentOnComment(t *testing.T) {
 	opsComment := "/hello-world"
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:            "Github GitOps push/retest request",
-		YamlFiles:        []string{"testdata/pipelinerun-on-comment-annotation.yaml"},
-		NoStatusCheck:    true,
-		TargetRefName:    options.MainBranch,
-		SecondController: true,
+		Label:         "Github GitOps push/retest request",
+		YamlFiles:     []string{"testdata/pipelinerun-on-comment-annotation.yaml"},
+		NoStatusCheck: true,
+		TargetRefName: options.MainBranch,
+		GHE:           true,
 	}
 	g.RunPushRequest(ctx, t)
 	defer g.TearDown(ctx, t)
@@ -89,14 +89,14 @@ func TestGithubSecondPushRequestGitOpsCommentOnComment(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestGithubSecondPushRequestGitOpsCommentRetest(t *testing.T) {
+func TestGithubGHEPushRequestGitOpsCommentRetest(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label: "Github GitOps push/retest request",
 		YamlFiles: []string{
 			"testdata/pipelinerun-on-push.yaml", "testdata/pipelinerun.yaml",
 		},
-		SecondController: true,
+		GHE: true,
 	}
 	g.RunPushRequest(ctx, t)
 	defer g.TearDown(ctx, t)
@@ -146,12 +146,12 @@ func TestGithubSecondPushRequestGitOpsCommentRetest(t *testing.T) {
 	}
 }
 
-func TestGithubSecondPushRequestGitOpsCommentCancel(t *testing.T) {
+func TestGithubGHEPushRequestGitOpsCommentCancel(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:            "GitHub Gitops push/cancel request",
-		YamlFiles:        []string{"testdata/pipelinerun-on-push.yaml", "testdata/pipelinerun.yaml"},
-		SecondController: true,
+		Label:     "GitHub Gitops push/cancel request",
+		YamlFiles: []string{"testdata/pipelinerun-on-push.yaml", "testdata/pipelinerun.yaml"},
+		GHE:       true,
 	}
 	g.RunPushRequest(ctx, t)
 	defer g.TearDown(ctx, t)
@@ -229,7 +229,7 @@ func TestGithubPullRequestRetestPullRequestNumberSubstitution(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{}
 
-	ctx, runcnx, opts, ghcnx, err := tgithub.Setup(ctx, g.SecondController, g.Webhook)
+	ctx, runcnx, opts, ghcnx, err := tgithub.Setup(ctx, g.GHE, g.Webhook)
 	assert.NilError(t, err)
 	g.Logger = runcnx.Clients.Log
 
