@@ -421,6 +421,7 @@ The CEL evaluator is only useful for admins, since the payload and headers as se
 `tkn pac cel` — Evaluate CEL (Common Expression Language) expressions interactively with webhook payloads.
 
 This command allows you to test and debug CEL expressions as they would be evaluated by Pipelines-as-Code, using real webhook payloads and headers. It supports interactive and non-interactive modes, provider auto-detection, and persistent history.
+Note that the CEL evaluator may not always produce the same output as when the expression is evaluated in an actual PipelineRun.
 
 To be able to have the CEL evaluator working, you need to have the payload and the headers available in a file. The best way to do this is to go to the webhook configuration on your git provider and copy the payload and headers to different files.
 
