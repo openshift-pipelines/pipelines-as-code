@@ -781,9 +781,12 @@ func TestCreateComment(t *testing.T) {
 			commit:       "Updated Comment",
 			updateMarker: "MARKER",
 			mockResponses: map[string]func(rw http.ResponseWriter, _ *http.Request){
+				"/user": func(rw http.ResponseWriter, _ *http.Request) {
+					fmt.Fprint(rw, `{"id": 100, "login": "pac-user"}`)
+				},
 				"/repos/org/repo/issues/123/comments": func(rw http.ResponseWriter, r *http.Request) {
 					if r.Method == http.MethodGet {
-						fmt.Fprint(rw, `[{"id": 555, "body": "MARKER"}]`)
+						fmt.Fprint(rw, `[{"id": 555, "body": "MARKER", "user": {"id": 100}}]`)
 						return
 					}
 				},
@@ -800,14 +803,41 @@ func TestCreateComment(t *testing.T) {
 			commit:       "New Comment",
 			updateMarker: "MARKER",
 			mockResponses: map[string]func(rw http.ResponseWriter, _ *http.Request){
+				"/user": func(rw http.ResponseWriter, _ *http.Request) {
+					fmt.Fprint(rw, `{"id": 100, "login": "pac-user"}`)
+				},
 				"/repos/org/repo/issues/123/comments": func(rw http.ResponseWriter, r *http.Request) {
 					if r.Method == http.MethodGet {
-						fmt.Fprint(rw, `[{"id": 555, "body": "NO_MATCH"}]`)
+						fmt.Fprint(rw, `[{"id": 555, "body": "NO_MATCH", "user": {"id": 200}}]`)
 						return
 					}
 					assert.Equal(t, r.Method, http.MethodPost)
 					rw.WriteHeader(http.StatusCreated)
 					fmt.Fprint(rw, `{}`)
+				},
+			},
+		},
+		{
+			name:         "skip comment from different user and create new",
+			event:        &info.Event{Organization: "org", Repository: "repo", PullRequestNumber: 123},
+			commit:       "Updated Comment",
+			updateMarker: "MARKER",
+			mockResponses: map[string]func(rw http.ResponseWriter, _ *http.Request){
+				"/user": func(rw http.ResponseWriter, _ *http.Request) {
+					fmt.Fprint(rw, `{"id": 100, "login": "pac-user"}`)
+				},
+				"/repos/org/repo/issues/123/comments": func(rw http.ResponseWriter, r *http.Request) {
+					if r.Method == http.MethodGet {
+						fmt.Fprint(rw, `[{"id": 555, "body": "Old MARKER", "user": {"id": 999}}]`)
+						return
+					}
+					assert.Equal(t, r.Method, http.MethodPost)
+					rw.WriteHeader(http.StatusCreated)
+					fmt.Fprint(rw, `{}`)
+				},
+				"/repos/org/repo/issues/comments/555": func(rw http.ResponseWriter, _ *http.Request) {
+					t.Error("edit endpoint should not be called for comment from different user")
+					rw.WriteHeader(http.StatusOK)
 				},
 			},
 		},
@@ -817,6 +847,8 @@ func TestCreateComment(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fakeclient, mux, teardown := tgitea.Setup(t)
 			defer teardown()
+			observer, _ := zapobserver.New(zap.InfoLevel)
+			fakelogger := zap.New(observer).Sugar()
 
 			if tt.clientNil {
 				p := &Provider{}
@@ -829,7 +861,7 @@ func TestCreateComment(t *testing.T) {
 				mux.HandleFunc(endpoint, handler)
 			}
 
-			p := &Provider{giteaClient: fakeclient}
+			p := &Provider{giteaClient: fakeclient, Logger: fakelogger}
 			err := p.CreateComment(context.Background(), tt.event, tt.commit, tt.updateMarker)
 			if tt.wantErr != "" {
 				assert.ErrorContains(t, err, tt.wantErr)

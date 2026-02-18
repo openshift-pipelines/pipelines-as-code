@@ -1576,9 +1576,12 @@ func TestGitLabCreateComment(t *testing.T) {
 			commit:       "Updated Comment",
 			updateMarker: "MARKER",
 			mockResponses: map[string]func(rw http.ResponseWriter, _ *http.Request){
+				"/user": func(rw http.ResponseWriter, _ *http.Request) {
+					fmt.Fprint(rw, `{"id": 100}`)
+				},
 				"/projects/666/merge_requests/123/notes": func(rw http.ResponseWriter, r *http.Request) {
 					if r.Method == http.MethodGet {
-						fmt.Fprint(rw, `[{"id": 555, "body": "MARKER"}]`)
+						fmt.Fprint(rw, `[{"id": 555, "body": "MARKER", "author": {"id": 100}}]`)
 						return
 					}
 				},
@@ -1595,14 +1598,41 @@ func TestGitLabCreateComment(t *testing.T) {
 			commit:       "New Comment",
 			updateMarker: "MARKER",
 			mockResponses: map[string]func(rw http.ResponseWriter, _ *http.Request){
+				"/user": func(rw http.ResponseWriter, _ *http.Request) {
+					fmt.Fprint(rw, `{"id": 100}`)
+				},
 				"/projects/666/merge_requests/123/notes": func(rw http.ResponseWriter, r *http.Request) {
 					if r.Method == http.MethodGet {
-						fmt.Fprint(rw, `[{"id": 555, "body": "NO_MATCH"}]`)
+						fmt.Fprint(rw, `[{"id": 555, "body": "NO_MATCH", "author": {"id": 200}}]`)
 						return
 					}
 					assert.Equal(t, r.Method, http.MethodPost)
 					rw.WriteHeader(http.StatusCreated)
 					fmt.Fprint(rw, `{}`)
+				},
+			},
+		},
+		{
+			name:         "skip comment from different user and create new",
+			event:        &info.Event{PullRequestNumber: 123, TargetProjectID: 666},
+			commit:       "Updated Comment",
+			updateMarker: "MARKER",
+			mockResponses: map[string]func(rw http.ResponseWriter, _ *http.Request){
+				"/user": func(rw http.ResponseWriter, _ *http.Request) {
+					fmt.Fprint(rw, `{"id": 100}`)
+				},
+				"/projects/666/merge_requests/123/notes": func(rw http.ResponseWriter, r *http.Request) {
+					if r.Method == http.MethodGet {
+						fmt.Fprint(rw, `[{"id": 555, "body": "Old MARKER", "author": {"id": 999}}]`)
+						return
+					}
+					assert.Equal(t, r.Method, http.MethodPost)
+					rw.WriteHeader(http.StatusCreated)
+					fmt.Fprint(rw, `{}`)
+				},
+				"/projects/666/merge_requests/123/notes/555": func(rw http.ResponseWriter, _ *http.Request) {
+					t.Error("edit endpoint should not be called for comment from different user")
+					rw.WriteHeader(http.StatusOK)
 				},
 			},
 		},
@@ -1632,6 +1662,7 @@ func TestGitLabCreateComment(t *testing.T) {
 			p := &Provider{
 				sourceProjectID: 666,
 				gitlabClient:    fakeclient,
+				Logger:          logger,
 			}
 			err := p.CreateComment(context.Background(), tt.event, tt.commit, tt.updateMarker)
 			if tt.wantErr != "" {
@@ -1649,6 +1680,9 @@ func TestGitLabCreateCommentPaging(t *testing.T) {
 	commit := "Updated Comment"
 	updateMarker := "MARKER"
 	mockResponses := map[string]func(rw http.ResponseWriter, _ *http.Request){
+		"/user": func(rw http.ResponseWriter, _ *http.Request) {
+			fmt.Fprint(rw, `{"id": 100}`)
+		},
 		"/projects/666/merge_requests/123/notes": func(rw http.ResponseWriter, r *http.Request) {
 			if r.Method == http.MethodGet {
 				page := thelp.SetPagingHeader(t, rw, r, 100)
@@ -1658,7 +1692,7 @@ func TestGitLabCreateCommentPaging(t *testing.T) {
 				} else if page > 10 {
 					t.Error("notes shouldn't be queries past the expected ID")
 				}
-				fmt.Fprintf(rw, `[{"id": %d, "body": "%s"}]`, page, note)
+				fmt.Fprintf(rw, `[{"id": %d, "body": "%s", "author": {"id": 100}}]`, page, note)
 			}
 		},
 		"/projects/666/merge_requests/123/notes/{id}": func(rw http.ResponseWriter, r *http.Request) {
@@ -1676,6 +1710,8 @@ func TestGitLabCreateCommentPaging(t *testing.T) {
 
 	fakeclient, mux, teardown := thelp.Setup(t)
 	defer teardown()
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observer).Sugar()
 
 	for endpoint, handler := range mockResponses {
 		mux.HandleFunc(endpoint, handler)
@@ -1684,6 +1720,7 @@ func TestGitLabCreateCommentPaging(t *testing.T) {
 	p := &Provider{
 		sourceProjectID: 666,
 		gitlabClient:    fakeclient,
+		Logger:          logger,
 	}
 	err := p.CreateComment(context.Background(), event, commit, updateMarker)
 	assert.NilError(t, err)
