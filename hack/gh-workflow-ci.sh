@@ -4,6 +4,7 @@
 set -exufo pipefail
 
 export PAC_API_INSTRUMENTATION_DIR=/tmp/api-instrumentation
+export TEST_GITLAB_API_URL=https://gitlab.pipelinesascode.com
 
 create_pac_github_app_secret() {
   # Read from environment variables instead of arguments
