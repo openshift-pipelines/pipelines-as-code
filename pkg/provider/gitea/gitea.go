@@ -64,6 +64,7 @@ type Provider struct {
 	eventEmitter *events.EventEmitter
 	run          *params.Run
 	triggerEvent string
+	pacUserID    int64 // user login used by PAC
 }
 
 func (v *Provider) Client() *forgejo.Client {
@@ -101,6 +102,22 @@ func (v *Provider) CreateComment(_ context.Context, event *info.Event, commit, u
 		re := regexp.MustCompile(updateMarker)
 		for _, comment := range comments {
 			if re.MatchString(comment.Body) {
+				// Get the UserID for the PAC user.
+				if v.pacUserID == 0 {
+					pacUser, _, err := v.Client().GetMyUserInfo()
+					if err != nil {
+						return fmt.Errorf("unable to fetch user info: %w", err)
+					}
+					v.pacUserID = pacUser.ID
+				}
+				// Only edit comments created by this PAC installation's credentials.
+				// Prevents accidentally modifying comments from other users/bots.
+				if comment.Poster.ID != v.pacUserID {
+					v.Logger.Debugf("Skipping comment %d: created by user ID %d, PAC user ID is %d",
+						comment.ID, comment.Poster.ID, v.pacUserID)
+					continue
+				}
+
 				_, _, err := v.Client().EditIssueComment(event.Organization, event.Repository, comment.ID, forgejo.EditIssueCommentOption{
 					Body: commit,
 				})
