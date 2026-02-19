@@ -3,6 +3,7 @@ package pipelineascode
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -261,6 +262,15 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 	var matchedPRs []matcher.Match
 	if p.event.TargetTestPipelineRun == "" {
 		if matchedPRs, err = matcher.MatchPipelinerunByAnnotation(ctx, p.logger, pipelineRuns, p.run, p.event, p.vcx, p.eventEmitter, repo, true); err != nil {
+			// Check if all pipelines have already succeeded - post comment so user gets feedback
+			if errors.Is(err, matcher.ErrNoFailedPipelineToRetest) {
+				p.logger.Infof("RepositoryAllPipelinesSucceeded: %s", err.Error())
+				p.eventEmitter.EmitMessage(nil, zap.InfoLevel, "RepositoryAllPipelinesSucceeded", err.Error())
+				if commentErr := p.vcx.CreateComment(ctx, p.event, err.Error(), ""); commentErr != nil {
+					return nil, fmt.Errorf("error adding no pipelineruns to rerun comment: %w", commentErr)
+				}
+				return nil, nil
+			}
 			// Don't fail when you don't have a match between pipeline and annotations
 			p.eventEmitter.EmitMessage(nil, zap.WarnLevel, "RepositoryNoMatch", err.Error())
 			// In a scenario where an external user submits a pull request and the repository owner uses the
