@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -1234,6 +1235,7 @@ func TestGetFiles(t *testing.T) {
 		name                             string
 		event                            *info.Event
 		mrchanges                        []*gitlab.MergeRequestDiff
+		diffAPILimitExceeded             bool
 		pushChanges                      []*gitlab.Diff
 		wantAddedFilesCount              int
 		wantDeletedFilesCount            int
@@ -1241,6 +1243,7 @@ func TestGetFiles(t *testing.T) {
 		wantRenamedFilesCount            int
 		sourceProjectID, targetProjectID int
 		wantError                        bool
+		apiCallCount                     int64
 	}{
 		{
 			name: "pull-request",
@@ -1272,6 +1275,41 @@ func TestGetFiles(t *testing.T) {
 			wantModifiedFilesCount: 1,
 			wantRenamedFilesCount:  1,
 			targetProjectID:        10,
+			apiCallCount:           2,
+		},
+		{
+			name: "merge request exceeding gitlab Diff API",
+			event: &info.Event{
+				TriggerTarget:     "pull_request",
+				Organization:      "pullrequestowner",
+				Repository:        "pullrequestrepository",
+				PullRequestNumber: 10,
+			},
+			mrchanges: []*gitlab.MergeRequestDiff{
+				{
+					NewPath: "modified.yaml",
+				},
+				{
+					NewPath: "added.doc",
+					NewFile: true,
+				},
+				{
+					NewPath:     "removed.yaml",
+					DeletedFile: true,
+				},
+				{
+					NewPath:     "renamed.doc",
+					RenamedFile: true,
+				},
+			},
+			wantAddedFilesCount:    1,
+			wantDeletedFilesCount:  1,
+			wantModifiedFilesCount: 1,
+			wantRenamedFilesCount:  1,
+			targetProjectID:        10,
+			wantError:              false,
+			apiCallCount:           2,
+			diffAPILimitExceeded:   true,
 		},
 		{
 			name: "pull-request with wrong project ID",
@@ -1304,6 +1342,7 @@ func TestGetFiles(t *testing.T) {
 			wantRenamedFilesCount:  0,
 			targetProjectID:        12,
 			wantError:              true,
+			apiCallCount:           1,
 		},
 		{
 			name: "push",
@@ -1335,6 +1374,7 @@ func TestGetFiles(t *testing.T) {
 			wantModifiedFilesCount: 1,
 			wantRenamedFilesCount:  1,
 			sourceProjectID:        0,
+			apiCallCount:           1,
 		},
 	}
 	for _, tt := range tests {
@@ -1343,10 +1383,40 @@ func TestGetFiles(t *testing.T) {
 			metricsutils.ResetMetrics()
 			fakeclient, mux, teardown := thelp.Setup(t)
 			defer teardown()
+
 			if tt.event.TriggerTarget == "pull_request" {
+				mux.HandleFunc(fmt.Sprintf("/projects/10/merge_requests/%d",
+					tt.event.PullRequestNumber), func(rw http.ResponseWriter, _ *http.Request) {
+
+					resp := gitlab.MergeRequest{
+						ChangesCount: strconv.Itoa(len(tt.mrchanges)),
+					}
+					if tt.diffAPILimitExceeded {
+						resp.ChangesCount = strconv.Itoa(len(tt.mrchanges)-1) + "+"
+					}
+					jeez, err := json.Marshal(resp)
+					assert.NilError(t, err)
+					_, _ = rw.Write(jeez)
+				})
 				mux.HandleFunc(fmt.Sprintf("/projects/10/merge_requests/%d/diffs",
 					tt.event.PullRequestNumber), func(rw http.ResponseWriter, _ *http.Request) {
-					jeez, err := json.Marshal(tt.mrchanges)
+					diffAPIChanges := tt.mrchanges
+					if tt.diffAPILimitExceeded {
+						// The Diff API will not return the full list of files
+						diffAPIChanges = diffAPIChanges[:len(tt.mrchanges)-1]
+					}
+
+					jeez, err := json.Marshal(diffAPIChanges)
+					assert.NilError(t, err)
+					_, _ = rw.Write(jeez)
+				})
+				mux.HandleFunc("/projects/10/repository/compare", func(rw http.ResponseWriter, _ *http.Request) {
+					// always return the full list, not subject to the Diff API size limitations
+					diffs := []*gitlab.Diff{}
+					for _, d := range tt.mrchanges {
+						diffs = append(diffs, &gitlab.Diff{NewPath: d.NewPath, NewFile: d.NewFile, RenamedFile: d.RenamedFile, DeletedFile: d.DeletedFile})
+					}
+					jeez, err := json.Marshal(gitlab.Compare{Diffs: diffs})
 					assert.NilError(t, err)
 					_, _ = rw.Write(jeez)
 				})
@@ -1385,14 +1455,14 @@ func TestGetFiles(t *testing.T) {
 			}
 
 			// Check caching
-			metricstest.CheckCountData(t, "pipelines_as_code_git_provider_api_request_count", metricsTags, 1)
+			metricstest.CheckCountData(t, "pipelines_as_code_git_provider_api_request_count", metricsTags, tt.apiCallCount)
 			_, _ = providerInfo.GetFiles(ctx, tt.event)
 			if tt.wantError {
 				// No caching on error
-				metricstest.CheckCountData(t, "pipelines_as_code_git_provider_api_request_count", metricsTags, 2)
+				metricstest.CheckCountData(t, "pipelines_as_code_git_provider_api_request_count", metricsTags, tt.apiCallCount*2)
 			} else {
 				// Cache API results on success
-				metricstest.CheckCountData(t, "pipelines_as_code_git_provider_api_request_count", metricsTags, 1)
+				metricstest.CheckCountData(t, "pipelines_as_code_git_provider_api_request_count", metricsTags, tt.apiCallCount)
 			}
 		})
 	}
@@ -1428,10 +1498,23 @@ func TestGetFilesPaging(t *testing.T) {
 			fakeclient, mux, teardown := thelp.Setup(t)
 			defer teardown()
 
+			changeCount := 5
+			apiCallCount := changeCount
 			if tt.event.TriggerTarget == "pull_request" {
+				// Extra request made to check the diff API limit
+				apiCallCount += 1
+			}
+
+			if tt.event.TriggerTarget == "pull_request" {
+				mux.HandleFunc(fmt.Sprintf("/projects/0/merge_requests/%d",
+					tt.event.PullRequestNumber), func(rw http.ResponseWriter, _ *http.Request) {
+					jeez, err := json.Marshal(gitlab.MergeRequest{ChangesCount: strconv.Itoa(changeCount)})
+					assert.NilError(t, err)
+					_, _ = rw.Write(jeez)
+				})
 				mux.HandleFunc(fmt.Sprintf("/projects/0/merge_requests/%d/diffs",
 					tt.event.PullRequestNumber), func(rw http.ResponseWriter, req *http.Request) {
-					pageCount := thelp.SetPagingHeader(t, rw, req, 5)
+					pageCount := thelp.SetPagingHeader(t, rw, req, changeCount)
 					jeez, err := json.Marshal([]*gitlab.MergeRequestDiff{{NewPath: fmt.Sprintf("change-%d.txt", pageCount)}})
 					assert.NilError(t, err)
 					_, _ = rw.Write(jeez)
@@ -1440,7 +1523,7 @@ func TestGetFilesPaging(t *testing.T) {
 			if tt.event.TriggerTarget == "push" {
 				mux.HandleFunc(fmt.Sprintf("/projects/0/repository/commits/%s/diff",
 					tt.event.SHA), func(rw http.ResponseWriter, req *http.Request) {
-					pageCount := thelp.SetPagingHeader(t, rw, req, 5)
+					pageCount := thelp.SetPagingHeader(t, rw, req, changeCount)
 					jeez, err := json.Marshal([]*gitlab.Diff{{NewPath: fmt.Sprintf("change-%d.txt", pageCount)}})
 					assert.NilError(t, err)
 					_, _ = rw.Write(jeez)
@@ -1454,12 +1537,12 @@ func TestGetFilesPaging(t *testing.T) {
 			changedFiles, err := providerInfo.GetFiles(ctx, tt.event)
 			assert.NilError(t, err, nil)
 			assert.DeepEqual(t, changedFiles.All, []string{"change-1.txt", "change-2.txt", "change-3.txt", "change-4.txt", "change-5.txt"})
-			assert.Equal(t, len(changedFiles.Modified), 5)
+			assert.Equal(t, len(changedFiles.Modified), changeCount)
 
 			// Check caching
-			metricstest.CheckCountData(t, "pipelines_as_code_git_provider_api_request_count", metricsTags, 5)
+			metricstest.CheckCountData(t, "pipelines_as_code_git_provider_api_request_count", metricsTags, int64(apiCallCount))
 			_, _ = providerInfo.GetFiles(ctx, tt.event)
-			metricstest.CheckCountData(t, "pipelines_as_code_git_provider_api_request_count", metricsTags, 5)
+			metricstest.CheckCountData(t, "pipelines_as_code_git_provider_api_request_count", metricsTags, int64(apiCallCount))
 		})
 	}
 }
