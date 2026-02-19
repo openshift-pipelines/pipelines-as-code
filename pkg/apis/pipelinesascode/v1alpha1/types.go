@@ -161,6 +161,10 @@ type Settings struct {
 
 	Github *GithubSettings `json:"github,omitempty"`
 
+	// Forgejo contains Forgejo/Gitea-specific settings.
+	// +optional
+	Forgejo *ForgejoSettings `json:"forgejo,omitempty"`
+
 	// AIAnalysis contains AI/LLM analysis configuration for automated CI/CD pipeline analysis.
 	// +optional
 	AIAnalysis *AIAnalysisConfig `json:"ai,omitempty"`
@@ -186,6 +190,15 @@ type GithubSettings struct {
 	CommentStrategy string `json:"comment_strategy,omitempty"`
 }
 
+type ForgejoSettings struct {
+	// UserAgent sets the User-Agent header on API requests to the Gitea/Forgejo instance.
+	// This is useful when the instance is behind an AI scraping protection proxy (e.g. Anubis)
+	// that blocks requests without a recognized User-Agent.
+	// Defaults to "pipelines-as-code/<version>" when left empty.
+	// +optional
+	UserAgent string `json:"user_agent,omitempty"`
+}
+
 func (s *Settings) Merge(newSettings *Settings) {
 	if newSettings.PipelineRunProvenance != "" && s.PipelineRunProvenance == "" {
 		s.PipelineRunProvenance = newSettings.PipelineRunProvenance
@@ -195,6 +208,9 @@ func (s *Settings) Merge(newSettings *Settings) {
 	}
 	if newSettings.GithubAppTokenScopeRepos != nil && s.GithubAppTokenScopeRepos == nil {
 		s.GithubAppTokenScopeRepos = newSettings.GithubAppTokenScopeRepos
+	}
+	if newSettings.Forgejo != nil && s.Forgejo == nil {
+		s.Forgejo = newSettings.Forgejo
 	}
 	if newSettings.AIAnalysis != nil && s.AIAnalysis == nil {
 		s.AIAnalysis = newSettings.AIAnalysis

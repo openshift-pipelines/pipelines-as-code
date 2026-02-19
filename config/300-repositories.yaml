@@ -448,6 +448,17 @@ spec:
                         - roles
                         - secret_ref
                       type: object
+                    forgejo:
+                      description: Forgejo contains Forgejo/Gitea-specific settings.
+                      properties:
+                        user_agent:
+                          description: |-
+                            UserAgent sets the User-Agent header on API requests to the Gitea/Forgejo instance.
+                            This is useful when the instance is behind an AI scraping protection proxy (e.g. Anubis)
+                            that blocks requests without a recognized User-Agent.
+                            Defaults to "pipelines-as-code/<version>" when left empty.
+                          type: string
+                      type: object
                     github:
                       properties:
                         comment_strategy:

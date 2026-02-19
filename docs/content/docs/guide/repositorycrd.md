@@ -192,6 +192,23 @@ spec:
       comment_strategy: "disable_all"
 ```
 
+### Forgejo/Gitea
+
+You can configure a custom `User-Agent` header for API requests to
+Forgejo/Gitea instances. This is useful when the instance is behind an AI
+scraping protection proxy (such as [Anubis](https://anubis.techaro.lol/)) that
+blocks requests without a recognized `User-Agent`.
+
+By default, Pipelines-as-Code sends `pipelines-as-code/<version>` as the
+`User-Agent`. You can override it per repository:
+
+```yaml
+spec:
+  settings:
+    forgejo:
+      user_agent: "my-custom-agent"
+```
+
 ## Concurrency
 
 `concurrency_limit` allows you to define the maximum number of PipelineRuns running at any time for a Repository.
