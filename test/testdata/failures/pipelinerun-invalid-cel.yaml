@@ -5,6 +5,7 @@ metadata:
   name: "\\ .PipelineName //"
   annotations:
     pipelinesascode.tekton.dev/on-cel-expression: event == "pull request" |
+    pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
 spec:
   pipelineSpec:
     tasks:
