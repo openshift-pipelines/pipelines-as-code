@@ -83,8 +83,8 @@ jobs:
       TEST_GITHUB_REPO_OWNER_WEBHOOK: openshift-pipelines/pipelines-as-code-e2e-tests-webhook
       TEST_GITHUB_SECOND_API_URL: ghe.pipelinesascode.com
       TEST_GITHUB_SECOND_EL_URL: http://ghe.paac-127-0-0-1.nip.io
-      TEST_GITHUB_SECOND_REPO_INSTALLATION_ID: 1
-      TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP: pipelines-as-code/e2e
+      TEST_GITHUB_SECOND_REPO_INSTALLATION_ID: 8
+      TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP: pac/zaki-test-pac
       TEST_GITHUB_SECOND_TOKEN: ${{ secrets.TEST_GITHUB_SECOND_TOKEN }}
       TEST_GITHUB_TOKEN: ${{ secrets.GH_APPS_TOKEN }}
       TEST_GITLAB_API_URL: https://gitlab.com
