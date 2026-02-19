@@ -51,7 +51,7 @@ type TestResult struct {
 func (g *PRTest) collectGitHubAPICalls(ctx context.Context, _ *testing.T) {
 	numLines := int64(100)
 	controllerName := "controller"
-	if g.SecondController {
+	if g.GHE {
 		controllerName = "ghe-controller"
 	}
 	ns := info.GetNS(ctx)
@@ -199,7 +199,7 @@ func (g *PRTest) outputTestResultToFile(outputDir string, apiCalls []string, las
 
 	// Create test result
 	controllerName := "controller"
-	if g.SecondController {
+	if g.GHE {
 		controllerName = "ghe-controller"
 	}
 

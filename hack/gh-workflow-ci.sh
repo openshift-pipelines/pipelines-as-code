@@ -86,8 +86,8 @@ get_tests() {
   fi
 
   local -a github_tests=()
-  if [[ "${target}" == *"github"* ]] && [[ "${target}" != "github_second_controller" ]]; then
-    mapfile -t github_tests < <(echo "${all_tests}" | grep -iP '^TestGithub' 2>/dev/null | grep -ivP 'Concurrency|GithubSecond|Flaky' 2>/dev/null | sort 2>/dev/null)
+  if [[ "${target}" == *"github"* ]] && [[ "${target}" != "github_ghe" ]] && [[ "${target}" != "github_second_controller" ]]; then
+    mapfile -t github_tests < <(echo "${all_tests}" | grep -iP '^TestGithub' 2>/dev/null | grep -ivP 'Concurrency|GithubGHE' 2>/dev/null | sort 2>/dev/null)
   fi
 
   # Calculate chunk sizes for splitting gitea tests into 3 parts
@@ -97,32 +97,49 @@ get_tests() {
     remainder=$((${#gitea_tests[@]} % 3))
   fi
 
-  # Calculate chunk sizes for splitting github tests into 2 parts
+  # TODO: revert once the new workflow matrix lands on main.
+  # Backward compat: github_1/github_2 chunking for pull_request_target
+  # which runs the workflow YAML from main (old target names).
   local github_chunk_size github_remainder
   if [[ ${#github_tests[@]} -gt 0 ]]; then
-    github_chunk_size=$((${#github_tests[@]} / 2))
-    github_remainder=$((${#github_tests[@]} % 2))
+    github_chunk_size=$(( ${#github_tests[@]} / 2 ))
+    github_remainder=$(( ${#github_tests[@]} % 2 ))
   fi
 
   case "${target}" in
   flaky)
-    printf '%s\n' "${all_tests}" | grep -iP 'Flaky'
+    # no-op: flaky tests have been absorbed into their natural categories.
+    # Kept for backward compat since pull_request_target uses main's YAML
+    # which still references 'flaky'.
     ;;
+
   concurrency)
     printf '%s\n' "${all_tests}" | grep -iP 'Concurrency|Others'
     ;;
+  github_public)
+    if [[ ${#github_tests[@]} -gt 0 ]]; then
+      printf '%s\n' "${github_tests[@]}"
+    fi
+    ;;
+  # TODO: revert - remove github_1, github_2, github_second_controller aliases
+  # once the new workflow matrix lands on main. These exist because
+  # pull_request_target runs the workflow YAML from main which still sends old
+  # target names.
   github_1)
     if [[ ${#github_tests[@]} -gt 0 ]]; then
-      printf '%s\n' "${github_tests[@]:0:${github_chunk_size}}"
+      printf '%s\n' "${github_tests[@]:0:$((github_chunk_size + github_remainder))}"
     fi
     ;;
   github_2)
     if [[ ${#github_tests[@]} -gt 0 ]]; then
-      printf '%s\n' "${github_tests[@]:${github_chunk_size}:$((github_chunk_size + github_remainder))}"
+      printf '%s\n' "${github_tests[@]:$((github_chunk_size + github_remainder))}"
     fi
     ;;
   github_second_controller)
-    printf '%s\n' "${all_tests}" | grep -iP 'GithubSecond' | grep -ivP 'Concurrency|Flaky'
+    printf '%s\n' "${all_tests}" | grep -iP 'GithubGHE' | grep -ivP 'Concurrency'
+    ;;
+  github_ghe)
+    printf '%s\n' "${all_tests}" | grep -iP 'GithubGHE' | grep -ivP 'Concurrency'
     ;;
   gitlab_bitbucket)
     printf '%s\n' "${all_tests}" | grep -iP 'Gitlab|Bitbucket' | grep -ivP 'Concurrency'
@@ -145,7 +162,8 @@ get_tests() {
     ;;
   *)
     echo "Invalid target: ${target}"
-    echo "supported targets: github_1, github_2, github_second_controller, gitlab_bitbucket, gitea_1, gitea_2, gitea_3, concurrency, flaky"
+    echo "supported targets: github_public, github_ghe, gitlab_bitbucket, gitea_1, gitea_2, gitea_3, concurrency, flaky"
+    echo "backward compat aliases: github_1, github_2, github_second_controller"
     ;;
   esac
 }
@@ -157,6 +175,11 @@ run_e2e_tests() {
 
   mapfile -t tests < <(get_tests "${target}")
   echo "About to run ${#tests[@]} tests: ${tests[*]}"
+
+  if [[ ${#tests[@]} -eq 0 || (-z "${tests[0]}" && ${#tests[@]} -eq 1) ]]; then
+    echo "No tests to run for target '${target}', exiting successfully."
+    return 0
+  fi
 
   mkdir -p /tmp/logs
 
@@ -285,7 +308,7 @@ output_logs)
   ;;
 print_tests)
   set +x
-  for target in github_1 github_2 github_second_controller gitlab_bitbucket gitea_1 gitea_2 gitea_3 concurrency flaky; do
+  for target in github_public github_ghe gitlab_bitbucket gitea_1 gitea_2 gitea_3 concurrency flaky; do
     mapfile -t tests < <(get_tests "${target}")
     echo "Tests for target: ${target} Total: ${#tests[@]}"
     printf '%s\n' "${tests[@]}"

@@ -18,10 +18,10 @@ func TestGithubPush(t *testing.T) {
 	ctx := context.Background()
 	if os.Getenv("TEST_GITHUB_REPO_OWNER_WEBHOOK") == "" {
 		g := &tgithub.PRTest{
-			Label:            "Github push request on Webhook",
-			YamlFiles:        []string{"testdata/pipelinerun-on-push.yaml"},
-			SecondController: false,
-			Webhook:          true,
+			Label:     "Github push request on Webhook",
+			YamlFiles: []string{"testdata/pipelinerun-on-push.yaml"},
+			GHE:       false,
+			Webhook:   true,
 		}
 		g.RunPushRequest(ctx, t)
 		defer g.TearDown(ctx, t)
@@ -36,12 +36,12 @@ func TestGithubPush(t *testing.T) {
 	defer g.TearDown(ctx, t)
 }
 
-func TestGithubSecondPush(t *testing.T) {
+func TestGithubGHEPush(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:            "Github push request",
-		YamlFiles:        []string{"testdata/pipelinerun-on-push.yaml"},
-		SecondController: true,
+		Label:     "Github push request",
+		YamlFiles: []string{"testdata/pipelinerun-on-push.yaml"},
+		GHE:       true,
 	}
 	g.RunPushRequest(ctx, t)
 	defer g.TearDown(ctx, t)

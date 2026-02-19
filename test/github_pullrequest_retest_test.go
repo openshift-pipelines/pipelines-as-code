@@ -18,18 +18,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// TestGithubSecondPullRequestGitopsCommentRetest will test the retest
+// TestGithubGHEPullRequestGitopsCommentRetest will test the retest
 // functionality of a GitHub pull request.
-func TestGithubSecondPullRequestGitopsCommentRetest(t *testing.T) {
+func TestGithubGHEPullRequestGitopsCommentRetest(t *testing.T) {
 	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
 		t.Skip("Skipping test since only enabled for nightly")
 	}
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:            "Github retest comment",
-		YamlFiles:        []string{"testdata/pipelinerun.yaml"},
-		SecondController: true,
-		NoStatusCheck:    true,
+		Label:         "Github retest comment",
+		YamlFiles:     []string{"testdata/pipelinerun.yaml"},
+		GHE:           true,
+		NoStatusCheck: true,
 	}
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
@@ -58,15 +58,15 @@ func TestGithubSecondPullRequestGitopsCommentRetest(t *testing.T) {
 	assert.Equal(t, repo.Status[len(repo.Status)-1].Conditions[0].Status, corev1.ConditionTrue)
 }
 
-// TestGithubSecondPullRequestRetest tests the retest functionality of a GitHub pull request.
+// TestGithubGHEPullRequestRetest tests the retest functionality of a GitHub pull request.
 // It sets up a pull request, triggers a retest comment, waits for the repository to be updated,
 // and verifies that the repository status is set to succeeded and the correct number of PipelineRuns are created.
-func TestGithubSecondPullRequestGitopsCommentCancel(t *testing.T) {
+func TestGithubGHEPullRequestGitopsCommentCancel(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:            "Github PullRequest Cancel",
-		YamlFiles:        []string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-gitops.yaml"},
-		SecondController: true,
+		Label:     "Github PullRequest Cancel",
+		YamlFiles: []string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-gitops.yaml"},
+		GHE:       true,
 	}
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
@@ -147,7 +147,7 @@ func TestGithubSecondPullRequestGitopsCommentCancel(t *testing.T) {
 	assert.Equal(t, unknownCount, 0, "should have zero unknown PipelineRuns: %+v", pruns.Items)
 }
 
-func TestGithubSecondRetestWithMultipleFailedPipelineRuns(t *testing.T) {
+func TestGithubGHERetestWithMultipleFailedPipelineRuns(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label: "Github Retest with multiple failed PipelineRuns",
@@ -155,8 +155,8 @@ func TestGithubSecondRetestWithMultipleFailedPipelineRuns(t *testing.T) {
 			"testdata/pipelinerun-tekton-validation.yaml",
 			"testdata/failures/pipelinerun-exit-1.yaml", // failed pipelinerun to be re-trigger after retest
 		},
-		NoStatusCheck:    true,
-		SecondController: true,
+		NoStatusCheck: true,
+		GHE:           true,
 	}
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
