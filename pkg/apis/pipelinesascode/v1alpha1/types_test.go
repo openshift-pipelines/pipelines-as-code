@@ -118,6 +118,56 @@ func TestMergeSpecs(t *testing.T) {
 			},
 		},
 		{
+			name: "gitea settings from global",
+			local: &RepositorySpec{
+				Settings:    &Settings{},
+				GitProvider: &GitProvider{},
+			},
+			global: RepositorySpec{
+				Settings: &Settings{
+					Gitea: &GiteaSettings{
+						UserAgent: "my-custom-agent",
+					},
+				},
+				GitProvider: &GitProvider{},
+			},
+			expected: &RepositorySpec{
+				Settings: &Settings{
+					Gitea: &GiteaSettings{
+						UserAgent: "my-custom-agent",
+					},
+				},
+				GitProvider: &GitProvider{},
+			},
+		},
+		{
+			name: "local gitea settings take precedence",
+			local: &RepositorySpec{
+				Settings: &Settings{
+					Gitea: &GiteaSettings{
+						UserAgent: "local-agent",
+					},
+				},
+				GitProvider: &GitProvider{},
+			},
+			global: RepositorySpec{
+				Settings: &Settings{
+					Gitea: &GiteaSettings{
+						UserAgent: "global-agent",
+					},
+				},
+				GitProvider: &GitProvider{},
+			},
+			expected: &RepositorySpec{
+				Settings: &Settings{
+					Gitea: &GiteaSettings{
+						UserAgent: "local-agent",
+					},
+				},
+				GitProvider: &GitProvider{},
+			},
+		},
+		{
 			name: "different git providers",
 			local: &RepositorySpec{
 				GitProvider: &GitProvider{
