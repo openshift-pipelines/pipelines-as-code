@@ -118,6 +118,56 @@ func TestMergeSpecs(t *testing.T) {
 			},
 		},
 		{
+			name: "forgejo settings from global",
+			local: &RepositorySpec{
+				Settings:    &Settings{},
+				GitProvider: &GitProvider{},
+			},
+			global: RepositorySpec{
+				Settings: &Settings{
+					Forgejo: &ForgejoSettings{
+						UserAgent: "my-custom-agent",
+					},
+				},
+				GitProvider: &GitProvider{},
+			},
+			expected: &RepositorySpec{
+				Settings: &Settings{
+					Forgejo: &ForgejoSettings{
+						UserAgent: "my-custom-agent",
+					},
+				},
+				GitProvider: &GitProvider{},
+			},
+		},
+		{
+			name: "local forgejo settings take precedence",
+			local: &RepositorySpec{
+				Settings: &Settings{
+					Forgejo: &ForgejoSettings{
+						UserAgent: "local-agent",
+					},
+				},
+				GitProvider: &GitProvider{},
+			},
+			global: RepositorySpec{
+				Settings: &Settings{
+					Forgejo: &ForgejoSettings{
+						UserAgent: "global-agent",
+					},
+				},
+				GitProvider: &GitProvider{},
+			},
+			expected: &RepositorySpec{
+				Settings: &Settings{
+					Forgejo: &ForgejoSettings{
+						UserAgent: "local-agent",
+					},
+				},
+				GitProvider: &GitProvider{},
+			},
+		},
+		{
 			name: "different git providers",
 			local: &RepositorySpec{
 				GitProvider: &GitProvider{
