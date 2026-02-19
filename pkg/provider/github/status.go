@@ -18,6 +18,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	"go.uber.org/zap"
 )
 
 const (
@@ -359,9 +360,28 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 	}
 
 	switch commentStrategy {
-	case "disable_all":
+	case provider.DisableAllCommentStrategy:
 		v.Logger.Warn("github: comments related to PipelineRuns status have been disabled for Github pull requests")
 		return nil
+	case provider.UpdateCommentStrategy:
+		if (status.Status == "completed" || (status.Status == "queued" && status.Title == pendingApproval)) &&
+			status.Text != "" && eventType == triggertype.PullRequest {
+			statusComment := v.formatPipelineComment(runevent.SHA, status)
+			// Creating the prefix that is added to the status comment for a pipeline run.
+			plrStatusCommentPrefix := fmt.Sprintf(provider.PlrStatusCommentPrefixTemplate, status.OriginalPipelineRunName)
+			// The entire markdown comment, including the prefix that is added to the pull request for the pipelinerun.
+			markdownStatusComment := fmt.Sprintf("%s\n%s", plrStatusCommentPrefix, statusComment)
+
+			if err := v.CreateComment(ctx, runevent, markdownStatusComment, plrStatusCommentPrefix); err != nil {
+				v.eventEmitter.EmitMessage(
+					v.repo,
+					zap.ErrorLevel,
+					"PipelineRunCommentCreationError",
+					fmt.Sprintf("failed to create comment: %s", err.Error()),
+				)
+				return err
+			}
+		}
 	default:
 		if (status.Status == "completed" || (status.Status == "queued" && status.Title == pendingApproval)) &&
 			status.Text != "" && eventType == triggertype.PullRequest {
@@ -437,4 +457,35 @@ func (v *Provider) CreateStatus(ctx context.Context, runevent *info.Event, statu
 
 	// Otherwise use the update status commit API
 	return v.createStatusCommit(ctx, runevent, statusOpts)
+}
+
+func (v *Provider) formatPipelineComment(sha string, status provider.StatusOpts) string {
+	var emoji, title string
+
+	switch {
+	case status.Status == "queued":
+		emoji = "⏳"
+		title = "Queued"
+	case status.Status == "in_progress":
+		emoji = "🚀"
+		title = "Running"
+	case status.Status == "completed" && status.Conclusion == "success":
+		emoji = "✅"
+		title = "Success"
+	case status.Status == "completed" && status.Conclusion == "failure":
+		emoji = "❌"
+		title = "Failed"
+	case status.Status == "completed" && status.Conclusion == "cancelled":
+		emoji = "⚠️"
+		title = "Cancelled"
+	case status.Status == "completed" && status.Conclusion == "neutral":
+		emoji = "ℹ️"
+		title = "Completed"
+	default:
+		emoji = "ℹ️"
+		title = "Status Update"
+	}
+
+	return fmt.Sprintf("%s **%s: %s for %s**\n\n%s<br>%s",
+		emoji, title, status.OriginalPipelineRunName, sha, status.Summary, status.Text)
 }
