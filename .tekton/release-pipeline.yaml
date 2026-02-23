@@ -107,8 +107,8 @@ spec:
                   git checkout -B $target {{ revision }}
                   echo ${TARGET_BRANCH} > docs/content/VERSION
                   echo ${allversions} > docs/content/ALLVERSIONS
-                  echo "$version" > pkg/params/version/version.txt
-                  git add release.yaml release.k8s.yaml docs/content/VERSION docs/content/ALLVERSIONS pkg/params/version/version.txt
+                  echo "$version" > pkg/params/versiondata/version.txt
+                  git add release.yaml release.k8s.yaml docs/content/VERSION docs/content/ALLVERSIONS pkg/params/versiondata/version.txt
                   git commit -m "Release yaml generated from {{repo_url}}/commit/{{revision}} for release ${version}"
                   echo git push "https://git:\$HUB_TOKEN@github.com/{{ repo_owner }}/{{ repo_name }} refs/heads/${target}"
                   git push --force https://git:$HUB_TOKEN@github.com/{{ repo_owner }}/{{ repo_name }} refs/heads/${target}
