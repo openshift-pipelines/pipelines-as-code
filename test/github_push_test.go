@@ -4,7 +4,6 @@ package test
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 
@@ -47,19 +46,13 @@ func TestGithubGHEPush(t *testing.T) {
 	defer g.TearDown(ctx, t)
 }
 
-func TestGithubPushRequestCELMatchOnTitle(t *testing.T) {
+func TestGithubGHEPushRequestCELMatchOnTitle(t *testing.T) {
 	ctx := context.Background()
-	for _, onWebhook := range []bool{false, true} {
-		if onWebhook && os.Getenv("TEST_GITHUB_REPO_OWNER_WEBHOOK") == "" {
-			t.Skip("TEST_GITHUB_REPO_OWNER_WEBHOOK is not set")
-			continue
-		}
-		g := &tgithub.PRTest{
-			Label:     fmt.Sprintf("Github push request test CEL match on title onWebhook=%v", onWebhook),
-			YamlFiles: []string{"testdata/pipelinerun-cel-annotation-for-title-match.yaml"},
-			Webhook:   onWebhook,
-		}
-		g.RunPushRequest(ctx, t)
-		defer g.TearDown(ctx, t)
+	g := &tgithub.PRTest{
+		Label:     "Github push request test CEL match on title",
+		YamlFiles: []string{"testdata/pipelinerun-cel-annotation-for-title-match.yaml"},
+		GHE:       true,
 	}
+	g.RunPushRequest(ctx, t)
+	defer g.TearDown(ctx, t)
 }

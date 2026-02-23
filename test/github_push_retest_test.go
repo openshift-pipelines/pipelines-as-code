@@ -224,10 +224,10 @@ func TestGithubGHEPushRequestGitOpsCommentCancel(t *testing.T) {
 	assert.Assert(t, cancelled, "No cancelled pipeline run found")
 }
 
-func TestGithubPullRequestRetestPullRequestNumberSubstitution(t *testing.T) {
+func TestGithubGHEPullRequestRetestPullRequestNumberSubstitution(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
-	g := &tgithub.PRTest{}
+	g := &tgithub.PRTest{GHE: true}
 
 	ctx, runcnx, opts, ghcnx, err := tgithub.Setup(ctx, g.GHE, g.Webhook)
 	assert.NilError(t, err)

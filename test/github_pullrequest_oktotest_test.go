@@ -20,7 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestGithubPullRequestOkToTest(t *testing.T) {
+func TestGithubGHEPullRequestOkToTest(t *testing.T) {
 	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
 		t.Skip("Skipping test since only enabled for nightly")
 	}
@@ -28,6 +28,7 @@ func TestGithubPullRequestOkToTest(t *testing.T) {
 	g := &tgithub.PRTest{
 		Label:     "Github OkToTest comment",
 		YamlFiles: []string{"testdata/pipelinerun.yaml"},
+		GHE:       true,
 	}
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
@@ -46,7 +47,7 @@ func TestGithubPullRequestOkToTest(t *testing.T) {
 		Sender:        g.Options.Organization,
 	}
 
-	installID, err := strconv.ParseInt(os.Getenv("TEST_GITHUB_REPO_INSTALLATION_ID"), 10, 64)
+	installID, err := strconv.ParseInt(os.Getenv("TEST_GITHUB_SECOND_APPLICATION_ID"), 10, 64)
 	assert.NilError(t, err)
 	event := github.IssueCommentEvent{
 		Comment: &github.IssueComment{
@@ -59,9 +60,7 @@ func TestGithubPullRequestOkToTest(t *testing.T) {
 		Issue: &github.Issue{
 			State: github.Ptr("open"),
 			PullRequestLinks: &github.PullRequestLinks{
-				HTMLURL: github.Ptr(fmt.Sprintf("%s/%s/pull/%d",
-					os.Getenv("TEST_GITHUB_API_URL"),
-					os.Getenv("TEST_GITHUB_REPO_OWNER"), g.PRNumber)),
+				HTMLURL: github.Ptr(fmt.Sprintf("%s/pull/%d", runevent.URL, g.PRNumber)),
 			},
 		},
 		Repo: &github.Repository{
@@ -77,10 +76,10 @@ func TestGithubPullRequestOkToTest(t *testing.T) {
 
 	err = payload.Send(ctx,
 		g.Cnx,
-		os.Getenv("TEST_EL_URL"),
-		os.Getenv("TEST_EL_WEBHOOK_SECRET"),
-		os.Getenv("TEST_GITHUB_API_URL"),
-		os.Getenv("TEST_GITHUB_REPO_INSTALLATION_ID"),
+		os.Getenv("TEST_GITHUB_SECOND_EL_URL"),
+		os.Getenv("TEST_GITHUB_SECOND_WEBHOOK_SECRET"),
+		os.Getenv("TEST_GITHUB_SECOND_API_URL"),
+		os.Getenv("TEST_GITHUB_SECOND_APPLICATION_ID"),
 		event,
 		"issue_comment",
 	)

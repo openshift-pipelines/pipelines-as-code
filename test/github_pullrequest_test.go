@@ -51,11 +51,12 @@ func commentBodyHash(body string) string {
 	return digest
 }
 
-func TestGithubPullRequest(t *testing.T) {
+func TestGithubGHEPullRequestBasic(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label:     "Github PullRequest",
 		YamlFiles: []string{"testdata/pipelinerun.yaml"},
+		GHE:       true,
 	}
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
@@ -642,22 +643,23 @@ func TestGithubGHEPullRequestNoPipelineRunCancelledOnPRClosed(t *testing.T) {
 	assert.Equal(t, false, isCancelled, fmt.Sprintf("PipelineRun got cancelled while we wanted it `Running`, last reason: %v", prReason))
 }
 
-func TestGithubCancelInProgressSettingFromConfigMapOnPR(t *testing.T) {
+func TestGithubGHECancelInProgressSettingFromConfigMapOnPR(t *testing.T) {
 	ctx := context.Background()
-	ctx, runcnx, _, _, err := tgithub.Setup(ctx, false, false)
+	ctx, runcnx, _, _, err := tgithub.Setup(ctx, true, false)
 	assert.NilError(t, err)
 
 	patchData := map[string]string{
 		"enable-cancel-in-progress-on-pull-requests": "true",
 	}
 
-	configMapTearDown := configmap.ChangeGlobalConfig(ctx, t, runcnx, patchData)
+	configMapTearDown := configmap.ChangeGlobalConfig(ctx, t, runcnx, "ghe-configmap", patchData)
 	defer configMapTearDown()
 
 	g := &tgithub.PRTest{
 		Label:         "Github PullRequest",
 		YamlFiles:     []string{"testdata/pipelinerun-gitops.yaml"},
 		NoStatusCheck: true,
+		GHE:           true,
 	}
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
@@ -687,22 +689,23 @@ func TestGithubCancelInProgressSettingFromConfigMapOnPR(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestGithubCancelInProgressSettingFromConfigMapOnPush(t *testing.T) {
+func TestGithubGHECancelInProgressSettingFromConfigMapOnPush(t *testing.T) {
 	ctx := context.Background()
-	ctx, runcnx, _, _, err := tgithub.Setup(ctx, false, false)
+	ctx, runcnx, _, _, err := tgithub.Setup(ctx, true, false)
 	assert.NilError(t, err)
 
 	patchData := map[string]string{
 		"enable-cancel-in-progress-on-push": "true",
 	}
 
-	configMapTearDown := configmap.ChangeGlobalConfig(ctx, t, runcnx, patchData)
+	configMapTearDown := configmap.ChangeGlobalConfig(ctx, t, runcnx, "ghe-configmap", patchData)
 	defer configMapTearDown()
 
 	g := &tgithub.PRTest{
 		Label:         "Github PullRequest",
 		YamlFiles:     []string{"testdata/pipelinerun-gitops.yaml"},
 		NoStatusCheck: true,
+		GHE:           true,
 	}
 	g.RunPushRequest(ctx, t)
 	defer g.TearDown(ctx, t)

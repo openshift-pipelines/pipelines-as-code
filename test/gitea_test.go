@@ -891,7 +891,7 @@ func TestGiteaErrorSnippetCustomLines(t *testing.T) {
 	cfgMapData := map[string]string{
 		"error-log-snippet-number-of-lines": "5",
 	}
-	defer configmap.ChangeGlobalConfig(ctx, t, topts.ParamsRun, cfgMapData)()
+	defer configmap.ChangeGlobalConfig(ctx, t, topts.ParamsRun, "pipelines-as-code", cfgMapData)()
 
 	_, f := tgitea.TestPR(t, topts)
 	defer f()
