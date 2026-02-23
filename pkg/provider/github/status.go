@@ -462,7 +462,7 @@ func (v *Provider) CreateStatus(ctx context.Context, runevent *info.Event, statu
 	return v.createStatusCommit(ctx, runevent, statusOpts)
 }
 
-func (v *Provider) formatPipelineComment(sha string, status provider.StatusOpts) string {
+func (v *Provider) formatPipelineComment(sha string, status providerstatus.StatusOpts) string {
 	var emoji, title string
 
 	switch {
