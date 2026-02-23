@@ -130,6 +130,39 @@ spec:
         workspaces:
           - name: source
             workspace: source
+      - name: ai-release-notes
+        runAfter:
+          - gorelease
+        workspaces:
+          - name: source
+            workspace: source
+        taskSpec:
+          workspaces:
+            - name: source
+          steps:
+            - name: generate-release-notes
+              image: registry.access.redhat.com/ubi9/python-312
+              workingDir: $(workspaces.source.path)
+              env:
+                - name: HUB_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: "nightly-ci-github-hub-token"
+                      key: "hub-token"
+                - name: GEMINI_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: "gemini-api-key"
+                      key: "api-key"
+                - name: REPO_OWNER
+                  value: "{{ repo_owner }}"
+                - name: REPO_NAME
+                  value: "{{ repo_name }}"
+              script: |
+                #!/usr/bin/env bash
+                set -euxo pipefail
+                git config --global --add safe.directory $(workspaces.source.path)
+                python3 ./hack/generate-releasenotes.py
   workspaces:
     - name: source
       volumeClaimTemplate:
