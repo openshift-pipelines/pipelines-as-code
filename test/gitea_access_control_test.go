@@ -290,7 +290,7 @@ func TestGiteaACLCommentsAllowingRememberOkToTestFalse(t *testing.T) {
 	cfgMapData := map[string]string{
 		"remember-ok-to-test": "false",
 	}
-	defer configmap.ChangeGlobalConfig(ctx, t, topts.ParamsRun, cfgMapData)()
+	defer configmap.ChangeGlobalConfig(ctx, t, topts.ParamsRun, "pipelines-as-code", cfgMapData)()
 
 	_, f := tgitea.TestPR(t, topts)
 	defer f()
