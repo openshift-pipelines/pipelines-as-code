@@ -242,10 +242,13 @@ const (
 func IsCommentStrategyUpdate(repo *v1alpha1.Repository) bool {
 	var commentStrategy string
 	if repo != nil && repo.Spec.Settings != nil {
-		if repo.Spec.Settings.Gitlab != nil {
+		switch {
+		case repo.Spec.Settings.Gitlab != nil:
 			commentStrategy = repo.Spec.Settings.Gitlab.CommentStrategy
-		} else if repo.Spec.Settings.Github != nil {
+		case repo.Spec.Settings.Github != nil:
 			commentStrategy = repo.Spec.Settings.Github.CommentStrategy
+		case repo.Spec.Settings.Forgejo != nil:
+			commentStrategy = repo.Spec.Settings.Forgejo.CommentStrategy
 		}
 	}
 

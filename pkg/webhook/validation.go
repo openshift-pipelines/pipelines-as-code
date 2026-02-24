@@ -18,7 +18,10 @@ import (
 
 var universalDeserializer = serializer.NewCodecFactory(runtime.NewScheme()).UniversalDeserializer()
 
-var allowedGitlabDisableCommentStrategyOnMr = sets.NewString("", provider.DisableAllCommentStrategy, provider.UpdateCommentStrategy)
+var (
+	allowedGitlabDisableCommentStrategyOnMr = sets.NewString("", provider.DisableAllCommentStrategy, provider.UpdateCommentStrategy)
+	allowedForgejoCommentStrategyOnPr       = sets.NewString("", provider.DisableAllCommentStrategy, provider.UpdateCommentStrategy)
+)
 
 // Path implements AdmissionController.
 func (ac *reconciler) Path() string {
@@ -65,6 +68,12 @@ func (ac *reconciler) Admit(_ context.Context, request *v1.AdmissionRequest) *v1
 	if repo.Spec.Settings != nil && repo.Spec.Settings.Gitlab != nil {
 		if !allowedGitlabDisableCommentStrategyOnMr.Has(repo.Spec.Settings.Gitlab.CommentStrategy) {
 			return webhook.MakeErrorStatus("comment strategy '%s' is not supported for Gitlab MRs", repo.Spec.Settings.Gitlab.CommentStrategy)
+		}
+	}
+
+	if repo.Spec.Settings != nil && repo.Spec.Settings.Forgejo != nil {
+		if !allowedForgejoCommentStrategyOnPr.Has(repo.Spec.Settings.Forgejo.CommentStrategy) {
+			return webhook.MakeErrorStatus("comment strategy '%s' is not supported for Forgejo/Gitea PRs", repo.Spec.Settings.Forgejo.CommentStrategy)
 		}
 	}
 
