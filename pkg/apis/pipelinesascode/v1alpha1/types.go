@@ -197,6 +197,14 @@ type ForgejoSettings struct {
 	// Defaults to "pipelines-as-code/<version>" when left empty.
 	// +optional
 	UserAgent string `json:"user_agent,omitempty"`
+
+	// CommentStrategy defines how Forgejo/Gitea comments are handled for pipeline results.
+	// Options:
+	// - 'disable_all': Disables all comments on pull requests
+	// - 'update': Updates a single comment per PipelineRun on every trigger.
+	// +optional
+	// +kubebuilder:validation:Enum="";disable_all;update
+	CommentStrategy string `json:"comment_strategy,omitempty"`
 }
 
 func (s *Settings) Merge(newSettings *Settings) {

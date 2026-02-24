@@ -10,9 +10,11 @@ import (
 	"testing"
 	"time"
 
+	forgejo "codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
 	pacrepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
@@ -216,4 +218,86 @@ func TestGiteaRetestAll(t *testing.T) {
 	}
 	assert.Assert(t, rt, "should have a retest all comment event in status")
 	assert.Equal(t, len(repo.Status), 2, "should have only 2 status")
+}
+
+func TestGiteaRetestCommentUpdate(t *testing.T) {
+	tests := []struct {
+		name            string
+		commentStrategy string
+		wantComments    int
+	}{
+		{
+			name:            "update strategy creates single comment",
+			commentStrategy: provider.UpdateCommentStrategy,
+			wantComments:    1,
+		},
+		{
+			name:            "disable_all strategy creates no comments",
+			commentStrategy: provider.DisableAllCommentStrategy,
+			wantComments:    0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var err error
+			ctx := context.Background()
+			topts := &tgitea.TestOpts{
+				TargetRefName: names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"),
+			}
+			topts.TargetNS = topts.TargetRefName
+			topts.ParamsRun, topts.Opts, topts.GiteaCNX, err = tgitea.Setup(ctx)
+			assert.NilError(t, err, fmt.Errorf("cannot do gitea setup: %w", err))
+			ctx, err = cctx.GetControllerCtxInfo(ctx, topts.ParamsRun)
+			assert.NilError(t, err)
+			assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, topts.ParamsRun))
+			assert.NilError(t, secret.Create(ctx, topts.ParamsRun, map[string]string{"secret": "SHHHHHHH"}, topts.TargetNS, "pac-secret"))
+			topts.TargetEvent = triggertype.PullRequest.String()
+			topts.YAMLFiles = map[string]string{
+				".tekton/pr.yaml":      "testdata/pipelinerun.yaml",
+				".tekton/nomatch.yaml": "testdata/pipelinerun-nomatch.yaml",
+			}
+			topts.Settings = &v1alpha1.Settings{
+				Forgejo: &v1alpha1.ForgejoSettings{
+					CommentStrategy: tt.commentStrategy,
+				},
+			}
+			_, f := tgitea.TestPR(t, topts)
+			defer f()
+			tgitea.PostCommentOnPullRequest(t, topts, "/retest")
+			waitOpts := twait.Opts{
+				RepoName:        topts.TargetNS,
+				Namespace:       topts.TargetNS,
+				MinNumberStatus: 2,
+				PollTimeout:     twait.DefaultTimeout,
+			}
+
+			repo, err := twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+			assert.NilError(t, err)
+			var rt bool
+			for _, status := range repo.Status {
+				if *status.EventType == triggertype.PullRequest.String() {
+					rt = true
+				}
+			}
+			assert.Assert(t, rt, "should have a retest all comment event in status")
+			assert.Equal(t, len(repo.Status), 2, "should have only 2 status")
+
+			// Verify comment strategy: count pac-status comments.
+			comments, _, err := topts.GiteaCNX.Client().ListRepoIssueComments(
+				topts.PullRequest.Base.Repository.Owner.UserName,
+				topts.PullRequest.Base.Repository.Name,
+				forgejo.ListIssueCommentOptions{})
+			assert.NilError(t, err)
+
+			markerPattern := regexp.MustCompile(`<!-- pac-status-`)
+			var pacStatusCount int
+			for _, comment := range comments {
+				if markerPattern.MatchString(comment.Body) {
+					pacStatusCount++
+				}
+			}
+			assert.Equal(t, pacStatusCount, tt.wantComments,
+				"with comment strategy %q, expected %d pac-status comment(s) but found %d", tt.commentStrategy, tt.wantComments, pacStatusCount)
+		})
+	}
 }
