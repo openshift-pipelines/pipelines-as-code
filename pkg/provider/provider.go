@@ -139,7 +139,7 @@ func getPipelineRunAndBranchOrTagNameFromComment(typeOfComment, comment string) 
 			return prName, branchName, tagName, fmt.Errorf("the GitOps comment `%s` does not contain a branch or tag word", comment)
 		}
 
-		if strings.Contains(splitText[1], "tag") {
+		if strings.Contains(splitText[1], "tag:") {
 			tagName = getBranchOrTagNameFromComment(splitText[1], "tag")
 		} else {
 			branchName = getBranchOrTagNameFromComment(splitText[1], "branch")

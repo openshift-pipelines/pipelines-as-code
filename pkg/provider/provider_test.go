@@ -334,6 +334,13 @@ func TestGetPipelineRunAndBranchNameFromTestComment(t *testing.T) {
 			wantError:  false,
 		},
 		{
+			name:       "branch name contains substring tag so not parsed as tag",
+			comment:    "/retest my-pipeline branch:feature-test-tagged-release",
+			prName:     "my-pipeline",
+			branchName: "feature-test-tagged-release",
+			wantError:  false,
+		},
+		{
 			name:      "different word other than branch for retest command",
 			comment:   "/retest invalidname:nightly",
 			wantError: true,

@@ -89,7 +89,7 @@ jobs:
       TEST_GITLAB_PROJECT_ID: ${{ vars.TEST_GITLAB_PROJECT_ID }}
       TEST_GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           ref: ${{ inputs.target_ref || github.event.pull_request.head.sha || github.sha }}
 
@@ -97,7 +97,7 @@ jobs:
       # This step will fail the job if checks do not pass, skipping subsequent steps.
       - name: Check user permissions on PRs
         if: github.event_name == 'pull_request_target'
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           script: |
             if (!context || !context.payload || !context.payload.pull_request) {
@@ -258,19 +258,19 @@ jobs:
               core.setFailed(`Unexpected error during permission check: ${err.message}`);
             });
 
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
         with:
           go-version-file: "go.mod"
 
       - name: Cache ko layer cache
-        uses: actions/cache@v5
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
         with:
           path: /tmp/ko-cache
           key: ${{ runner.os }}-ko-${{ hashFiles('go.sum') }}
           restore-keys: |
             ${{ runner.os }}-ko-
 
-      - uses: ko-build/setup-ko@v0.9
+      - uses: ko-build/setup-ko@d006021bd0c28d1ce33a07e7943d48b079944c8d # v0.9
 
       # Start binary build in background as soon as possible so we can optimize
       # the run of e2e when it's start later on
@@ -280,12 +280,12 @@ jobs:
           echo $! > /tmp/binary-build.pid
 
       - name: Install gosmee
-        uses: jaxxstorm/action-install-gh-release@v2.1.0
+        uses: jaxxstorm/action-install-gh-release@6096f2a2bbfee498ced520b6922ac2c06e990ed2 # v2.1.0
         with:
           repo: chmouel/gosmee
 
       - name: Install Snazy
-        uses: jaxxstorm/action-install-gh-release@v2.1.0
+        uses: jaxxstorm/action-install-gh-release@6096f2a2bbfee498ced520b6922ac2c06e990ed2 # v2.1.0
         with:
           repo: chmouel/snazy
 
@@ -303,7 +303,7 @@ jobs:
           echo "TEST_GITEA_SMEEURL=${SMEE_URL}" >> "$GITHUB_ENV"
 
       - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
+        uses: mxschmitt/action-tmate@c0afd6f790e3a5564914980036ebf83216678101 # v3
         # add all environment so we can debug easily
         env:
           CONTROLLER_DOMAIN_URL: controller.paac-127-0-0-1.nip.io
@@ -416,6 +416,7 @@ jobs:
           TEST_BITBUCKET_SERVER_TOKEN: ${{ secrets.BITBUCKET_SERVER_TOKEN }}
           TEST_BITBUCKET_SERVER_API_URL: ${{ secrets.BITBUCKET_SERVER_API_URL }}
           TEST_BITBUCKET_SERVER_WEBHOOK_SECRET: ${{ secrets.BITBUCKET_SERVER_WEBHOOK_SECRET }}
+          TEST_GITHUB_SECOND_APPLICATION_ID: ${{ vars.TEST_GITHUB_SECOND_APPLICATION_ID }}
         run: |
           ./hack/gh-workflow-ci.sh run_e2e_tests
 
@@ -433,7 +434,7 @@ jobs:
 
       - name: Upload artifacts
         if: ${{ always() }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: logs-e2e-tests-${{ matrix.provider }}
           path: /tmp/logs
@@ -444,9 +445,9 @@ jobs:
     needs: [e2e-tests]
     if: ${{ always() && github.ref_name == 'main' && github.event_name == 'schedule' }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Download all artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           path: artifacts
           pattern: logs-e2e-tests-*
