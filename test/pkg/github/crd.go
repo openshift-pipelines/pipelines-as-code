@@ -82,6 +82,38 @@ func CreateCRDIncoming(ctx context.Context, t *testing.T, repoinfo *github.Repos
 
 	err := repository.CreateNS(ctx, targetNS, run)
 	assert.NilError(t, err)
+
+	if opts.DirectWebhook {
+		token, _ := os.LookupEnv("TEST_GITHUB_TOKEN")
+		webhookSecret, _ := os.LookupEnv("TEST_EL_WEBHOOK_SECRET")
+		apiURL, _ := os.LookupEnv("TEST_GITHUB_API_URL")
+		err := secret.Create(ctx, run,
+			map[string]string{
+				"webhook-secret": webhookSecret,
+				"token":          token,
+			},
+			targetNS,
+			"webhook-token")
+		assert.NilError(t, err)
+		repo.Spec.GitProvider = &v1alpha1.GitProvider{
+			// Type must be set explicitly so the incoming webhook handler
+			// (adapter.detectIncoming) knows this is a direct webhook setup.
+			// Without it, GitProvider.Type == "" causes the controller to
+			// assume GitHub App mode and attempt to fetch the global
+			// pipelines-as-code-secret, which doesn't exist for direct webhooks.
+			Type: "github",
+			URL:  apiURL,
+			Secret: &v1alpha1.Secret{
+				Name: "webhook-token",
+				Key:  "token",
+			},
+			WebhookSecret: &v1alpha1.Secret{
+				Name: "webhook-token",
+				Key:  "webhook-secret",
+			},
+		}
+	}
+
 	err = repository.CreateRepo(ctx, targetNS, run, repo)
 	assert.NilError(t, err)
 	return err

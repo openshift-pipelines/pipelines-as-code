@@ -110,7 +110,7 @@ func TestGiteaParamsOnRepoCRWithCustomConsole(t *testing.T) {
 		"custom-console-url-pr-tasklog": "https://url/log/{{ custom }}",
 		"tekton-dashboard-url":          "",
 	}
-	defer configmap.ChangeGlobalConfig(ctx, t, topts.ParamsRun, cfgMapData)()
+	defer configmap.ChangeGlobalConfig(ctx, t, topts.ParamsRun, "pipelines-as-code", cfgMapData)()
 	_, f := tgitea.TestPR(t, topts)
 	defer f()
 	// topts.Regexp = regexp.MustCompile(`(?m).*Custom Console.*https://url/detail/myconsole.*https://url/log/myconsole`)

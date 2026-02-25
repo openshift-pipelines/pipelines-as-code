@@ -25,13 +25,14 @@ import (
 	pacapi "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/listers/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/llm"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	pac "github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
+	prmetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/pipelinerunmetrics"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/sync"
+	providerstatus "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
+	queuepkg "github.com/openshift-pipelines/pipelines-as-code/pkg/queue"
 )
 
 // Reconciler implements controller.Reconciler for PipelineRun resources.
@@ -40,8 +41,8 @@ type Reconciler struct {
 	repoLister        pacapi.RepositoryLister
 	pipelineRunLister tektonv1lister.PipelineRunLister
 	kinteract         kubeinteraction.Interface
-	qm                sync.QueueManagerInterface
-	metrics           *metrics.Recorder
+	qm                queuepkg.ManagerInterface
+	metrics           *prmetrics.Recorder
 	eventEmitter      *events.EventEmitter
 	globalRepo        *v1alpha1.Repository
 	secretNS          string
@@ -275,7 +276,7 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 
 		if err := r.updatePipelineRunToInProgress(ctx, logger, repo, pr); err != nil {
 			logger.Errorf("failed to update status: %w", err)
-			_ = r.qm.RemoveFromQueue(sync.RepoKey(repo), sync.PrKey(pr))
+			_ = r.qm.RemoveFromQueue(queuepkg.RepoKey(repo), queuepkg.PrKey(pr))
 			continue
 		}
 		break
@@ -313,9 +314,9 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 	if err != nil {
 		return fmt.Errorf("cannot create message template: %w", err)
 	}
-	status := provider.StatusOpts{
+	status := providerstatus.StatusOpts{
 		Status:                  "in_progress",
-		Conclusion:              "pending",
+		Conclusion:              providerstatus.ConclusionPending,
 		Text:                    msg,
 		DetailsURL:              consoleURL,
 		PipelineRunName:         pr.GetName(),

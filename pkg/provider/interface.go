@@ -9,23 +9,9 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	v1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	"go.uber.org/zap"
 )
-
-type StatusOpts struct {
-	PipelineRun              *v1.PipelineRun
-	PipelineRunName          string
-	OriginalPipelineRunName  string
-	Status                   string
-	Conclusion               string
-	Text                     string
-	DetailsURL               string
-	Summary                  string
-	Title                    string
-	InstanceCountForCheckRun int
-	AccessDenied             bool
-}
 
 type Interface interface {
 	SetLogger(*zap.SugaredLogger)
@@ -34,7 +20,7 @@ type Interface interface {
 	ParsePayload(context.Context, *params.Run, *http.Request, string) (*info.Event, error)
 	IsAllowed(context.Context, *info.Event) (bool, error)
 	IsAllowedOwnersFile(context.Context, *info.Event) (bool, error)
-	CreateStatus(context.Context, *info.Event, StatusOpts) error
+	CreateStatus(context.Context, *info.Event, status.StatusOpts) error
 	GetTektonDir(context.Context, *info.Event, string, string) (string, error)      // ctx, event, path, provenance
 	GetFileInsideRepo(context.Context, *info.Event, string, string) (string, error) // ctx, event, path, branch
 	SetClient(context.Context, *params.Run, *info.Event, *v1alpha1.Repository, *events.EventEmitter) error

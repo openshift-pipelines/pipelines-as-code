@@ -4,7 +4,6 @@ package test
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 
@@ -18,10 +17,10 @@ func TestGithubPush(t *testing.T) {
 	ctx := context.Background()
 	if os.Getenv("TEST_GITHUB_REPO_OWNER_WEBHOOK") == "" {
 		g := &tgithub.PRTest{
-			Label:            "Github push request on Webhook",
-			YamlFiles:        []string{"testdata/pipelinerun-on-push.yaml"},
-			SecondController: false,
-			Webhook:          true,
+			Label:     "Github push request on Webhook",
+			YamlFiles: []string{"testdata/pipelinerun-on-push.yaml"},
+			GHE:       false,
+			Webhook:   true,
 		}
 		g.RunPushRequest(ctx, t)
 		defer g.TearDown(ctx, t)
@@ -36,30 +35,24 @@ func TestGithubPush(t *testing.T) {
 	defer g.TearDown(ctx, t)
 }
 
-func TestGithubSecondPush(t *testing.T) {
+func TestGithubGHEPush(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:            "Github push request",
-		YamlFiles:        []string{"testdata/pipelinerun-on-push.yaml"},
-		SecondController: true,
+		Label:     "Github push request",
+		YamlFiles: []string{"testdata/pipelinerun-on-push.yaml"},
+		GHE:       true,
 	}
 	g.RunPushRequest(ctx, t)
 	defer g.TearDown(ctx, t)
 }
 
-func TestGithubPushRequestCELMatchOnTitle(t *testing.T) {
+func TestGithubGHEPushRequestCELMatchOnTitle(t *testing.T) {
 	ctx := context.Background()
-	for _, onWebhook := range []bool{false, true} {
-		if onWebhook && os.Getenv("TEST_GITHUB_REPO_OWNER_WEBHOOK") == "" {
-			t.Skip("TEST_GITHUB_REPO_OWNER_WEBHOOK is not set")
-			continue
-		}
-		g := &tgithub.PRTest{
-			Label:     fmt.Sprintf("Github push request test CEL match on title onWebhook=%v", onWebhook),
-			YamlFiles: []string{"testdata/pipelinerun-cel-annotation-for-title-match.yaml"},
-			Webhook:   onWebhook,
-		}
-		g.RunPushRequest(ctx, t)
-		defer g.TearDown(ctx, t)
+	g := &tgithub.PRTest{
+		Label:     "Github push request test CEL match on title",
+		YamlFiles: []string{"testdata/pipelinerun-cel-annotation-for-title-match.yaml"},
+		GHE:       true,
 	}
+	g.RunPushRequest(ctx, t)
+	defer g.TearDown(ctx, t)
 }

@@ -15,7 +15,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/setup"
 )
 
-func Setup(ctx context.Context, onSecondController, viaDirectWebhook bool) (context.Context, *params.Run, options.E2E, *github.Provider, error) {
+func Setup(ctx context.Context, onGHE, viaDirectWebhook bool) (context.Context, *params.Run, options.E2E, *github.Provider, error) {
 	if err := setup.RequireEnvs(
 		"TEST_EL_URL",
 		"TEST_GITHUB_API_URL",
@@ -33,7 +33,7 @@ func Setup(ctx context.Context, onSecondController, viaDirectWebhook bool) (cont
 	// EL_URL mean CONTROLLER URL, it's called el_url because a long time ago pac was based on trigger
 	controllerURL := os.Getenv("TEST_EL_URL")
 
-	if onSecondController {
+	if onGHE {
 		if err := setup.RequireEnvs(
 			"TEST_GITHUB_SECOND_API_URL",
 			"TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP",
@@ -52,7 +52,7 @@ func Setup(ctx context.Context, onSecondController, viaDirectWebhook bool) (cont
 		githubToken = os.Getenv("TEST_GITHUB_TOKEN")
 		split = strings.Split(githubRepoOwnerDirectWebhook, "/")
 	}
-	if onSecondController {
+	if onGHE {
 		githubURL = os.Getenv("TEST_GITHUB_SECOND_API_URL")
 		githubRepoOwnerGithubApp = os.Getenv("TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP")
 		githubToken = os.Getenv("TEST_GITHUB_SECOND_TOKEN")
@@ -65,6 +65,11 @@ func Setup(ctx context.Context, onSecondController, viaDirectWebhook bool) (cont
 		return ctx, nil, options.E2E{}, github.New(), err
 	}
 	run.Info.Controller = info.GetControllerInfoFromEnvOrDefault()
+	ctxWithInfo, err := cctx.GetControllerCtxInfo(ctx, run)
+	if err != nil {
+		return ctx, nil, options.E2E{}, github.New(), err
+	}
+	ctx = ctxWithInfo
 	e2eoptions := options.E2E{Organization: split[0], Repo: split[1], DirectWebhook: viaDirectWebhook, ControllerURL: controllerURL}
 	gprovider := github.New()
 	gprovider.Run = run
@@ -72,11 +77,6 @@ func Setup(ctx context.Context, onSecondController, viaDirectWebhook bool) (cont
 
 	if githubToken == "" && !viaDirectWebhook {
 		var err error
-
-		ctx, err = cctx.GetControllerCtxInfo(ctx, run)
-		if err != nil {
-			return ctx, nil, options.E2E{}, github.New(), err
-		}
 
 		envGithubRepoInstallationID, err := setup.GetRequiredEnv("TEST_GITHUB_REPO_INSTALLATION_ID")
 		if err != nil {

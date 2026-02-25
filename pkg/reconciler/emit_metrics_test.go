@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
-	metricsutils "github.com/openshift-pipelines/pipelines-as-code/pkg/test/metrics"
+	prmetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/pipelinerunmetrics"
+	metricsutils "github.com/openshift-pipelines/pipelines-as-code/pkg/test/metricstest"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
@@ -76,6 +76,18 @@ func TestCountPipelineRun(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "provider is Forgejo",
+			annotations: map[string]string{
+				keys.GitProvider: "forgejo",
+				keys.EventType:   "push",
+			},
+			tags: map[string]string{
+				"provider":   "forgejo-webhook",
+				"event-type": "push",
+			},
+			wantErr: false,
+		},
+		{
 			name: "unsupported provider",
 			annotations: map[string]string{
 				keys.GitProvider: "unsupported",
@@ -88,7 +100,7 @@ func TestCountPipelineRun(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metricsutils.ResetMetrics()
-			m, err := metrics.NewRecorder()
+			m, err := prmetrics.NewRecorder()
 			assert.NilError(t, err)
 			r := &Reconciler{
 				metrics: m,
@@ -226,7 +238,7 @@ func TestCalculatePipelineRunDuration(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metricsutils.ResetMetrics()
-			m, err := metrics.NewRecorder()
+			m, err := prmetrics.NewRecorder()
 			assert.NilError(t, err)
 			r := &Reconciler{
 				metrics: m,
@@ -293,7 +305,7 @@ func TestCountRunningPRs(t *testing.T) {
 	}
 
 	metricsutils.ResetMetrics()
-	m, err := metrics.NewRecorder()
+	m, err := prmetrics.NewRecorder()
 	assert.NilError(t, err)
 	r := &Reconciler{
 		metrics: m,

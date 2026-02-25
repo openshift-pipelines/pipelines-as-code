@@ -4,6 +4,7 @@
 set -exufo pipefail
 
 export PAC_API_INSTRUMENTATION_DIR=/tmp/api-instrumentation
+export TEST_GITLAB_API_URL=https://gitlab.pipelinesascode.com
 
 create_pac_github_app_secret() {
   # Read from environment variables instead of arguments
@@ -42,15 +43,8 @@ create_second_github_app_controller_on_ghe() {
   local test_github_second_application_id="${TEST_GITHUB_SECOND_APPLICATION_ID}"
   local test_github_second_webhook_secret="${TEST_GITHUB_SECOND_WEBHOOK_SECRET}"
 
-  if [[ -n "$(type -p apt)" ]]; then
-    sudo apt update &&
-      sudo apt install -y python3-yaml
-  elif [[ -n "$(type -p dnf)" ]]; then
-    dnf install -y python3-pyyaml
-  else
-    # TODO(chmouel): setup a virtualenvironment instead
-    python3 -m pip install --break-system-packages PyYAML
-  fi
+  # install uv
+  type -p uv >/dev/null 2>&1 || { curl -LsSf https://astral.sh/uv/install.sh | sh; }
 
   ./hack/second-controller.py \
     --controller-image="ko" \
@@ -77,8 +71,7 @@ get_tests() {
   mapfile -t testfiles < <(find test/ -maxdepth 1 -name '*.go')
   all_tests=$(grep -hioP '^func[[:space:]]+Test[[:alnum:]_]+' "${testfiles[@]}" | sed -E 's/^func[[:space:]]+//')
 
-  local -a gitea_tests
-  local chunk_size remainder
+  local -a gitea_tests=()
   if [[ "${target}" == *"gitea"* ]]; then
     # Filter Gitea tests, excluding Concurrency tests
     mapfile -t gitea_tests < <(echo "${all_tests}" | grep -iP '^TestGitea' 2>/dev/null | grep -ivP 'Concurrency' 2>/dev/null | sort 2>/dev/null)
@@ -90,19 +83,63 @@ get_tests() {
       fi
     done
     gitea_tests=("${filtered_tests[@]}")
+  fi
+
+  local -a github_tests=()
+  if [[ "${target}" == *"github"* ]] && [[ "${target}" != "github_ghe" ]] && [[ "${target}" != "github_second_controller" ]]; then
+    mapfile -t github_tests < <(echo "${all_tests}" | grep -iP '^TestGithub' 2>/dev/null | grep -ivP 'Concurrency|GithubGHE' 2>/dev/null | sort 2>/dev/null)
+  fi
+
+  # Calculate chunk sizes for splitting gitea tests into 3 parts
+  local chunk_size remainder
+  if [[ ${#gitea_tests[@]} -gt 0 ]]; then
     chunk_size=$((${#gitea_tests[@]} / 3))
     remainder=$((${#gitea_tests[@]} % 3))
   fi
 
+  # TODO: revert once the new workflow matrix lands on main.
+  # Backward compat: github_1/github_2 chunking for pull_request_target
+  # which runs the workflow YAML from main (old target names).
+  local github_chunk_size github_remainder
+  if [[ ${#github_tests[@]} -gt 0 ]]; then
+    github_chunk_size=$(( ${#github_tests[@]} / 2 ))
+    github_remainder=$(( ${#github_tests[@]} % 2 ))
+  fi
+
   case "${target}" in
-  concurrency)
-    printf '%s\n' "${all_tests}" | grep -iP 'Concurrency'
+  flaky)
+    # no-op: flaky tests have been absorbed into their natural categories.
+    # Kept for backward compat since pull_request_target uses main's YAML
+    # which still references 'flaky'.
     ;;
-  github)
-    printf '%s\n' "${all_tests}" | grep -iP 'Github' | grep -ivP 'Concurrency|GithubSecond'
+
+  concurrency)
+    printf '%s\n' "${all_tests}" | grep -iP 'Concurrency|Others'
+    ;;
+  github_public)
+    if [[ ${#github_tests[@]} -gt 0 ]]; then
+      printf '%s\n' "${github_tests[@]}"
+    fi
+    ;;
+  # TODO: revert - remove github_1, github_2, github_second_controller aliases
+  # once the new workflow matrix lands on main. These exist because
+  # pull_request_target runs the workflow YAML from main which still sends old
+  # target names.
+  github_1)
+    if [[ ${#github_tests[@]} -gt 0 ]]; then
+      printf '%s\n' "${github_tests[@]:0:$((github_chunk_size + github_remainder))}"
+    fi
+    ;;
+  github_2)
+    if [[ ${#github_tests[@]} -gt 0 ]]; then
+      printf '%s\n' "${github_tests[@]:$((github_chunk_size + github_remainder))}"
+    fi
     ;;
   github_second_controller)
-    printf '%s\n' "${all_tests}" | grep -iP 'GithubSecond' | grep -ivP 'Concurrency'
+    printf '%s\n' "${all_tests}" | grep -iP 'GithubGHE' | grep -ivP 'Concurrency'
+    ;;
+  github_ghe)
+    printf '%s\n' "${all_tests}" | grep -iP 'GithubGHE' | grep -ivP 'Concurrency'
     ;;
   gitlab_bitbucket)
     printf '%s\n' "${all_tests}" | grep -iP 'Gitlab|Bitbucket' | grep -ivP 'Concurrency'
@@ -123,13 +160,10 @@ get_tests() {
       printf '%s\n' "${gitea_tests[@]:${start_idx}:$((chunk_size + remainder))}"
     fi
     ;;
-  gitea_others)
-    # Deprecated: Use gitea_1, gitea_2, gitea_3 instead
-    printf '%s\n' "${all_tests}" | grep -ivP 'Github|Gitlab|Bitbucket|Concurrency'
-    ;;
   *)
     echo "Invalid target: ${target}"
-    echo "supported targets: github, github_second_controller, gitlab_bitbucket, gitea_1, gitea_2, gitea_3, concurrency"
+    echo "supported targets: github_public, github_ghe, gitlab_bitbucket, gitea_1, gitea_2, gitea_3, concurrency, flaky"
+    echo "backward compat aliases: github_1, github_2, github_second_controller"
     ;;
   esac
 }
@@ -141,8 +175,17 @@ run_e2e_tests() {
 
   mapfile -t tests < <(get_tests "${target}")
   echo "About to run ${#tests[@]} tests: ${tests[*]}"
+
+  if [[ ${#tests[@]} -eq 0 || (-z "${tests[0]}" && ${#tests[@]} -eq 1) ]]; then
+    echo "No tests to run for target '${target}', exiting successfully."
+    return 0
+  fi
+
+  mkdir -p /tmp/logs
+
   # shellcheck disable=SC2001
-  make test-e2e GO_TEST_FLAGS="-v -run \"$(echo "${tests[*]}" | sed 's/ /|/g')\""
+  make test-e2e GO_TEST_FLAGS="-v -run \"$(echo "${tests[*]}" | sed 's/ /|/g')\"" 2>&1 | tee -a /tmp/logs/e2e-test-output.log
+  return "${PIPESTATUS[0]}"
 }
 
 output_logs() {
@@ -156,9 +199,9 @@ output_logs() {
 }
 
 collect_logs() {
-  # Read from environment variables
-  local test_gitea_smee_url="${TEST_GITEA_SMEEURL}"
-  local github_ghe_smee_url="${TEST_GITHUB_SECOND_SMEE_URL}"
+  # Read from environment variables (use default empty value for optional vars)
+  local test_gitea_smee_url="${TEST_GITEA_SMEEURL:-}"
+  local github_ghe_smee_url="${TEST_GITHUB_SECOND_SMEE_URL:-}"
 
   mkdir -p /tmp/logs
   # Output logs to stdout so we can see via the web interface directly
@@ -193,6 +236,7 @@ collect_logs() {
   fi
 
   for url in "${test_gitea_smee_url}" "${github_ghe_smee_url}"; do
+    [[ -z "${url}" ]] && continue
     find /tmp/logs -type f -exec grep -l "${url}" {} \; | xargs -r sed -i "s|${url}|SMEE_URL|g"
   done
 
@@ -210,133 +254,6 @@ detect_panic() {
     echo "**********************************************************************"
     exit 1
   fi
-}
-
-notify_slack() {
-  # Required env vars: SLACK_WEBHOOK_URL, GITHUB_REPOSITORY, GITHUB_REF_NAME, GITHUB_SERVER_URL, GITHUB_RUN_ID, GITHUB_SHA
-  # Required argument: artifacts directory path
-  local artifacts_dir="${1:-artifacts}"
-  local slack_webhook_url="${SLACK_WEBHOOK_URL}"
-
-  if [[ -z "${slack_webhook_url}" ]]; then
-    echo "SLACK_WEBHOOK_URL is not set, skipping Slack notification"
-    return 0
-  fi
-
-  if [[ ! -d "${artifacts_dir}" ]]; then
-    echo "Artifacts directory '${artifacts_dir}' not found"
-    return 1
-  fi
-
-  echo "Scanning artifacts in: ${artifacts_dir}"
-
-  local failure_details=""
-  local failed_providers=""
-
-  # Use find to get provider directories (more reliable than glob)
-  local provider_dirs
-  provider_dirs=$(find "${artifacts_dir}" -maxdepth 1 -type d -name 'logs-e2e-tests-*' | sort)
-
-  if [[ -z "${provider_dirs}" ]]; then
-    echo "No provider artifact directories found matching pattern: ${artifacts_dir}/logs-e2e-tests-*"
-    return 0
-  fi
-
-  echo "Found provider directories:"
-  echo "${provider_dirs}"
-
-  while IFS= read -r provider_dir; do
-    local provider
-    provider=$(basename "${provider_dir}" | sed 's/logs-e2e-tests-//')
-    echo "Processing provider: ${provider} (${provider_dir})"
-
-    # Extract failed test names from e2e test output log
-    local failed_tests=""
-    if [[ -f "${provider_dir}/e2e-test-output.log" ]]; then
-      echo "  Found e2e-test-output.log"
-      failed_tests=$(grep -E "^--- FAIL:" "${provider_dir}/e2e-test-output.log" 2>/dev/null | sed 's/--- FAIL: //' | cut -d' ' -f1 | sort -u | paste -sd ',' - || true)
-      if [[ -n "${failed_tests}" ]]; then
-        echo "  Failed tests: ${failed_tests}"
-      else
-        echo "  No failed tests found in log"
-      fi
-    else
-      echo "  No e2e-test-output.log found"
-      ls -la "${provider_dir}" 2>/dev/null || true
-    fi
-
-    # Check if this provider had failures
-    if [[ -n "${failed_tests}" ]]; then
-      failed_providers="${failed_providers}${provider}, "
-      # Use literal \n for Slack mrkdwn newlines (will be kept as-is in JSON)
-      failure_details="${failure_details}• *${provider}*: ${failed_tests}\\n"
-    fi
-  done <<<"${provider_dirs}"
-
-  # Remove trailing comma and space
-  failed_providers="${failed_providers%, }"
-
-  if [[ -z "${failure_details}" ]]; then
-    echo "No failures detected, skipping Slack notification"
-    return 0
-  fi
-
-  # Remove trailing \n
-  failure_details="${failure_details%\\n}"
-
-  local run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-  local commit_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}"
-  local short_sha="${GITHUB_SHA:0:7}"
-
-  # Build Slack message payload using jq to ensure proper JSON escaping
-  local payload
-  payload=$(jq -n \
-    --arg repo "${GITHUB_REPOSITORY:-unknown}" \
-    --arg branch "${GITHUB_REF_NAME:-unknown}" \
-    --arg run_url "${run_url}" \
-    --arg commit_url "${commit_url}" \
-    --arg short_sha "${short_sha:-unknown}" \
-    --arg failed_providers "${failed_providers}" \
-    --arg failure_details "${failure_details}" \
-    '{
-      "blocks": [
-        {
-          "type": "header",
-          "text": {
-            "type": "plain_text",
-            "text": "🔴 E2E Test Failures",
-            "emoji": true
-          }
-        },
-        {
-          "type": "section",
-          "text": {
-            "type": "mrkdwn",
-            "text": ("*Repository:* " + $repo + "\n*Branch:* " + $branch + "\n*Commit:* <" + $commit_url + "|" + $short_sha + ">\n*Workflow:* <" + $run_url + "|View Run>")
-          }
-        },
-        {
-          "type": "divider"
-        },
-        {
-          "type": "section",
-          "text": {
-            "type": "mrkdwn",
-            "text": ("*Failed Providers:* " + $failed_providers)
-          }
-        },
-        {
-          "type": "section",
-          "text": {
-            "type": "mrkdwn",
-            "text": ("*Failure Details:*\n" + $failure_details)
-          }
-        }
-      ]
-    }')
-
-  echo "Sending Slack notification for failed providers: ${failed_providers}"
-  curl -s -X POST -H 'Content-type: application/json' --data "${payload}" "${slack_webhook_url}"
 }
 
 help() {
@@ -361,16 +278,15 @@ help() {
 
   collect_logs
     Collect logs from the cluster
-    Required env vars: TEST_GITEA_SMEEURL, TEST_GITHUB_SECOND_SMEE_URL
+    Optional env vars: TEST_GITEA_SMEEURL, TEST_GITHUB_SECOND_SMEE_URL (for scrubbing URLs from logs)
 
   output_logs
     Will output logs using snazzy formatting when available or otherwise through a simple
     python formatter. This makes debugging easier from the GitHub Actions interface.
 
-  notify_slack <artifacts_dir>
-    Send a combined Slack notification for all failed E2E test providers.
-    Parses test output logs from artifacts to extract failed test names.
-    Required env vars: SLACK_WEBHOOK_URL, GITHUB_REPOSITORY, GITHUB_REF_NAME, GITHUB_SERVER_URL, GITHUB_RUN_ID
+  print_tests
+    Print the list of tests that would be run for each provider target.
+
 EOF
 }
 
@@ -390,8 +306,14 @@ collect_logs)
 output_logs)
   output_logs
   ;;
-notify_slack)
-  notify_slack "${2:-artifacts}"
+print_tests)
+  set +x
+  for target in github_public github_ghe gitlab_bitbucket gitea_1 gitea_2 gitea_3 concurrency flaky; do
+    mapfile -t tests < <(get_tests "${target}")
+    echo "Tests for target: ${target} Total: ${#tests[@]}"
+    printf '%s\n' "${tests[@]}"
+    echo
+  done
   ;;
 help)
   help

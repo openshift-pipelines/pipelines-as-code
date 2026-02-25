@@ -19,7 +19,8 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
-	providerMetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/metrics"
+	providerMetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/providermetrics"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	"go.uber.org/zap"
 )
 
@@ -89,31 +90,36 @@ func sanitizeTitle(s string) string {
 	return strings.Split(s, "\n")[0]
 }
 
-func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOpts provider.StatusOpts) error {
+func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOpts status.StatusOpts) error {
 	detailsURL := event.Provider.URL
+	state := scm.StateUnknown
+
 	switch statusOpts.Conclusion {
-	case "skipped":
-		statusOpts.Conclusion = "FAILED"
+	case status.ConclusionSkipped:
+		state = scm.StateFailure
 		statusOpts.Title = "➖ Skipping this commit"
-	case "neutral":
-		statusOpts.Conclusion = "FAILED"
+	case status.ConclusionNeutral:
+		state = scm.StateFailure
 		statusOpts.Title = "➖ CI has stopped"
-	case "failure":
-		statusOpts.Conclusion = "FAILED"
+	case status.ConclusionFailure:
+		state = scm.StateFailure
 		statusOpts.Title = "❌ Failed"
-	case "pending":
+	case status.ConclusionPending:
 		if statusOpts.Status == "queued" {
-			statusOpts.Conclusion = "UNKNOWN"
+			state = scm.StateUnknown
 		} else {
-			statusOpts.Conclusion = "INPROGRESS"
+			// TODO: Should this be scm.StateRunning?
+			state = scm.StatePending
 			statusOpts.Title = "⚡ CI has started"
 		}
-	case "success":
-		statusOpts.Conclusion = "SUCCESSFUL"
+	case status.ConclusionSuccess:
+		state = scm.StateSuccess
 		statusOpts.Title = "Commit has been validated"
-	case "completed":
-		statusOpts.Conclusion = "SUCCESSFUL"
+	case status.ConclusionCompleted:
+		state = scm.StateSuccess
 		statusOpts.Title = "Completed"
+	case status.ConclusionCancelled:
+		// TODO
 	}
 	if statusOpts.DetailsURL != "" {
 		detailsURL = statusOpts.DetailsURL
@@ -133,7 +139,7 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOp
 
 	OrgAndRepo := fmt.Sprintf("%s/%s", event.Organization, event.Repository)
 	opts := &scm.StatusInput{
-		State: convertState(statusOpts.Conclusion),
+		State: state,
 		Label: key,
 		Desc:  statusOpts.Text,
 		Link:  detailsURL,
@@ -149,7 +155,7 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOp
 	}
 	bbComment := fmt.Sprintf("**%s%s** - %s\n\n%s", v.pacInfo.ApplicationName, onPr, statusOpts.Title, statusOpts.Text)
 
-	if statusOpts.Conclusion == "SUCCESSFUL" && statusOpts.Status == "completed" &&
+	if state == scm.StateSuccess && statusOpts.Status == "completed" &&
 		statusOpts.Text != "" && event.TriggerTarget == triggertype.PullRequest && event.PullRequestNumber > 0 {
 		input := &scm.CommentInput{
 			Body: bbComment,
@@ -162,21 +168,6 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOp
 
 	// TODO: Completed status
 	return nil
-}
-
-func convertState(from string) scm.State {
-	switch from {
-	case "FAILED":
-		return scm.StateFailure
-	case "INPROGRESS":
-		return scm.StatePending
-	case "SUCCESSFUL":
-		return scm.StateSuccess
-	case "UNKNOWN":
-		return scm.StateUnknown
-	default:
-		return scm.StateUnknown
-	}
 }
 
 func (v *Provider) concatAllYamlFiles(ctx context.Context, objects []string, sha string, runevent *info.Event) (string, error) {

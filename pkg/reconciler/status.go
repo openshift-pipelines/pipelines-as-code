@@ -15,6 +15,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/secrets"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
@@ -146,7 +147,7 @@ func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLog
 		return nil, fmt.Errorf("cannot create message template: %w", err)
 	}
 
-	status := provider.StatusOpts{
+	status := status.StatusOpts{
 		Status:                  pipelineascode.CompletedStatus,
 		PipelineRun:             pr,
 		Conclusion:              formatting.PipelineRunStatus(pr),
@@ -161,10 +162,10 @@ func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLog
 	return pr, err
 }
 
-func createStatusWithRetry(ctx context.Context, logger *zap.SugaredLogger, vcx provider.Interface, event *info.Event, status provider.StatusOpts) error {
+func createStatusWithRetry(ctx context.Context, logger *zap.SugaredLogger, vcx provider.Interface, event *info.Event, statusOpts status.StatusOpts) error {
 	var finalError error
 	for _, backoff := range backoffSchedule {
-		err := vcx.CreateStatus(ctx, event, status)
+		err := vcx.CreateStatus(ctx, event, statusOpts)
 		if err == nil {
 			return nil
 		}

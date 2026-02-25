@@ -20,9 +20,9 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	bbtest "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketdatacenter/test"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/metrics"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
+	metricsutils "github.com/openshift-pipelines/pipelines-as-code/pkg/test/metricstest"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"go.uber.org/zap"
@@ -114,7 +114,7 @@ func TestCreateStatus(t *testing.T) {
 
 	tests := []struct {
 		name                  string
-		status                provider.StatusOpts
+		status                status.StatusOpts
 		expectedCommentSubstr string
 		pacOpts               info.PacOpts
 		nilClient             bool
@@ -127,7 +127,7 @@ func TestCreateStatus(t *testing.T) {
 		},
 		{
 			name: "good/skipped",
-			status: provider.StatusOpts{
+			status: status.StatusOpts{
 				Conclusion: "skipped",
 				Text:       "Skipping",
 			},
@@ -136,7 +136,7 @@ func TestCreateStatus(t *testing.T) {
 		},
 		{
 			name: "good/neutral",
-			status: provider.StatusOpts{
+			status: status.StatusOpts{
 				Conclusion: "neutral",
 				Text:       "stopped",
 			},
@@ -145,7 +145,7 @@ func TestCreateStatus(t *testing.T) {
 		},
 		{
 			name: "good/completed with comment",
-			status: provider.StatusOpts{
+			status: status.StatusOpts{
 				Conclusion: "success",
 				Status:     "completed",
 				Text:       "validated",
@@ -156,7 +156,7 @@ func TestCreateStatus(t *testing.T) {
 		},
 		{
 			name: "good/failed",
-			status: provider.StatusOpts{
+			status: status.StatusOpts{
 				Conclusion: "failure",
 				Text:       "Failed",
 			},
@@ -165,7 +165,7 @@ func TestCreateStatus(t *testing.T) {
 		},
 		{
 			name: "good/details url",
-			status: provider.StatusOpts{
+			status: status.StatusOpts{
 				Conclusion: "failure",
 				DetailsURL: "http://fail.com",
 				Text:       "Failed",
@@ -175,7 +175,7 @@ func TestCreateStatus(t *testing.T) {
 		},
 		{
 			name: "good/pending",
-			status: provider.StatusOpts{
+			status: status.StatusOpts{
 				Conclusion: "pending",
 				Text:       "started",
 			},
@@ -184,7 +184,7 @@ func TestCreateStatus(t *testing.T) {
 		},
 		{
 			name: "good/success",
-			status: provider.StatusOpts{
+			status: status.StatusOpts{
 				Conclusion: "success",
 				Text:       "validated",
 			},
@@ -193,7 +193,7 @@ func TestCreateStatus(t *testing.T) {
 		},
 		{
 			name: "good/completed",
-			status: provider.StatusOpts{
+			status: status.StatusOpts{
 				Conclusion: "completed",
 				Text:       "Completed",
 			},
@@ -202,7 +202,7 @@ func TestCreateStatus(t *testing.T) {
 		},
 		{
 			name: "good/pending",
-			status: provider.StatusOpts{
+			status: status.StatusOpts{
 				Conclusion: "pending",
 				Status:     "queued",
 				Text:       "Pending approval, waiting for an /ok-to-test",
@@ -799,7 +799,7 @@ func TestGetFiles(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			client, mux, tearDown, tURL := bbtest.SetupBBDataCenterClient()
 			defer tearDown()
-			metrics.ResetMetrics()
+			metricsutils.ResetMetrics()
 
 			stats := &bbtest.DiffStats{
 				Values: tt.changeFiles,

@@ -626,15 +626,37 @@ func (v *Provider) handleCommitCommentEvent(ctx context.Context, event *github.C
 	runevent.BaseURL = runevent.HeadURL
 	runevent.TriggerTarget = triggertype.Push
 	opscomments.SetEventTypeAndTargetPR(runevent, event.GetComment().GetBody())
+	v.userType = event.GetSender().GetType()
 
 	defaultBranch := event.GetRepo().GetDefaultBranch()
 	// Set Event.Repository.DefaultBranch as default branch to runevent.HeadBranch, runevent.BaseBranch
+
+	commit, _, err := v.Client().Git.GetCommit(ctx, runevent.Organization, runevent.Repository, runevent.SHA)
+	if err != nil {
+		return runevent, fmt.Errorf("error getting commit %s: %w", runevent.SHA, err)
+	}
+
+	// as we're going to make GetCommit API again in GetCommitInfo func, it will be cached in provider
+	// so that we're wasting one API call
+	v.commitInfo = commit
+
+	// when the commit is a merge commit, either email is 'noreply@github.com' or name is 'web-flow'
+	isMergeCommit := commit.GetCommitter().GetEmail() == githubNoreplyEmail ||
+		commit.GetCommitter().GetName() == githubWebFlowUser
+
+	prs, err := v.getPullRequestsWithCommit(ctx, runevent.SHA, runevent.Organization, runevent.Repository, isMergeCommit)
+	if err != nil {
+		v.Logger.Warnf("Error getting pull requests associated with the commit in this commit comment event: %v", err)
+	}
+	if len(prs) > 0 {
+		runevent.PullRequestNumber = prs[0].GetNumber()
+	}
+
 	runevent.HeadBranch, runevent.BaseBranch = defaultBranch, defaultBranch
 	var (
 		branchName string
 		prName     string
 		tagName    string
-		err        error
 	)
 
 	// If it is a /test or /retest comment with pipelinerun name figure out the pipelinerun name
@@ -666,14 +688,28 @@ func (v *Provider) handleCommitCommentEvent(ctx context.Context, event *github.C
 		if err != nil {
 			return runevent, fmt.Errorf("error getting ref for tag %s: %w", tagName, err)
 		}
-		// get the tag object to get the SHA
-		tag, _, err := wrapAPI(v, "get_tag", func() (*github.Tag, *github.Response, error) {
-			return v.Client().Git.GetTag(ctx, runevent.Organization, runevent.Repository, ref.GetObject().GetSHA())
-		})
-		if err != nil {
-			return runevent, fmt.Errorf("error getting tag %s: %w", tagName, err)
+
+		tagSha := ""
+
+		switch ref.GetObject().GetType() {
+		case "tag":
+			// annotated tag - get the tag object to resolve the commit SHA
+			tag, _, err := wrapAPI(v, "get_tag", func() (*github.Tag, *github.Response, error) {
+				return v.Client().Git.GetTag(ctx, runevent.Organization, runevent.Repository, ref.GetObject().GetSHA())
+			})
+			if err != nil {
+				return runevent, fmt.Errorf("error getting tag %s: %w", tagName, err)
+			}
+			tagSha = tag.GetObject().GetSHA()
+		case "commit":
+			// lightweight tag - ref contains the commit SHA directly.
+			// trying to get the tag object would return an error.
+			tagSha = ref.GetObject().GetSHA()
+		default:
+			return runevent, fmt.Errorf("invalid object type for tag %s: %s", tagName, ref.GetObject().GetType())
 		}
-		if tag.GetObject().GetSHA() != runevent.SHA {
+
+		if tagSha != runevent.SHA {
 			return runevent, fmt.Errorf("provided SHA %s is not the tagged commit for the tag %s", runevent.SHA, tagName)
 		}
 		runevent.HeadBranch = tagPath

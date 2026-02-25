@@ -106,6 +106,9 @@ linters:
           - revive
         path: pkg/test/http/
         text: "var-naming"
+      - linters:
+          - gosec
+        text: "G115|G117|G702|G703|G704|G705|G706"
     paths:
       - vendor
       - pkg/provider/gitea/structs

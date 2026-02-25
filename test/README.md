@@ -130,10 +130,10 @@ Tests run on:
 
 The tests are separated into provider categories (matrix strategy):
 
-- `github` - GitHub tests (excluding second controller and concurrency)
-- `github_second_controller` - GitHub second controller tests
+- `github_public` - Public GitHub tests (excluding GHE and concurrency)
+- `github_ghe` - GitHub Enterprise (GHE) tests
 - `gitlab_bitbucket` - GitLab and Bitbucket tests
-- `gitea_others` - Gitea and other non-provider specific functionality
+- `gitea_1`, `gitea_2`, `gitea_3` - Gitea tests (split into 3 chunks)
 - `concurrency` - Concurrency-specific tests
 
 This split helps reduce the load on external APIs during testing and provides more focused test results.
@@ -202,8 +202,8 @@ for example:
 
 Log source details:
 
-- Parses controller pod logs from the `pac-controller` container.
-- Uses label selector `app.kubernetes.io/name=controller` (or `ghe-controller` when testing against GHE).
+- Parses controller pod logs by resolving the controller label and container name dynamically.
+- Tries known controller labels first (for example `app.kubernetes.io/name=controller` or `ghe-controller`) and then falls back to the standard PAC controller labels.
 - Considers only log lines after the last occurrence of `github-app: initialized OAuth2 client`.
 - Matches lines containing `GitHub API call completed` and extracts the embedded JSON payload.
 

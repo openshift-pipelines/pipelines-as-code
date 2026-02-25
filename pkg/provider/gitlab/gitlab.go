@@ -19,7 +19,8 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
-	providerMetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/metrics"
+	providerMetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/providermetrics"
+	providerstatus "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"go.uber.org/zap"
 )
@@ -66,6 +67,7 @@ type Provider struct {
 	// current provider instance lifecycle to avoid repeated API calls.
 	memberCache        map[int64]bool
 	cachedChangedFiles *changedfiles.ChangedFiles
+	pacUserID          int64 // user login used by PAC
 }
 
 var defaultGitlabListOptions = gitlab.ListOptions{
@@ -103,7 +105,7 @@ func (v *Provider) CreateComment(_ context.Context, event *info.Event, commit, u
 
 	// List comments of the merge request
 	if updateMarker != "" {
-		commentRe := regexp.MustCompile(updateMarker)
+		commentRe := regexp.MustCompile(regexp.QuoteMeta(updateMarker))
 		options := []gitlab.RequestOptionFunc{}
 
 		for {
@@ -114,6 +116,22 @@ func (v *Provider) CreateComment(_ context.Context, event *info.Event, commit, u
 
 			for _, comment := range comments {
 				if commentRe.MatchString(comment.Body) {
+					// Get the UserID for the PAC user.
+					if v.pacUserID == 0 {
+						pacUser, _, err := v.Client().Users.CurrentUser()
+						if err != nil {
+							return fmt.Errorf("unable to fetch user info: %w", err)
+						}
+						v.pacUserID = pacUser.ID
+					}
+					// Only edit comments created by this PAC installation's credentials.
+					// Prevents accidentally modifying comments from other users/bots.
+					if comment.Author.ID != v.pacUserID {
+						v.Logger.Debugf("This comment was not created by PAC, skipping comment edit :%d, created by user %d, PAC user: %d",
+							comment.ID, comment.Author.ID, v.pacUserID)
+						continue
+					}
+
 					_, _, err := v.Client().Notes.UpdateMergeRequestNote(event.TargetProjectID, int64(event.PullRequestNumber), comment.ID, &gitlab.UpdateMergeRequestNoteOptions{
 						Body: &commit,
 					})
@@ -277,39 +295,43 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.
 }
 
 //nolint:misspell
-func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts provider.StatusOpts,
+func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOpts providerstatus.StatusOpts,
 ) error {
 	var detailsURL string
 	if v.gitlabClient == nil {
 		return fmt.Errorf("no gitlab client has been initialized, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
+
+	var state gitlab.BuildStateValue
+
 	switch statusOpts.Conclusion {
-	case "skipped":
-		statusOpts.Conclusion = "canceled"
+	case providerstatus.ConclusionSkipped:
+		state = gitlab.Canceled
 		statusOpts.Title = "skipped validating this commit"
-	case "neutral":
-		statusOpts.Conclusion = "canceled"
+	case providerstatus.ConclusionNeutral:
+		state = gitlab.Canceled
 		statusOpts.Title = "stopped"
-	case "cancelled":
-		statusOpts.Conclusion = "canceled"
+	case providerstatus.ConclusionCancelled:
+		state = gitlab.Canceled
 		statusOpts.Title = "cancelled validating this commit"
-	case "failure":
-		statusOpts.Conclusion = "failed"
+	case providerstatus.ConclusionFailure:
+		state = gitlab.Failed
 		statusOpts.Title = "failed"
-	case "success":
-		statusOpts.Conclusion = "success"
+	case providerstatus.ConclusionSuccess:
+		state = gitlab.Success
 		statusOpts.Title = "successfully validated your commit"
-	case "completed":
-		statusOpts.Conclusion = "success"
+	case providerstatus.ConclusionCompleted:
+		state = gitlab.Success
 		statusOpts.Title = "completed"
-	case "pending":
-		statusOpts.Conclusion = "pending"
+	case providerstatus.ConclusionPending:
+		state = gitlab.Running
 	}
+
 	// When the pipeline is actually running (in_progress), show it as running
 	// not pending. Pending is only for waiting states like /ok-to-test approval.
 	if statusOpts.Status == "in_progress" {
-		statusOpts.Conclusion = "running"
+		state = gitlab.Running
 	}
 	if statusOpts.DetailsURL != "" {
 		detailsURL = statusOpts.DetailsURL
@@ -324,7 +346,7 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 
 	contextName := provider.GetCheckName(statusOpts, v.pacInfo)
 	opt := &gitlab.SetCommitStatusOptions{
-		State:       gitlab.BuildStateValue(statusOpts.Conclusion),
+		State:       state,
 		Name:        gitlab.Ptr(contextName),
 		TargetURL:   gitlab.Ptr(detailsURL),
 		Description: gitlab.Ptr(statusOpts.Title),
@@ -383,9 +405,27 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 		commentStrategy = v.repo.Spec.Settings.Gitlab.CommentStrategy
 	}
 	switch commentStrategy {
-	case "disable_all":
+	case provider.DisableAllCommentStrategy:
 		v.Logger.Warn("Comments related to PipelineRuns status have been disabled for GitLab merge requests")
 		return nil
+	case provider.UpdateCommentStrategy:
+		if eventType == triggertype.PullRequest || provider.Valid(event.EventType, anyMergeRequestEventType) {
+			statusComment := v.formatPipelineComment(event.SHA, statusOpts)
+			// Creating the prefix that is added to the status comment for a pipeline run.
+			plrStatusCommentPrefix := fmt.Sprintf(provider.PlrStatusCommentPrefixTemplate, statusOpts.OriginalPipelineRunName)
+			// The entire markdown comment, including the prefix that is added to the pull request for the pipelinerun.
+			markdownStatusComment := fmt.Sprintf("%s\n%s", plrStatusCommentPrefix, statusComment)
+
+			if err := v.CreateComment(ctx, event, markdownStatusComment, plrStatusCommentPrefix); err != nil {
+				v.eventEmitter.EmitMessage(
+					v.repo,
+					zap.ErrorLevel,
+					"PipelineRunCommentCreationError",
+					fmt.Sprintf("failed to create comment: %s", err.Error()),
+				)
+				return err
+			}
+		}
 	default:
 		if eventType == triggertype.PullRequest || provider.Valid(event.EventType, anyMergeRequestEventType) {
 			mopt := &gitlab.CreateMergeRequestNoteOptions{Body: gitlab.Ptr(body)}
@@ -664,4 +704,25 @@ func (v *Provider) isHeadCommitOfBranch(runevent *info.Event, branchName string)
 
 func (v *Provider) GetTemplate(commentType provider.CommentType) string {
 	return provider.GetHTMLTemplate(commentType)
+}
+
+//nolint:misspell
+func (v *Provider) formatPipelineComment(sha string, status providerstatus.StatusOpts) string {
+	var emoji string
+
+	switch status.Conclusion {
+	case "canceled":
+		emoji = "⚠️"
+	case "failed":
+		emoji = "❌"
+	case "success":
+		emoji = "✅"
+	case "running":
+		emoji = "🚀"
+	default:
+		emoji = "ℹ️"
+	}
+
+	return fmt.Sprintf("%s **%s: %s/%s for %s**\n\n%s\n\n<small>Full log available [here](%s)</small>",
+		emoji, status.Title, v.pacInfo.ApplicationName, status.OriginalPipelineRunName, sha, status.Text, status.DetailsURL)
 }

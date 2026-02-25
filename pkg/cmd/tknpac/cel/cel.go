@@ -81,8 +81,10 @@ func printBanner(ioStreams *cli.IOStreams, provider, bodyFile, headersFile strin
 
 	fmt.Fprintf(ioStreams.Out, "%s %s\n", cs.Yellow("⚠"), cs.Bold("Important Notice"))
 	fmt.Fprint(ioStreams.Out, "\n")
-	fmt.Fprintf(ioStreams.Out, "This tool provides an interactive environment for testing CEL expressions.\n")
-	fmt.Fprintf(ioStreams.Out, "However, please note the following important differences:\n")
+	fmt.Fprintf(ioStreams.Out, "This is a %s feature for testing CEL expressions.\n", cs.Yellow("tech preview"))
+	fmt.Fprintf(ioStreams.Out, "%s\n", cs.Bold("The evaluator may not always produce the same output as in actual PipelineRuns."))
+	fmt.Fprint(ioStreams.Out, "\n")
+	fmt.Fprintf(ioStreams.Out, "Please note the following important differences:\n")
 	fmt.Fprint(ioStreams.Out, "\n")
 
 	differences := []string{
@@ -634,7 +636,7 @@ that would be used in PipelineRun configurations.`,
 					return err
 				}
 				pacParams = pacParamsFromEvent(event)
-			case "gitea":
+			case "gitea", "forgejo":
 				event, err := eventFromGitea(bodyBytes, headers)
 				if err != nil {
 					return err
@@ -738,7 +740,7 @@ that would be used in PipelineRun configurations.`,
 
 	cmd.Flags().StringVarP(&bodyFile, bodyFileFlag, "b", "", "path to JSON body file (required)")
 	cmd.Flags().StringVarP(&headersFile, headersFileFlag, "H", "", "path to headers file (required, JSON, HTTP format, or gosmee-generated shell script)")
-	cmd.Flags().StringVarP(&provider, providerFlag, "p", "auto", "payload provider (auto, github, gitlab, bitbucket-cloud, bitbucket-datacenter, gitea)")
+	cmd.Flags().StringVarP(&provider, providerFlag, "p", "auto", "payload provider (auto, github, gitlab, bitbucket-cloud, bitbucket-datacenter, gitea, forgejo)")
 	cmd.Flags().StringVarP(&githubToken, githubTokenFlag, "t", "", "GitHub personal access token for API enrichment (enables full event processing)")
 	// Mark body and headers flags as required.
 	// These errors are safe to ignore as the flags are defined above.

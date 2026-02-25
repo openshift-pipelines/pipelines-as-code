@@ -106,7 +106,7 @@ func GetIssueTimeline(ctx context.Context, topts *TestOpts) (Timelines, error) {
 	return tls, nil
 }
 
-func CreateGiteaRepo(giteaClient *forgejo.Client, user, name, defaultBranch, hookURL string, onOrg bool, logger *zap.SugaredLogger) (*forgejo.Repository, error) {
+func CreateGiteaRepo(giteaClient *forgejo.Client, user, name, defaultBranch, hookURL, webhookSecret string, onOrg bool, logger *zap.SugaredLogger) (*forgejo.Repository, error) {
 	var repo *forgejo.Repository
 	var err error
 	// Create a new repo
@@ -143,12 +143,14 @@ func CreateGiteaRepo(giteaClient *forgejo.Client, user, name, defaultBranch, hoo
 	}
 	logger.Infof("Creating webhook to smee url on gitea repository %s", name)
 	_, _, err = giteaClient.CreateRepoHook(user, repo.Name, forgejo.CreateHookOption{
+		// Forgejo still uses the "gitea" hook type for webhooks.
 		Type:   "gitea",
 		Active: true,
 		Config: map[string]string{
 			"name":         "hook to smee url",
 			"url":          hookURL,
 			"content_type": "json",
+			"secret":       webhookSecret,
 		},
 		Events: []string{"push", "issue_comments", "pull_request"},
 	})

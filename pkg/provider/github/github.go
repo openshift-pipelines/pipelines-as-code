@@ -2,8 +2,11 @@ package github
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -58,6 +61,7 @@ type Provider struct {
 	skippedRun
 	triggerEvent       string
 	cachedChangedFiles *changedfiles.ChangedFiles
+	commitInfo         *github.Commit
 }
 
 type skippedRun struct {
@@ -398,11 +402,17 @@ func (v *Provider) GetCommitInfo(ctx context.Context, runevent *info.Event) erro
 		sha = branchinfo.Commit.GetSHA()
 	}
 	var err error
-	commit, _, err = wrapAPI(v, "get_commit", func() (*github.Commit, *github.Response, error) {
-		return v.Client().Git.GetCommit(ctx, runevent.Organization, runevent.Repository, sha)
-	})
-	if err != nil {
-		return err
+
+	// check if the commit info is already cached in provider
+	if v.commitInfo == nil {
+		commit, _, err = wrapAPI(v, "get_commit", func() (*github.Commit, *github.Response, error) {
+			return v.Client().Git.GetCommit(ctx, runevent.Organization, runevent.Repository, sha)
+		})
+		if err != nil {
+			return err
+		}
+	} else {
+		commit = v.commitInfo
 	}
 
 	runevent.SHAURL = commit.GetHTMLURL()
@@ -749,6 +759,209 @@ func (v *Provider) GetTemplate(commentType provider.CommentType) string {
 	return provider.GetHTMLTemplate(commentType)
 }
 
+type commentTraceLogContext struct {
+	dedupTrace      string
+	eventID         string
+	markerHash      string
+	markerLen       int
+	controllerLabel string
+}
+
+func newDedupTraceID() string {
+	//nolint:gosec // best-effort correlation ID for debug logs only
+	return fmt.Sprintf("%x-%04x", time.Now().UnixNano(), rand.Intn(1<<16))
+}
+
+func markerHash(marker string) string {
+	if marker == "" {
+		return "none"
+	}
+	sum := sha256.Sum256([]byte(marker))
+	digest := hex.EncodeToString(sum[:])
+	if len(digest) > 12 {
+		return digest[:12]
+	}
+	return digest
+}
+
+func formatCommentTime(ts github.Timestamp) string {
+	if ts.IsZero() {
+		return "unknown"
+	}
+	return ts.UTC().Format(time.RFC3339)
+}
+
+func compactCommentIDs(comments []*github.IssueComment) []string {
+	out := make([]string, 0, len(comments))
+	for _, comment := range comments {
+		out = append(out, fmt.Sprintf("%d@%s", comment.GetID(), formatCommentTime(comment.GetCreatedAt())))
+	}
+	return out
+}
+
+func responseStatusCode(resp *github.Response) int {
+	if resp == nil {
+		return 0
+	}
+	return resp.StatusCode
+}
+
+func eventID(event *info.Event) string {
+	if event == nil || event.Request == nil {
+		return "unknown"
+	}
+	if id := event.Request.Header.Get("X-GitHub-Delivery"); id != "" {
+		return id
+	}
+	return "unknown"
+}
+
+func (v *Provider) controllerLabel(ctx context.Context) string {
+	if name := info.GetCurrentControllerName(ctx); name != "" {
+		return name
+	}
+	if v.Run != nil && v.Run.Info.Controller != nil && v.Run.Info.Controller.Name != "" {
+		return v.Run.Info.Controller.Name
+	}
+	return "unknown"
+}
+
+func (v *Provider) newCommentTraceLogContext(ctx context.Context, event *info.Event, marker string) commentTraceLogContext {
+	return commentTraceLogContext{
+		dedupTrace:      newDedupTraceID(),
+		eventID:         eventID(event),
+		markerHash:      markerHash(marker),
+		markerLen:       len(marker),
+		controllerLabel: v.controllerLabel(ctx),
+	}
+}
+
+func (v *Provider) debugCommentPhase(event *info.Event, trace commentTraceLogContext, phase string, kv ...any) {
+	if v.Logger == nil {
+		return
+	}
+
+	org := "unknown"
+	repo := "unknown"
+	pr := 0
+	if event != nil {
+		org = event.Organization
+		repo = event.Repository
+		pr = event.PullRequestNumber
+	}
+
+	baseFields := []any{
+		"phase", phase,
+		"organization", org,
+		"repository", repo,
+		"pr", pr,
+		"event_id", trace.eventID,
+		"dedup_trace", trace.dedupTrace,
+		"marker_hash", trace.markerHash,
+		"marker_len", trace.markerLen,
+		"controller_label", trace.controllerLabel,
+	}
+	v.Logger.Debugw("github comment dedup flow", append(baseFields, kv...)...)
+}
+
+func (v *Provider) listCommentsByMarker(
+	ctx context.Context,
+	event *info.Event,
+	marker, phase string,
+	trace commentTraceLogContext,
+) ([]*github.IssueComment, error) {
+	comments, _, err := wrapAPI(v, "list_comments", func() ([]*github.IssueComment, *github.Response, error) {
+		return v.Client().Issues.ListComments(ctx, event.Organization, event.Repository, event.PullRequestNumber, &github.IssueListCommentsOptions{
+			ListOptions: github.ListOptions{
+				Page:    1,
+				PerPage: 100,
+			},
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	re := regexp.MustCompile(regexp.QuoteMeta(marker))
+	matchedComments := make([]*github.IssueComment, 0, len(comments))
+	for _, comment := range comments {
+		if re.MatchString(comment.GetBody()) {
+			matchedComments = append(matchedComments, comment)
+		}
+	}
+
+	v.debugCommentPhase(event, trace, phase,
+		"fetched_count", len(comments),
+		"matched_count", len(matchedComments),
+		"matched_comments", compactCommentIDs(matchedComments),
+	)
+
+	return matchedComments, nil
+}
+
+func (v *Provider) ensureSingleMarkerComment(
+	ctx context.Context,
+	event *info.Event,
+	comments []*github.IssueComment,
+	commit string,
+	trace commentTraceLogContext,
+) error {
+	if len(comments) == 0 {
+		return nil
+	}
+
+	if len(comments) > 1 {
+		v.debugCommentPhase(event, trace, "duplicate_detected", "matched_count", len(comments))
+	}
+
+	primaryComment := comments[0]
+	for _, comment := range comments {
+		if comment.GetBody() == commit {
+			primaryComment = comment
+			break
+		}
+	}
+
+	v.debugCommentPhase(event, trace, "dedup_select_primary",
+		"matched_count", len(comments),
+		"primary_comment_id", primaryComment.GetID(),
+	)
+
+	if primaryComment.GetBody() != commit {
+		if _, _, err := wrapAPI(v, "edit_comment", func() (*github.IssueComment, *github.Response, error) {
+			return v.Client().Issues.EditComment(ctx, event.Organization, event.Repository, primaryComment.GetID(), &github.IssueComment{
+				Body: github.Ptr(commit),
+			})
+		}); err != nil {
+			return err
+		}
+	}
+
+	// Best-effort cleanup to collapse duplicates into a single canonical marker comment.
+	for _, comment := range comments {
+		if comment.GetID() == primaryComment.GetID() {
+			continue
+		}
+
+		v.debugCommentPhase(event, trace, "dedup_delete_attempt", "delete_comment_id", comment.GetID())
+		_, resp, err := wrapAPI(v, "delete_comment", func() (struct{}, *github.Response, error) {
+			resp, err := v.Client().Issues.DeleteComment(ctx, event.Organization, event.Repository, comment.GetID())
+			return struct{}{}, resp, err
+		})
+		v.debugCommentPhase(event, trace, "dedup_delete_done",
+			"delete_comment_id", comment.GetID(),
+			"status_code", responseStatusCode(resp),
+			"delete_error", err != nil,
+		)
+		if err != nil && v.Logger != nil {
+			v.Logger.Warnf("failed to delete duplicate comment %d on %s/%s#%d: %v",
+				comment.GetID(), event.Organization, event.Repository, event.PullRequestNumber, err)
+		}
+	}
+	v.debugCommentPhase(event, trace, "dedup_complete", "final_expected_count", 1)
+	return nil
+}
+
 // CreateComment creates a comment on a Pull Request.
 func (v *Provider) CreateComment(ctx context.Context, event *info.Event, commit, updateMarker string) error {
 	if v.ghClient == nil {
@@ -759,39 +972,79 @@ func (v *Provider) CreateComment(ctx context.Context, event *info.Event, commit,
 		return fmt.Errorf("create comment only works on pull requests")
 	}
 
-	// List last page of the comments of the PR
+	trace := v.newCommentTraceLogContext(ctx, event, updateMarker)
+
 	if updateMarker != "" {
-		comments, _, err := wrapAPI(v, "list_comments", func() ([]*github.IssueComment, *github.Response, error) {
-			return v.Client().Issues.ListComments(ctx, event.Organization, event.Repository, event.PullRequestNumber, &github.IssueListCommentsOptions{
-				ListOptions: github.ListOptions{
-					Page:    1,
-					PerPage: 100,
-				},
-			})
-		})
+		existingComments, err := v.listCommentsByMarker(ctx, event, updateMarker, "initial_list", trace)
 		if err != nil {
 			return err
 		}
 
-		re := regexp.MustCompile(regexp.QuoteMeta(updateMarker))
-		for _, comment := range comments {
-			if re.MatchString(comment.GetBody()) {
-				if _, _, err := wrapAPI(v, "edit_comment", func() (*github.IssueComment, *github.Response, error) {
-					return v.Client().Issues.EditComment(ctx, event.Organization, event.Repository, comment.GetID(), &github.IssueComment{
-						Body: &commit,
-					})
-				}); err != nil {
-					return err
-				}
-				return nil
-			}
+		if len(existingComments) > 1 {
+			v.debugCommentPhase(event, trace, "duplicate_detected", "matched_count", len(existingComments))
 		}
+
+		if len(existingComments) > 0 {
+			return v.ensureSingleMarkerComment(ctx, event, existingComments, commit, trace)
+		}
+
+		//nolint:gosec // No need for crypto/rand here, just reducing timing window
+		jitter := time.Duration(rand.Intn(500)) * time.Millisecond
+		v.debugCommentPhase(event, trace, "jitter_wait", "jitter_ms", jitter.Milliseconds())
+		timer := time.NewTimer(jitter)
+		defer timer.Stop()
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-timer.C:
+		}
+
+		// Re-check after jitter in case another processor already created the marker comment.
+		existingComments, err = v.listCommentsByMarker(ctx, event, updateMarker, "post_jitter_list", trace)
+		if err != nil {
+			return err
+		}
+		if len(existingComments) > 1 {
+			v.debugCommentPhase(event, trace, "duplicate_detected", "matched_count", len(existingComments))
+		}
+		if len(existingComments) > 0 {
+			return v.ensureSingleMarkerComment(ctx, event, existingComments, commit, trace)
+		}
+
+		v.debugCommentPhase(event, trace, "pre_create_race_window", "matched_count", len(existingComments))
 	}
 
-	_, _, err := wrapAPI(v, "create_comment", func() (*github.IssueComment, *github.Response, error) {
+	v.debugCommentPhase(event, trace, "create_comment_start")
+	createdComment, createResp, err := wrapAPI(v, "create_comment", func() (*github.IssueComment, *github.Response, error) {
 		return v.Client().Issues.CreateComment(ctx, event.Organization, event.Repository, event.PullRequestNumber, &github.IssueComment{
-			Body: &commit,
+			Body: github.Ptr(commit),
 		})
 	})
-	return err
+	if err != nil {
+		v.debugCommentPhase(event, trace, "create_comment_done",
+			"status_code", responseStatusCode(createResp),
+			"create_error", err.Error(),
+		)
+		return err
+	}
+	v.debugCommentPhase(event, trace, "create_comment_done",
+		"status_code", responseStatusCode(createResp),
+		"created_comment_id", createdComment.GetID(),
+	)
+
+	if updateMarker == "" {
+		return nil
+	}
+
+	// Best-effort post-create reconciliation to collapse duplicates created by
+	// concurrent processors handling the same event.
+	matchedComments, listErr := v.listCommentsByMarker(ctx, event, updateMarker, "post_create_list", trace)
+	if listErr != nil {
+		return nil
+	}
+	if len(matchedComments) > 1 {
+		v.debugCommentPhase(event, trace, "duplicate_detected", "matched_count", len(matchedComments))
+	}
+	return v.ensureSingleMarkerComment(ctx, event, matchedComments, commit, trace)
 }

@@ -1,7 +1,8 @@
 package reconciler
 
 import (
-	"strings"
+	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
@@ -11,8 +12,9 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/sync"
+	queuepkg "github.com/openshift-pipelines/pipelines-as-code/pkg/queue"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
+	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	testkubernetestint "github.com/openshift-pipelines/pipelines-as-code/pkg/test/kubernetestint"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
@@ -31,7 +33,7 @@ var (
 			Namespace: "pac-app-pipelines",
 		},
 		Spec: v1alpha1.RepositorySpec{
-			URL:              "https://github.com/sm43/pac-app",
+			URL:              "https://github.com/org/repo",
 			ConcurrencyLimit: &concurrency,
 			GitProvider: &v1alpha1.GitProvider{
 				Secret: &v1alpha1.Secret{
@@ -56,8 +58,8 @@ func getTestPR(name, state string) *tektonv1.PipelineRun {
 				keys.Repository:    finalizeTestRepo.Name,
 				keys.GitProvider:   "github",
 				keys.SHA:           "123afc",
-				keys.URLOrg:        "sm43",
-				keys.URLRepository: "pac-app",
+				keys.URLOrg:        "org",
+				keys.URLRepository: "repo",
 			},
 		},
 		Spec: tektonv1.PipelineRunSpec{
@@ -69,6 +71,16 @@ func getTestPR(name, state string) *tektonv1.PipelineRun {
 func TestReconciler_FinalizeKind(t *testing.T) {
 	observer, _ := zapobserver.New(zap.InfoLevel)
 	fakelogger := zap.New(observer).Sugar()
+
+	_, mux, mockServerURL, teardown := ghtesthelper.SetupGH()
+	defer teardown()
+
+	finalizeTestRepo.Spec.GitProvider.URL = mockServerURL
+
+	// Mock status endpoint
+	mux.HandleFunc("/repos/org/repo/statuses/123afc", func(rw http.ResponseWriter, _ *http.Request) {
+		fmt.Fprint(rw, `{"state":"pending"}`)
+	})
 
 	tests := []struct {
 		name           string
@@ -147,7 +159,7 @@ func TestReconciler_FinalizeKind(t *testing.T) {
 			cs.Clients.SetConsoleUI(consoleui.FallBackConsole{})
 			r := Reconciler{
 				repoLister: informers.Repository.Lister(),
-				qm:         sync.NewQueueManager(fakelogger),
+				qm:         queuepkg.NewManager(fakelogger),
 				run:        cs,
 				kinteract:  kinterfaceTest,
 			}
@@ -159,9 +171,7 @@ func TestReconciler_FinalizeKind(t *testing.T) {
 				}
 			}
 			err := r.FinalizeKind(ctx, tt.pipelinerun)
-			if err != nil && !strings.Contains(err.Error(), "401 Bad credentials []") {
-				t.Fatalf("expected no error, got %v", err)
-			}
+			assert.NilError(t, err)
 
 			// if repo was deleted then no queue will be there
 			if tt.skipAddingRepo {

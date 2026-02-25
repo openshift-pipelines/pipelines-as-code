@@ -74,7 +74,52 @@ func UntilRepositoryUpdated(ctx context.Context, clients clients.Clients, opts O
 
 		clients.Log.Infof("Still waiting for repository status to be updated: %d/%d", len(repo.Status), opts.MinNumberStatus)
 		time.Sleep(2 * time.Second)
+		if opts.TargetSHA != "" {
+			matchingStatuses := 0
+			for _, s := range repo.Status {
+				if s.SHA != nil && *s.SHA == opts.TargetSHA {
+					matchingStatuses++
+				}
+			}
+			return matchingStatuses > 0 && len(repo.Status) >= opts.MinNumberStatus, nil
+		}
 		return len(repo.Status) >= opts.MinNumberStatus, nil
+	})
+}
+
+func UntilRepositoryHasStatusReason(ctx context.Context, clients clients.Clients, opts Opts, reason string) (*pacv1alpha1.Repository, error) {
+	ctx, cancel := context.WithTimeout(ctx, opts.PollTimeout)
+	defer cancel()
+	var repo *pacv1alpha1.Repository
+	return repo, kubeinteraction.PollImmediateWithContext(ctx, opts.PollTimeout, func() (bool, error) {
+		var err error
+		if repo, err = clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(opts.Namespace).Get(ctx, opts.RepoName, metav1.GetOptions{}); err != nil {
+			return true, err
+		}
+
+		matchingStatuses := 0
+		reasons := []string{}
+		for _, status := range repo.Status {
+			if opts.TargetSHA != "" {
+				if status.SHA == nil || *status.SHA != opts.TargetSHA {
+					continue
+				}
+			}
+			matchingStatuses++
+			if len(status.Conditions) == 0 {
+				continue
+			}
+			reasons = append(reasons, status.Conditions[0].Reason)
+			if status.Conditions[0].Reason == reason {
+				return true, nil
+			}
+		}
+
+		clients.Log.Infof(
+			"Still waiting for repository status reason to be updated: wanted=%q matching statuses=%d reasons=%v",
+			reason, matchingStatuses, reasons,
+		)
+		return false, nil
 	})
 }
 
@@ -114,7 +159,7 @@ func UntilPipelineRunHasReason(ctx context.Context, clients clients.Clients, des
 			}
 		}
 
-		clients.Log.Infof("still waiting for pipelinerun to have reason %s in %s namespace", desiredReason.String(), opts.Namespace)
+		clients.Log.Infof("still waiting for %d pipelinerun(s) to have reason %s in %s namespace", opts.MinNumberStatus, desiredReason.String(), opts.Namespace)
 		return len(prsWithReason) >= opts.MinNumberStatus, nil
 	})
 }

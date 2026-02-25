@@ -15,8 +15,8 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/stash"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketdatacenter/types"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	"gotest.tools/v3/assert"
 )
 
@@ -198,7 +198,7 @@ func MuxListDir(t *testing.T, mux *http.ServeMux, event *info.Event, path string
 	})
 }
 
-func MuxCreateAndTestCommitStatus(t *testing.T, mux *http.ServeMux, event *info.Event, expectedDescSubstr string, expStatus provider.StatusOpts) {
+func MuxCreateAndTestCommitStatus(t *testing.T, mux *http.ServeMux, event *info.Event, expectedDescSubstr string, expStatus status.StatusOpts) {
 	path := fmt.Sprintf("/commits/%s", event.SHA)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 		cso := &BuildStatus{}
@@ -218,46 +218,53 @@ func MuxCreateAndTestCommitStatus(t *testing.T, mux *http.ServeMux, event *info.
 	})
 }
 
-func MuxProjectMemberShip(t *testing.T, mux *http.ServeMux, event *info.Event, userperms []*UserPermission) {
-	path := fmt.Sprintf("/projects/%s/permissions/users", event.Organization)
+func muxPermissions(t *testing.T, mux *http.ServeMux, path string, values any) {
+	t.Helper()
 	mux.HandleFunc(path, func(rw http.ResponseWriter, _ *http.Request) {
-		if userperms == nil {
-			fmt.Fprintf(rw, "{\"values\": []}")
-		}
 		resp := map[string]any{
-			"values": userperms,
+			"values":     values,
+			"isLastPage": true,
 		}
 		b, err := json.Marshal(resp)
 		assert.NilError(t, err)
-
 		fmt.Fprint(rw, string(b))
 	})
+}
+
+func MuxProjectMemberShip(t *testing.T, mux *http.ServeMux, event *info.Event, userperms []*UserPermission) {
+	path := fmt.Sprintf("/projects/%s/permissions/users", event.Organization)
+	muxPermissions(t, mux, path, userperms)
 }
 
 func MuxProjectGroupMembership(t *testing.T, mux *http.ServeMux, event *info.Event, groups []*ProjGroup) {
 	path := fmt.Sprintf("/projects/%s/permissions/groups", event.Organization)
-	mux.HandleFunc(path, func(rw http.ResponseWriter, _ *http.Request) {
-		if groups == nil {
-			fmt.Fprintf(rw, "{\"values\": []}")
-		}
-		resp := map[string]any{
-			"values": groups,
-		}
-		b, err := json.Marshal(resp)
-		assert.NilError(t, err)
+	muxPermissions(t, mux, path, groups)
+}
 
-		fmt.Fprint(rw, string(b))
-	})
+func MuxRepoGroupMembership(t *testing.T, mux *http.ServeMux, event *info.Event, groups []*ProjGroup) {
+	path := fmt.Sprintf("/projects/%s/repos/%s/permissions/groups", event.Organization, event.Repository)
+	muxPermissions(t, mux, path, groups)
 }
 
 func MuxRepoMemberShip(t *testing.T, mux *http.ServeMux, event *info.Event, userperms []*UserPermission) {
 	path := fmt.Sprintf("/projects/%s/repos/%s/permissions/users", event.Organization, event.Repository)
-	mux.HandleFunc(path, func(rw http.ResponseWriter, _ *http.Request) {
-		if userperms == nil {
-			fmt.Fprintf(rw, "{\"values\": []}")
+	muxPermissions(t, mux, path, userperms)
+}
+
+// MuxGroupMembers mocks the /admin/groups/more-members endpoint used by go-scm
+// to resolve group names to individual users. groupMembers maps group name to
+// the list of members in that group.
+func MuxGroupMembers(t *testing.T, mux *http.ServeMux, groupMembers map[string][]GroupMember) {
+	t.Helper()
+	mux.HandleFunc("/admin/groups/more-members", func(rw http.ResponseWriter, r *http.Request) {
+		groupName := r.URL.Query().Get("context")
+		members, ok := groupMembers[groupName]
+		if !ok {
+			members = []GroupMember{}
 		}
 		resp := map[string]any{
-			"values": userperms,
+			"values":     members,
+			"isLastPage": true,
 		}
 		b, err := json.Marshal(resp)
 		assert.NilError(t, err)

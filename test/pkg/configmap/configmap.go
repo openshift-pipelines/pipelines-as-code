@@ -12,17 +12,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func ChangeGlobalConfig(ctx context.Context, t *testing.T, runcnx *params.Run, data map[string]string) func() {
+func ChangeGlobalConfig(ctx context.Context, t *testing.T, runcnx *params.Run, configMapName string, data map[string]string) func() {
 	ns := info.GetNS(ctx)
 	// grab the old configmap content
-	origCfgmap, err := runcnx.Clients.Kube.CoreV1().ConfigMaps(ns).Get(ctx, "pipelines-as-code", metav1.GetOptions{})
+	origCfgmap, err := runcnx.Clients.Kube.CoreV1().ConfigMaps(ns).Get(ctx, configMapName, metav1.GetOptions{})
 	assert.NilError(t, err)
 	newData := map[string]string{}
 	maps.Copy(newData, origCfgmap.Data)
 	maps.Copy(newData, data)
 	newConfigMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pipelines-as-code",
+			Name:      configMapName,
 			Namespace: ns,
 		},
 		Data: newData,
@@ -32,7 +32,7 @@ func ChangeGlobalConfig(ctx context.Context, t *testing.T, runcnx *params.Run, d
 	return func() {
 		orgNew := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "pipelines-as-code",
+				Name:      configMapName,
 				Namespace: ns,
 			},
 			Data: origCfgmap.Data,

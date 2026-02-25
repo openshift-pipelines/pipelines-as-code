@@ -1,6 +1,7 @@
 package settings
 
 import (
+	"net/http"
 	"reflect"
 	"testing"
 
@@ -155,7 +156,7 @@ func TestSyncConfig(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var test Settings
 
-			err := SyncConfig(logger, &test, tc.configMap, DefaultValidators())
+			err := SyncConfig(logger, &test, tc.configMap, DefaultValidators(), http.DefaultClient)
 
 			// set hub catalogs to nil to avoid comparison error
 			// test separately

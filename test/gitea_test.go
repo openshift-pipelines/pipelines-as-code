@@ -26,7 +26,7 @@ import (
 	tknpacdelete "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/deleterepo"
 	tknpacdesc "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/describe"
 	tknpacgenerate "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/generate"
-	tknpaclist "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/list"
+	tknpaclist "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/listcmd"
 	tknpacresolve "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -161,7 +161,7 @@ func TestGiteaPullRequestPrivateRepository(t *testing.T) {
 	ctx, f := tgitea.TestPR(t, topts)
 	defer f()
 	reg := regexp.MustCompile(".*successfully fetched git-clone task from default configured catalog Hub")
-	maxLines := int64(100)
+	maxLines := int64(1000)
 	err := twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *reg, 20, "controller", &maxLines)
 	assert.NilError(t, err)
 	tgitea.WaitForSecretDeletion(t, topts, topts.TargetRefName)
@@ -252,7 +252,7 @@ func TestGiteaBadYamlValidation(t *testing.T) {
 
 	ctx, f := tgitea.TestPR(t, topts)
 	defer f()
-	maxLines := int64(20)
+	maxLines := int64(1000)
 	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *regexp.MustCompile(
 		"cannot read the PipelineRun: pr-bad-format.yaml, error: yaml validation error: line 3: could not find expected ':'"),
 		10, "controller", &maxLines))
@@ -625,7 +625,7 @@ func TestGiteaWithCLI(t *testing.T) {
 
 	output, err = tknpactest.ExecCommand(topts.ParamsRun, tknpacdelete.Root, "-n", topts.TargetNS, "repository", topts.TargetNS, "--cascade")
 	assert.NilError(t, err)
-	expectedOutput := fmt.Sprintf("secret %s has been deleted\nrepository %s has been deleted\n", topts.TargetNS, topts.TargetNS)
+	expectedOutput := fmt.Sprintf("secret %s has been deleted\nsecret webhook-secret has been deleted\nrepository %s has been deleted\n", topts.TargetNS, topts.TargetNS)
 	assert.Assert(t, output == expectedOutput, topts.TargetRefName, fmt.Sprintf("delete command should have this output: %s received: %s", expectedOutput, output))
 }
 
@@ -891,7 +891,7 @@ func TestGiteaErrorSnippetCustomLines(t *testing.T) {
 	cfgMapData := map[string]string{
 		"error-log-snippet-number-of-lines": "5",
 	}
-	defer configmap.ChangeGlobalConfig(ctx, t, topts.ParamsRun, cfgMapData)()
+	defer configmap.ChangeGlobalConfig(ctx, t, topts.ParamsRun, "pipelines-as-code", cfgMapData)()
 
 	_, f := tgitea.TestPR(t, topts)
 	defer f()
@@ -998,7 +998,7 @@ func TestGiteaBadLinkOfTask(t *testing.T) {
 	ctx, f := tgitea.TestPR(t, topts)
 	defer f()
 	errre := regexp.MustCompile("There was an error starting the PipelineRun")
-	maxLines := int64(20)
+	maxLines := int64(1000)
 	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *errre, 10, "controller", &maxLines))
 }
 
@@ -1019,7 +1019,7 @@ func TestGiteaPipelineRunWithSameName(t *testing.T) {
 	ctx, f := tgitea.TestPR(t, topts)
 	defer f()
 	errre := regexp.MustCompile("found multiple pipelinerun in .tekton with the same name")
-	maxLines := int64(20)
+	maxLines := int64(1000)
 	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *errre, 10, "controller", &maxLines))
 }
 

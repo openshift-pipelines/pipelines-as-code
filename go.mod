@@ -16,7 +16,7 @@ require (
 	github.com/google/go-github/v75 v75.0.0
 	github.com/google/go-github/v81 v81.0.0
 	github.com/hako/durafmt v0.0.0-20210608085754-5c1018a4e16b
-	github.com/jenkins-x/go-scm v1.15.16
+	github.com/jenkins-x/go-scm v1.15.17
 	github.com/jonboulle/clockwork v0.5.0
 	github.com/juju/ansiterm v1.0.0
 	github.com/ktrysmt/go-bitbucket v0.9.88
@@ -50,7 +50,7 @@ require (
 	cel.dev/expr v0.25.1 // indirect
 	github.com/42wim/httpsig v1.2.3 // indirect
 	github.com/antlr/antlr4/runtime/Go/antlr v1.4.10 // indirect
-	github.com/cert-manager/cert-manager v1.19.2 // indirect
+	github.com/cert-manager/cert-manager v1.19.3 // indirect
 	github.com/cloudevents/sdk-go/sql/v2 v2.16.2 // indirect
 	github.com/coreos/go-oidc/v3 v3.17.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect

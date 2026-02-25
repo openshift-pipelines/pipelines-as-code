@@ -1,3 +1,5 @@
+//go:build e2e
+
 package test
 
 import (
@@ -913,30 +915,26 @@ func TestGitlabConsistentCommitStatusOnMR(t *testing.T) {
 		BaseRefName:   projectinfo.DefaultBranch,
 		PushForce:     true,
 	}
-	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
+	newSHA := scm.PushFilesToRefGit(t, scmOpts, entries)
 	runcnx.Clients.Log.Infof("Pushed good .tekton files to branch: %s", targetRefName)
-
-	// get latest MR because of last commit it is update
-	mr, _, err = glprovider.Client().MergeRequests.GetMergeRequest(projectinfo.ID, mr.IID, nil)
-	assert.NilError(t, err)
 
 	sopt = twait.SuccessOpt{
 		Title:           commitTitle,
 		OnEvent:         "Merge Request",
 		TargetNS:        targetNS,
 		NumberofPRMatch: 2,
-		SHA:             mr.SHA,
+		SHA:             newSHA,
 	}
 
 	twait.Succeeded(ctx, t, runcnx, opts, sopt)
-	labelSelector = fmt.Sprintf("%s=%s", keys.SHA, formatting.CleanValueKubernetes(mr.SHA))
+	labelSelector = fmt.Sprintf("%s=%s", keys.SHA, formatting.CleanValueKubernetes(newSHA))
 	prsNew, err = runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{
 		LabelSelector: labelSelector,
 	})
 	assert.NilError(t, err)
 	assert.Assert(t, len(prsNew.Items) == 2)
 
-	commitStatuses, _, err = glprovider.Client().Commits.GetCommitStatuses(projectinfo.ID, mr.SHA, &clientGitlab.GetCommitStatusesOptions{})
+	commitStatuses, _, err = glprovider.Client().Commits.GetCommitStatuses(projectinfo.ID, newSHA, &clientGitlab.GetCommitStatusesOptions{})
 	assert.NilError(t, err)
 	assert.Assert(t, len(commitStatuses) == 2)
 
@@ -1032,6 +1030,91 @@ func TestGitlabMergeRequestCelPrefix(t *testing.T) {
 		2,
 	)
 	assert.NilError(t, err)
+}
+
+// TestGitlabMergeRequestVariableSubs tests variable substitution in PipelineRun annotations
+// by pushing a PipelineRun file to a branch, making a comment on the commit, and verifying
+// that the PipelineRun logs contain the commit message.
+func TestGitlabMergeRequestVariableSubs(t *testing.T) {
+	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
+	ctx := context.Background()
+	runcnx, opts, glprovider, err := tgitlab.Setup(ctx)
+	assert.NilError(t, err)
+	ctx, err = cctx.GetControllerCtxInfo(ctx, runcnx)
+	assert.NilError(t, err)
+	runcnx.Clients.Log.Info("Testing variable substitution with GitLab")
+
+	projectinfo, resp, err := glprovider.Client().Projects.GetProject(opts.ProjectID, nil)
+	assert.NilError(t, err)
+	if resp != nil && resp.StatusCode == http.StatusNotFound {
+		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
+	}
+
+	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, opts, targetNS, nil)
+	assert.NilError(t, err)
+
+	targetRefName := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
+
+	entries, err := payload.GetEntries(map[string]string{
+		".tekton/pipelinerun-variable-subs.yaml": "testdata/pipelinerun-variable-subs.yaml",
+	}, targetNS, targetRefName,
+		triggertype.Push.String(), map[string]string{})
+	assert.NilError(t, err)
+
+	gitCloneURL, err := scm.MakeGitCloneURL(projectinfo.WebURL, opts.UserName, opts.Password)
+	assert.NilError(t, err)
+	commitTitle := "Testing variable substitution on " + targetRefName
+	scmOpts := &scm.Opts{
+		GitURL:        gitCloneURL,
+		CommitTitle:   commitTitle,
+		Log:           runcnx.Clients.Log,
+		WebURL:        projectinfo.WebURL,
+		TargetRefName: targetRefName,
+		BaseRefName:   projectinfo.DefaultBranch,
+	}
+	sha := scm.PushFilesToRefGit(t, scmOpts, entries)
+
+	runcnx.Clients.Log.Infof("Branch %s has been created and pushed with files, commit SHA: %s", targetRefName, sha)
+	defer tgitlab.TearDown(ctx, t, runcnx, glprovider, -1, targetRefName, targetNS, opts.ProjectID)
+
+	// Make a comment on the commit
+	runcnx.Clients.Log.Infof("Creating comment /test pipelinerun-variable-subs on commit %s", sha)
+	commentOpts := &clientGitlab.PostCommitCommentOptions{
+		Note: clientGitlab.Ptr(fmt.Sprintf("/test pipelinerun-variable-subs branch:%s", targetRefName)),
+	}
+	cc, _, err := glprovider.Client().Commits.PostCommitComment(opts.ProjectID, sha, commentOpts)
+	assert.NilError(t, err)
+	runcnx.Clients.Log.Infof("Commit comment %s has been created", cc.Note)
+
+	// Wait for PipelineRun creation
+	waitOpts := twait.Opts{
+		RepoName:        targetNS,
+		Namespace:       targetNS,
+		MinNumberStatus: 2,
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       sha,
+	}
+	err = twait.UntilPipelineRunHasReason(ctx, runcnx.Clients, v1.PipelineRunReasonSuccessful, waitOpts)
+	assert.NilError(t, err)
+
+	// Get the PipelineRun
+	prs, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
+	assert.NilError(t, err)
+	assert.Assert(t, len(prs.Items) >= 1, "Expected at least one PipelineRun, got %d", len(prs.Items))
+
+	// Check that PipelineRun logs contain the commit message
+	err = twait.RegexpMatchingInPodLog(
+		ctx,
+		runcnx,
+		targetNS,
+		fmt.Sprintf("pipelinesascode.tekton.dev/event-type=%s",
+			opscomments.TestSingleCommentEventType.String()),
+		"step-task",
+		*regexp.MustCompile(regexp.QuoteMeta(commitTitle)),
+		"",
+		2,
+	)
+	assert.NilError(t, err, "PipelineRun logs should contain the commit message: %s", commitTitle)
 }
 
 // Local Variables:

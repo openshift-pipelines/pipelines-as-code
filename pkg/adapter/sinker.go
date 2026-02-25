@@ -13,6 +13,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	"go.uber.org/zap"
 )
 
@@ -156,9 +157,9 @@ func (s *sinker) setupClient(ctx context.Context, repo *v1alpha1.Repository) err
 
 // createSkipCIStatus creates a neutral status check on the git provider when CI is skipped.
 func (s *sinker) createSkipCIStatus(ctx context.Context) error {
-	statusOpts := provider.StatusOpts{
+	statusOpts := status.StatusOpts{
 		Status:     "completed",
-		Conclusion: "neutral",
+		Conclusion: status.ConclusionNeutral,
 		Title:      "CI Skipped",
 		Summary:    fmt.Sprintf("%s - CI has been skipped", s.pacInfo.ApplicationName),
 		Text:       "Commit contains a skip CI command. Use /test or /retest to manually trigger CI if needed.",

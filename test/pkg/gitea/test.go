@@ -19,9 +19,9 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	pgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
-	tlogs "github.com/openshift-pipelines/pipelines-as-code/test/pkg/logs"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
+	tlogs "github.com/openshift-pipelines/pipelines-as-code/test/pkg/podlogs"
 	pacrepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
 	v1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
@@ -65,6 +65,7 @@ type TestOpts struct {
 	SHA                   string
 	FileChanges           []scm.FileChange
 	CreateSecret          []corev1.Secret
+	ProviderType          string // defaults to "forgejo" if empty
 }
 
 func PostCommentOnPullRequest(t *testing.T, topt *TestOpts, body string) {
@@ -155,7 +156,11 @@ func TestPR(t *testing.T, topts *TestOpts) (context.Context, func()) {
 		topts.DefaultBranch = options.MainBranch
 	}
 
-	repoInfo, err := CreateGiteaRepo(topts.GiteaCNX.Client(), topts.Opts.Organization, topts.TargetRepoName, topts.DefaultBranch, hookURL, topts.OnOrg, topts.ParamsRun.Clients.Log)
+	webhookSecret := os.Getenv("TEST_EL_WEBHOOK_SECRET")
+	repoInfo, err := CreateGiteaRepo(topts.GiteaCNX.Client(), topts.Opts.Organization,
+		topts.TargetRepoName, topts.DefaultBranch, hookURL,
+		webhookSecret, topts.OnOrg,
+		topts.ParamsRun.Clients.Log)
 	assert.NilError(t, err)
 	topts.Opts.Repo = repoInfo.Name
 	topts.Opts.Organization = repoInfo.Owner.UserName
@@ -174,8 +179,12 @@ func TestPR(t *testing.T, topts *TestOpts) (context.Context, func()) {
 		assert.NilError(t, err, "failed to create secret %s in namespace %s: %v", sec.GetName(), ns, err)
 	}
 
+	providerType := topts.ProviderType
+	if providerType == "" {
+		providerType = "forgejo"
+	}
 	gp := &v1alpha1.GitProvider{
-		Type: "gitea",
+		Type: providerType,
 		// caveat this assume gitea running on the same cluster, which
 		// we do and need for e2e tests but that may be changed somehow
 		URL:    topts.InternalGiteaURL,
@@ -190,7 +199,7 @@ func TestPR(t *testing.T, topts *TestOpts) (context.Context, func()) {
 	if topts.GlobalRepoCRParams == nil {
 		spec.GitProvider = gp
 	} else {
-		spec.GitProvider = &v1alpha1.GitProvider{Type: "gitea"}
+		spec.GitProvider = &v1alpha1.GitProvider{Type: providerType}
 	}
 	assert.NilError(t, CreateCRD(ctx, topts, spec, false))
 
