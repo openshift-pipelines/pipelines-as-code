@@ -66,7 +66,7 @@ func AddLabelsAndAnnotations(event *info.Event, pipelineRun *tektonv1.PipelineRu
 
 	// TODO: move to provider specific function
 	if providerConfig.Name == "github" || providerConfig.Name == "github-enterprise" {
-		if event.InstallationID != -1 {
+		if event.InstallationID > 0 {
 			annotations[keys.InstallationID] = strconv.FormatInt(event.InstallationID, 10)
 		}
 		if event.GHEURL != "" {
