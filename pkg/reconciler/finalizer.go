@@ -8,7 +8,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -80,7 +80,7 @@ func (r *Reconciler) reportPipelineRunAsCancelled(ctx context.Context, repo *v1a
 	}
 
 	consoleURL := r.run.Clients.ConsoleUI().DetailURL(pr)
-	status := provider.StatusOpts{
+	status := status.StatusOpts{
 		Conclusion:              "cancelled",
 		Text:                    fmt.Sprintf("PipelineRun %s was deleted", pr.GetName()),
 		DetailsURL:              consoleURL,

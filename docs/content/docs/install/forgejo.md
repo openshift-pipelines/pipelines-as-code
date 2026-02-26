@@ -9,7 +9,7 @@ weight: 14
 
 Pipelines-as-Code supports [Forgejo](https://forgejo.org) through a webhook.
 
-Forgejo is a community-driven Git forge that originated as a fork of Gitea. Pipelines-as-Code originally supported Gitea and now supports Forgejo, maintaining API compatibility between the two platforms. Both use the same provider type (`gitea`) in Pipelines-as-Code configuration.
+Forgejo is a community-driven Git forge that originated as a fork of Gitea. Pipelines-as-Code supports Forgejo as a first-class provider type. You can use `type: "forgejo"` in your Repository CRD configuration, or `type: "gitea"` for backwards compatibility.
 
 Follow the Pipelines-as-Code [installation](/docs/install/installation) according to your Kubernetes cluster.
 
@@ -115,8 +115,7 @@ metadata:
 spec:
   url: "https://forgejo.example.com/owner/repo"
   git_provider:
-    # Use "gitea" as the type - Forgejo is API-compatible with Gitea
-    type: "gitea"
+    type: "forgejo"
     # Set this to your Forgejo instance URL
     url: "https://forgejo.example.com"
     secret:
@@ -131,7 +130,7 @@ spec:
 
 ## Notes
 
-- **Provider Type**: Use `type: "gitea"` in your Repository CRD. Forgejo is a fork of Gitea and maintains full API compatibility.
+- **Provider Type**: Use `type: "forgejo"` in your Repository CRD. The legacy `type: "gitea"` is kept as an alias for backwards compatibility.
 
 - **Forgejo Instance URL**: You must specify `git_provider.url` pointing to your Forgejo instance URL.
 

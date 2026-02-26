@@ -93,7 +93,7 @@ func verifyGHTokenScope(t *testing.T, remoteTaskURL, remoteTaskName string, data
 	assert.NilError(t, err)
 
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
-	defer configmap.ChangeGlobalConfig(ctx, t, runcnx, data)()
+	defer configmap.ChangeGlobalConfig(ctx, t, runcnx, "pipelines-as-code", data)()
 
 	entries, err := payload.GetEntries(map[string]string{
 		".tekton/pr.yaml":                              "testdata/pipelinerun_remote_task_annotations.yaml",

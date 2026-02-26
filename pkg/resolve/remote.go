@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
@@ -30,6 +31,14 @@ func alreadyFetchedResource[T NamedItem](resources map[string]T, resourceName st
 func assembleTaskFQDNs(pipelineURL string, tasks []string) ([]string, error) {
 	if pipelineURL == "" {
 		return tasks, nil // no pipeline URL, return tasks as is
+	}
+
+	// Only HTTP(S) URLs can serve as base for relative task resolution.
+	// Hub catalog references (e.g., "catalog://resource:version") use a
+	// different scheme where relative paths are meaningless.
+	lowered := strings.ToLower(pipelineURL)
+	if !strings.HasPrefix(lowered, "http://") && !strings.HasPrefix(lowered, "https://") {
+		return tasks, nil
 	}
 
 	pURL, err := url.Parse(pipelineURL)
@@ -120,9 +129,9 @@ func resolveRemoteResources(ctx context.Context, rt *matcher.RemoteTasks, types 
 					}
 					// add the pipeline to the Resources fetched for the Event
 					fetchedResourcesForEvent.Pipelines[remotePipeline] = pipeline
-					// add the pipeline URL to the run specific Resources
-					fetchedResourcesForPipelineRun.PipelineURL = remotePipeline
 				}
+				// set the pipeline URL for relative task path resolution (used by both cached and newly fetched)
+				fetchedResourcesForPipelineRun.PipelineURL = remotePipeline
 			}
 		}
 		pipelineTasks := []string{}

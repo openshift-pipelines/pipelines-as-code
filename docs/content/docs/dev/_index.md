@@ -62,7 +62,7 @@ metadata:
 spec:
   url: "https://forgejo.example.com/owner/repo"
   git_provider:
-    type: "gitea"  # Use "gitea" - Forgejo is API-compatible with Gitea
+    type: "forgejo"
     url: "https://forgejo.example.com/"
     secret:
       name: "forgejo-secret"

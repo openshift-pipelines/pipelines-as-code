@@ -5,6 +5,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	"gotest.tools/v3/assert"
 )
 
@@ -333,6 +334,13 @@ func TestGetPipelineRunAndBranchNameFromTestComment(t *testing.T) {
 			wantError:  false,
 		},
 		{
+			name:       "branch name contains substring tag so not parsed as tag",
+			comment:    "/retest my-pipeline branch:feature-test-tagged-release",
+			prName:     "my-pipeline",
+			branchName: "feature-test-tagged-release",
+			wantError:  false,
+		},
+		{
 			name:      "different word other than branch for retest command",
 			comment:   "/retest invalidname:nightly",
 			wantError: true,
@@ -513,7 +521,7 @@ func TestCompareHostOfURLS(t *testing.T) {
 
 func TestGetCheckName(t *testing.T) {
 	type args struct {
-		status  StatusOpts
+		status  status.StatusOpts
 		pacopts *info.PacOpts
 	}
 	tests := []struct {
@@ -524,7 +532,7 @@ func TestGetCheckName(t *testing.T) {
 		{
 			name: "no application name",
 			args: args{
-				status: StatusOpts{
+				status: status.StatusOpts{
 					OriginalPipelineRunName: "HELLO",
 				},
 				pacopts: &info.PacOpts{Settings: settings.Settings{ApplicationName: ""}},
@@ -534,7 +542,7 @@ func TestGetCheckName(t *testing.T) {
 		{
 			name: "application and pipelinerun name",
 			args: args{
-				status: StatusOpts{
+				status: status.StatusOpts{
 					OriginalPipelineRunName: "MOTO",
 				},
 				pacopts: &info.PacOpts{Settings: settings.Settings{ApplicationName: "HELLO"}},
@@ -544,7 +552,7 @@ func TestGetCheckName(t *testing.T) {
 		{
 			name: "application no pipelinerun name",
 			args: args{
-				status: StatusOpts{
+				status: status.StatusOpts{
 					OriginalPipelineRunName: "",
 				},
 				pacopts: &info.PacOpts{Settings: settings.Settings{ApplicationName: "PAC"}},

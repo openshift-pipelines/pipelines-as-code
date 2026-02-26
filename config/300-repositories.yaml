@@ -210,13 +210,15 @@ spec:
                         - 'gitlab': GitLab.com or self-hosted GitLab
                         - 'bitbucket-datacenter': Bitbucket Data Center (self-hosted)
                         - 'bitbucket-cloud': Bitbucket Cloud (bitbucket.org)
-                        - 'gitea': Gitea instances
+                        - 'forgejo': Forgejo instances
+                        - 'gitea': Gitea instances (alias for forgejo, kept for backwards compatibility)
                       enum:
                         - github
                         - gitlab
                         - bitbucket-datacenter
                         - bitbucket-cloud
                         - gitea
+                        - forgejo
                       type: string
                     url:
                       description: |-
@@ -446,16 +448,40 @@ spec:
                         - roles
                         - secret_ref
                       type: object
+                    forgejo:
+                      description: Forgejo contains Forgejo/Gitea-specific settings.
+                      properties:
+                        comment_strategy:
+                          description: |-
+                            CommentStrategy defines how Forgejo/Gitea comments are handled for pipeline results.
+                            Options:
+                            - 'disable_all': Disables all comments on pull requests
+                            - 'update': Updates a single comment per PipelineRun on every trigger.
+                          enum:
+                            - ""
+                            - disable_all
+                            - update
+                          type: string
+                        user_agent:
+                          description: |-
+                            UserAgent sets the User-Agent header on API requests to the Gitea/Forgejo instance.
+                            This is useful when the instance is behind an AI scraping protection proxy (e.g. Anubis)
+                            that blocks requests without a recognized User-Agent.
+                            Defaults to "pipelines-as-code/<version>" when left empty.
+                          type: string
+                      type: object
                     github:
                       properties:
                         comment_strategy:
                           description: |-
-                            CommentStrategy defines how GitLab comments are handled for pipeline results.
+                            CommentStrategy defines how GitHub comments are handled for pipeline results.
                             Options:
                             - 'disable_all': Disables all comments on merge requests
+                            - 'update': Updates a single comment per PipelineRun on every trigger.
                           enum:
                             - ""
                             - disable_all
+                            - update
                           type: string
                       type: object
                     github_app_token_scope_repos:
@@ -474,9 +500,11 @@ spec:
                             CommentStrategy defines how GitLab comments are handled for pipeline results.
                             Options:
                             - 'disable_all': Disables all comments on merge requests
+                            - 'update': Updates a single comment per PipelineRun on every trigger.
                           enum:
                             - ""
                             - disable_all
+                            - update
                           type: string
                       type: object
                     pipelinerun_provenance:

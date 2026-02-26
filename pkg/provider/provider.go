@@ -6,8 +6,10 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	providerstatus "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	"gopkg.in/yaml.v2"
 )
 
@@ -137,7 +139,7 @@ func getPipelineRunAndBranchOrTagNameFromComment(typeOfComment, comment string) 
 			return prName, branchName, tagName, fmt.Errorf("the GitOps comment `%s` does not contain a branch or tag word", comment)
 		}
 
-		if strings.Contains(splitText[1], "tag") {
+		if strings.Contains(splitText[1], "tag:") {
 			tagName = getBranchOrTagNameFromComment(splitText[1], "tag")
 		} else {
 			branchName = getBranchOrTagNameFromComment(splitText[1], "branch")
@@ -201,7 +203,7 @@ func ValidateYaml(content []byte, filename string) error {
 // Otherwise, the OriginalPipelineRunName will be used.
 // If the OriginalPipelineRunName is not set, an empty string will be returned.
 // The check name will be in the format "ApplicationName / OriginalPipelineRunName".
-func GetCheckName(status StatusOpts, pacopts *info.PacOpts) string {
+func GetCheckName(status providerstatus.StatusOpts, pacopts *info.PacOpts) string {
 	if pacopts.ApplicationName != "" {
 		if status.OriginalPipelineRunName == "" {
 			return pacopts.ApplicationName
@@ -223,4 +225,32 @@ var skipCIRegex = regexp.MustCompile(`\[(skip ci|ci skip|skip tkn|tkn skip)\]`)
 // SkipCI returns true if the given commit message contains any skip command.
 func SkipCI(commitMessage string) bool {
 	return skipCIRegex.MatchString(commitMessage)
+}
+
+// PlrStatusCommentPrefixTemplate is used to add a prefix to comments which include the status details
+// of a PipelineRun.
+// The %s placeholder must be replaced with the OriginalPipelineRunName of the associated PipelineRun.
+const PlrStatusCommentPrefixTemplate string = "<!-- pac-status-%s -->"
+
+const (
+	// Updates a single comment per PipelineRun on every trigger.
+	UpdateCommentStrategy string = "update"
+	// Disables all comments on merge requests.
+	DisableAllCommentStrategy string = "disable_all"
+)
+
+func IsCommentStrategyUpdate(repo *v1alpha1.Repository) bool {
+	var commentStrategy string
+	if repo != nil && repo.Spec.Settings != nil {
+		switch {
+		case repo.Spec.Settings.Gitlab != nil:
+			commentStrategy = repo.Spec.Settings.Gitlab.CommentStrategy
+		case repo.Spec.Settings.Github != nil:
+			commentStrategy = repo.Spec.Settings.Github.CommentStrategy
+		case repo.Spec.Settings.Forgejo != nil:
+			commentStrategy = repo.Spec.Settings.Forgejo.CommentStrategy
+		}
+	}
+
+	return commentStrategy == UpdateCommentStrategy
 }

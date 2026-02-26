@@ -76,6 +76,18 @@ func TestCountPipelineRun(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "provider is Forgejo",
+			annotations: map[string]string{
+				keys.GitProvider: "forgejo",
+				keys.EventType:   "push",
+			},
+			tags: map[string]string{
+				"provider":   "forgejo-webhook",
+				"event-type": "push",
+			},
+			wantErr: false,
+		},
+		{
 			name: "unsupported provider",
 			annotations: map[string]string{
 				keys.GitProvider: "unsupported",

@@ -231,7 +231,7 @@ func (l *listener) processIncoming(targetRepo *v1alpha1.Repository) (provider.In
 			provider = github.New()
 		case "gitlab":
 			provider = &gitlab.Provider{}
-		case "gitea":
+		case "gitea", "forgejo":
 			provider = &gitea.Provider{}
 		case "bitbucket-cloud":
 			provider = &bitbucketcloud.Provider{}

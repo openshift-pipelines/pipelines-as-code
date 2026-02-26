@@ -7,6 +7,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	pac "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/listers/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	v1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -17,7 +18,10 @@ import (
 
 var universalDeserializer = serializer.NewCodecFactory(runtime.NewScheme()).UniversalDeserializer()
 
-var allowedGitlabDisableCommentStrategyOnMr = sets.NewString("", "disable_all")
+var (
+	allowedGitlabDisableCommentStrategyOnMr = sets.NewString("", provider.DisableAllCommentStrategy, provider.UpdateCommentStrategy)
+	allowedForgejoCommentStrategyOnPr       = sets.NewString("", provider.DisableAllCommentStrategy, provider.UpdateCommentStrategy)
+)
 
 // Path implements AdmissionController.
 func (ac *reconciler) Path() string {
@@ -64,6 +68,12 @@ func (ac *reconciler) Admit(_ context.Context, request *v1.AdmissionRequest) *v1
 	if repo.Spec.Settings != nil && repo.Spec.Settings.Gitlab != nil {
 		if !allowedGitlabDisableCommentStrategyOnMr.Has(repo.Spec.Settings.Gitlab.CommentStrategy) {
 			return webhook.MakeErrorStatus("comment strategy '%s' is not supported for Gitlab MRs", repo.Spec.Settings.Gitlab.CommentStrategy)
+		}
+	}
+
+	if repo.Spec.Settings != nil && repo.Spec.Settings.Forgejo != nil {
+		if !allowedForgejoCommentStrategyOnPr.Has(repo.Spec.Settings.Forgejo.CommentStrategy) {
+			return webhook.MakeErrorStatus("comment strategy '%s' is not supported for Forgejo/Gitea PRs", repo.Spec.Settings.Forgejo.CommentStrategy)
 		}
 	}
 

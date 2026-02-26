@@ -17,6 +17,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
 	providerMetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/providermetrics"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	"go.uber.org/zap"
 )
 
@@ -82,26 +83,30 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 	}
 }
 
-func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusopts provider.StatusOpts) error {
+func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusopts status.StatusOpts) error {
+	var state types.CommitStatusState
+
 	switch statusopts.Conclusion {
-	case "skipped":
-		statusopts.Conclusion = "STOPPED"
+	case status.ConclusionSkipped:
+		state = types.StateStopped
 		statusopts.Title = "➖ Skipping this commit"
-	case "neutral":
-		statusopts.Conclusion = "STOPPED"
+	case status.ConclusionNeutral:
+		state = types.StateStopped
 		statusopts.Title = "➖ CI has stopped"
-	case "failure":
-		statusopts.Conclusion = "FAILED"
+	case status.ConclusionFailure:
+		state = types.StateFailed
 		statusopts.Title = "❌ Failed"
-	case "pending":
-		statusopts.Conclusion = "INPROGRESS"
+	case status.ConclusionPending:
+		state = types.StateInProgress
 		statusopts.Title = "⚡ CI has started"
-	case "success":
-		statusopts.Conclusion = "SUCCESSFUL"
+	case status.ConclusionSuccess:
+		state = types.StateSuccessful
 		statusopts.Title = "✅ Commit has been validated"
-	case "completed":
-		statusopts.Conclusion = "SUCCESSFUL"
+	case status.ConclusionCompleted:
+		state = types.StateSuccessful
 		statusopts.Title = "✅ Completed"
+	case status.ConclusionCancelled:
+		// TODO
 	}
 	detailsURL := event.Provider.URL
 	if statusopts.DetailsURL != "" {
@@ -111,7 +116,7 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusopts
 	cso := &bitbucket.CommitStatusOptions{
 		Key:         provider.GetCheckName(statusopts, v.pacInfo),
 		Url:         detailsURL,
-		State:       statusopts.Conclusion,
+		State:       string(state),
 		Description: statusopts.Title,
 	}
 	cmo := &bitbucket.CommitsOptions{
@@ -133,7 +138,7 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusopts
 	}
 
 	eventType := triggertype.IsPullRequestType(event.EventType)
-	if statusopts.Conclusion != "STOPPED" && statusopts.Status == "completed" &&
+	if state != types.StateStopped && statusopts.Status == "completed" &&
 		statusopts.Text != "" &&
 		(eventType == triggertype.PullRequest || event.TriggerTarget == triggertype.PullRequest) {
 		onPr := ""

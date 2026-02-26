@@ -107,8 +107,8 @@ spec:
                   git checkout -B $target {{ revision }}
                   echo ${TARGET_BRANCH} > docs/content/VERSION
                   echo ${allversions} > docs/content/ALLVERSIONS
-                  echo "$version" > pkg/params/version/version.txt
-                  git add release.yaml release.k8s.yaml docs/content/VERSION docs/content/ALLVERSIONS pkg/params/version/version.txt
+                  echo "$version" > pkg/params/versiondata/version.txt
+                  git add release.yaml release.k8s.yaml docs/content/VERSION docs/content/ALLVERSIONS pkg/params/versiondata/version.txt
                   git commit -m "Release yaml generated from {{repo_url}}/commit/{{revision}} for release ${version}"
                   echo git push "https://git:\$HUB_TOKEN@github.com/{{ repo_owner }}/{{ repo_name }} refs/heads/${target}"
                   git push --force https://git:$HUB_TOKEN@github.com/{{ repo_owner }}/{{ repo_name }} refs/heads/${target}
@@ -130,6 +130,39 @@ spec:
         workspaces:
           - name: source
             workspace: source
+      - name: ai-release-notes
+        runAfter:
+          - gorelease
+        workspaces:
+          - name: source
+            workspace: source
+        taskSpec:
+          workspaces:
+            - name: source
+          steps:
+            - name: generate-release-notes
+              image: registry.access.redhat.com/ubi9/python-312
+              workingDir: $(workspaces.source.path)
+              env:
+                - name: HUB_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: "nightly-ci-github-hub-token"
+                      key: "hub-token"
+                - name: GEMINI_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: "gemini-api-key"
+                      key: "api-key"
+                - name: REPO_OWNER
+                  value: "{{ repo_owner }}"
+                - name: REPO_NAME
+                  value: "{{ repo_name }}"
+              script: |
+                #!/usr/bin/env bash
+                set -euxo pipefail
+                git config --global --add safe.directory $(workspaces.source.path)
+                python3 ./hack/generate-releasenotes.py
   workspaces:
     - name: source
       volumeClaimTemplate:

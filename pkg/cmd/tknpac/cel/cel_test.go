@@ -1214,7 +1214,7 @@ func TestCommandFlags(t *testing.T) {
 	providerFlag := cmd.Flags().Lookup("provider")
 	assert.Assert(t, providerFlag != nil)
 	assert.Equal(t, providerFlag.Shorthand, "p")
-	assert.Equal(t, providerFlag.Usage, "payload provider (auto, github, gitlab, bitbucket-cloud, bitbucket-datacenter, gitea)")
+	assert.Equal(t, providerFlag.Usage, "payload provider (auto, github, gitlab, bitbucket-cloud, bitbucket-datacenter, gitea, forgejo)")
 	assert.Equal(t, providerFlag.DefValue, "auto")
 }
 

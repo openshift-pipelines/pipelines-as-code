@@ -5,31 +5,37 @@ package test
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"os"
 	"regexp"
 	"testing"
 	"time"
 
 	"github.com/google/go-github/v81/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	"github.com/tektoncd/pipeline/pkg/names"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestGithubSecondPushRequestGitOpsCommentOnComment(t *testing.T) {
+func TestGithubGHEPushRequestGitOpsCommentOnComment(t *testing.T) {
 	opsComment := "/hello-world"
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:            "Github GitOps push/retest request",
-		YamlFiles:        []string{"testdata/pipelinerun-on-comment-annotation.yaml"},
-		NoStatusCheck:    true,
-		TargetRefName:    options.MainBranch,
-		SecondController: true,
+		Label:         "Github GitOps push/retest request",
+		YamlFiles:     []string{"testdata/pipelinerun-on-comment-annotation.yaml"},
+		NoStatusCheck: true,
+		TargetRefName: options.MainBranch,
+		GHE:           true,
 	}
 	g.RunPushRequest(ctx, t)
 	defer g.TearDown(ctx, t)
@@ -83,14 +89,14 @@ func TestGithubSecondPushRequestGitOpsCommentOnComment(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestGithubSecondPushRequestGitOpsCommentRetest(t *testing.T) {
+func TestGithubGHEPushRequestGitOpsCommentRetest(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label: "Github GitOps push/retest request",
 		YamlFiles: []string{
 			"testdata/pipelinerun-on-push.yaml", "testdata/pipelinerun.yaml",
 		},
-		SecondController: true,
+		GHE: true,
 	}
 	g.RunPushRequest(ctx, t)
 	defer g.TearDown(ctx, t)
@@ -140,12 +146,12 @@ func TestGithubSecondPushRequestGitOpsCommentRetest(t *testing.T) {
 	}
 }
 
-func TestGithubSecondPushRequestGitOpsCommentCancel(t *testing.T) {
+func TestGithubGHEPushRequestGitOpsCommentCancel(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:            "GitHub Gitops push/cancel request",
-		YamlFiles:        []string{"testdata/pipelinerun-on-push.yaml", "testdata/pipelinerun.yaml"},
-		SecondController: true,
+		Label:     "GitHub Gitops push/cancel request",
+		YamlFiles: []string{"testdata/pipelinerun-on-push.yaml", "testdata/pipelinerun.yaml"},
+		GHE:       true,
 	}
 	g.RunPushRequest(ctx, t)
 	defer g.TearDown(ctx, t)
@@ -216,4 +222,113 @@ func TestGithubSecondPushRequestGitOpsCommentCancel(t *testing.T) {
 		}
 	}
 	assert.Assert(t, cancelled, "No cancelled pipeline run found")
+}
+
+func TestGithubGHEPullRequestRetestPullRequestNumberSubstitution(t *testing.T) {
+	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
+	ctx := context.Background()
+	g := &tgithub.PRTest{GHE: true}
+
+	ctx, runcnx, opts, ghcnx, err := tgithub.Setup(ctx, g.GHE, g.Webhook)
+	assert.NilError(t, err)
+	g.Logger = runcnx.Clients.Log
+
+	g.CommitTitle = fmt.Sprintf("Testing %s with Github APPS integration on %s", g.Label, targetNS)
+	g.Logger.Info(g.CommitTitle)
+
+	repoinfo, resp, err := ghcnx.Client().Repositories.Get(ctx, opts.Organization, opts.Repo)
+	assert.NilError(t, err)
+	if resp != nil && resp.StatusCode == http.StatusNotFound {
+		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
+	}
+
+	if g.Options.Settings.Github != nil {
+		opts.Settings = g.Options.Settings
+	}
+	err = tgithub.CreateCRD(ctx, t, repoinfo, runcnx, opts, targetNS)
+	assert.NilError(t, err)
+
+	tempBaseBranch := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("temp-base-branch")
+	tempBaseBranchRef := fmt.Sprintf("refs/heads/%s", tempBaseBranch)
+
+	// Get the SHA of the default branch
+	defaultBranchRef, _, err := ghcnx.Client().Git.GetRef(ctx, opts.Organization, opts.Repo, fmt.Sprintf("refs/heads/%s", repoinfo.GetDefaultBranch()))
+	assert.NilError(t, err)
+
+	// Create the temporary base branch
+	_, _, err = ghcnx.Client().Git.CreateRef(ctx, opts.Organization, opts.Repo, github.CreateRef{
+		Ref: tempBaseBranchRef,
+		SHA: *defaultBranchRef.Object.SHA,
+	})
+	assert.NilError(t, err)
+
+	yamlEntries := map[string]string{".tekton/pipelinerun-pr-number-variable.yaml": "testdata/pipelinerun-pr-number-variable.yaml"}
+
+	entries, err := payload.GetEntries(yamlEntries, targetNS, tempBaseBranchRef, triggertype.Push.String(), map[string]string{})
+	assert.NilError(t, err)
+
+	targetRefName := fmt.Sprintf("refs/heads/%s",
+		names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"))
+
+	sha, vref, err := tgithub.PushFilesToRef(ctx, ghcnx.Client(), g.CommitTitle, tempBaseBranchRef, targetRefName,
+		opts.Organization, opts.Repo, entries)
+	assert.NilError(t, err)
+
+	g.Logger.Infof("Commit %s has been created and pushed to %s", sha, vref.GetURL())
+	number, err := tgithub.PRCreate(ctx, runcnx, ghcnx, opts.Organization,
+		opts.Repo, targetRefName, tempBaseBranchRef, g.CommitTitle)
+	assert.NilError(t, err)
+
+	g.Cnx = runcnx
+	g.Options = opts
+	g.Provider = ghcnx
+	g.TargetNamespace = targetNS
+	g.TargetRefName = targetRefName
+	g.PRNumber = number
+	g.SHA = sha
+
+	defer g.TearDown(ctx, t)
+	defer func() {
+		if os.Getenv("TEST_NOCLEANUP") != "true" {
+			g.Logger.Infof("Deleting Ref %s", tempBaseBranchRef)
+			_, err := ghcnx.Client().Git.DeleteRef(ctx, opts.Organization, opts.Repo, tempBaseBranchRef)
+			assert.NilError(t, err)
+		}
+	}()
+
+	mergeResult, _, err := g.Provider.Client().PullRequests.Merge(ctx, opts.Organization, opts.Repo, g.PRNumber, g.CommitTitle, &github.PullRequestOptions{
+		MergeMethod: "rebase",
+		SHA:         sha,
+	})
+	assert.NilError(t, err)
+	g.Logger.Infof("Pull request %d has been merged", g.PRNumber)
+
+	// wait for API to reflect this PR in response
+	time.Sleep(10 * time.Second)
+
+	mergedSHA := mergeResult.GetSHA()
+
+	_, _, err = g.Provider.Client().Repositories.CreateComment(ctx, opts.Organization, opts.Repo, mergedSHA, &github.RepositoryComment{Body: github.Ptr("/retest pipelinerun-pr-number-variable branch:" + tempBaseBranch)})
+	assert.NilError(t, err)
+	g.Logger.Infof("Comment %s has been created", mergedSHA)
+
+	waitOpts := twait.Opts{
+		RepoName:        g.TargetNamespace,
+		Namespace:       g.TargetNamespace,
+		MinNumberStatus: 2,
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       mergedSHA,
+	}
+
+	err = twait.UntilPipelineRunHasReason(ctx, g.Cnx.Clients, tektonv1.PipelineRunReasonSuccessful, waitOpts)
+	assert.NilError(t, err)
+
+	regex := regexp.MustCompile(fmt.Sprintf("I don't know my PR number is %d", g.PRNumber))
+
+	// because there are two pipeline runs were created due to pull request merge, we need the one which is triggered on retest comment.
+	err = twait.RegexpMatchingInPodLog(ctx, g.Cnx, g.TargetNamespace,
+		fmt.Sprintf("pipelinesascode.tekton.dev/event-type=%s",
+			opscomments.RetestSingleCommentEventType.String()),
+		"step-task", *regex, "", 2)
+	assert.NilError(t, err)
 }

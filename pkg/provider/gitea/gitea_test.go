@@ -24,16 +24,18 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/test"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
+	"gotest.tools/v3/golden"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
 func TestProvider_CreateStatus(t *testing.T) {
 	type args struct {
 		event      *info.Event
-		statusOpts provider.StatusOpts
+		statusOpts status.StatusOpts
 	}
 	tests := []struct {
 		name    string
@@ -44,8 +46,8 @@ func TestProvider_CreateStatus(t *testing.T) {
 			name: "Test with success conclusion",
 			args: args{
 				event: &info.Event{},
-				statusOpts: provider.StatusOpts{
-					Conclusion: "success",
+				statusOpts: status.StatusOpts{
+					Conclusion: status.ConclusionSuccess,
 				},
 			},
 			wantErr: false,
@@ -54,8 +56,8 @@ func TestProvider_CreateStatus(t *testing.T) {
 			name: "Test with failure conclusion",
 			args: args{
 				event: &info.Event{},
-				statusOpts: provider.StatusOpts{
-					Conclusion: "failure",
+				statusOpts: status.StatusOpts{
+					Conclusion: status.ConclusionFailure,
 				},
 			},
 			wantErr: false,
@@ -64,8 +66,8 @@ func TestProvider_CreateStatus(t *testing.T) {
 			name: "Test with pending conclusion",
 			args: args{
 				event: &info.Event{},
-				statusOpts: provider.StatusOpts{
-					Conclusion: "pending",
+				statusOpts: status.StatusOpts{
+					Conclusion: status.ConclusionPending,
 				},
 			},
 			wantErr: false,
@@ -74,8 +76,8 @@ func TestProvider_CreateStatus(t *testing.T) {
 			name: "Test with neutral conclusion",
 			args: args{
 				event: &info.Event{},
-				statusOpts: provider.StatusOpts{
-					Conclusion: "neutral",
+				statusOpts: status.StatusOpts{
+					Conclusion: status.ConclusionNeutral,
 				},
 			},
 			wantErr: false,
@@ -84,7 +86,7 @@ func TestProvider_CreateStatus(t *testing.T) {
 			name: "Test with in_progress status",
 			args: args{
 				event: &info.Event{},
-				statusOpts: provider.StatusOpts{
+				statusOpts: status.StatusOpts{
 					Status: "in_progress",
 				},
 			},
@@ -94,7 +96,7 @@ func TestProvider_CreateStatus(t *testing.T) {
 			name: "Test with onpr",
 			args: args{
 				event: &info.Event{},
-				statusOpts: provider.StatusOpts{
+				statusOpts: status.StatusOpts{
 					Status:          "in_progress",
 					PipelineRunName: "mypr",
 				},
@@ -105,7 +107,7 @@ func TestProvider_CreateStatus(t *testing.T) {
 			name: "Test with ok-to-test event",
 			args: args{
 				event: &info.Event{EventType: triggertype.OkToTest.String()},
-				statusOpts: provider.StatusOpts{
+				statusOpts: status.StatusOpts{
 					Status:          "in_progress",
 					PipelineRunName: "mypr",
 				},
@@ -116,7 +118,7 @@ func TestProvider_CreateStatus(t *testing.T) {
 			name: "Test with oncomment event",
 			args: args{
 				event: &info.Event{EventType: opscomments.OkToTestCommentEventType.String()},
-				statusOpts: provider.StatusOpts{
+				statusOpts: status.StatusOpts{
 					Status:          "in_progress",
 					PipelineRunName: "mypr",
 				},
@@ -127,7 +129,7 @@ func TestProvider_CreateStatus(t *testing.T) {
 			name: "Test status_text",
 			args: args{
 				event: &info.Event{EventType: triggertype.PullRequest.String()},
-				statusOpts: provider.StatusOpts{
+				statusOpts: status.StatusOpts{
 					Status:          "in_progress",
 					PipelineRunName: "mypr",
 					Text:            "mytext",
@@ -407,7 +409,7 @@ func TestProvider_CreateStatusCommit(t *testing.T) {
 	type args struct {
 		event   *info.Event
 		pacopts *info.PacOpts
-		status  provider.StatusOpts
+		status  status.StatusOpts
 	}
 	tests := []struct {
 		name                            string
@@ -428,8 +430,8 @@ func TestProvider_CreateStatusCommit(t *testing.T) {
 					TriggerTarget:     "pull_request",
 					SHA:               "123456",
 				},
-				status: provider.StatusOpts{
-					Conclusion: "neutral",
+				status: status.StatusOpts{
+					Conclusion: status.ConclusionNeutral,
 				},
 			},
 			wantStatusJSON: `{"state":"success","target_url":"","description":"","context":"myapp"}`,
@@ -437,8 +439,8 @@ func TestProvider_CreateStatusCommit(t *testing.T) {
 		{
 			name: "pending",
 			args: args{
-				status: provider.StatusOpts{
-					Conclusion: "pending",
+				status: status.StatusOpts{
+					Conclusion: status.ConclusionPending,
 					Title:      "Pipeline run for myapp has been triggered",
 				},
 				pacopts: &info.PacOpts{Settings: settings.Settings{
@@ -457,7 +459,7 @@ func TestProvider_CreateStatusCommit(t *testing.T) {
 		{
 			name: "pending from status",
 			args: args{
-				status: provider.StatusOpts{
+				status: status.StatusOpts{
 					Status: "in_progress",
 					Title:  "Pipeline run for myapp has been triggered",
 				},
@@ -477,8 +479,8 @@ func TestProvider_CreateStatusCommit(t *testing.T) {
 		{
 			name: "ok-to-test",
 			args: args{
-				status: provider.StatusOpts{
-					Conclusion: "pending",
+				status: status.StatusOpts{
+					Conclusion: status.ConclusionPending,
 					Title:      "Pipeline run for myapp has been triggered",
 					Text:       "time to get started",
 				},
@@ -499,8 +501,8 @@ func TestProvider_CreateStatusCommit(t *testing.T) {
 		{
 			name: "cancel",
 			args: args{
-				status: provider.StatusOpts{
-					Conclusion: "pending",
+				status: status.StatusOpts{
+					Conclusion: status.ConclusionPending,
 					Title:      "Pipeline run for myapp has been triggered",
 					Text:       "time to get started",
 				},
@@ -521,8 +523,8 @@ func TestProvider_CreateStatusCommit(t *testing.T) {
 		{
 			name: "retest",
 			args: args{
-				status: provider.StatusOpts{
-					Conclusion: "pending",
+				status: status.StatusOpts{
+					Conclusion: status.ConclusionPending,
 					Title:      "Pipeline run for myapp has been triggered",
 					Text:       "time to get started",
 				},
@@ -579,7 +581,7 @@ func TestProvider_CreateStatusCommit(t *testing.T) {
 				giteaClient: fakeclient,
 			}
 
-			if err := v.createStatusCommit(tt.args.event, tt.args.pacopts, tt.args.status); (err != nil) != tt.wantErr {
+			if err := v.createStatusCommit(context.Background(), tt.args.event, tt.args.pacopts, tt.args.status); (err != nil) != tt.wantErr {
 				t.Errorf("Provider.createStatusCommit() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -649,11 +651,11 @@ func TestProviderCreateStatusCommitRetryOnTransientError(t *testing.T) {
 			pacopts := &info.PacOpts{Settings: settings.Settings{
 				ApplicationName: "myapp",
 			}}
-			status := provider.StatusOpts{
+			status := status.StatusOpts{
 				Conclusion: "success",
 			}
 
-			err := v.createStatusCommit(event, pacopts, status)
+			err := v.createStatusCommit(context.Background(), event, pacopts, status)
 
 			if tt.wantErr {
 				assert.Assert(t, err != nil, "expected an error but got none")
@@ -781,9 +783,12 @@ func TestCreateComment(t *testing.T) {
 			commit:       "Updated Comment",
 			updateMarker: "MARKER",
 			mockResponses: map[string]func(rw http.ResponseWriter, _ *http.Request){
+				"/user": func(rw http.ResponseWriter, _ *http.Request) {
+					fmt.Fprint(rw, `{"id": 100, "login": "pac-user"}`)
+				},
 				"/repos/org/repo/issues/123/comments": func(rw http.ResponseWriter, r *http.Request) {
 					if r.Method == http.MethodGet {
-						fmt.Fprint(rw, `[{"id": 555, "body": "MARKER"}]`)
+						fmt.Fprint(rw, `[{"id": 555, "body": "MARKER", "user": {"id": 100}}]`)
 						return
 					}
 				},
@@ -800,14 +805,41 @@ func TestCreateComment(t *testing.T) {
 			commit:       "New Comment",
 			updateMarker: "MARKER",
 			mockResponses: map[string]func(rw http.ResponseWriter, _ *http.Request){
+				"/user": func(rw http.ResponseWriter, _ *http.Request) {
+					fmt.Fprint(rw, `{"id": 100, "login": "pac-user"}`)
+				},
 				"/repos/org/repo/issues/123/comments": func(rw http.ResponseWriter, r *http.Request) {
 					if r.Method == http.MethodGet {
-						fmt.Fprint(rw, `[{"id": 555, "body": "NO_MATCH"}]`)
+						fmt.Fprint(rw, `[{"id": 555, "body": "NO_MATCH", "user": {"id": 200}}]`)
 						return
 					}
 					assert.Equal(t, r.Method, http.MethodPost)
 					rw.WriteHeader(http.StatusCreated)
 					fmt.Fprint(rw, `{}`)
+				},
+			},
+		},
+		{
+			name:         "skip comment from different user and create new",
+			event:        &info.Event{Organization: "org", Repository: "repo", PullRequestNumber: 123},
+			commit:       "Updated Comment",
+			updateMarker: "MARKER",
+			mockResponses: map[string]func(rw http.ResponseWriter, _ *http.Request){
+				"/user": func(rw http.ResponseWriter, _ *http.Request) {
+					fmt.Fprint(rw, `{"id": 100, "login": "pac-user"}`)
+				},
+				"/repos/org/repo/issues/123/comments": func(rw http.ResponseWriter, r *http.Request) {
+					if r.Method == http.MethodGet {
+						fmt.Fprint(rw, `[{"id": 555, "body": "Old MARKER", "user": {"id": 999}}]`)
+						return
+					}
+					assert.Equal(t, r.Method, http.MethodPost)
+					rw.WriteHeader(http.StatusCreated)
+					fmt.Fprint(rw, `{}`)
+				},
+				"/repos/org/repo/issues/comments/555": func(rw http.ResponseWriter, _ *http.Request) {
+					t.Error("edit endpoint should not be called for comment from different user")
+					rw.WriteHeader(http.StatusOK)
 				},
 			},
 		},
@@ -817,6 +849,8 @@ func TestCreateComment(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fakeclient, mux, teardown := tgitea.Setup(t)
 			defer teardown()
+			observer, _ := zapobserver.New(zap.InfoLevel)
+			fakelogger := zap.New(observer).Sugar()
 
 			if tt.clientNil {
 				p := &Provider{}
@@ -829,13 +863,117 @@ func TestCreateComment(t *testing.T) {
 				mux.HandleFunc(endpoint, handler)
 			}
 
-			p := &Provider{giteaClient: fakeclient}
+			p := &Provider{giteaClient: fakeclient, Logger: fakelogger}
 			err := p.CreateComment(context.Background(), tt.event, tt.commit, tt.updateMarker)
 			if tt.wantErr != "" {
 				assert.ErrorContains(t, err, tt.wantErr)
 			} else {
 				assert.NilError(t, err)
 			}
+		})
+	}
+}
+
+func TestCreateStatusUpdateCommentNormalizesBreaks(t *testing.T) {
+	fakeclient, mux, teardown := tgitea.Setup(t)
+	defer teardown()
+
+	var createCommentBody string
+	mux.HandleFunc("/repos/org/repo/statuses/", func(rw http.ResponseWriter, _ *http.Request) {
+		fmt.Fprint(rw, `{"state":"pending"}`)
+	})
+	mux.HandleFunc("/repos/org/repo/issues/123/comments", func(rw http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			fmt.Fprint(rw, `[]`)
+		case http.MethodPost:
+			b, err := io.ReadAll(r.Body)
+			assert.NilError(t, err)
+			createCommentBody = string(b)
+			fmt.Fprint(rw, `{}`)
+		default:
+			t.Fatalf("unexpected method: %s", r.Method)
+		}
+	})
+
+	p := &Provider{
+		giteaClient: fakeclient,
+		pacInfo: &info.PacOpts{
+			Settings: settings.Settings{
+				ApplicationName: settings.PACApplicationNameDefaultValue,
+			},
+		},
+		repo: &v1alpha1.Repository{
+			Spec: v1alpha1.RepositorySpec{
+				Settings: &v1alpha1.Settings{
+					Forgejo: &v1alpha1.ForgejoSettings{CommentStrategy: provider.UpdateCommentStrategy},
+				},
+			},
+		},
+	}
+
+	err := p.CreateStatus(context.Background(), &info.Event{
+		Organization:      "org",
+		Repository:        "repo",
+		SHA:               "abc123",
+		PullRequestNumber: 123,
+		EventType:         triggertype.PullRequest.String(),
+		TriggerTarget:     triggertype.PullRequest,
+	}, status.StatusOpts{
+		Status:                  "in_progress",
+		Text:                    "line1<br>line2",
+		OriginalPipelineRunName: "demo",
+		DetailsURL:              "https://example.test/log",
+	})
+	assert.NilError(t, err)
+	assert.Assert(t, !strings.Contains(createCommentBody, "<br>"), "comment body should not contain raw <br>: %s", createCommentBody)
+	assert.Assert(t, strings.Contains(createCommentBody, "line1\\nline2"), "comment body should contain normalized newline: %s", createCommentBody)
+
+	golden.Assert(t, createCommentBody, strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"))
+}
+
+func TestFormatPipelineCommentEmoji(t *testing.T) {
+	p := &Provider{
+		pacInfo: &info.PacOpts{
+			Settings: settings.Settings{
+				ApplicationName: settings.PACApplicationNameDefaultValue,
+			},
+		},
+	}
+
+	tests := []struct {
+		name   string
+		status status.StatusOpts
+		emoji  string
+	}{
+		{
+			name: "failure conclusion uses failure emoji",
+			status: status.StatusOpts{
+				Conclusion:              status.ConclusionFailure,
+				Title:                   "Failed",
+				Text:                    "details",
+				OriginalPipelineRunName: "demo",
+				DetailsURL:              "https://example.test/log",
+			},
+			emoji: "❌",
+		},
+		{
+			name: "in progress status uses rocket emoji",
+			status: status.StatusOpts{
+				Status:                  "in_progress",
+				Title:                   "CI has Started",
+				Text:                    "details",
+				OriginalPipelineRunName: "demo",
+				DetailsURL:              "https://example.test/log",
+			},
+			emoji: "🚀",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := p.formatPipelineComment("abc123", tt.status)
+			assert.Assert(t, strings.HasPrefix(got, tt.emoji+" "), "expected prefix %q in comment %q", tt.emoji+" ", got)
 		})
 	}
 }

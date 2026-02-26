@@ -303,10 +303,26 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 			if err != nil {
 				logger.Errorf("there was an error evaluating the CEL expression, skipping: %v", err)
 				if checkIfCELEvaluateError(err) {
-					celValidationErrors = append(celValidationErrors, &pacerrors.PacYamlValidations{
-						Name: prName,
-						Err:  fmt.Errorf("CEL expression evaluation error: %s", sanitizeErrorAsMarkdown(err)),
-					})
+					if provider.IsCommentStrategyUpdate(repo) {
+						// Using the same logic for getting OriginalPipelineRun as the one used for setting
+						// the annotation which is used in the provider's "update" comment strategy.
+						originPipelineRunName := prun.GetName()
+						if originPipelineRunName == "" && prun.GenerateName != "" {
+							originPipelineRunName = prun.GetGenerateName()
+						}
+
+						if reportErrors {
+							reportCELValidationErrors(ctx, repo, []*pacerrors.PacYamlValidations{{
+								Name: originPipelineRunName,
+								Err:  fmt.Errorf("CEL expression evaluation error: %s", sanitizeErrorAsMarkdown(err)),
+							}}, eventEmitter, vcx, event, fmt.Sprintf(provider.PlrStatusCommentPrefixTemplate, originPipelineRunName))
+						}
+					} else {
+						celValidationErrors = append(celValidationErrors, &pacerrors.PacYamlValidations{
+							Name: prName,
+							Err:  fmt.Errorf("CEL expression evaluation error: %s", sanitizeErrorAsMarkdown(err)),
+						})
+					}
 				}
 				continue
 			}
@@ -400,7 +416,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 
 	if len(celValidationErrors) > 0 && reportErrors {
 		logger.Debugf("MatchPipelinerunByAnnotation: reporting %d CEL validation errors", len(celValidationErrors))
-		reportCELValidationErrors(ctx, repo, celValidationErrors, eventEmitter, vcx, event)
+		reportCELValidationErrors(ctx, repo, celValidationErrors, eventEmitter, vcx, event, "")
 	}
 
 	if len(matchedPRs) > 0 {

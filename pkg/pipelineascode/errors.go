@@ -9,6 +9,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	pacerrors "github.com/openshift-pipelines/pipelines-as-code/pkg/errors"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	providerstatus "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 )
@@ -19,7 +20,7 @@ const (
 
 var regexpIgnoreErrors = regexp.MustCompile(`.*no kind.*is registered for version.*in scheme.*`)
 
-func (p *PacRun) checkAccessOrError(ctx context.Context, repo *v1alpha1.Repository, status provider.StatusOpts, viamsg string) (bool, error) {
+func (p *PacRun) checkAccessOrError(ctx context.Context, repo *v1alpha1.Repository, status providerstatus.StatusOpts, viamsg string) (bool, error) {
 	p.debugf("checkAccessOrError: checking access for sender=%s via=%s", p.event.Sender, viamsg)
 	allowed, err := p.vcx.IsAllowed(ctx, p.event)
 	if err != nil {

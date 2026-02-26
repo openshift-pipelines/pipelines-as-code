@@ -118,6 +118,56 @@ func TestMergeSpecs(t *testing.T) {
 			},
 		},
 		{
+			name: "forgejo settings from global",
+			local: &RepositorySpec{
+				Settings:    &Settings{},
+				GitProvider: &GitProvider{},
+			},
+			global: RepositorySpec{
+				Settings: &Settings{
+					Forgejo: &ForgejoSettings{
+						UserAgent: "my-custom-agent",
+					},
+				},
+				GitProvider: &GitProvider{},
+			},
+			expected: &RepositorySpec{
+				Settings: &Settings{
+					Forgejo: &ForgejoSettings{
+						UserAgent: "my-custom-agent",
+					},
+				},
+				GitProvider: &GitProvider{},
+			},
+		},
+		{
+			name: "local forgejo settings take precedence",
+			local: &RepositorySpec{
+				Settings: &Settings{
+					Forgejo: &ForgejoSettings{
+						UserAgent: "local-agent",
+					},
+				},
+				GitProvider: &GitProvider{},
+			},
+			global: RepositorySpec{
+				Settings: &Settings{
+					Forgejo: &ForgejoSettings{
+						UserAgent: "global-agent",
+					},
+				},
+				GitProvider: &GitProvider{},
+			},
+			expected: &RepositorySpec{
+				Settings: &Settings{
+					Forgejo: &ForgejoSettings{
+						UserAgent: "local-agent",
+					},
+				},
+				GitProvider: &GitProvider{},
+			},
+		},
+		{
 			name: "different git providers",
 			local: &RepositorySpec{
 				GitProvider: &GitProvider{
@@ -130,6 +180,54 @@ func TestMergeSpecs(t *testing.T) {
 			expected: &RepositorySpec{
 				GitProvider: &GitProvider{
 					Type: "local",
+				},
+			},
+		},
+		{
+			name: "forgejo local merges with gitea global",
+			local: &RepositorySpec{
+				GitProvider: &GitProvider{
+					Type: "forgejo",
+				},
+			},
+			global: RepositorySpec{
+				GitProvider: &GitProvider{
+					Type:   "gitea",
+					URL:    "https://gitea.example.com",
+					User:   "user",
+					Secret: &Secret{Name: "secret"},
+				},
+			},
+			expected: &RepositorySpec{
+				GitProvider: &GitProvider{
+					Type:   "forgejo",
+					URL:    "https://gitea.example.com",
+					User:   "user",
+					Secret: &Secret{Name: "secret"},
+				},
+			},
+		},
+		{
+			name: "gitea local merges with forgejo global",
+			local: &RepositorySpec{
+				GitProvider: &GitProvider{
+					Type: "gitea",
+				},
+			},
+			global: RepositorySpec{
+				GitProvider: &GitProvider{
+					Type:   "forgejo",
+					URL:    "https://forgejo.example.com",
+					User:   "user",
+					Secret: &Secret{Name: "secret"},
+				},
+			},
+			expected: &RepositorySpec{
+				GitProvider: &GitProvider{
+					Type:   "gitea",
+					URL:    "https://forgejo.example.com",
+					User:   "user",
+					Secret: &Secret{Name: "secret"},
 				},
 			},
 		},

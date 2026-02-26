@@ -24,8 +24,10 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/versiondata"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	providerMetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/providermetrics"
+	providerstatus "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	"go.uber.org/zap"
 )
 
@@ -64,6 +66,7 @@ type Provider struct {
 	eventEmitter *events.EventEmitter
 	run          *params.Run
 	triggerEvent string
+	pacUserID    int64 // user login used by PAC
 }
 
 func (v *Provider) Client() *forgejo.Client {
@@ -98,9 +101,25 @@ func (v *Provider) CreateComment(_ context.Context, event *info.Event, commit, u
 			return err
 		}
 
-		re := regexp.MustCompile(updateMarker)
+		re := regexp.MustCompile(regexp.QuoteMeta(updateMarker))
 		for _, comment := range comments {
 			if re.MatchString(comment.Body) {
+				// Get the UserID for the PAC user.
+				if v.pacUserID == 0 {
+					pacUser, _, err := v.Client().GetMyUserInfo()
+					if err != nil {
+						return fmt.Errorf("unable to fetch user info: %w", err)
+					}
+					v.pacUserID = pacUser.ID
+				}
+				// Only edit comments created by this PAC installation's credentials.
+				// Prevents accidentally modifying comments from other users/bots.
+				if comment.Poster.ID != v.pacUserID {
+					v.Logger.Debugf("This comment was not created by PAC, skipping comment edit :%d, created by user %d, PAC user: %d",
+						comment.ID, comment.Poster.ID, v.pacUserID)
+					continue
+				}
+
 				_, _, err := v.Client().EditIssueComment(event.Organization, event.Repository, comment.ID, forgejo.EditIssueCommentOption{
 					Body: commit,
 				})
@@ -182,14 +201,18 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.Event, repo *v1alpha1.Repository, emitter *events.EventEmitter) error {
 	var err error
 	apiURL := runevent.Provider.URL
+	userAgent := "pipelines-as-code/" + strings.TrimSpace(versiondata.Version)
+	if repo != nil && repo.Spec.Settings != nil && repo.Spec.Settings.Forgejo != nil && repo.Spec.Settings.Forgejo.UserAgent != "" {
+		userAgent = repo.Spec.Settings.Forgejo.UserAgent
+	}
 	// password is not exposed to CRD, it's only used from the e2e tests
 	if v.Password != "" && runevent.Provider.User != "" {
-		v.giteaClient, err = forgejo.NewClient(apiURL, forgejo.SetBasicAuth(runevent.Provider.User, v.Password))
+		v.giteaClient, err = forgejo.NewClient(apiURL, forgejo.SetBasicAuth(runevent.Provider.User, v.Password), forgejo.SetUserAgent(userAgent))
 	} else {
 		if runevent.Provider.Token == "" {
 			return fmt.Errorf("no git_provider.secret has been set in the repo crd")
 		}
-		v.giteaClient, err = forgejo.NewClient(apiURL, forgejo.SetToken(runevent.Provider.Token))
+		v.giteaClient, err = forgejo.NewClient(apiURL, forgejo.SetToken(runevent.Provider.Token), forgejo.SetUserAgent(userAgent))
 	}
 	if err != nil {
 		return err
@@ -206,27 +229,28 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.
 	return nil
 }
 
-func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts provider.StatusOpts) error {
+func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOpts providerstatus.StatusOpts) error {
 	if v.giteaClient == nil {
 		return fmt.Errorf("cannot set status on gitea no token or url set")
 	}
 	switch statusOpts.Conclusion {
-	case "success":
+	case providerstatus.ConclusionSuccess:
 		statusOpts.Title = "Success"
 		statusOpts.Summary = "has <b>successfully</b> validated your commit."
-	case "failure":
+	case providerstatus.ConclusionFailure:
 		statusOpts.Title = "Failed"
 		statusOpts.Summary = "has <b>failed</b>."
-	case "pending":
+	case providerstatus.ConclusionPending:
 		// for concurrency set title as pending
 		if statusOpts.Title == "" {
 			statusOpts.Title = "Pending"
 		}
 		// for unauthorized user set title as Pending approval
 		statusOpts.Summary = "is skipping this commit."
-	case "neutral":
+	case providerstatus.ConclusionNeutral:
 		statusOpts.Title = "Unknown"
 		statusOpts.Summary = "doesn't know what happened with this commit."
+	case providerstatus.ConclusionCancelled, providerstatus.ConclusionCompleted, providerstatus.ConclusionSkipped:
 	}
 
 	if statusOpts.Status == "in_progress" {
@@ -241,18 +265,19 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	// gitea show weirdly the <br>
 	statusOpts.Summary = fmt.Sprintf("%s%s %s", v.pacInfo.ApplicationName, onPr, statusOpts.Summary)
 
-	return v.createStatusCommit(event, v.pacInfo, statusOpts)
+	return v.createStatusCommit(ctx, event, v.pacInfo, statusOpts)
 }
 
-func (v *Provider) createStatusCommit(event *info.Event, pacopts *info.PacOpts, status provider.StatusOpts) error {
+func (v *Provider) createStatusCommit(ctx context.Context, event *info.Event, pacopts *info.PacOpts, status providerstatus.StatusOpts) error {
 	state := forgejo.StatusState(status.Conclusion)
 	switch status.Conclusion {
-	case "neutral":
+	case providerstatus.ConclusionNeutral:
 		state = forgejo.StatusSuccess // We don't have a choice than setting as success, no pending here.c
-	case "pending":
+	case providerstatus.ConclusionPending:
 		if status.Title != "" {
 			state = forgejo.StatusPending
 		}
+	default:
 	}
 	if status.Status == "in_progress" {
 		state = forgejo.StatusPending
@@ -290,15 +315,45 @@ func (v *Provider) createStatusCommit(event *info.Event, pacopts *info.PacOpts, 
 	if opscomments.IsAnyOpsEventType(eventType.String()) {
 		eventType = triggertype.PullRequest
 	}
-	if status.Text != "" && (eventType == triggertype.PullRequest || event.TriggerTarget == triggertype.PullRequest) {
-		status.Text = strings.ReplaceAll(strings.TrimSpace(status.Text), "<br>", "\n")
-		_, _, err := v.Client().CreateIssueComment(event.Organization, event.Repository,
-			int64(event.PullRequestNumber), forgejo.CreateIssueCommentOption{
-				Body: fmt.Sprintf("%s\n%s", status.Summary, status.Text),
-			},
-		)
-		if err != nil {
-			return err
+
+	var commentStrategy string
+	if v.repo != nil && v.repo.Spec.Settings != nil && v.repo.Spec.Settings.Forgejo != nil {
+		commentStrategy = v.repo.Spec.Settings.Forgejo.CommentStrategy
+	}
+	switch commentStrategy {
+	case provider.DisableAllCommentStrategy:
+		v.Logger.Warn("Comments related to PipelineRuns status have been disabled for Gitea/Forgejo pull requests")
+		return nil
+	case provider.UpdateCommentStrategy:
+		if eventType == triggertype.PullRequest || event.TriggerTarget == triggertype.PullRequest {
+			status.Text = strings.ReplaceAll(strings.TrimSpace(status.Text), "<br>", "\n")
+			statusComment := v.formatPipelineComment(event.SHA, status)
+			// Creating the prefix that is added to the status comment for a pipeline run.
+			plrStatusCommentPrefix := fmt.Sprintf(provider.PlrStatusCommentPrefixTemplate, status.OriginalPipelineRunName)
+			// The entire markdown comment, including the prefix that is added to the pull request for the pipelinerun.
+			markdownStatusComment := fmt.Sprintf("%s\n%s", plrStatusCommentPrefix, statusComment)
+
+			if err := v.CreateComment(ctx, event, markdownStatusComment, plrStatusCommentPrefix); err != nil {
+				v.eventEmitter.EmitMessage(
+					v.repo,
+					zap.ErrorLevel,
+					"PipelineRunCommentCreationError",
+					fmt.Sprintf("failed to create comment: %s", err.Error()),
+				)
+				return err
+			}
+		}
+	default:
+		if status.Text != "" && (eventType == triggertype.PullRequest || event.TriggerTarget == triggertype.PullRequest) {
+			status.Text = strings.ReplaceAll(strings.TrimSpace(status.Text), "<br>", "\n")
+			_, _, err := v.Client().CreateIssueComment(event.Organization, event.Repository,
+				int64(event.PullRequestNumber), forgejo.CreateIssueCommentOption{
+					Body: fmt.Sprintf("%s\n%s", status.Summary, status.Text),
+				},
+			)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -544,4 +599,26 @@ func (v *Provider) CreateToken(_ context.Context, _ []string, _ *info.Event) (st
 
 func (v *Provider) GetTemplate(commentType provider.CommentType) string {
 	return provider.GetHTMLTemplate(commentType)
+}
+
+func (v *Provider) formatPipelineComment(sha string, status providerstatus.StatusOpts) string {
+	var emoji string
+
+	if status.Status == "in_progress" {
+		emoji = "🚀"
+	} else {
+		switch status.Conclusion {
+		case providerstatus.ConclusionCancelled:
+			emoji = "⚠️"
+		case providerstatus.ConclusionFailure:
+			emoji = "❌"
+		case providerstatus.ConclusionSuccess:
+			emoji = "✅"
+		default:
+			emoji = "ℹ️"
+		}
+	}
+
+	return fmt.Sprintf("%s **%s: %s/%s for %s**\n\n%s\n\n<small>Full log available [here](%s)</small>",
+		emoji, status.Title, v.pacInfo.ApplicationName, status.OriginalPipelineRunName, sha, status.Text, status.DetailsURL)
 }
