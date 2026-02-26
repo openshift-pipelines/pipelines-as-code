@@ -1,0 +1,76 @@
+# Pipelines-as-Code E2E Test Configuration
+#
+# Copy this file and fill in the values for the providers you want to test:
+#   cp e2e-config.yaml.example e2e-config.yaml
+#
+# Then run tests with:
+#   PAC_E2E_CONFIG=./test/e2e-config.yaml make test-e2e
+#
+# You only need to fill in the sections for the providers you are testing.
+# Environment variables always take precedence over values in this file.
+
+# Common settings shared across providers
+common:
+  # The controller public URL (ingress or OpenShift route)
+  controller_url: "https://pac-controller.example.com"
+  # Webhook secret configured on the controller
+  webhook_secret: ""
+  # Set to "true" to skip cleanup after tests (useful for debugging)
+  # no_cleanup: "true"
+
+# GitHub (public)
+github:
+  api_url: "https://api.github.com"
+  token: ""
+  # Repository configured with GitHub Apps (format: org/repo)
+  repo_owner_githubapp: ""
+  # Repository configured with webhooks (format: org/repo, must differ from githubapp repo)
+  repo_owner_webhook: ""
+  # Installation ID from GitHub App webhook deliveries
+  repo_installation_id: ""
+  # Private remote task for scoped token tests (optional)
+  # private_task_name: "task-remote"
+  # private_task_url: "https://github.com/org/private-repo/blob/main/task.yaml"
+
+# GitHub Enterprise (second controller)
+github_enterprise:
+  api_url: ""
+  token: ""
+  controller_url: ""
+  repo_owner_githubapp: ""
+  repo_installation_id: ""
+
+# GitLab
+gitlab:
+  api_url: "https://gitlab.com"
+  token: ""
+  # Project ID (find in repo Settings > General)
+  project_id: ""
+
+# Gitea / Forgejo
+gitea:
+  api_url: "http://localhost:3000"
+  # Internal URL for in-cluster access (optional)
+  # internal_url: "http://forgejo-http.forgejo.svc.cluster.local:3000"
+  password: "pac"
+  username: "pac"
+  repo_owner: "pac/pac"
+  smee_url: ""
+
+# Bitbucket Cloud
+bitbucket_cloud:
+  api_url: "https://api.bitbucket.org/2.0"
+  # Username from "Personal Bitbucket settings"
+  user: ""
+  token: ""
+  # Format: workspace/repo
+  e2e_repository: ""
+
+# Bitbucket Data Center (Server)
+bitbucket_server:
+  api_url: ""
+  user: ""
+  token: ""
+  # Format: project/repo
+  e2e_repository: ""
+  webhook_secret: ""

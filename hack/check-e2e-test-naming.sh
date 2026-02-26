@@ -17,8 +17,8 @@ if [[ ${#testfiles[@]} -eq 0 ]]; then
     exit 0
 fi
 
-# Extract all Test* function names
-all_tests=$(grep -hE '^func[[:space:]]+Test[[:alnum:]_]+' "${testfiles[@]}" | sed -E 's/^func[[:space:]]+([[:alnum:]_]+).*/\1/')
+# Extract all Test* function names (excluding TestMain which is a Go test harness, not a test)
+all_tests=$(grep -hE '^func[[:space:]]+Test[[:alnum:]_]+' "${testfiles[@]}" | sed -E 's/^func[[:space:]]+([[:alnum:]_]+).*/\1/' | grep -v '^TestMain$')
 
 # Valid patterns: TestGithub*, TestGitea*, TestGitlab*, TestBitbucket*, TestOthers*, or *Concurrency*
 valid_pattern='^Test(Github|Gitea|Gitlab|Bitbucket|Others)|Concurrency'

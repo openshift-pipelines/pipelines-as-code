@@ -62,6 +62,31 @@ this repo should differ from the one which is configured as part of `TEST_GITHUB
 
 You don't need to configure all of those if you restrict running your e2e tests to a subset.
 
+### YAML Configuration File
+
+Instead of setting individual environment variables, you can use a YAML
+configuration file. Set `PAC_E2E_CONFIG` to the path of your config file:
+
+```shell
+PAC_E2E_CONFIG=./test/e2e-config.yaml make test-e2e
+```
+
+Copy the example file and fill in the values for the providers you want to test:
+
+```shell
+cp test/e2e-config.yaml.example test/e2e-config.yaml
+# edit test/e2e-config.yaml with your values
+```
+
+The YAML file groups settings by provider section (`common`, `github`,
+`github_enterprise`, `gitlab`, `gitea`, `bitbucket_cloud`,
+`bitbucket_server`). See `test/e2e-config.yaml.example` for the full list of
+fields.
+
+Environment variables always take precedence over YAML values, so you can use
+the config file for base settings and override specific values via env vars
+(useful for CI secrets).
+
 ## Running
 
 As long you have env variables set, you can just do a :
