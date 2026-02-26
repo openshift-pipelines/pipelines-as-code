@@ -1498,71 +1498,6 @@ func TestCreateComment(t *testing.T) {
 				return nil
 			},
 		},
-		{
-			name:         "deduplicates existing marker comments",
-			event:        &info.Event{Organization: "org", Repository: "repo", PullRequestNumber: 123},
-			updateMarker: "MARKER",
-			commentBody:  "new body MARKER",
-			setup: func(t *testing.T, mux *http.ServeMux) func(t *testing.T) {
-				t.Helper()
-				editedPrimary := false
-				deletedDuplicate := false
-				mux.HandleFunc("/repos/org/repo/issues/123/comments", func(rw http.ResponseWriter, r *http.Request) {
-					assert.Equal(t, r.Method, http.MethodGet)
-					fmt.Fprint(rw, `[{"id": 111, "body": "MARKER old"}, {"id": 222, "body": "MARKER old"}]`)
-				})
-				mux.HandleFunc("/repos/org/repo/issues/comments/111", func(rw http.ResponseWriter, r *http.Request) {
-					assert.Equal(t, r.Method, http.MethodPatch)
-					editedPrimary = true
-					rw.WriteHeader(http.StatusOK)
-				})
-				mux.HandleFunc("/repos/org/repo/issues/comments/222", func(rw http.ResponseWriter, r *http.Request) {
-					assert.Equal(t, r.Method, http.MethodDelete)
-					deletedDuplicate = true
-					rw.WriteHeader(http.StatusNoContent)
-				})
-				return func(t *testing.T) {
-					t.Helper()
-					assert.Assert(t, editedPrimary)
-					assert.Assert(t, deletedDuplicate)
-				}
-			},
-		},
-		{
-			name:         "deduplicates post-create marker comments",
-			event:        &info.Event{Organization: "org", Repository: "repo", PullRequestNumber: 123},
-			updateMarker: "MARKER",
-			commentBody:  "body MARKER",
-			setup: func(t *testing.T, mux *http.ServeMux) func(t *testing.T) {
-				t.Helper()
-				listCalls := 0
-				deletedDuplicate := false
-				mux.HandleFunc("/repos/org/repo/issues/123/comments", func(rw http.ResponseWriter, r *http.Request) {
-					switch r.Method {
-					case http.MethodGet:
-						listCalls++
-						if listCalls <= 2 {
-							fmt.Fprint(rw, `[]`)
-							return
-						}
-						fmt.Fprint(rw, `[{"id": 111, "body": "body MARKER"}, {"id": 222, "body": "body MARKER"}]`)
-					case http.MethodPost:
-						rw.WriteHeader(http.StatusCreated)
-					default:
-						t.Fatalf("unexpected method: %s", r.Method)
-					}
-				})
-				mux.HandleFunc("/repos/org/repo/issues/comments/222", func(rw http.ResponseWriter, r *http.Request) {
-					assert.Equal(t, r.Method, http.MethodDelete)
-					deletedDuplicate = true
-					rw.WriteHeader(http.StatusNoContent)
-				})
-				return func(t *testing.T) {
-					t.Helper()
-					assert.Assert(t, deletedDuplicate)
-				}
-			},
-		},
 	}
 
 	for _, tt := range tests {
@@ -1606,26 +1541,21 @@ func TestCreateCommentDedupLogging(t *testing.T) {
 	tests := []struct {
 		name            string
 		commitBody      string
+		updateMarker    string
 		setup           func(t *testing.T, mux *http.ServeMux)
 		expectedPhases  []string
 		unexpectedPhase []string
 	}{
 		{
-			name:       "logs full create flow when marker comment does not exist",
-			commitBody: "new body MARKER",
+			name:         "logs full create flow when marker comment does not exist",
+			commitBody:   "new body MARKER",
+			updateMarker: "MARKER",
 			setup: func(t *testing.T, mux *http.ServeMux) {
 				t.Helper()
-				listCalls := 0
 				mux.HandleFunc("/repos/org/repo/issues/123/comments", func(rw http.ResponseWriter, r *http.Request) {
 					switch r.Method {
 					case http.MethodGet:
-						listCalls++
-						switch listCalls {
-						case 1, 2:
-							fmt.Fprint(rw, `[]`)
-						default:
-							fmt.Fprint(rw, `[{"id": 333, "body": "new body MARKER", "created_at": "2024-01-01T00:00:00Z"}]`)
-						}
+						fmt.Fprint(rw, `[]`)
 					case http.MethodPost:
 						rw.WriteHeader(http.StatusCreated)
 						fmt.Fprint(rw, `{"id": 333, "body": "new body MARKER"}`)
@@ -1636,20 +1566,15 @@ func TestCreateCommentDedupLogging(t *testing.T) {
 			},
 			expectedPhases: []string{
 				"initial_list",
-				"jitter_wait",
-				"post_jitter_list",
-				"pre_create_race_window",
 				"create_comment_start",
 				"create_comment_done",
-				"post_create_list",
-				"dedup_select_primary",
-				"dedup_complete",
 			},
-			unexpectedPhase: []string{"dedup_delete_attempt"},
+			unexpectedPhase: []string{"no_marker", "jitter_wait", "post_jitter_list", "pre_create_race_window", "post_create_list", "dedup_select_primary", "dedup_complete", "dedup_delete_attempt"},
 		},
 		{
-			name:       "logs dedup select without delete for one existing marker comment",
-			commitBody: "new body MARKER",
+			name:         "logs edit flow for one existing marker comment",
+			commitBody:   "new body MARKER",
+			updateMarker: "MARKER",
 			setup: func(t *testing.T, mux *http.ServeMux) {
 				t.Helper()
 				mux.HandleFunc("/repos/org/repo/issues/123/comments", func(rw http.ResponseWriter, r *http.Request) {
@@ -1663,14 +1588,14 @@ func TestCreateCommentDedupLogging(t *testing.T) {
 			},
 			expectedPhases: []string{
 				"initial_list",
-				"dedup_select_primary",
-				"dedup_complete",
+				"edit_comment",
 			},
-			unexpectedPhase: []string{"create_comment_start", "dedup_delete_attempt"},
+			unexpectedPhase: []string{"create_comment_start", "dedup_select_primary", "dedup_complete", "dedup_delete_attempt"},
 		},
 		{
-			name:       "logs duplicate detection and delete phases for multiple markers",
-			commitBody: "new body MARKER",
+			name:         "logs duplicate detection for multiple markers and edits first",
+			commitBody:   "new body MARKER",
+			updateMarker: "MARKER",
 			setup: func(t *testing.T, mux *http.ServeMux) {
 				t.Helper()
 				mux.HandleFunc("/repos/org/repo/issues/123/comments", func(rw http.ResponseWriter, r *http.Request) {
@@ -1681,20 +1606,36 @@ func TestCreateCommentDedupLogging(t *testing.T) {
 					assert.Equal(t, r.Method, http.MethodPatch)
 					rw.WriteHeader(http.StatusOK)
 				})
-				mux.HandleFunc("/repos/org/repo/issues/comments/222", func(rw http.ResponseWriter, r *http.Request) {
-					assert.Equal(t, r.Method, http.MethodDelete)
-					rw.WriteHeader(http.StatusNoContent)
-				})
 			},
 			expectedPhases: []string{
 				"initial_list",
 				"duplicate_detected",
-				"dedup_select_primary",
-				"dedup_delete_attempt",
-				"dedup_delete_done",
-				"dedup_complete",
+				"edit_comment",
 			},
-			unexpectedPhase: []string{"create_comment_start"},
+			unexpectedPhase: []string{"create_comment_start", "dedup_select_primary", "dedup_delete_attempt", "dedup_delete_done", "dedup_complete"},
+		},
+		{
+			name:         "logs no_marker phase when updateMarker is empty",
+			commitBody:   "body without marker",
+			updateMarker: "",
+			setup: func(t *testing.T, mux *http.ServeMux) {
+				t.Helper()
+				mux.HandleFunc("/repos/org/repo/issues/123/comments", func(rw http.ResponseWriter, r *http.Request) {
+					switch r.Method {
+					case http.MethodPost:
+						rw.WriteHeader(http.StatusCreated)
+						fmt.Fprint(rw, `{"id": 444, "body": "body without marker"}`)
+					default:
+						t.Fatalf("unexpected method %s", r.Method)
+					}
+				})
+			},
+			expectedPhases: []string{
+				"no_marker",
+				"create_comment_start",
+				"create_comment_done",
+			},
+			unexpectedPhase: []string{"initial_list", "edit_comment", "duplicate_detected"},
 		},
 	}
 
@@ -1723,7 +1664,7 @@ func TestCreateCommentDedupLogging(t *testing.T) {
 				},
 			}
 
-			err := provider.CreateComment(ctx, event, tt.commitBody, "MARKER")
+			err := provider.CreateComment(ctx, event, tt.commitBody, tt.updateMarker)
 			assert.NilError(t, err)
 
 			logEntries := observedLogs.FilterMessage("github comment dedup flow").All()
@@ -1749,9 +1690,20 @@ func TestCreateCommentDedupLogging(t *testing.T) {
 				assert.Equal(t, "123", fmt.Sprint(fields["pr"]))
 				assert.Equal(t, "controller-test", fmt.Sprint(fields["controller_label"]))
 
-				if phase == "initial_list" || phase == "post_jitter_list" || phase == "post_create_list" {
+				if phase == "initial_list" {
 					_, hasMatchedCount := fields["matched_count"]
 					assert.Assert(t, hasMatchedCount, "phase=%s should include matched_count fields=%+v", phase, fields)
+				}
+
+				bodyHashPhases := map[string]bool{
+					"create_comment_start": true,
+					"edit_comment":         true,
+					"no_edit_needed":       true,
+					"no_marker":            true,
+				}
+				if bodyHashPhases[phase] {
+					_, hasBodyHash := fields["body_hash"]
+					assert.Assert(t, hasBodyHash, "phase=%s should include body_hash field=%+v", phase, fields)
 				}
 			}
 
