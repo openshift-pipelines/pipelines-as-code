@@ -8,26 +8,16 @@ Pipelines-as-Code supports [Bitbucket Cloud](https://bitbucket.org) through a we
 
 Follow the Pipelines-as-Code [installation](/docs/install/installation) according to your Kubernetes cluster.
 
-## Create Bitbucket Cloud App Password
+## Create Bitbucket API Token
 
-Follow this guide to create an app password:
-
-<https://support.atlassian.com/bitbucket-cloud/docs/app-passwords/>
+Follow [this guide](https://support.atlassian.com/bitbucket-cloud/docs/create-an-api-token/) to create an API token.
 
 Check these boxes to add the permissions to the token:
 
-- Account: `Email`, `Read`
-- Workspace membership: `Read`, `Write`
-- Projects: `Read`, `Write`
-- Issues: `Read`, `Write`
-- Pull requests: `Read`, `Write`
-
-**NOTE:** If you are going to configure webhook through CLI, you must also add additional permission
-
-- Webhooks: `Read and write`
-
-[Refer to this screenshot](/images/bitbucket-cloud-create-secrete.png) to verify
-you have properly configured the app password.
+- **read:workspace:bitbucket**
+- **read:pullrequest:bitbucket**
+- **read:repository:bitbucket**
+- **write:repository:bitbucket**
 
 Keep the generated token noted somewhere, or otherwise you will have to recreate it.
 
@@ -121,16 +111,15 @@ $ tkn pac create repo
   spec:
     url: "https://bitbucket.com/workspace/repo"
     git_provider:
-      user: "yourbitbucketusername"
+      user: "your_atlassian_email_id"
       secret:
         name: "bitbucket-cloud-token"
         # Set this if you have a different key in your secret
         # key: “provider.token“
 ```
 
-Please note that the workspace name is different from your username. To view your username in the Bitbucket UI, click on the settings icon, navigate to the
-Personal Bitbucket Settings, and there you will find your username there, as shown in image below `zakisk-admin` is username:
-![GitOps Commits For Comments](/images/bitbucket-cloud-username-settings.png)
+Please note that you must use your Bitbucket/Atlassian account email address in the `user` field of the `Repository` CR. To find your email address, click on your profile icon at the top-left corner in the Bitbucket Cloud UI (see image below), go to **Account Settings**, and scroll down to locate your email address.
+![Bitbucket Cloud Account Settings](/images/bitbucket-cloud-account-settings.png)
 
 ## Bitbucket Cloud Notes
 

@@ -128,7 +128,7 @@ access to the infrastructure.
 
 ## Controlling Pull/Merge Request comment volume
 
-For GitHub (Webhook) and GitLab integrations, you can control the types
+For GitHub (Webhook), GitLab, and Gitea/Forgejo integrations, you can control the types
 of Pull/Merge request comments that Pipelines as Code emits using
 the `spec.<provider>.comment_strategy` setting. This can
 help reduce notification volume for repositories that use long-lasting

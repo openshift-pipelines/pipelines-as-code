@@ -22,11 +22,13 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/test"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
+	"gotest.tools/v3/golden"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -579,7 +581,7 @@ func TestProvider_CreateStatusCommit(t *testing.T) {
 				giteaClient: fakeclient,
 			}
 
-			if err := v.createStatusCommit(tt.args.event, tt.args.pacopts, tt.args.status); (err != nil) != tt.wantErr {
+			if err := v.createStatusCommit(context.Background(), tt.args.event, tt.args.pacopts, tt.args.status); (err != nil) != tt.wantErr {
 				t.Errorf("Provider.createStatusCommit() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -653,7 +655,7 @@ func TestProviderCreateStatusCommitRetryOnTransientError(t *testing.T) {
 				Conclusion: "success",
 			}
 
-			err := v.createStatusCommit(event, pacopts, status)
+			err := v.createStatusCommit(context.Background(), event, pacopts, status)
 
 			if tt.wantErr {
 				assert.Assert(t, err != nil, "expected an error but got none")
@@ -868,6 +870,110 @@ func TestCreateComment(t *testing.T) {
 			} else {
 				assert.NilError(t, err)
 			}
+		})
+	}
+}
+
+func TestCreateStatusUpdateCommentNormalizesBreaks(t *testing.T) {
+	fakeclient, mux, teardown := tgitea.Setup(t)
+	defer teardown()
+
+	var createCommentBody string
+	mux.HandleFunc("/repos/org/repo/statuses/", func(rw http.ResponseWriter, _ *http.Request) {
+		fmt.Fprint(rw, `{"state":"pending"}`)
+	})
+	mux.HandleFunc("/repos/org/repo/issues/123/comments", func(rw http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			fmt.Fprint(rw, `[]`)
+		case http.MethodPost:
+			b, err := io.ReadAll(r.Body)
+			assert.NilError(t, err)
+			createCommentBody = string(b)
+			fmt.Fprint(rw, `{}`)
+		default:
+			t.Fatalf("unexpected method: %s", r.Method)
+		}
+	})
+
+	p := &Provider{
+		giteaClient: fakeclient,
+		pacInfo: &info.PacOpts{
+			Settings: settings.Settings{
+				ApplicationName: settings.PACApplicationNameDefaultValue,
+			},
+		},
+		repo: &v1alpha1.Repository{
+			Spec: v1alpha1.RepositorySpec{
+				Settings: &v1alpha1.Settings{
+					Forgejo: &v1alpha1.ForgejoSettings{CommentStrategy: provider.UpdateCommentStrategy},
+				},
+			},
+		},
+	}
+
+	err := p.CreateStatus(context.Background(), &info.Event{
+		Organization:      "org",
+		Repository:        "repo",
+		SHA:               "abc123",
+		PullRequestNumber: 123,
+		EventType:         triggertype.PullRequest.String(),
+		TriggerTarget:     triggertype.PullRequest,
+	}, status.StatusOpts{
+		Status:                  "in_progress",
+		Text:                    "line1<br>line2",
+		OriginalPipelineRunName: "demo",
+		DetailsURL:              "https://example.test/log",
+	})
+	assert.NilError(t, err)
+	assert.Assert(t, !strings.Contains(createCommentBody, "<br>"), "comment body should not contain raw <br>: %s", createCommentBody)
+	assert.Assert(t, strings.Contains(createCommentBody, "line1\\nline2"), "comment body should contain normalized newline: %s", createCommentBody)
+
+	golden.Assert(t, createCommentBody, strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"))
+}
+
+func TestFormatPipelineCommentEmoji(t *testing.T) {
+	p := &Provider{
+		pacInfo: &info.PacOpts{
+			Settings: settings.Settings{
+				ApplicationName: settings.PACApplicationNameDefaultValue,
+			},
+		},
+	}
+
+	tests := []struct {
+		name   string
+		status status.StatusOpts
+		emoji  string
+	}{
+		{
+			name: "failure conclusion uses failure emoji",
+			status: status.StatusOpts{
+				Conclusion:              status.ConclusionFailure,
+				Title:                   "Failed",
+				Text:                    "details",
+				OriginalPipelineRunName: "demo",
+				DetailsURL:              "https://example.test/log",
+			},
+			emoji: "❌",
+		},
+		{
+			name: "in progress status uses rocket emoji",
+			status: status.StatusOpts{
+				Status:                  "in_progress",
+				Title:                   "CI has Started",
+				Text:                    "details",
+				OriginalPipelineRunName: "demo",
+				DetailsURL:              "https://example.test/log",
+			},
+			emoji: "🚀",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := p.formatPipelineComment("abc123", tt.status)
+			assert.Assert(t, strings.HasPrefix(got, tt.emoji+" "), "expected prefix %q in comment %q", tt.emoji+" ", got)
 		})
 	}
 }
