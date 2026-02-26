@@ -475,6 +475,12 @@ func (v *Provider) GetCommitInfo(_ context.Context, runevent *info.Event) error 
 		runevent.SHA = pr.Head.Sha
 		runevent.HeadBranch = pr.Head.Ref
 		runevent.BaseBranch = pr.Base.Ref
+		if runevent.HeadURL == "" && pr.Head.Repository != nil {
+			runevent.HeadURL = pr.Head.Repository.HTMLURL
+		}
+		if runevent.BaseURL == "" && pr.Base.Repository != nil {
+			runevent.BaseURL = pr.Base.Repository.HTMLURL
+		}
 		sha = pr.Head.Sha
 	}
 	commit, _, err := v.Client().GetSingleCommit(runevent.Organization, runevent.Repository, sha)
