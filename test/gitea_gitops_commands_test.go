@@ -114,7 +114,7 @@ func TestGiteaOnCommentAnnotation(t *testing.T) {
 	last := repo.Status[len(repo.Status)-1]
 	twait.GoldenPodLog(context.Background(), t, topts.ParamsRun, topts.TargetNS,
 		fmt.Sprintf("tekton.dev/pipelineRun=%s", last.PipelineRunName),
-		"step-task", strings.ReplaceAll(fmt.Sprintf("%s-pipelinerun-on-comment-annotation.golden", t.Name()), "/", "-"), 2)
+		"step-task", strings.ReplaceAll(fmt.Sprintf("%s-pipelinerun-on-comment-annotation.golden", t.Name()), "/", "-"), 2, nil)
 
 	tgitea.PostCommentOnPullRequest(t, topts, fmt.Sprintf(`%s revision=main custom1=thisone custom2="another one" custom_no_initial_value="a \"quote\""`, triggerComment))
 	waitOpts.MinNumberStatus = 4
@@ -125,7 +125,7 @@ func TestGiteaOnCommentAnnotation(t *testing.T) {
 	// now we should have only 3 status, the last one is the on comment match with an argument redefining the revision which is a standard parameter
 
 	last = repo.Status[len(repo.Status)-1]
-	err = twait.RegexpMatchingInPodLog(context.Background(), topts.ParamsRun, topts.TargetNS, fmt.Sprintf("tekton.dev/pipelineRun=%s", last.PipelineRunName), "step-task", regexp.Regexp{}, t.Name(), 2)
+	err = twait.RegexpMatchingInPodLog(context.Background(), topts.ParamsRun, topts.TargetNS, fmt.Sprintf("tekton.dev/pipelineRun=%s", last.PipelineRunName), "step-task", regexp.Regexp{}, t.Name(), 2, nil)
 	assert.NilError(t, err)
 }
 
@@ -175,7 +175,7 @@ func TestGiteaTestPipelineRunExplicitlyWithTestComment(t *testing.T) {
 		"we didn't target the proper pipelinerun, we tested: %s", repo.Status[0].PipelineRunName)
 
 	last := repo.Status[len(repo.Status)-1]
-	err = twait.RegexpMatchingInPodLog(context.Background(), topts.ParamsRun, topts.TargetNS, fmt.Sprintf("tekton.dev/pipelineRun=%s", last.PipelineRunName), "step-task", *regexp.MustCompile("custom is awesome"), "", 2)
+	err = twait.RegexpMatchingInPodLog(context.Background(), topts.ParamsRun, topts.TargetNS, fmt.Sprintf("tekton.dev/pipelineRun=%s", last.PipelineRunName), "step-task", *regexp.MustCompile("custom is awesome"), "", 2, nil)
 	assert.NilError(t, err)
 }
 

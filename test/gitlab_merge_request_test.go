@@ -276,7 +276,7 @@ func TestGitlabOnComment(t *testing.T) {
 	assert.Assert(t, repo.Status[len(repo.Status)-1].Conditions[0].Status == corev1.ConditionTrue)
 	lastPrName := repo.Status[len(repo.Status)-1].PipelineRunName
 
-	err = twait.RegexpMatchingInPodLog(context.Background(), runcnx, targetNS, fmt.Sprintf("tekton.dev/pipelineRun=%s", lastPrName), "step-task", *regexp.MustCompile(triggerComment), "", 2)
+	err = twait.RegexpMatchingInPodLog(context.Background(), runcnx, targetNS, fmt.Sprintf("tekton.dev/pipelineRun=%s", lastPrName), "step-task", *regexp.MustCompile(triggerComment), "", 2, nil)
 	assert.NilError(t, err)
 }
 
@@ -1028,6 +1028,7 @@ func TestGitlabMergeRequestCelPrefix(t *testing.T) {
 		regexp.Regexp{},
 		t.Name(),
 		2,
+		nil,
 	)
 	assert.NilError(t, err)
 }
@@ -1113,6 +1114,7 @@ func TestGitlabMergeRequestVariableSubs(t *testing.T) {
 		*regexp.MustCompile(regexp.QuoteMeta(commitTitle)),
 		"",
 		2,
+		nil,
 	)
 	assert.NilError(t, err, "PipelineRun logs should contain the commit message: %s", commitTitle)
 }

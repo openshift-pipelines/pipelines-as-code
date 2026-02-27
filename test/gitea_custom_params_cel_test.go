@@ -62,7 +62,7 @@ func TestGiteaCustomParamsInCELExpression(t *testing.T) {
 	output := `Custom params: enable_ci=true environment=staging`
 	err = twait.RegexpMatchingInPodLog(context.Background(), topts.ParamsRun, topts.TargetNS,
 		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=custom-params-cel-test", prs.Items[0].Name),
-		"step-test-custom-params-cel", *regexp.MustCompile(output), "", 2)
+		"step-test-custom-params-cel", *regexp.MustCompile(output), "", 2, nil)
 	assert.NilError(t, err)
 }
 
@@ -124,13 +124,13 @@ func TestGiteaCustomParamsFromSecretsInCEL(t *testing.T) {
 	output := `Secret params verified: api_key=super-secret-api-key-12345 deploy_token=deploy-token-xyz-789`
 	err = twait.RegexpMatchingInPodLog(context.Background(), topts.ParamsRun, topts.TargetNS,
 		"tekton.dev/pipelineTask=cel-secret-params-test",
-		"step-test-cel-secret-params", *regexp.MustCompile(output), "", 2)
+		"step-test-cel-secret-params", *regexp.MustCompile(output), "", 2, nil)
 	assert.NilError(t, err)
 
 	// Verify secrets are not leaked in controller logs
 	maxLines := int64(1000)
 	secretLeakRegex := regexp.MustCompile(`super-secret-api-key-12345|deploy-token-xyz-789`)
-	err = twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *secretLeakRegex, 2, "controller", &maxLines)
+	err = twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *secretLeakRegex, 2, "controller", &maxLines, nil)
 	if err == nil {
 		t.Fatal("Secret values were found in controller logs - this is a security issue!")
 	}
@@ -234,6 +234,6 @@ func TestGiteaOnCommentParamsReResolved(t *testing.T) {
 	output := `Trigger type verified: trigger_type=comment`
 	err = twait.RegexpMatchingInPodLog(context.Background(), topts.ParamsRun, topts.TargetNS,
 		"tekton.dev/pipelineTask=on-comment-cel-test",
-		"step-test-on-comment-cel", *regexp.MustCompile(output), "", 2)
+		"step-test-on-comment-cel", *regexp.MustCompile(output), "", 2, nil)
 	assert.NilError(t, err)
 }

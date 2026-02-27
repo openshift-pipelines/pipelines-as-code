@@ -62,7 +62,7 @@ func (g *PRTest) collectGitHubAPICalls(ctx context.Context, _ *testing.T) {
 	)
 
 	logContent, source, err := tlogs.GetControllerLogByName(
-		ctx, g.Cnx.Clients.Kube.CoreV1(), ns, controllerName, &numLines,
+		ctx, g.Cnx.Clients.Kube.CoreV1(), ns, controllerName, &numLines, nil,
 	)
 	if err != nil {
 		g.Logger.Warnf("Failed to get controller logs: %v", err)

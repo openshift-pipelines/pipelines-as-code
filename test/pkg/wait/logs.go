@@ -15,7 +15,7 @@ import (
 	"gotest.tools/v3/golden"
 )
 
-func RegexpMatchingInControllerLog(ctx context.Context, clients *params.Run, reg regexp.Regexp, maxNumberOfLoop int, controllerName string, lines *int64) error {
+func RegexpMatchingInControllerLog(ctx context.Context, clients *params.Run, reg regexp.Regexp, maxNumberOfLoop int, controllerName string, lines, sinceSeconds *int64) error {
 	ns := info.GetNS(ctx)
 	clients.Clients.Log.Infof(
 		`looking for regexp "%s" in %s for controller "%s" namespace "%s"`,
@@ -23,7 +23,7 @@ func RegexpMatchingInControllerLog(ctx context.Context, clients *params.Run, reg
 	)
 	for i := 0; i <= maxNumberOfLoop; i++ {
 		output, source, err := tlogs.GetControllerLogByName(
-			ctx, clients.Clients.Kube.CoreV1(), ns, controllerName, lines,
+			ctx, clients.Clients.Kube.CoreV1(), ns, controllerName, lines, sinceSeconds,
 		)
 		if err != nil {
 			return err
@@ -44,7 +44,7 @@ func RegexpMatchingInControllerLog(ctx context.Context, clients *params.Run, reg
 	)
 }
 
-func RegexpMatchingInPodLog(ctx context.Context, clients *params.Run, ns, labelselector, containerName string, reg regexp.Regexp, goldenFile string, maxNumberOfLoop int) error {
+func RegexpMatchingInPodLog(ctx context.Context, clients *params.Run, ns, labelselector, containerName string, reg regexp.Regexp, goldenFile string, maxNumberOfLoop int, sinceSeconds *int64) error {
 	var err error
 	output := ""
 	if goldenFile != "" {
@@ -57,7 +57,7 @@ func RegexpMatchingInPodLog(ctx context.Context, clients *params.Run, ns, labels
 	}
 	numLines := int64(10)
 	for i := 0; i <= maxNumberOfLoop; i++ {
-		output, err = tlogs.GetPodLog(ctx, clients.Clients.Kube.CoreV1(), ns, labelselector, containerName, &numLines)
+		output, err = tlogs.GetPodLog(ctx, clients.Clients.Kube.CoreV1(), ns, labelselector, containerName, &numLines, sinceSeconds)
 		if err != nil {
 			return err
 		}
@@ -78,12 +78,12 @@ func RegexpMatchingInPodLog(ctx context.Context, clients *params.Run, ns, labels
 }
 
 // GoldenPodLog is a helper function to get the logs of a pod and compare it to a golden file.
-func GoldenPodLog(ctx context.Context, t *testing.T, clients *params.Run, ns, labelselector, containerName, goldenFile string, maxNumberOfLoop int) {
+func GoldenPodLog(ctx context.Context, t *testing.T, clients *params.Run, ns, labelselector, containerName, goldenFile string, maxNumberOfLoop int, sinceSeconds *int64) {
 	var err error
 	numLines := int64(10)
 	for i := 0; i <= maxNumberOfLoop; i++ {
 		var output string
-		output, err = tlogs.GetPodLog(ctx, clients.Clients.Kube.CoreV1(), ns, labelselector, containerName, &numLines)
+		output, err = tlogs.GetPodLog(ctx, clients.Clients.Kube.CoreV1(), ns, labelselector, containerName, &numLines, sinceSeconds)
 		if err != nil {
 			time.Sleep(5 * time.Second)
 			continue

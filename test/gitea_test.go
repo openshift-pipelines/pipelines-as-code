@@ -144,7 +144,7 @@ func TestGiteaPullRequestResolvedTektonParamsRemotePipeline(t *testing.T) {
 	err := twait.RegexpMatchingInPodLog(context.Background(),
 		topts.ParamsRun,
 		topts.TargetNS, "pipelinesascode.tekton.dev/event-type=pull_request", "step-task",
-		*regexp.MustCompile("Hello " + topts.TargetRepoName), "", 2)
+		*regexp.MustCompile("Hello " + topts.TargetRepoName), "", 2, nil)
 	assert.NilError(t, err)
 }
 
@@ -162,7 +162,7 @@ func TestGiteaPullRequestPrivateRepository(t *testing.T) {
 	defer f()
 	reg := regexp.MustCompile(".*successfully fetched git-clone task from default configured catalog Hub")
 	maxLines := int64(1000)
-	err := twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *reg, 20, "controller", &maxLines)
+	err := twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *reg, 20, "controller", &maxLines, nil)
 	assert.NilError(t, err)
 	tgitea.WaitForSecretDeletion(t, topts, topts.TargetRefName)
 }
@@ -255,7 +255,7 @@ func TestGiteaBadYamlValidation(t *testing.T) {
 	maxLines := int64(1000)
 	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *regexp.MustCompile(
 		"cannot read the PipelineRun: pr-bad-format.yaml, error: yaml validation error: line 3: could not find expected ':'"),
-		10, "controller", &maxLines))
+		10, "controller", &maxLines, nil))
 }
 
 // TestGiteaInvalidSpecValues tests invalid field values of a PipelinRun and ensures that these
@@ -950,7 +950,7 @@ func TestGiteaOnPullRequestLabels(t *testing.T) {
 	assert.NilError(t, err)
 	twait.GoldenPodLog(context.Background(), t, topts.ParamsRun, topts.TargetNS,
 		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=task", repo.Status[0].PipelineRunName),
-		"step-success", strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"), 2)
+		"step-success", strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"), 2, nil)
 
 	// Make sure the on-label pr has triggered and post status
 	topts.Regexp = regexp.MustCompile(fmt.Sprintf("Pipelines as Code CI/%s.* has <b>successfully</b> validated your commit", prName))
@@ -999,7 +999,7 @@ func TestGiteaBadLinkOfTask(t *testing.T) {
 	defer f()
 	errre := regexp.MustCompile("There was an error starting the PipelineRun")
 	maxLines := int64(1000)
-	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *errre, 10, "controller", &maxLines))
+	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *errre, 10, "controller", &maxLines, nil))
 }
 
 // TestGiteaPipelineRunWithSameName checks that we fail properly with the error from the
@@ -1162,7 +1162,7 @@ func verifyProvenance(t *testing.T, topts *tgitea.TestOpts, expectedOutput, cNam
 
 	// check the output of the PipelineRun logs
 	err = twait.RegexpMatchingInPodLog(context.Background(), topts.ParamsRun, topts.TargetNS, "pipelinesascode.tekton.dev/event-type=pull_request",
-		cName, *regexp.MustCompile(expectedOutput), "", 2)
+		cName, *regexp.MustCompile(expectedOutput), "", 2, nil)
 	assert.NilError(t, err)
 }
 

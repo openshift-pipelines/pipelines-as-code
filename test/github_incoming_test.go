@@ -311,7 +311,7 @@ func verifyIncomingWebhook(t *testing.T, randomedString, pipelinerunName string,
 		}
 		assert.Assert(t, prName == "pipelinerun-incoming", "Expected PipelineRun name 'pipelinerun-incoming', got '%s'", prName)
 
-		err = wait.RegexpMatchingInPodLog(context.Background(), runcnx, randomedString, "pipelinesascode.tekton.dev/event-type=incoming", "step-task", *regexp.MustCompile(".*It's a Bird... It's a Plane... It's Superman"), "", 2)
+		err = wait.RegexpMatchingInPodLog(context.Background(), runcnx, randomedString, "pipelinesascode.tekton.dev/event-type=incoming", "step-task", *regexp.MustCompile(".*It's a Bird... It's a Plane... It's Superman"), "", 2, nil)
 		assert.NilError(t, err, "Error while checking the logs of the pods")
 	} else {
 		runcnx.Clients.Log.Infof("Successfully verified no PipelineRun was created for non-matching branch %s with targets %v", randomedString, targets)
