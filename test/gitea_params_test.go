@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2"
+	packeys "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
@@ -19,10 +21,12 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
+	tlogs "github.com/openshift-pipelines/pipelines-as-code/test/pkg/podlogs"
 	pacrepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/secret"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"github.com/tektoncd/pipeline/pkg/names"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -75,6 +79,159 @@ func TestGiteaParamsStandardCheckForPushAndPullEvent(t *testing.T) {
 	if repoURL != sourceURL {
 		assert.Error(t, fmt.Errorf(`source_url %s is different from repo_url %s for push`, repoURL, sourceURL), fmt.Sprintf(`source_url %s is same as repo_url %s for push`, repoURL, sourceURL))
 	}
+}
+
+func TestGiteaRetestPreservesSourceURL(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		TargetEvent: triggertype.PullRequest.String(),
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml": "testdata/pipelinerun-standard-params-display.yaml",
+		},
+		CheckForStatus: "success",
+		ExpectEvents:   false,
+	}
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+
+	initialPRs, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s,%s=%s", packeys.EventType, triggertype.PullRequest.String(), packeys.SHA, topts.PullRequest.Head.Sha),
+	})
+	assert.NilError(t, err)
+	assert.Assert(t, len(initialPRs.Items) >= 1, "should have at least 1 pull_request pipelinerun before comment")
+	sort.PipelineRunSortByStartTime(initialPRs.Items)
+	firstPR := initialPRs.Items[len(initialPRs.Items)-1]
+	originalPRName, ok := firstPR.Annotations[packeys.OriginalPRName]
+	assert.Assert(t, ok, "first pipelinerun is missing %s annotation", packeys.OriginalPRName)
+	assert.Assert(t, originalPRName != "", "%s annotation should not be empty", packeys.OriginalPRName)
+	numLines := int64(10)
+	firstOut, err := tlogs.GetPodLog(
+		context.Background(),
+		topts.ParamsRun.Clients.Kube.CoreV1(),
+		topts.TargetNS,
+		fmt.Sprintf("tekton.dev/pipelineRun=%s", firstPR.Name),
+		"step-test-standard-params-value",
+		&numLines,
+	)
+	assert.NilError(t, err)
+	assert.Assert(t, firstOut != "")
+	firstParts := strings.Split(strings.TrimSpace(firstOut), "--")
+	assert.Equal(t, len(firstParts), 5)
+	firstRepoURL := strings.TrimSpace(firstParts[0])
+	firstSourceURL := strings.TrimSpace(firstParts[1])
+	assert.Assert(t, firstRepoURL != "", "repo_url should not be empty on initial PR run")
+	assert.Assert(t, firstSourceURL != "", "source_url should not be empty on initial PR run")
+
+	tgitea.PostCommentOnPullRequest(t, topts, fmt.Sprintf("/retest %s", originalPRName))
+	waitOpts := twait.Opts{
+		RepoName:        topts.TargetNS,
+		Namespace:       topts.TargetNS,
+		MinNumberStatus: 2,
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       topts.PullRequest.Head.Sha,
+	}
+	_, err = twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	assert.NilError(t, err)
+	assert.NilError(t, twait.UntilMinPRAppeared(context.Background(), topts.ParamsRun.Clients, waitOpts, 2))
+
+	var retestPR *tektonv1.PipelineRun
+	deadline := time.Now().Add(twait.DefaultTimeout)
+	for time.Now().Before(deadline) {
+		prs, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("%s=%s", packeys.SHA, topts.PullRequest.Head.Sha),
+		})
+		assert.NilError(t, err)
+		if len(prs.Items) < 2 {
+			time.Sleep(2 * time.Second)
+			continue
+		}
+		sort.PipelineRunSortByStartTime(prs.Items)
+		for i := range prs.Items {
+			if prs.Items[i].Name == firstPR.Name || prs.Items[i].Status.StartTime == nil {
+				continue
+			}
+			retestPR = &prs.Items[i]
+			break
+		}
+		if retestPR != nil {
+			break
+		}
+		time.Sleep(2 * time.Second)
+	}
+
+	assert.Assert(t, retestPR != nil, "should find a started rerun pipelinerun for SHA %s after /retest", topts.PullRequest.Head.Sha)
+	assert.Assert(t, retestPR.Name != firstPR.Name, "latest pipelinerun should be a new run after targeted /retest (latest=%s first=%s)", retestPR.Name, firstPR.Name)
+	assert.Equal(t, retestPR.Annotations[packeys.OriginalPRName], originalPRName, "targeted /retest should create a rerun for the same original pipelinerun name")
+
+	// Verify standard params from pod logs
+	out, err := tlogs.GetPodLog(
+		context.Background(),
+		topts.ParamsRun.Clients.Kube.CoreV1(),
+		topts.TargetNS,
+		fmt.Sprintf("tekton.dev/pipelineRun=%s", retestPR.Name),
+		"step-test-standard-params-value",
+		&numLines,
+	)
+	assert.NilError(t, err)
+	assert.Assert(t, out != "")
+
+	parts := strings.Split(strings.TrimSpace(out), "--")
+	assert.Equal(t, len(parts), 5)
+	repoURL := strings.TrimSpace(parts[0])
+	sourceURL := strings.TrimSpace(parts[1])
+	sourceBranch := strings.TrimSpace(parts[2])
+	targetBranch := strings.TrimSpace(parts[3])
+
+	assert.Assert(t, repoURL != "", "repo_url should not be empty on /retest-created run")
+	assert.Assert(t, sourceURL != "", "source_url should not be empty on /retest-created run")
+	assert.Equal(t, sourceURL, repoURL, "same-repo PR retest should keep source_url equal to repo_url")
+	assert.Equal(t, sourceURL, firstSourceURL, "source_url on /retest-created run should match the initial PR run")
+	assert.Equal(t, repoURL, firstRepoURL, "repo_url on /retest-created run should match the initial PR run")
+	assert.Assert(t, sourceBranch != "", "source_branch should not be empty on /retest-created run")
+	assert.Assert(t, targetBranch != "", "target_branch should not be empty on /retest-created run")
+	assert.Assert(t, sourceBranch != targetBranch, "pull_request retest should preserve distinct source/target branches")
+
+	// Verify labels are preserved on the retest PipelineRun
+	retestLabels := retestPR.GetLabels()
+	firstLabels := firstPR.GetLabels()
+	for _, key := range []string{
+		packeys.URLOrg,
+		packeys.URLRepository,
+		packeys.SHA,
+		packeys.Repository,
+	} {
+		assert.Equal(t, retestLabels[key], firstLabels[key], "label %s should match between initial and retest run", key)
+	}
+	assert.Equal(t, retestLabels[packeys.PullRequest], strconv.Itoa(int(topts.PullRequest.Index)),
+		"retest pipelinerun should have pull-request label set to PR number")
+	// event-type changes from "pull_request" to "retest-comment" on /retest — verify it's set, not that it matches
+	assert.Assert(t, retestLabels[packeys.EventType] != "", "event-type label should be set on retest pipelinerun")
+
+	// Verify annotations are preserved on the retest PipelineRun
+	retestAnnotations := retestPR.GetAnnotations()
+	firstAnnotations := firstPR.GetAnnotations()
+	for _, key := range []string{
+		packeys.SHA,
+		packeys.URLOrg,
+		packeys.URLRepository,
+		packeys.Branch,
+		packeys.SourceBranch,
+		packeys.RepoURL,
+		packeys.Repository,
+		packeys.GitProvider,
+	} {
+		assert.Equal(t, retestAnnotations[key], firstAnnotations[key], "annotation %s should match between initial and retest run", key)
+	}
+	assert.Assert(t, retestAnnotations[packeys.EventType] != "", "event-type annotation should be set on retest pipelinerun")
+	assert.Assert(t, retestAnnotations[packeys.SourceRepoURL] != "",
+		"source-repo-url annotation should not be empty on retest pipelinerun")
+	assert.Equal(t, retestAnnotations[packeys.SourceRepoURL], firstAnnotations[packeys.SourceRepoURL],
+		"source-repo-url annotation should match between initial and retest run")
+	assert.Assert(t, retestAnnotations[packeys.ShaURL] != "",
+		"sha-url annotation should not be empty on retest pipelinerun")
+	assert.Assert(t, retestAnnotations[packeys.ShaTitle] != "",
+		"sha-title annotation should not be empty on retest pipelinerun")
+	assert.Equal(t, retestAnnotations[packeys.PullRequest], strconv.Itoa(int(topts.PullRequest.Index)),
+		"retest pipelinerun should have pull-request annotation set to PR number")
 }
 
 func TestGiteaParamsOnRepoCRWithCustomConsole(t *testing.T) {

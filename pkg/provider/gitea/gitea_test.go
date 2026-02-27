@@ -1112,3 +1112,55 @@ func TestGetCommitInfo(t *testing.T) {
 		})
 	}
 }
+
+func TestGetCommitInfoPRLookupPopulatesURLs(t *testing.T) {
+	ctx, _ := rtesting.SetupFakeContext(t)
+	client, mux, tearDown := tgitea.Setup(t)
+	defer tearDown()
+
+	event := &info.Event{
+		Organization:      "owner",
+		Repository:        "repo",
+		PullRequestNumber: 42,
+		// SHA intentionally empty to trigger PR lookup path
+	}
+
+	// Mock GetPullRequest endpoint
+	mux.HandleFunc("/repos/owner/repo/pulls/42", func(rw http.ResponseWriter, _ *http.Request) {
+		fmt.Fprint(rw, `{
+			"head": {
+				"ref": "feature-branch",
+				"sha": "abc123",
+				"repo": {
+					"html_url": "https://gitea.com/fork-owner/repo"
+				}
+			},
+			"base": {
+				"ref": "main",
+				"repo": {
+					"html_url": "https://gitea.com/owner/repo"
+				}
+			}
+		}`)
+	})
+
+	// Mock GetSingleCommit endpoint
+	mux.HandleFunc("/repos/owner/repo/git/commits/abc123", func(rw http.ResponseWriter, _ *http.Request) {
+		fmt.Fprint(rw, `{
+			"sha": "abc123",
+			"html_url": "https://gitea.com/owner/repo/commit/abc123",
+			"commit": {
+				"message": "feat: test commit"
+			}
+		}`)
+	})
+
+	provider := &Provider{giteaClient: client}
+	err := provider.GetCommitInfo(ctx, event)
+	assert.NilError(t, err)
+	assert.Equal(t, "abc123", event.SHA)
+	assert.Equal(t, "feature-branch", event.HeadBranch)
+	assert.Equal(t, "main", event.BaseBranch)
+	assert.Equal(t, "https://gitea.com/fork-owner/repo", event.HeadURL, "HeadURL should be populated from PR lookup")
+	assert.Equal(t, "https://gitea.com/owner/repo", event.BaseURL, "BaseURL should be populated from PR lookup")
+}

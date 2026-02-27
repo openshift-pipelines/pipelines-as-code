@@ -1016,11 +1016,28 @@ func TestGiteaPipelineRunWithSameName(t *testing.T) {
 		ExpectEvents:   true,
 		Regexp:         regexp.MustCompile(".*found multiple pipelinerun in .tekton with the same name*"),
 	}
-	ctx, f := tgitea.TestPR(t, topts)
+	_, f := tgitea.TestPR(t, topts)
 	defer f()
-	errre := regexp.MustCompile("found multiple pipelinerun in .tekton with the same name")
-	maxLines := int64(1000)
-	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *errre, 10, "controller", &maxLines))
+
+	// Wait for any webhook feedback loop to settle, then verify only 1 failure
+	// comment was posted (not duplicates from re-triggered no-op comment events).
+	time.Sleep(10 * time.Second)
+
+	comments, _, err := topts.GiteaCNX.Client().ListRepoIssueComments(
+		topts.PullRequest.Base.Repository.Owner.UserName,
+		topts.PullRequest.Base.Repository.Name,
+		forgejo.ListIssueCommentOptions{})
+	assert.NilError(t, err)
+
+	failureRe := regexp.MustCompile("found multiple pipelinerun in .tekton with the same name")
+	var failureCount int
+	for _, comment := range comments {
+		if failureRe.MatchString(comment.Body) {
+			failureCount++
+		}
+	}
+	assert.Equal(t, failureCount, 1,
+		"expected 1 failure comment but found %d", failureCount)
 }
 
 // TestGiteaProvenanceForDefaultBranch tests the provenance feature of the PipelineRun.
