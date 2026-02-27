@@ -13,6 +13,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
@@ -32,8 +33,11 @@ import (
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/golden"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	k8stesting "k8s.io/client-go/testing"
 	knativeapi "knative.dev/pkg/apis"
 	knativeduckv1 "knative.dev/pkg/apis/duck/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
@@ -345,6 +349,7 @@ func TestReconcileKind_SCMReportingLogic(t *testing.T) {
 						keys.SHA:           "123afc",
 						keys.URLOrg:        "random",
 						keys.URLRepository: "app",
+						keys.SecretCreated: "true",
 					},
 				},
 				Spec: tektonv1.PipelineRunSpec{},
@@ -377,6 +382,7 @@ func TestReconcileKind_SCMReportingLogic(t *testing.T) {
 						keys.SHA:                    "123afc",
 						keys.URLOrg:                 "random",
 						keys.URLRepository:          "app",
+						keys.SecretCreated:          "true",
 					},
 				},
 				Spec: tektonv1.PipelineRunSpec{},
@@ -408,6 +414,7 @@ func TestReconcileKind_SCMReportingLogic(t *testing.T) {
 						keys.SHA:           "123afc",
 						keys.URLOrg:        "random",
 						keys.URLRepository: "app",
+						keys.SecretCreated: "true",
 					},
 				},
 				Spec: tektonv1.PipelineRunSpec{
@@ -519,6 +526,181 @@ func TestReconcileKind_SCMReportingLogic(t *testing.T) {
 					// If original state was not 'started', SCMReportingPLRStarted should not exist
 					assert.Assert(t, !exists, "SCMReportingPLRStarted should not exist when original state is not started")
 				}
+			}
+		})
+	}
+}
+
+func TestCreateSecretForPipelineRun(t *testing.T) {
+	tests := []struct {
+		name              string
+		prAnnotations     map[string]string
+		eventURL          string
+		eventCloneURL     string
+		providerToken     string
+		providerUser      string
+		createSecretError error
+		updateSecretError error
+		simulatePatchErr  bool
+		wantErr           string
+		wantLogSnippet    string
+		verifyPatched     bool
+	}{
+		{
+			name:          "missing git-auth-secret annotation",
+			prAnnotations: map[string]string{},
+			eventURL:      "https://github.com/org/repo",
+			providerToken: "test-token",
+			wantErr:       "cannot get annotation",
+		},
+		{
+			name: "MakeBasicAuthSecret failure with malformed URL",
+			prAnnotations: map[string]string{
+				keys.GitAuthSecret: "test-secret",
+			},
+			eventURL:      "http://[invalid",
+			providerToken: "test-token",
+			wantErr:       "making basic auth secret",
+		},
+		{
+			name: "CreateSecret generic failure",
+			prAnnotations: map[string]string{
+				keys.GitAuthSecret: "test-secret",
+			},
+			eventURL:          "https://github.com/org/repo",
+			providerToken:     "test-token",
+			createSecretError: fmt.Errorf("connection timeout"),
+			wantErr:           "creating basic auth secret",
+		},
+		{
+			name: "CreateSecret AlreadyExists succeeds with warning",
+			prAnnotations: map[string]string{
+				keys.GitAuthSecret: "test-secret",
+			},
+			eventURL:          "https://github.com/org/repo",
+			providerToken:     "test-token",
+			createSecretError: errors.NewAlreadyExists(schema.GroupResource{Group: "", Resource: "secrets"}, "test-secret"),
+			wantLogSnippet:    "already exists",
+			verifyPatched:     true,
+		},
+		{
+			name: "UpdateSecretWithOwnerRef failure",
+			prAnnotations: map[string]string{
+				keys.GitAuthSecret: "test-secret",
+			},
+			eventURL:          "https://github.com/org/repo",
+			providerToken:     "test-token",
+			updateSecretError: fmt.Errorf("failed to update owner ref"),
+			wantErr:           "cannot update pipelinerun",
+		},
+		{
+			name: "PatchPipelineRun failure returns error",
+			prAnnotations: map[string]string{
+				keys.GitAuthSecret: "test-secret",
+			},
+			eventURL:         "https://github.com/org/repo",
+			providerToken:    "test-token",
+			simulatePatchErr: true,
+			wantErr:          "failed to patch pipelinerun",
+		},
+		{
+			name: "happy path with default git user",
+			prAnnotations: map[string]string{
+				keys.GitAuthSecret: "test-secret",
+			},
+			eventURL:      "https://github.com/org/repo",
+			providerToken: "test-token",
+			verifyPatched: true,
+		},
+		{
+			name: "happy path with custom clone URL and user",
+			prAnnotations: map[string]string{
+				keys.GitAuthSecret: "test-secret",
+			},
+			eventURL:      "https://github.com/org/repo",
+			eventCloneURL: "https://bitbucket.org/org/repo.git",
+			providerToken: "test-token",
+			providerUser:  "custom-user",
+			verifyPatched: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := rtesting.SetupFakeContext(t)
+			observer, log := zapobserver.New(zap.InfoLevel)
+			logger := zap.New(observer).Sugar()
+
+			pr := &tektonv1.PipelineRun{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        "test-pr",
+					Namespace:   "test-ns",
+					Annotations: tt.prAnnotations,
+				},
+			}
+
+			repo := &v1alpha1.Repository{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-repo",
+					Namespace: "test-ns",
+				},
+			}
+
+			event := &info.Event{
+				URL:          tt.eventURL,
+				CloneURL:     tt.eventCloneURL,
+				SHA:          "abc123",
+				Organization: "test-org",
+				Repository:   "test-repo",
+				Provider: &info.Provider{
+					Token: tt.providerToken,
+					User:  tt.providerUser,
+				},
+			}
+
+			testData := testclient.Data{
+				PipelineRuns: []*tektonv1.PipelineRun{pr},
+			}
+			stdata, _ := testclient.SeedTestData(t, ctx, testData)
+
+			if tt.simulatePatchErr {
+				stdata.Pipeline.PrependReactor("patch", "pipelineruns", func(_ k8stesting.Action) (bool, runtime.Object, error) {
+					return true, nil, fmt.Errorf("etcd unavailable")
+				})
+			}
+
+			kint := &testkubernetestint.KinterfaceTest{
+				CreateSecretError: tt.createSecretError,
+				UpdateSecretError: tt.updateSecretError,
+			}
+
+			r := &Reconciler{
+				run: &params.Run{
+					Clients: clients.Clients{
+						Tekton: stdata.Pipeline,
+					},
+				},
+				kinteract:    kint,
+				eventEmitter: events.NewEventEmitter(stdata.Kube, logger),
+			}
+
+			err := r.createSecretForPipelineRun(ctx, logger, event, pr, repo)
+
+			if tt.wantErr != "" {
+				assert.Assert(t, err != nil, "expected error containing: %s", tt.wantErr)
+				assert.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			assert.NilError(t, err)
+
+			if tt.wantLogSnippet != "" {
+				logEntries := log.FilterMessageSnippet(tt.wantLogSnippet).TakeAll()
+				assert.Assert(t, len(logEntries) > 0, "expected log snippet %q not found", tt.wantLogSnippet)
+			}
+
+			if tt.verifyPatched {
+				updatedPR, getErr := stdata.Pipeline.TektonV1().PipelineRuns(pr.Namespace).Get(ctx, pr.Name, metav1.GetOptions{})
+				assert.NilError(t, getErr)
+				assert.Equal(t, updatedPR.Annotations[keys.SecretCreated], "true")
 			}
 		})
 	}
