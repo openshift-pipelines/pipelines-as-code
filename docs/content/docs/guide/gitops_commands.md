@@ -297,6 +297,45 @@ For a practical example, check out the related project
 utilizes the `on-comment` annotation to create a PipelineRun experience similar
 to [Prow](https://docs.prow.k8s.io/).
 
+## GitOps Command Prefix
+
+{{< support_matrix github_app="true" github_webhook="true" forgejo="false" gitlab="false" bitbucket_cloud="false" bitbucket_datacenter="false" >}}
+
+You can configure a custom prefix for GitOps commands in the Repository CR. This allows you to use commands like `/pac-test` instead of the standard `/test`. This is useful when both [prow](https://docs.prow.k8s.io/) CI and Pipelines-as-Code are configured on a Repository and making comments causes issues and confusion.
+
+To configure a custom GitOps command prefix, set the `gitops_command_prefix` field in your Repository CR's `settings` section:
+
+```yaml
+apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+kind: Repository
+metadata:
+  name: my-repository
+  namespace: pipelines-as-code
+spec:
+  url: "https://github.com/organization/repository"
+  settings:
+    gitops_command_prefix: "pac"
+```
+
+Note: Set the prefix as a plain word (e.g. `pac`). The `/` and `-` are added automatically by Pipelines-as-Code.
+
+With this configuration, you can use the following prefixed commands:
+
+- `/pac-test` - Trigger all matching PipelineRuns
+- `/pac-test <pipelinerun-name>` - Trigger a specific PipelineRun
+- `/pac-retest` - Retest failed PipelineRuns
+- `/pac-retest <pipelinerun-name>` - Retest specific PipelineRun
+- `/pac-cancel` - Cancel all running PipelineRuns
+- `/pac-cancel <pipelinerun-name>` - Cancel Specific PipelineRun
+- `/pac-ok-to-test` - Approve CI for external contributors
+- `/pac-ok-to-test SHA` - Approve CI for external contributors for a specific SHA
+
+Example:
+
+```text
+/pac-test
+```
+
 ## Cancelling a PipelineRun
 
 You can cancel a running PipelineRun by commenting on the Pull Request.

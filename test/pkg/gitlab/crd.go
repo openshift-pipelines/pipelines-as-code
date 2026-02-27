@@ -32,7 +32,7 @@ func CreateCRD(ctx context.Context, projectinfo *gitlab.Project, run *params.Run
 			Name: targetNS,
 		},
 		Spec: v1alpha1.RepositorySpec{
-			Settings: &opts.Settings,
+			Settings: opts.Settings,
 			URL:      projectinfo.WebURL,
 			GitProvider: &v1alpha1.GitProvider{
 				Type:          "gitlab",

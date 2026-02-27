@@ -36,7 +36,7 @@ func TestGithubCommentStrategyUpdateCELErrorReplacement(t *testing.T) {
 		NoStatusCheck: true,
 	}
 
-	commentStrategy := v1alpha1.Settings{
+	commentStrategy := &v1alpha1.Settings{
 		Github: &v1alpha1.GithubSettings{
 			CommentStrategy: provider.UpdateCommentStrategy,
 		},
@@ -157,7 +157,7 @@ func TestGithubCommentStrategyUpdateMultiplePLRs(t *testing.T) {
 		Webhook:   true,
 	}
 
-	commentStrategy := v1alpha1.Settings{
+	commentStrategy := &v1alpha1.Settings{
 		Github: &v1alpha1.GithubSettings{
 			CommentStrategy: provider.UpdateCommentStrategy,
 		},
@@ -268,7 +268,7 @@ func TestGithubCommentStrategyUpdateMarkerMatchingWithRegexChars(t *testing.T) {
 		Webhook: true,
 	}
 
-	commentStrategy := v1alpha1.Settings{
+	commentStrategy := &v1alpha1.Settings{
 		Github: &v1alpha1.GithubSettings{
 			CommentStrategy: provider.UpdateCommentStrategy,
 		},
