@@ -29,9 +29,9 @@ func TestGithubGHEPullRequestGitCloneTask(t *testing.T) {
 	ctx, err := cctx.GetControllerCtxInfo(ctx, g.Cnx)
 	assert.NilError(t, err)
 
-	maxLines := int64(1000)
+	sinceSeconds := int64(40)
 	assert.NilError(t, wait.RegexpMatchingInControllerLog(ctx, g.Cnx, *regexp.MustCompile(".*fetched git-clone task"),
-		10, "ghe-controller", &maxLines), "Error while checking the logs of the pipelines-as-code controller pod")
+		10, "ghe-controller", nil, &sinceSeconds), "Error while checking the logs of the pipelines-as-code controller pod")
 	defer g.TearDown(ctx, t)
 }
 

@@ -84,7 +84,8 @@ func TestGithubGHEPushRequestGitOpsCommentOnComment(t *testing.T) {
 		"step-task",
 		*regexp.MustCompile(opsComment),
 		"",
-		2)
+		2,
+		nil)
 
 	assert.NilError(t, err)
 }
@@ -202,7 +203,7 @@ func TestGithubGHEPushRequestGitOpsCommentCancel(t *testing.T) {
 	if err != nil {
 		numLines := int64(1000)
 		reg := regexp.MustCompile(".*cancel-in-progress:.*pipelinerun.*on-push.*")
-		logErr := twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 10, "ghe-controller", &numLines)
+		logErr := twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 10, "ghe-controller", &numLines, nil)
 		if logErr != nil {
 			t.Errorf("neither a cancelled pipelinerun in repo status or a cancellation request in the controller log was found: status wait error: %s, log wait error: %s", err.Error(), logErr.Error())
 		}
@@ -329,6 +330,6 @@ func TestGithubGHEPullRequestRetestPullRequestNumberSubstitution(t *testing.T) {
 	err = twait.RegexpMatchingInPodLog(ctx, g.Cnx, g.TargetNamespace,
 		fmt.Sprintf("pipelinesascode.tekton.dev/event-type=%s",
 			opscomments.RetestSingleCommentEventType.String()),
-		"step-task", *regex, "", 2)
+		"step-task", *regex, "", 2, nil)
 	assert.NilError(t, err)
 }

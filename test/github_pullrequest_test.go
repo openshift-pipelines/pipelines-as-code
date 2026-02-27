@@ -752,7 +752,7 @@ func TestGithubGHEPullandPushMatchTriggerOnlyPull(t *testing.T) {
 
 	reg := regexp.MustCompile(fmt.Sprintf("Skipping push event for commit.*as it belongs to pull request #%d", g.PRNumber))
 	maxLines := int64(1000)
-	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 20, "ghe-controller", &maxLines)
+	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 20, "ghe-controller", &maxLines, nil)
 	assert.NilError(t, err)
 }
 
@@ -813,7 +813,7 @@ func TestGithubGHEIgnoreTagPushCommitsFromSkipPushEventsSetting(t *testing.T) {
 
 	reg := regexp.MustCompile(fmt.Sprintf("Processing tag push event for commit %s despite skip-push-events-for-pr-commits being enabled.*", g.SHA))
 	maxLines := int64(1000)
-	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 20, "ghe-controller", &maxLines)
+	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 20, "ghe-controller", &maxLines, nil)
 	assert.NilError(t, err)
 
 	g.Cnx.Clients.Log.Infof("Deleting tag %s", tag)
@@ -867,6 +867,7 @@ func TestGithubGHEPullRequestCelPrefix(t *testing.T) {
 		regexp.Regexp{},
 		t.Name(),
 		2,
+		nil,
 	)
 	assert.NilError(t, err)
 }

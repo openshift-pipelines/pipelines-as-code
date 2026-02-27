@@ -111,6 +111,7 @@ func TestGiteaRetestPreservesSourceURL(t *testing.T) {
 		fmt.Sprintf("tekton.dev/pipelineRun=%s", firstPR.Name),
 		"step-test-standard-params-value",
 		&numLines,
+		nil,
 	)
 	assert.NilError(t, err)
 	assert.Assert(t, firstOut != "")
@@ -170,6 +171,7 @@ func TestGiteaRetestPreservesSourceURL(t *testing.T) {
 		fmt.Sprintf("tekton.dev/pipelineRun=%s", retestPR.Name),
 		"step-test-standard-params-value",
 		&numLines,
+		nil,
 	)
 	assert.NilError(t, err)
 	assert.Assert(t, out != "")
@@ -321,6 +323,7 @@ func TestGiteaGlobalRepoParams(t *testing.T) {
 		regexp.Regexp{},
 		t.Name(),
 		2,
+		nil,
 	)
 	assert.NilError(t, err)
 }
@@ -399,6 +402,7 @@ func TestGiteaGlobalRepoUseLocalDef(t *testing.T) {
 		regexp.Regexp{},
 		t.Name(),
 		2,
+		nil,
 	)
 	assert.NilError(t, err)
 }
@@ -484,7 +488,7 @@ func TestGiteaParamsOnRepoCR(t *testing.T) {
 	assert.NilError(t,
 		twait.RegexpMatchingInPodLog(context.Background(), topts.ParamsRun, topts.TargetNS, fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=params",
 			repo.Status[0].PipelineRunName), "step-test-params-value", *regexp.MustCompile(
-			"I am the most Kawaī params\nSHHHHHHH\nFollow me on my ig #nofilter\n{{ no_match }}\nHey I show up from a payload match\n{{ secret_nothere }}\n{{ no_initial_value }}"), "", 2))
+			"I am the most Kawaī params\nSHHHHHHH\nFollow me on my ig #nofilter\n{{ no_match }}\nHey I show up from a payload match\n{{ secret_nothere }}\n{{ no_initial_value }}"), "", 2, nil))
 }
 
 // TestGiteaParamsBodyHeadersCEL Test that we can access the pull request body and headers in params
@@ -515,7 +519,7 @@ func TestGiteaParamsBodyHeadersCEL(t *testing.T) {
 	output := `Look mum I know that we are acting on a pull_request
 my email is a true beauty and like groot, I AM pac`
 	err = twait.RegexpMatchingInPodLog(context.Background(), topts.ParamsRun, topts.TargetNS, fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=cel-pullrequest-params",
-		repo.Status[0].PipelineRunName), "step-test-cel-params-value", *regexp.MustCompile(output), "", 2)
+		repo.Status[0].PipelineRunName), "step-test-cel-params-value", *regexp.MustCompile(output), "", 2, nil)
 	assert.NilError(t, err)
 
 	// Merge the pull request so we can generate a push event and wait that it is updated
@@ -553,7 +557,7 @@ my email is a true beauty and like groot, I AM pac`
 	// push matching the expanded CEL body and headers values
 	output = `Look mum I know that we are acting on a push
 my email is a true beauty and you can call me pacman`
-	err = twait.RegexpMatchingInPodLog(context.Background(), topts.ParamsRun, topts.TargetNS, fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=cel-push-params", sortedstatus[0].PipelineRunName), "step-test-cel-params-value", *regexp.MustCompile(output), "", 2)
+	err = twait.RegexpMatchingInPodLog(context.Background(), topts.ParamsRun, topts.TargetNS, fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=cel-push-params", sortedstatus[0].PipelineRunName), "step-test-cel-params-value", *regexp.MustCompile(output), "", 2, nil)
 	assert.NilError(t, err)
 }
 
@@ -599,7 +603,7 @@ func TestGiteaParamsChangedFilesCEL(t *testing.T) {
 	assert.Equal(t, len(repo.Status), 1, repo.Status)
 	twait.GoldenPodLog(context.Background(), t, topts.ParamsRun, topts.TargetNS,
 		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=changed-files-pullrequest-params", repo.Status[0].PipelineRunName),
-		"step-test-changed-files-params-pull", strings.ReplaceAll(fmt.Sprintf("%s-changed-files-pullrequest-params-1.golden", t.Name()), "/", "-"), 2)
+		"step-test-changed-files-params-pull", strings.ReplaceAll(fmt.Sprintf("%s-changed-files-pullrequest-params-1.golden", t.Name()), "/", "-"), 2, nil)
 	// ======================================================================================================================
 	// Merge the pull request so we can generate a push event and wait that it is updated
 	// ======================================================================================================================
@@ -633,7 +637,7 @@ func TestGiteaParamsChangedFilesCEL(t *testing.T) {
 
 	twait.GoldenPodLog(context.Background(), t, topts.ParamsRun, topts.TargetNS,
 		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=changed-files-push-params", sortedstatus[0].PipelineRunName),
-		"step-test-changed-files-params-push", strings.ReplaceAll(fmt.Sprintf("%s-changed-files-push-params-1.golden", t.Name()), "/", "-"), 2)
+		"step-test-changed-files-params-push", strings.ReplaceAll(fmt.Sprintf("%s-changed-files-push-params-1.golden", t.Name()), "/", "-"), 2, nil)
 
 	// ======================================================================================================================
 	// Create second pull request with all change types
@@ -645,7 +649,7 @@ func TestGiteaParamsChangedFilesCEL(t *testing.T) {
 	assert.Equal(t, len(repo.Status), 3, repo.Status)
 	twait.GoldenPodLog(context.Background(), t, topts.ParamsRun, topts.TargetNS,
 		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=changed-files-pullrequest-params", repo.Status[2].PipelineRunName),
-		"step-test-changed-files-params-pull", strings.ReplaceAll(fmt.Sprintf("%s-changed-files-pullrequest-params-2.golden", t.Name()), "/", "-"), 2)
+		"step-test-changed-files-params-pull", strings.ReplaceAll(fmt.Sprintf("%s-changed-files-pullrequest-params-2.golden", t.Name()), "/", "-"), 2, nil)
 
 	// ======================================================================================================================
 	// Merge the pull request so we can generate a second push event and wait that it is updated
@@ -681,7 +685,7 @@ func TestGiteaParamsChangedFilesCEL(t *testing.T) {
 	// push matching the expanded CEL body and headers values
 	twait.GoldenPodLog(context.Background(), t, topts.ParamsRun, topts.TargetNS,
 		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=changed-files-push-params", sortedstatus[0].PipelineRunName),
-		"step-test-changed-files-params-push", strings.ReplaceAll(fmt.Sprintf("%s-changed-files-push-params-2.golden", t.Name()), "/", "-"), 2)
+		"step-test-changed-files-params-push", strings.ReplaceAll(fmt.Sprintf("%s-changed-files-push-params-2.golden", t.Name()), "/", "-"), 2, nil)
 }
 
 // TestGiteaParamsCelPrefix tests the cel: prefix for arbitrary CEL expressions.
@@ -721,6 +725,7 @@ func TestGiteaParamsCelPrefix(t *testing.T) {
 		regexp.Regexp{},
 		t.Name(),
 		2,
+		nil,
 	)
 	assert.NilError(t, err)
 }
