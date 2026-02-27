@@ -252,6 +252,12 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 	p.debugf("getPipelineRunsFromRepo: pipelineRuns count=%d", len(pipelineRuns))
 	pipelineRuns, err = resolve.MetadataResolve(pipelineRuns)
 	if err != nil && len(pipelineRuns) == 0 {
+		// Don't report errors for no-ops comment events to avoid a webhook feedback loop:
+		// reporting creates a comment, which triggers another webhook, which hits the same error.
+		if p.event.EventType == opscomments.NoOpsCommentEventType.String() {
+			p.logger.Infof("skipping MetadataResolve error for no-ops comment event: %s", err)
+			return nil, nil
+		}
 		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "FailedToResolvePipelineRunMetadata", err.Error())
 		return nil, err
 	}
