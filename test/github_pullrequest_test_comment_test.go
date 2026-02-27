@@ -90,10 +90,10 @@ func TestGithubGHEOnCommentAnnotation(t *testing.T) {
 	assert.Equal(t, *repo.Status[len(repo.Status)-1].EventType, opscomments.OnCommentEventType.String())
 	lastPrName := repo.Status[len(repo.Status)-1].PipelineRunName
 
-	err = twait.RegexpMatchingInPodLog(context.Background(), g.Cnx, g.TargetNamespace, fmt.Sprintf("tekton.dev/pipelineRun=%s", lastPrName), "step-task", *regexp.MustCompile(triggerComment), "", 2)
+	err = twait.RegexpMatchingInPodLog(context.Background(), g.Cnx, g.TargetNamespace, fmt.Sprintf("tekton.dev/pipelineRun=%s", lastPrName), "step-task", *regexp.MustCompile(triggerComment), "", 2, nil)
 	assert.NilError(t, err)
 
 	err = twait.RegexpMatchingInPodLog(context.Background(), g.Cnx, g.TargetNamespace, fmt.Sprintf("tekton.dev/pipelineRun=%s", lastPrName), "step-task", *regexp.MustCompile(fmt.Sprintf(
-		"The event is %s", opscomments.OnCommentEventType.String())), "", 2)
+		"The event is %s", opscomments.OnCommentEventType.String())), "", 2, nil)
 	assert.NilError(t, err)
 }
