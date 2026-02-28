@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/gobwas/glob"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/go-github/v81/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
@@ -62,6 +63,7 @@ type Provider struct {
 	triggerEvent       string
 	cachedChangedFiles *changedfiles.ChangedFiles
 	commitInfo         *github.Commit
+	pacUserLogin       string // user/bot login used by PAC
 }
 
 type skippedRun struct {
@@ -886,6 +888,16 @@ func (v *Provider) listCommentsByMarker(
 	matchedComments := make([]*github.IssueComment, 0, len(comments))
 	for _, comment := range comments {
 		if re.MatchString(comment.GetBody()) {
+			if err = v.getUserLogin(ctx, event); err != nil {
+				return nil, fmt.Errorf("unable to fetch user info: %w", err)
+			}
+			// Only edit comments created by this PAC installation's credentials.
+			// Prevents accidentally modifying comments from other users/bots.
+			if comment.GetUser().GetLogin() != v.pacUserLogin {
+				v.Logger.Debugf("This comment was not created by PAC, skipping comment edit :%d, created by user %s, PAC user: %s",
+					comment.GetID(), comment.GetUser().GetLogin(), v.pacUserLogin)
+				continue
+			}
 			matchedComments = append(matchedComments, comment)
 		}
 	}
@@ -1047,4 +1059,62 @@ func (v *Provider) CreateComment(ctx context.Context, event *info.Event, commit,
 		v.debugCommentPhase(event, trace, "duplicate_detected", "matched_count", len(matchedComments))
 	}
 	return v.ensureSingleMarkerComment(ctx, event, matchedComments, commit, trace)
+}
+
+func (v *Provider) getUserLogin(ctx context.Context, event *info.Event) error {
+	if v.pacUserLogin != "" {
+		return nil
+	}
+
+	// Get the PAC user/bot login.
+	if event.InstallationID > 0 {
+		// For Apps, get the app slug.
+		slug, err := v.fetchAppSlug(ctx, event.Provider.URL)
+		if err != nil {
+			return fmt.Errorf("failed to fetch app slug: %w", err)
+		}
+
+		v.pacUserLogin = fmt.Sprintf("%s[bot]", slug)
+	} else {
+		// For PATs, get the authenticated user.
+		pacUser, _, err := v.Client().Users.Get(ctx, "")
+		if err != nil {
+			return fmt.Errorf("unable to fetch user info: %w", err)
+		}
+		v.pacUserLogin = pacUser.GetLogin()
+	}
+
+	return nil
+}
+
+// Refer https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/authenticating-as-a-github-app-installation
+func (v *Provider) fetchAppSlug(ctx context.Context, apiURL string) (string, error) {
+	ns := info.GetNS(ctx)
+	applicationID, privateKey, err := v.GetAppIDAndPrivateKey(ctx, ns, v.Run.Clients.Kube)
+	if err != nil {
+		return "", err
+	}
+	parsedPK, err := jwt.ParseRSAPrivateKeyFromPEM(privateKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse private key: %w", err)
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, &jwt.RegisteredClaims{
+		Issuer:    fmt.Sprintf("%d", applicationID),
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(5 * time.Minute)),
+	})
+
+	tokenString, err := token.SignedString(parsedPK)
+	if err != nil {
+		return "", fmt.Errorf("failed to sign private key: %w", err)
+	}
+
+	client, _, _ := MakeClient(ctx, apiURL, tokenString)
+	app, _, err := client.Apps.Get(ctx, "")
+	if err != nil {
+		return "", fmt.Errorf("failed to get app info: %w", err)
+	}
+
+	return app.GetSlug(), nil
 }
