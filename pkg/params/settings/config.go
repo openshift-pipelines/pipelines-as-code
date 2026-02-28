@@ -72,6 +72,10 @@ type Settings struct {
 	EnableCancelInProgressOnPullRequests bool `json:"enable-cancel-in-progress-on-pull-requests"`
 	EnableCancelInProgressOnPush         bool `json:"enable-cancel-in-progress-on-push"`
 
+	// DeduplicatePipelineRuns uses fingerprinting to prevent duplicate PipelineRuns for the same commit
+	DeduplicatePipelineRuns bool `json:"deduplicate-pipelineruns" default:"true"` //nolint:tagalign
+
+	// SkipPushEventForPRCommits is deprecated, use DeduplicatePipelineRuns instead
 	SkipPushEventForPRCommits bool `json:"skip-push-event-for-pr-commits" default:"true"` // nolint:tagalign
 
 	CustomConsoleName         string `json:"custom-console-name"`

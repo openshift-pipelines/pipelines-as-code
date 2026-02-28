@@ -378,6 +378,10 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 			v.Logger.Infof("Processing tag push event for commit %s despite skip-push-events-for-pr-commits being enabled (tag events are excluded from this setting)", sha)
 		}
 
+		if v.pacInfo.SkipPushEventForPRCommits {
+			v.Logger.Warn("The 'skip-push-event-for-pr-commits' setting is deprecated and will be removed in a future version. Please use 'deduplicate-pipelineruns' instead.")
+		}
+
 		// Only check if the flag is enabled, and there are pull requests associated with this commit, and it's not a tag push event.
 		if v.pacInfo.SkipPushEventForPRCommits && len(prs) > 0 && !isGitTagEvent {
 			isPartOfPR, prNumber := v.isCommitPartOfPullRequest(sha, org, repoName, prs)

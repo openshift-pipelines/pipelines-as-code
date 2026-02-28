@@ -152,7 +152,23 @@ There are a few things you can configure through the ConfigMap
   risk and should be aware of the potential security vulnerabilities.
   (only GitHub and Forgejo are supported at the moment).
 
-* `skip-push-event-for-pr-commits`
+* `deduplicate-pipelineruns`
+
+  When enabled, this option uses fingerprinting to prevent duplicate PipelineRuns
+  when the same commit would trigger multiple events (e.g., both a push event
+  and a pull request event). Whichever event arrives first will trigger the
+  PipelineRun, and subsequent events for the same commit and pipeline will be
+  deduplicated.
+
+  The fingerprint is generated from the commit SHA, repository name, head branch, and
+  pipeline name, ensuring that unique pipelines for the same commit are still
+  allowed to run.
+
+  Default: `true`
+
+* `skip-push-event-for-pr-commits` (DEPRECATED)
+
+  **DEPRECATED: Use `deduplicate-pipelineruns` instead.**
 
   When enabled, this option prevents duplicate PipelineRuns when a commit appears in
   both a push event and a pull request. If a push event comes from a commit that is
@@ -162,7 +178,7 @@ There are a few things you can configure through the ConfigMap
   This feature works by checking if a pushed commit SHA exists in any open pull request,
   and if so, skipping the push event processing.
 
-  Default: `true`
+  Default: `false`
 
   **Note:** This setting does not apply to git tag push events. Tag push events will always trigger
   pipeline runs regardless of whether the tagged commit is part of an open pull request.
