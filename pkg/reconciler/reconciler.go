@@ -11,6 +11,7 @@ import (
 	tektonv1lister "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
@@ -52,6 +53,11 @@ var (
 	_ pipelinerunreconciler.Interface = (*Reconciler)(nil)
 	_ pipelinerunreconciler.Finalizer = (*Reconciler)(nil)
 )
+
+// The maximum number of time a pipelinerun start is attempted on transient errors.
+// This is to prevent an infinite loop when API server is causing multiple pipelineruns
+// to prevent from starting due to "retriable" errors.
+const maxRequeueAttempts = 5
 
 // ReconcileKind is the main entry point for reconciling PipelineRun resources.
 func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun) pkgreconciler.Event {
@@ -262,24 +268,16 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 	}
 
 	// remove pipelineRun from Queue and start the next one
-	for {
+	for attempt := 0; attempt < maxRequeueAttempts; attempt++ {
 		next := r.qm.RemoveAndTakeItemFromQueue(repo, pr)
 		if next == "" {
 			break
 		}
-		key := strings.Split(next, "/")
-		pr, err := r.run.Clients.Tekton.TektonV1().PipelineRuns(key[0]).Get(ctx, key[1], metav1.GetOptions{})
-		if err != nil {
-			logger.Errorf("cannot get pipeline for next in queue: %w", err)
-			continue
+		if r.getAndStartPipelineRun(ctx, repo, next, logger) {
+			break
 		}
-
-		if err := r.updatePipelineRunToInProgress(ctx, logger, repo, pr); err != nil {
-			logger.Errorf("failed to update status: %w", err)
-			_ = r.qm.RemoveFromQueue(queuepkg.RepoKey(repo), queuepkg.PrKey(pr))
-			continue
-		}
-		break
+		logger.Debugf("Could not start any pipelinerun in attempt %d/%d", attempt, maxRequeueAttempts)
+		// Failed to start, continue to next in queue
 	}
 
 	if err := r.cleanupPipelineRuns(ctx, logger, pacInfo, repo, pr); err != nil {
@@ -419,4 +417,65 @@ func (r *Reconciler) performLLMAnalysis(
 ) error {
 	orchestrator := llm.NewOrchestrator(r.run, r.kinteract, logger)
 	return orchestrator.ExecuteAnalysis(ctx, repo, pr, event, provider)
+}
+
+func (r *Reconciler) getAndStartPipelineRun(ctx context.Context, repo *v1alpha1.Repository, prKey string, logger *zap.SugaredLogger) bool {
+	key := strings.Split(prKey, "/")
+	if len(key) != 2 {
+		logger.Errorf("invalid PipelineRun key format: %s", prKey)
+		_ = r.qm.RemoveFromQueue(queuepkg.RepoKey(repo), prKey)
+		return false
+	}
+
+	pr, err := r.run.Clients.Tekton.TektonV1().PipelineRuns(key[0]).Get(ctx, key[1], metav1.GetOptions{})
+	if err != nil {
+		logger.Errorf("failed to get PipelineRun (%s): %w", prKey, err)
+		repoKey := queuepkg.RepoKey(repo)
+		if isRetriableError(err) {
+			logger.Infof("retriable Get error, requeueing (%s) to pending", prKey)
+			if !r.qm.RequeueToPendingByKey(repoKey, prKey) {
+				logger.Warnf("failed to requeue (%s), removing from queue", prKey)
+				_ = r.qm.RemoveFromQueue(repoKey, prKey)
+			}
+		} else {
+			logger.Warnf("non-retriable Get error, removing (%s) from queue: %v", prKey, err)
+			_ = r.qm.RemoveFromQueue(repoKey, prKey)
+		}
+		return false
+	}
+
+	if err := r.updatePipelineRunToInProgress(ctx, logger, repo, pr); err != nil {
+		logger.Errorf("failed to update PipelineRun to in-progress: %w", err)
+		// Requeue PLRs to pending on retriable errors - transient K8s API issues.
+		// Remove from queue otherwise to prevent infinite loops.
+		if isRetriableError(err) {
+			logger.Infof("retriable error detected, re-queuing (%s) to pending", queuepkg.PrKey(pr))
+			if !r.qm.RequeueToPending(repo, pr) {
+				logger.Warnf("failed to requeue (%s), removing from queue", queuepkg.PrKey(pr))
+				_ = r.qm.RemoveFromQueue(queuepkg.RepoKey(repo), queuepkg.PrKey(pr))
+			}
+		} else {
+			logger.Warnf("non-retriable error, removing (%s) from queue: %v", queuepkg.PrKey(pr), err)
+			_ = r.qm.RemoveFromQueue(queuepkg.RepoKey(repo), queuepkg.PrKey(pr))
+		}
+		return false
+	}
+
+	return true
+}
+
+// isRetriableError determines if an error from updatePipelineRunToInProgress should trigger a requeue.
+// Only transient K8s API errors are considered retriable to avoid infinite loops on operational issues.
+func isRetriableError(err error) bool {
+	// Retriable K8s API errors - mostly transient issues that self-heal
+	if apierrors.IsTimeout(err) ||
+		apierrors.IsServerTimeout(err) ||
+		apierrors.IsServiceUnavailable(err) ||
+		apierrors.IsInternalError(err) ||
+		apierrors.IsTooManyRequests(err) ||
+		apierrors.IsConflict(err) {
+		return true
+	}
+
+	return false
 }

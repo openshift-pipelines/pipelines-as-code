@@ -78,19 +78,8 @@ func (r *Reconciler) queuePipelineRun(ctx context.Context, logger *zap.SugaredLo
 		}
 
 		for _, prKeys := range acquired {
-			nsName := strings.Split(prKeys, "/")
-			repoKey := queuepkg.RepoKey(repo)
-			pr, err = r.run.Clients.Tekton.TektonV1().PipelineRuns(nsName[0]).Get(ctx, nsName[1], metav1.GetOptions{})
-			if err != nil {
-				logger.Info("failed to get pr with namespace and name: ", nsName[0], nsName[1])
-				_ = r.qm.RemoveFromQueue(repoKey, prKeys)
-			} else {
-				if err := r.updatePipelineRunToInProgress(ctx, logger, repo, pr); err != nil {
-					logger.Errorf("failed to update pipelineRun to in_progress: %w", err)
-					_ = r.qm.RemoveFromQueue(repoKey, prKeys)
-				} else {
-					processed = true
-				}
+			if r.getAndStartPipelineRun(ctx, repo, prKeys, logger) {
+				processed = true
 			}
 		}
 		if processed {
