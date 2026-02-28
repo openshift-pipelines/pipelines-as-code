@@ -19,6 +19,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/templates"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Repository, error) {
@@ -63,6 +64,10 @@ func (p *PacRun) verifyRepoAndUser(ctx context.Context) (*v1alpha1.Repository, e
 		return nil, nil
 	}
 	p.debugf("verifyRepoAndUser: matched repo=%s/%s", repo.GetNamespace(), repo.GetName())
+
+	if err := p.ensureGitProviderAnnotation(ctx, repo); err != nil {
+		p.logger.Warnf("failed to set git-provider annotation on repository %s/%s: %v", repo.GetNamespace(), repo.GetName(), err)
+	}
 
 	p.logger = p.logger.With("namespace", repo.Namespace)
 	p.vcx.SetLogger(p.logger)
@@ -501,5 +506,38 @@ func (p *PacRun) createNeutralStatus(ctx context.Context, title, text string) er
 		return fmt.Errorf("failed to run create status, user is not allowed to run the CI:: %w", err)
 	}
 
+	return nil
+}
+
+// ensureGitProviderAnnotation sets the git-provider annotation on the repository
+// if it's not already set. This annotation is used for provider detection during
+// reconciliation and token scoping.
+func (p *PacRun) ensureGitProviderAnnotation(ctx context.Context, repo *v1alpha1.Repository) error {
+	annotations := repo.GetAnnotations()
+	if annotations != nil {
+		if _, exists := annotations[apipac.GitProvider]; exists {
+			return nil
+		}
+	}
+
+	providerName := p.vcx.GetConfig().Name
+	if providerName == "" {
+		return fmt.Errorf("provider name is empty")
+	}
+
+	if annotations == nil {
+		annotations = make(map[string]string)
+	}
+
+	annotations[apipac.GitProvider] = providerName
+	repo.SetAnnotations(annotations)
+
+	_, err := p.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(repo.GetNamespace()).Update(
+		ctx, repo, metav1.UpdateOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to update repository: %w", err)
+	}
+
+	p.debugf("ensureGitProviderAnnotation: set git-provider=%s on repo=%s/%s", providerName, repo.GetNamespace(), repo.GetName())
 	return nil
 }

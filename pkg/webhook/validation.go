@@ -2,8 +2,10 @@ package webhook
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	pac "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/listers/pipelinesascode/v1alpha1"
@@ -42,13 +44,13 @@ func (ac *reconciler) Admit(_ context.Context, request *v1.AdmissionRequest) *v1
 			return webhook.MakeErrorStatus("URL must be set")
 		}
 
-		parsed, err := url.Parse(repo.Spec.URL)
-		if err != nil {
-			return webhook.MakeErrorStatus("invalid URL format: %v", err)
+		providerType := ""
+		if repo.Spec.GitProvider != nil && repo.Spec.GitProvider.Type != "" {
+			providerType = repo.Spec.GitProvider.Type
 		}
 
-		if parsed.Scheme != "http" && parsed.Scheme != "https" {
-			return webhook.MakeErrorStatus("URL scheme must be http or https")
+		if err := validateRepositoryURL(repo.Spec.URL, providerType); err != nil {
+			return webhook.MakeErrorStatus("%s", err.Error())
 		}
 	}
 
@@ -93,4 +95,43 @@ func checkIfRepoExist(pac pac.RepositoryLister, repo *v1alpha1.Repository, ns st
 		}
 	}
 	return false, nil
+}
+
+func validateRepositoryURL(repoURL, providerType string) error {
+	parsedURL, err := url.Parse(repoURL)
+	if err != nil {
+		return fmt.Errorf("invalid URL format: %w", err)
+	}
+
+	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+		return fmt.Errorf("URL scheme must be http or https")
+	}
+
+	// Strict validation ensures that the GitHub repository URL does not include
+	// additional path segments (e.g., https://github.com/org/repo/extra).
+	// However, we cannot reliably determine whether a self-hosted GitHub or
+	// GHE instance should be classified as type "github". Therefore, strict
+	// validation is applied only when we can confidently identify the repository
+	// as a GitHub repository.
+	if parsedURL.Host == "github.com" {
+		providerType = "github"
+	}
+
+	// GitHub doesn't support subgroups, so validate strictly for GitHub repos
+	shouldValidateStrictly := providerType == "github"
+
+	if shouldValidateStrictly {
+		pathSegments := []string{}
+		for _, seg := range strings.Split(strings.Trim(parsedURL.Path, "/"), "/") {
+			if seg != "" {
+				pathSegments = append(pathSegments, seg)
+			}
+		}
+
+		if len(pathSegments) != 2 {
+			return fmt.Errorf("GitHub repository URL must follow https://github.com/org/repo format without subgroups (found %d path segments, expected 2)", len(pathSegments))
+		}
+	}
+
+	return nil
 }
