@@ -5,6 +5,7 @@ set -exufo pipefail
 
 export PAC_API_INSTRUMENTATION_DIR=/tmp/api-instrumentation
 export TEST_GITLAB_API_URL=https://gitlab.pipelinesascode.com
+export TEST_GITLAB_GROUP=pac-e2e-tests
 
 create_pac_github_app_secret() {
   # Read from environment variables instead of arguments
@@ -231,6 +232,7 @@ collect_logs() {
   # Read from environment variables (use default empty value for optional vars)
   local test_gitea_smee_url="${TEST_GITEA_SMEEURL:-}"
   local github_ghe_smee_url="${TEST_GITHUB_SECOND_SMEE_URL:-}"
+  local test_gitlab_smee_url="${TEST_GITLAB_SMEEURL:-}"
 
   mkdir -p /tmp/logs
   # Output logs to stdout so we can see via the web interface directly
@@ -244,6 +246,8 @@ collect_logs() {
   [[ -d /tmp/gosmee-replay-ghe ]] && cp -a /tmp/gosmee-replay-ghe /tmp/logs/gosmee/replay-ghe
   [[ -f /tmp/gosmee-main.log ]] && cp /tmp/gosmee-main.log /tmp/logs/gosmee/main.log
   [[ -f /tmp/gosmee-ghe.log ]] && cp /tmp/gosmee-ghe.log /tmp/logs/gosmee/ghe.log
+  [[ -d /tmp/gosmee-replay-gitlab ]] && cp -a /tmp/gosmee-replay-gitlab /tmp/logs/gosmee/replay-gitlab
+  [[ -f /tmp/gosmee-gitlab.log ]] && cp /tmp/gosmee-gitlab.log /tmp/logs/gosmee/gitlab.log
 
   kubectl get pipelineruns -A -o yaml >/tmp/logs/pac-pipelineruns.yaml
   kubectl get repositories.pipelinesascode.tekton.dev -A -o yaml >/tmp/logs/pac-repositories.yaml
@@ -264,7 +268,7 @@ collect_logs() {
     cp -a ${PAC_API_INSTRUMENTATION_DIR} /tmp/logs/$(basename ${PAC_API_INSTRUMENTATION_DIR})
   fi
 
-  for url in "${test_gitea_smee_url}" "${github_ghe_smee_url}"; do
+  for url in "${test_gitea_smee_url}" "${github_ghe_smee_url}" "${test_gitlab_smee_url}"; do
     [[ -z "${url}" ]] && continue
     find /tmp/logs -type f -exec grep -l "${url}" {} \; | xargs -r sed -i "s|${url}|SMEE_URL|g"
   done
