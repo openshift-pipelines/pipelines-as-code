@@ -180,59 +180,47 @@ func TestGitlabGitOpsCommandTestOnTag(t *testing.T) {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
 	}
 
-	tagName := "v1.0.0"
+	tagName := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("v1.0")
 	comment := "/test tag:" + tagName
 	sha := ""
 	targetBranch := "release-" + tagName
-	numberOfPRs := 1
+	numberOfPRs := 2
 
 	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, opts, targetNs, nil)
 	assert.NilError(t, err)
 
 	runcnx.Clients.Log.Infof("Repository %s has been created successfully", targetNs)
 
-	tag, resp, err := glprovider.Client().Tags.GetTag(opts.ProjectID, tagName)
-	if err != nil && resp.StatusCode == http.StatusNotFound {
-		runcnx.Clients.Log.Infof("Tag %s not found in repository %s", tagName, projectinfo.Name)
-		runcnx.Clients.Log.Infof("Creating tag %s in repository %s", tagName, projectinfo.Name)
+	entries, err := payload.GetEntries(map[string]string{
+		".tekton/pipelinerun-on-tag.yaml": "testdata/pipelinerun-on-tag.yaml",
+	}, targetNs, "refs/tags/*", triggertype.Push.String(), map[string]string{})
+	assert.NilError(t, err)
 
-		entries, err := payload.GetEntries(map[string]string{
-			".tekton/pipelinerun-on-tag.yaml": "testdata/pipelinerun-on-tag.yaml",
-		}, targetNs, "refs/tags/*", triggertype.Push.String(), map[string]string{})
-		assert.NilError(t, err)
+	cloneURL, err := scm.MakeGitCloneURL(projectinfo.WebURL, "git", *glprovider.Token)
+	assert.NilError(t, err)
 
-		cloneURL, err := scm.MakeGitCloneURL(projectinfo.WebURL, "git", *glprovider.Token)
-		assert.NilError(t, err)
-
-		scmOpts := &scm.Opts{
-			GitURL:        cloneURL,
-			Log:           runcnx.Clients.Log,
-			WebURL:        projectinfo.WebURL,
-			TargetRefName: targetBranch,
-			BaseRefName:   projectinfo.DefaultBranch,
-			CommitTitle:   "Test GitOps Commands on Tag - " + targetNs,
-		}
-		_ = scm.PushFilesToRefGit(t, scmOpts, entries)
-
-		branch, _, err := glprovider.Client().Branches.GetBranch(opts.ProjectID, targetBranch)
-		assert.NilError(t, err)
-
-		sha = branch.Commit.ID
-
-		_, _, err = glprovider.Client().Tags.CreateTag(opts.ProjectID, &gitlab.CreateTagOptions{
-			TagName: gitlab.Ptr(tagName),
-			Ref:     gitlab.Ptr(targetBranch),
-		})
-		assert.NilError(t, err)
-
-		// as we're creating a tag, we need to increment the number of PRs
-		// because the tag creation will also trigger a new PipelineRun
-		numberOfPRs++
-	} else {
-		runcnx.Clients.Log.Infof("Tag %s already created in repository %s", tagName, projectinfo.Name)
-		sha = tag.Commit.ID
+	scmOpts := &scm.Opts{
+		GitURL:        cloneURL,
+		Log:           runcnx.Clients.Log,
+		WebURL:        projectinfo.WebURL,
+		TargetRefName: targetBranch,
+		BaseRefName:   projectinfo.DefaultBranch,
+		CommitTitle:   "Test GitOps Commands on Tag - " + targetNs,
 	}
-	defer tgitlab.TearDown(ctx, t, runcnx, glprovider, -1, "", targetNs, opts.ProjectID)
+	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
+
+	branch, _, err := glprovider.Client().Branches.GetBranch(opts.ProjectID, targetBranch)
+	assert.NilError(t, err)
+	sha = branch.Commit.ID
+
+	_, _, err = glprovider.Client().Tags.CreateTag(opts.ProjectID, &gitlab.CreateTagOptions{
+		TagName: gitlab.Ptr(tagName),
+		Ref:     gitlab.Ptr(targetBranch),
+	})
+	assert.NilError(t, err)
+
+	defer tgitlab.CleanTag(glprovider.Client(), opts.ProjectID, tagName)
+	defer tgitlab.TearDown(ctx, t, runcnx, glprovider, -1, targetBranch, targetNs, opts.ProjectID)
 
 	cc, _, err := glprovider.Client().Commits.PostCommitComment(opts.ProjectID, sha, &gitlab.PostCommitCommentOptions{
 		Note: gitlab.Ptr(comment),
