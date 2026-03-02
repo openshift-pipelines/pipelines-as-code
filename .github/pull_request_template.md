@@ -17,9 +17,14 @@ Fixes #
 - [ ] ✨ New feature (`feat:`)
 - [ ] 💥 Breaking change (`feat!:`, `fix!:`)
 - [ ] 📚 Documentation update (`docs:`)
-- [ ] ⚙️ Chore (`chore:`)
+- [ ] 🎨 Style (`style:`)
 - [ ] 💅 Refactor (`refactor:`)
-- [ ] 🔧 Enhancement (`enhance:`)
+- [ ] ⚡ Performance (`perf:`)
+- [ ] ✅ Test (`test:`)
+- [ ] 🏗️ Build (`build:`)
+- [ ] 👷 CI (`ci:`)
+- [ ] ⚙️ Chore (`chore:`)
+- [ ] ⏪ Revert (`revert:`)
 - [ ] 📦 Dependency update (`deps:`)
 
 ## 🧪 Testing Strategy
