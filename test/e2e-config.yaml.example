@@ -44,8 +44,9 @@ github_enterprise:
 gitlab:
   api_url: "https://gitlab.com"
   token: ""
-  # Project ID (find in repo Settings > General)
-  project_id: ""
+  # Group/namespace where test projects will be created and deleted
+  group: "pac-e2e-tests"
+  smee_url: ""  # Auto-generated in CI; set manually for local testing
 
 # Gitea / Forgejo
 gitea:

@@ -5,7 +5,6 @@ import "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascod
 type E2E struct {
 	Repo, Organization string
 	DirectWebhook      bool
-	ProjectID          int
 	ControllerURL      string
 	Concurrency        int
 	UserName           string
