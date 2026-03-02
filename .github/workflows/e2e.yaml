@@ -88,7 +88,6 @@ jobs:
       TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP: pipelines-as-code/e2e
       TEST_GITHUB_SECOND_TOKEN: ${{ secrets.TEST_GITHUB_SECOND_TOKEN }}
       TEST_GITHUB_TOKEN: ${{ secrets.GH_APPS_TOKEN }}
-      TEST_GITLAB_PROJECT_ID: ${{ vars.TEST_GITLAB_PROJECT_ID }}
       TEST_GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -320,6 +319,20 @@ jobs:
         run: |
           nohup gosmee client --saveDir /tmp/gosmee-replay "${TEST_GITEA_SMEEURL}" "https://${CONTROLLER_DOMAIN_URL}" >> /tmp/gosmee-main.log 2>&1 &
 
+      - name: Generate unique gosmee URL for GitLab tests
+        if: matrix.provider == 'gitlab_bitbucket'
+        id: gosmee-gitlab-url
+        run: |
+          SMEE_URL=$(curl -s https://hook.pipelinesascode.com -o /dev/null -w '%{redirect_url}')
+          echo "Generated unique GitLab smee URL: ${SMEE_URL}"
+          echo "url=${SMEE_URL}" >> "$GITHUB_OUTPUT"
+          echo "TEST_GITLAB_SMEEURL=${SMEE_URL}" >> "$GITHUB_ENV"
+
+      - name: Run gosmee for GitLab tests
+        if: matrix.provider == 'gitlab_bitbucket'
+        run: |
+          nohup gosmee client --saveDir /tmp/gosmee-replay-gitlab "${TEST_GITLAB_SMEEURL}" "https://${CONTROLLER_DOMAIN_URL}" >> /tmp/gosmee-gitlab.log 2>&1 &
+
       - name: Run gosmee for second controller (GHE)
         if: startsWith(matrix.provider, 'github_ghe') || matrix.provider == 'concurrency'
         run: |
@@ -366,7 +379,8 @@ jobs:
           TEST_GITHUB_SECOND_WEBHOOK_SECRET: ${{ secrets.TEST_GITHUB_SECOND_WEBHOOK_SECRET }}
           TEST_GITHUB_TOKEN: ${{ secrets.GH_APPS_TOKEN }}
           TEST_GITLAB_API_URL: https://gitlab.com
-          TEST_GITLAB_PROJECT_ID: ${{ vars.TEST_GITLAB_PROJECT_ID }}
+          TEST_GITLAB_GROUP: pac-e2e-tests
+          TEST_GITLAB_SMEEURL: ${{ env.TEST_GITLAB_SMEEURL }}
           TEST_GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
           TEST_PROVIDER: ${{ matrix.provider }}
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
@@ -466,6 +480,7 @@ jobs:
         if: ${{ always() }}
         env:
           TEST_GITHUB_SECOND_SMEE_URL: ${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}
+          TEST_GITLAB_SMEEURL: ${{ steps.gosmee-gitlab-url.outputs.url }}
         run: |
           ./hack/gh-workflow-ci.sh collect_logs
 
