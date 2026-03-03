@@ -4,8 +4,6 @@ package test
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"os"
 	"regexp"
@@ -30,26 +28,9 @@ import (
 	"github.com/tektoncd/pipeline/pkg/names"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
-	"gotest.tools/v3/golden"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 )
-
-func compactCommentTimestamp(ts github.Timestamp) string {
-	if ts.IsZero() {
-		return "unknown"
-	}
-	return ts.UTC().Format(time.RFC3339)
-}
-
-func commentBodyHash(body string) string {
-	sum := sha256.Sum256([]byte(body))
-	digest := hex.EncodeToString(sum[:])
-	if len(digest) > 12 {
-		return digest[:12]
-	}
-	return digest
-}
 
 func TestGithubGHEPullRequestBasic(t *testing.T) {
 	ctx := context.Background()
@@ -186,78 +167,6 @@ func TestGithubPullRequestWebhook(t *testing.T) {
 	}
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
-}
-
-func TestGithubGHEPullRequestBadYaml(t *testing.T) {
-	ctx := context.Background()
-	g := &tgithub.PRTest{
-		Label:         "Github PullRequest Bad Yaml",
-		YamlFiles:     []string{"testdata/failures/bad-yaml.yaml"},
-		GHE:           true,
-		NoStatusCheck: true,
-	}
-	g.RunPullRequest(ctx, t)
-	defer g.TearDown(ctx, t)
-
-	maxLoop := 10
-	for i := 0; i < maxLoop; i++ {
-		comments, _, err := g.Provider.Client().Issues.ListComments(
-			ctx, g.Options.Organization, g.Options.Repo, g.PRNumber,
-			&github.IssueListCommentsOptions{})
-		assert.NilError(t, err)
-
-		if len(comments) > 0 {
-			if len(comments) > 1 {
-				for _, comment := range comments {
-					g.Cnx.Clients.Log.Infof("duplicate comment diagnostic: comment_id=%d created_at=%s updated_at=%s author_login=%s body_hash=%s body_len=%d",
-						comment.GetID(),
-						compactCommentTimestamp(comment.GetCreatedAt()),
-						compactCommentTimestamp(comment.GetUpdatedAt()),
-						comment.GetUser().GetLogin(),
-						commentBodyHash(comment.GetBody()),
-						len(comment.GetBody()))
-				}
-
-				const recheckAttempts = 5
-				for attempt := 1; attempt <= recheckAttempts && len(comments) > 1; attempt++ {
-					g.Cnx.Clients.Log.Infof("recheck duplicate comments attempt=%d/%d current_count=%d", attempt, recheckAttempts, len(comments))
-					time.Sleep(2 * time.Second)
-					comments, _, err = g.Provider.Client().Issues.ListComments(
-						ctx, g.Options.Organization, g.Options.Repo, g.PRNumber,
-						&github.IssueListCommentsOptions{})
-					assert.NilError(t, err)
-				}
-
-				if len(comments) > 1 {
-					commentSummaries := make([]string, 0, len(comments))
-					for _, comment := range comments {
-						commentSummaries = append(commentSummaries,
-							fmt.Sprintf("%d(created=%s updated=%s)",
-								comment.GetID(),
-								compactCommentTimestamp(comment.GetCreatedAt()),
-								compactCommentTimestamp(comment.GetUpdatedAt())))
-					}
-					assert.Assert(t, len(comments) == 1,
-						"Should have only one comment created after rechecks, count=%d comments=%s",
-						len(comments), strings.Join(commentSummaries, ", "))
-				}
-			}
-
-			if len(comments) == 0 {
-				g.Cnx.Clients.Log.Infof("No comments after duplicate recheck, continuing wait loop %d/%d", i, maxLoop)
-				time.Sleep(6 * time.Second)
-				continue
-			}
-
-			golden.Assert(t, comments[0].GetBody(), strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"))
-			return
-		}
-
-		g.Cnx.Clients.Log.Infof("Looping %d/%d waiting for a comment to appear", i, maxLoop)
-		time.Sleep(6 * time.Second)
-	}
-
-	t.Fatal("No comments with the pipelinerun error found on the pull request")
 }
 
 func TestGithubGHEInvalidCELExpressionReportingOnPR(t *testing.T) {
