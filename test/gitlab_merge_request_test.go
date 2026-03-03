@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -24,6 +25,7 @@ import (
 	"github.com/tektoncd/pipeline/pkg/names"
 	clientGitlab "gitlab.com/gitlab-org/api/client-go"
 	"gotest.tools/v3/assert"
+	"gotest.tools/v3/golden"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -424,6 +426,36 @@ func TestGitlabMergeRequestOnUpdateAtAndLabelChange(t *testing.T) {
 		assert.Assert(t, len(prs.Items) == 2)
 		time.Sleep(1 * time.Second)
 	}
+}
+
+func TestGitlabMergeRequestBadYaml(t *testing.T) {
+	topts := &tgitlab.TestOpts{
+		TargetEvent: triggertype.PullRequest.String(),
+		YAMLFiles: map[string]string{
+			".tekton/bad-yaml.yaml": "testdata/failures/bad-yaml.yaml",
+		},
+	}
+	_, cleanup := tgitlab.TestMR(t, topts)
+	defer cleanup()
+
+	maxLoop := 10
+	for i := 0; i < maxLoop; i++ {
+		notes, _, err := topts.GLProvider.Client().Notes.ListMergeRequestNotes(topts.ProjectID, int64(topts.MRNumber), nil)
+		assert.NilError(t, err)
+
+		for _, note := range notes {
+			if note.System {
+				continue
+			}
+			golden.Assert(t, note.Body, strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"))
+			return
+		}
+
+		topts.ParamsRun.Clients.Log.Infof("Looping %d/%d waiting for a comment to appear", i, maxLoop)
+		time.Sleep(6 * time.Second)
+	}
+
+	t.Fatal("No comments with the pipelinerun error found on the merge request")
 }
 
 func TestGitlabMergeRequestValidationErrorsFromFork(t *testing.T) {
