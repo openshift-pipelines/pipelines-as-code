@@ -229,7 +229,7 @@ settings:
 
   catalog-2-id: "artifact"
   catalog-2-name: "tekton-catalog-tasks"
-  catalog-2-url: "https://artifacthub.io"
+  catalog-2-url: "https://artifacthub.io/api/v1"
   catalog-2-type: "artifacthub"
   ```
 
