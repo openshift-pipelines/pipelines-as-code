@@ -34,9 +34,18 @@ func CreateCRD(ctx context.Context, t *testing.T, repoinfo *github.Repository, r
 	assert.NilError(t, err)
 
 	if opts.DirectWebhook {
-		token, _ := os.LookupEnv("TEST_GITHUB_TOKEN")
+		// Use opts.Token and opts.APIURL if provided (for GHE dynamic repos),
+		// otherwise fall back to environment variables (for public GitHub)
+		token := opts.Token
+		if token == "" {
+			token, _ = os.LookupEnv("TEST_GITHUB_TOKEN")
+		}
+		apiURL := opts.APIURL
+		if apiURL == "" {
+			apiURL, _ = os.LookupEnv("TEST_GITHUB_API_URL")
+		}
 		webhookSecret, _ := os.LookupEnv("TEST_EL_WEBHOOK_SECRET")
-		apiURL, _ := os.LookupEnv("TEST_GITHUB_API_URL")
+
 		err := secret.Create(ctx, run,
 			map[string]string{
 				"webhook-secret": webhookSecret,
@@ -84,9 +93,18 @@ func CreateCRDIncoming(ctx context.Context, t *testing.T, repoinfo *github.Repos
 	assert.NilError(t, err)
 
 	if opts.DirectWebhook {
-		token, _ := os.LookupEnv("TEST_GITHUB_TOKEN")
+		// Use opts.Token and opts.APIURL if provided (for GHE dynamic repos),
+		// otherwise fall back to environment variables (for public GitHub)
+		token := opts.Token
+		if token == "" {
+			token, _ = os.LookupEnv("TEST_GITHUB_TOKEN")
+		}
+		apiURL := opts.APIURL
+		if apiURL == "" {
+			apiURL, _ = os.LookupEnv("TEST_GITHUB_API_URL")
+		}
 		webhookSecret, _ := os.LookupEnv("TEST_EL_WEBHOOK_SECRET")
-		apiURL, _ := os.LookupEnv("TEST_GITHUB_API_URL")
+
 		err := secret.Create(ctx, run,
 			map[string]string{
 				"webhook-secret": webhookSecret,

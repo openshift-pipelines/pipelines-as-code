@@ -40,6 +40,9 @@ type GitHubEnterpriseConfig struct {
 	ControllerURL      string `env:"TEST_GITHUB_SECOND_EL_URL"               json:"controller_url"       yaml:"controller_url"`
 	RepoOwnerGithubApp string `env:"TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP" json:"repo_owner_githubapp" yaml:"repo_owner_githubapp"`
 	RepoInstallationID string `env:"TEST_GITHUB_SECOND_REPO_INSTALLATION_ID" json:"repo_installation_id" yaml:"repo_installation_id"`
+	SmeeURL            string `env:"TEST_GITHUB_SECOND_SMEE_URL"             json:"smee_url"             yaml:"smee_url"`
+	WebhookSmeeURL     string `env:"TEST_GITHUB_SECOND_WEBHOOK_SMEE_URL"     json:"webhook_smee_url"     yaml:"webhook_smee_url"`
+	WebhookOrg         string `env:"TEST_GITHUB_SECOND_WEBHOOK_ORG"          json:"webhook_org"          yaml:"webhook_org"`
 }
 
 type GitLabConfig struct {

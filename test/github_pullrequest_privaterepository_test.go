@@ -4,7 +4,6 @@ package test
 
 import (
 	"context"
-	"os"
 	"regexp"
 	"testing"
 
@@ -43,18 +42,16 @@ func TestGithubGHEPullRequestGitClone(t *testing.T) {
 	defer g.TearDown(ctx, t)
 }
 
-func TestGithubPullRequestPrivateRepositoryOnWebhook(t *testing.T) {
-	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
-		t.Skip("Skipping test since only enabled for nightly")
-	}
+func TestGithubGHEPullRequestPrivateRepositoryOnWebhook(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:     "Github Rerequest",
+		Label:     "Github GHE Rerequest",
 		YamlFiles: []string{"testdata/pipelinerun_git_clone_private.yaml"},
+		GHE:       true,
 		Webhook:   true,
 	}
-	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
+	g.RunPullRequest(ctx, t)
 }
 
 // Local Variables:
