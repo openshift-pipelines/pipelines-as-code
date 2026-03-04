@@ -123,6 +123,7 @@ type PRTest struct {
 	SHA             string
 	Logger          *zap.SugaredLogger
 	CommitTitle     string
+	DynamicRepoName string
 }
 
 func (g *PRTest) RunPullRequest(ctx context.Context, t *testing.T) {
@@ -135,10 +136,28 @@ func (g *PRTest) RunPullRequest(ctx context.Context, t *testing.T) {
 	g.CommitTitle = fmt.Sprintf("Testing %s with Github APPS integration on %s", g.Label, targetNS)
 	g.Logger.Info(g.CommitTitle)
 
-	repoinfo, resp, err := ghcnx.Client().Repositories.Get(ctx, opts.Organization, opts.Repo)
-	assert.NilError(t, err)
-	if resp != nil && resp.StatusCode == http.StatusNotFound {
-		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
+	var repoinfo *github.Repository
+
+	// For GHE + webhook, create a dynamic repo with SMEE webhook
+	if g.GHE && g.Webhook {
+		repoName := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
+		smeeURL := os.Getenv("TEST_GITHUB_SECOND_WEBHOOK_SMEE_URL")
+		webhookSecret := os.Getenv("TEST_EL_WEBHOOK_SECRET")
+
+		g.Logger.Infof("Creating dynamic GHE repository %s/%s with webhook to %s", opts.Organization, repoName, smeeURL)
+		repoinfo, err = CreateGHERepo(ctx, ghcnx.Client(), opts.Organization, repoName, smeeURL, webhookSecret, g.Logger)
+		assert.NilError(t, err)
+
+		opts.Repo = repoName
+		g.DynamicRepoName = repoName
+	} else {
+		// Use existing pre-configured repo
+		var resp *github.Response
+		repoinfo, resp, err = ghcnx.Client().Repositories.Get(ctx, opts.Organization, opts.Repo)
+		assert.NilError(t, err)
+		if resp != nil && resp.StatusCode == http.StatusNotFound {
+			t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
+		}
 	}
 
 	if g.Options.Settings.Github != nil {
@@ -209,10 +228,19 @@ func (g *PRTest) TearDown(ctx context.Context, t *testing.T) {
 	if g.TargetNamespace != "" {
 		repository.NSTearDown(ctx, t, g.Cnx, g.TargetNamespace)
 	}
-	if g.TargetRefName != "" && g.TargetRefName != options.MainBranch {
+
+	// Skip branch deletion for dynamic repos since we're deleting the entire repo
+	if g.DynamicRepoName == "" && g.TargetRefName != "" && g.TargetRefName != options.MainBranch {
 		branch := fmt.Sprintf("heads/%s", filepath.Base(g.TargetRefName))
 		g.Logger.Infof("Deleting Ref %s", branch)
 		_, err := g.Provider.Client().Git.DeleteRef(ctx, g.Options.Organization, g.Options.Repo, branch)
+		assert.NilError(t, err)
+	}
+
+	// Delete dynamic repo if one was created
+	if g.DynamicRepoName != "" {
+		g.Logger.Infof("Deleting dynamic repository %s/%s", g.Options.Organization, g.DynamicRepoName)
+		err := DeleteGHERepo(ctx, g.Provider.Client(), g.Options.Organization, g.DynamicRepoName, g.Logger)
 		assert.NilError(t, err)
 	}
 }
@@ -237,10 +265,29 @@ func (g *PRTest) RunPushRequest(ctx context.Context, t *testing.T) {
 		logmsg = fmt.Sprintf("Testing %s with Github APPS integration on %s", g.Label, targetNS)
 		g.Logger.Info(logmsg)
 	}
-	repoinfo, resp, err := ghcnx.Client().Repositories.Get(ctx, opts.Organization, opts.Repo)
-	assert.NilError(t, err)
-	if resp != nil && resp.StatusCode == http.StatusNotFound {
-		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
+
+	var repoinfo *github.Repository
+
+	// For GHE + webhook, create a dynamic repo with SMEE webhook
+	if g.GHE && g.Webhook {
+		repoName := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
+		smeeURL := os.Getenv("TEST_GITHUB_SECOND_WEBHOOK_SMEE_URL")
+		webhookSecret := os.Getenv("TEST_EL_WEBHOOK_SECRET")
+
+		g.Logger.Infof("Creating dynamic GHE repository %s/%s with webhook to %s", opts.Organization, repoName, smeeURL)
+		repoinfo, err = CreateGHERepo(ctx, ghcnx.Client(), opts.Organization, repoName, smeeURL, webhookSecret, g.Logger)
+		assert.NilError(t, err)
+
+		opts.Repo = repoName
+		g.DynamicRepoName = repoName
+	} else {
+		// Use existing pre-configured repo
+		var resp *github.Response
+		repoinfo, resp, err = ghcnx.Client().Repositories.Get(ctx, opts.Organization, opts.Repo)
+		assert.NilError(t, err)
+		if resp != nil && resp.StatusCode == http.StatusNotFound {
+			t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
+		}
 	}
 	err = CreateCRD(ctx, t, repoinfo, runcnx, opts, targetNS)
 	assert.NilError(t, err)

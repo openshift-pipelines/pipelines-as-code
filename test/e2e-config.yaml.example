@@ -39,6 +39,9 @@ github_enterprise:
   controller_url: ""
   repo_owner_githubapp: ""
   repo_installation_id: ""
+  smee_url: ""  # For GitHub App tests
+  webhook_smee_url: ""  # For webhook-based tests with dynamic repo creation
+  webhook_org: ""  # Optional: Different org for webhook tests (uses repo_owner_githubapp org if not set)
 
 # GitLab
 gitlab:

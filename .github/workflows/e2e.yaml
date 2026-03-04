@@ -87,6 +87,8 @@ jobs:
       TEST_GITHUB_SECOND_REPO_INSTALLATION_ID: 1
       TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP: pipelines-as-code/e2e
       TEST_GITHUB_SECOND_TOKEN: ${{ secrets.TEST_GITHUB_SECOND_TOKEN }}
+      TEST_GITHUB_SECOND_SMEE_URL: ${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}
+      TEST_GITHUB_SECOND_WEBHOOK_ORG: pac-e2e-webhook-tests
       TEST_GITHUB_TOKEN: ${{ secrets.GH_APPS_TOKEN }}
       TEST_GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
     steps:
@@ -333,10 +335,25 @@ jobs:
         run: |
           nohup gosmee client --saveDir /tmp/gosmee-replay-gitlab "${TEST_GITLAB_SMEEURL}" "https://${CONTROLLER_DOMAIN_URL}" >> /tmp/gosmee-gitlab.log 2>&1 &
 
-      - name: Run gosmee for second controller (GHE)
+
+      - name: Run gosmee for second controller GHE App
         if: startsWith(matrix.provider, 'github_ghe') || matrix.provider == 'concurrency'
         run: |
-          nohup gosmee client --saveDir /tmp/gosmee-replay-ghe ${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }} "https://ghe.paac-127-0-0-1.nip.io" > /tmp/gosmee-ghe.log 2>&1 &
+          nohup gosmee client --saveDir /tmp/gosmee-replay-ghe "${TEST_GITHUB_SECOND_SMEE_URL}" "https://ghe.paac-127-0-0-1.nip.io" >> /tmp/gosmee-ghe.log 2>&1 &
+
+      - name: Generate unique gosmee URL for GHE webhook tests
+        if: startsWith(matrix.provider, 'github_ghe') || matrix.provider == 'concurrency'
+        id: gosmee-ghe-webhook-url
+        run: |
+          SMEE_URL=$(curl -s https://hook.pipelinesascode.com -o /dev/null -w '%{redirect_url}')
+          echo "Generated unique GHE webhook smee URL: ${SMEE_URL}"
+          echo "url=${SMEE_URL}" >> "$GITHUB_OUTPUT"
+          echo "TEST_GITHUB_SECOND_WEBHOOK_SMEE_URL=${SMEE_URL}" >> "$GITHUB_ENV"
+
+      - name: Run gosmee for second controller GHE webhook
+        if: startsWith(matrix.provider, 'github_ghe') || matrix.provider == 'concurrency'
+        run: |
+          nohup gosmee client --saveDir /tmp/gosmee-replay-ghe-webhook "${TEST_GITHUB_SECOND_WEBHOOK_SMEE_URL}" "https://ghe.paac-127-0-0-1.nip.io" >> /tmp/gosmee-ghe-webhook.log 2>&1 &
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@c0afd6f790e3a5564914980036ebf83216678101 # v3
@@ -375,6 +392,7 @@ jobs:
           TEST_GITHUB_SECOND_REPO_INSTALLATION_ID: 1
           TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP: pipelines-as-code/e2e
           TEST_GITHUB_SECOND_TOKEN: ${{ secrets.TEST_GITHUB_SECOND_TOKEN }}
+          TEST_GITHUB_SECOND_WEBHOOK_ORG: pac-e2e-webhook-tests
           TEST_GITHUB_SECOND_SMEE_URL: ${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}
           TEST_GITHUB_SECOND_WEBHOOK_SECRET: ${{ secrets.TEST_GITHUB_SECOND_WEBHOOK_SECRET }}
           TEST_GITHUB_TOKEN: ${{ secrets.GH_APPS_TOKEN }}
@@ -480,6 +498,7 @@ jobs:
         if: ${{ always() }}
         env:
           TEST_GITHUB_SECOND_SMEE_URL: ${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}
+          TEST_GITHUB_SECOND_WEBHOOK_SMEE_URL: ${{ steps.gosmee-ghe-webhook-url.outputs.url }}
           TEST_GITLAB_SMEEURL: ${{ steps.gosmee-gitlab-url.outputs.url }}
         run: |
           ./hack/gh-workflow-ci.sh collect_logs

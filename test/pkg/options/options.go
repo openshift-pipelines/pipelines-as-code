@@ -11,6 +11,8 @@ type E2E struct {
 	Password           string
 	LightweightTag     bool
 	Settings           v1alpha1.Settings
+	Token              string
+	APIURL             string
 }
 
 var (
