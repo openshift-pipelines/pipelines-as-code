@@ -1,0 +1,58 @@
+baseURL: /
+languageCode: en-us
+title: Pipelines as Code
+copyright: "Pipelines as Code"
+enableGitInfo: true
+disablePathToLower: true
+
+module:
+  imports:
+    - path: github.com/imfing/hextra
+
+markup:
+  highlight:
+    noClasses: false
+    tabWidth: 2
+  goldmark:
+    renderer:
+      unsafe: true
+  tableOfContents:
+    startLevel: 2
+
+menu:
+  main:
+    - name: Documentation
+      url: /docs/
+      weight: 10
+    - name: GitHub
+      url: https://github.com/openshift-pipelines/pipelines-as-code
+      weight: 20
+    - name: Tekton Docs
+      url: https://tekton.dev/docs/
+      weight: 30
+    - name: Search
+      weight: 40
+      params:
+        type: search
+
+params:
+  navbar:
+    displayTitle: true
+    displayLogo: true
+    logo:
+      path: ./images/pac-logo-no-tagline.png
+      dark: ./images/pac-logo-no-tagline.png
+      width: 128
+      height: 128
+  editURL:
+    enable: true
+    base: https://github.com/openshift-pipelines/pipelines-as-code/edit/main/docs/content
+  footer:
+    displayCopyright: true
+    displayPoweredBy: false
+  page:
+    width: normal
+
+privacy:
+  youtube:
+    privacyEnhanced: true

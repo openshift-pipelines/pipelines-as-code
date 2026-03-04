@@ -1,5 +1,5 @@
 TARGET_NAMESPACE=pipelines-as-code
-HUGO_VERSION=0.96.0
+HUGO_VERSION=0.146.0
 GOLANGCI_LINT=golangci-lint
 GOFUMPT=gofumpt
 TKN_BINARY_NAME := tkn

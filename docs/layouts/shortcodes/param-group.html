@@ -1,0 +1,7 @@
+{{/* param-group shortcode — collapsible nested parameter section */}}
+{{ $label := .Get "label" | default "Show Fields" }}
+
+<details class="pac-param-group">
+  <summary class="pac-param-group-summary">{{ $label }}</summary>
+  <div class="pac-param-group-body">{{ .Inner | markdownify }}</div>
+</details>

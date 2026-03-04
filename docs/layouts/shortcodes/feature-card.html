@@ -1,0 +1,54 @@
+{{- /*
+  A custom shortcode for feature cards with layman-friendly popover explanations.
+
+  @param {string} title The title of the feature card (required).
+  @param {string} subtitle The short description of the feature (required).
+  @param {string} popup The layman explanation shown in the popover (required).
+  @param {string} icon Optional icon/emoji for the popover.
+
+  @example {{< feature-card title="PR Status & Checks" subtitle="..." popup="..." >}}
+*/ -}}
+
+{{- $title := .Get "title" -}}
+{{- $subtitle := .Get "subtitle" -}}
+{{- $popup := .Get "popup" -}}
+{{- $icon := .Get "icon" | default "" -}}
+{{- $popoverId := printf "feature-popover-%d" .Ordinal -}}
+
+<div class="hextra-card hx:group hx:flex hx:flex-col hx:justify-start hx:overflow-hidden hx:rounded-lg hx:border hx:border-gray-200 hx:text-current hx:no-underline hx:dark:shadow-none hx:hover:shadow-gray-100 hx:dark:hover:shadow-none hx:shadow-gray-100 hx:active:shadow-sm hx:active:shadow-gray-200 hx:transition-all hx:duration-200 hx:hover:border-gray-300 hx:bg-transparent hx:shadow-xs hx:dark:border-neutral-800 hx:hover:bg-slate-50 hx:hover:shadow-md hx:dark:hover:border-neutral-700 hx:dark:hover:bg-neutral-900">
+  <div class="hx:mt-auto">
+    <span class="hextra-card-icon hx:flex hx:font-semibold hx:items-start hx:gap-2 hx:pt-4 hx:px-4 hx:text-gray-700 hx:hover:text-gray-900 hx:dark:text-neutral-200 hx:dark:hover:text-neutral-50">
+      {{- $title -}}
+    </span>
+    {{- with $subtitle -}}
+      <div class="hextra-card-subtitle hx:line-clamp-3 hx:text-sm hx:font-normal hx:text-gray-500 hx:dark:text-gray-400 hx:px-4 hx:mb-2 hx:mt-2">
+        {{- $subtitle | markdownify -}}
+      </div>
+    {{- end -}}
+    <div class="hx:px-4 hx:pb-4 hx:mt-2">
+      <button 
+        class="pac-feature-card-trigger"
+        popovertarget="{{ $popoverId }}"
+        popovertargetaction="toggle"
+        type="button"
+        aria-label="Learn more about {{ $title }}">
+        <svg class="pac-info-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <span>What's this?</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="{{ $popoverId }}" popover class="pac-feature-popover" role="tooltip">
+  {{- with $icon -}}
+    <div class="pac-popover-icon">{{ . }}</div>
+  {{- end -}}
+  <div class="pac-popover-content">
+    {{- $popup | markdownify -}}
+  </div>
+</div>
+{{- /* Strip trailing newline */ -}}
