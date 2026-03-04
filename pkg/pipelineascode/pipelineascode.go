@@ -2,7 +2,10 @@ package pipelineascode
 
 import (
 	"context"
+	"crypto/md5" //nolint:gosec
+	"encoding/hex"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/action"
@@ -205,6 +208,20 @@ func (p *PacRun) Run(ctx context.Context) error {
 	return nil
 }
 
+func (p *PacRun) generateFingerprint(pr *tektonv1.PipelineRun, repoName string) string {
+	prName := pr.GetName()
+	if prName == "" {
+		prName = pr.GetGenerateName()
+	}
+
+	headBranch := strings.TrimPrefix(p.event.HeadBranch, "refs/heads/")
+	headBranch = strings.TrimPrefix(headBranch, "refs/tags/")
+
+	data := fmt.Sprintf("%s-%s-%s-%s", p.event.SHA, prName, headBranch, repoName)
+	hash := md5.Sum([]byte(data)) //nolint:gosec
+	return hex.EncodeToString(hash[:])[:16]
+}
+
 func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.PipelineRun, error) {
 	var gitAuthSecretName string
 	prName := match.PipelineRun.GetName()
@@ -217,6 +234,31 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 		p.event.SHA,
 		p.event.BaseBranch,
 	)
+
+	if p.pacInfo.DeduplicatePipelineRuns {
+		fingerprint := p.generateFingerprint(match.PipelineRun, match.Repo.GetName())
+
+		// Check for existing run with same fingerprint
+		labelSelector := fmt.Sprintf("%s=%s", keys.PipelineRunFingerprint, fingerprint)
+		existing, err := p.run.Clients.Tekton.TektonV1().PipelineRuns(match.Repo.GetNamespace()).List(ctx, metav1.ListOptions{
+			LabelSelector: labelSelector,
+		})
+		if err == nil {
+			for i := range existing.Items {
+				pr := &existing.Items[i]
+				if !pr.IsDone() {
+					p.logger.Infof("Skipping duplicate PipelineRun - fingerprint %s already exists: %s",
+						fingerprint, pr.GetName())
+					return pr, nil
+				}
+			}
+		}
+		// Add fingerprint to labels so it gets created with it
+		if match.PipelineRun.Labels == nil {
+			match.PipelineRun.Labels = map[string]string{}
+		}
+		match.PipelineRun.Labels[keys.PipelineRunFingerprint] = fingerprint
+	}
 
 	// Automatically create a secret with the token to be reused by git-clone task
 	if p.pacInfo.SecretAutoCreation {
