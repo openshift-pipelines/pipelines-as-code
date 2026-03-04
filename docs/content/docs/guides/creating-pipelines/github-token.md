@@ -54,6 +54,7 @@ env:
 {{< callout type="info" >}}
 
 - On GitHub Apps, the generated installation token [is available for 8 hours](https://docs.github.com/en/developers/apps/building-github-apps/refreshing-user-to-server-access-tokens).
-- On GitHub Apps, Pipelines-as-Code scopes the token to the repository the event originates from, unless you [configure it differently]({{< relref "/docs/operations/settings#pipelines-as-code-configuration-settings" >}}) on the cluster.
+- On GitHub Apps, Pipelines-as-Code scopes the token to the repository the event originates from, unless you [configure it differently]({{< relref "/docs/api/configmap#secret-management" >}}) on the cluster.
+- To restrict the token to specific extra repositories or understand scoping in detail, see [GitHub Token Scoping]({{< relref "/docs/guides/repository-crd/github-token-scoping" >}}).
 
 {{< /callout >}}

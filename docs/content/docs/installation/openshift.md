@@ -34,7 +34,7 @@ below.
 Since version v0.37.0, Pipelines-as-Code defaults to using Artifact
 Hub. The public Tekton Hub (hub.tekton.dev) has been deprecated and is no longer
 available. You can still use custom self-hosted Tekton Hub instances by
-configuring them as custom catalogs (see [Remote Hub Catalogs]({{< relref "/docs/operations/settings#remote-hub-catalogs" >}})).
+configuring them as custom catalogs (see [Remote Hub Catalogs]({{< relref "/docs/api/configmap#hub-configuration" >}})).
 {{< /callout >}}
 
 ```yaml

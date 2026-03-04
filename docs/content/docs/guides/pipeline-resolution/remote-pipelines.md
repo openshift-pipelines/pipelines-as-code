@@ -3,7 +3,7 @@ title: Remote Pipelines
 weight: 1
 ---
 
-This page explains how to reference a Pipeline stored outside your repository using an annotation on your PipelineRun. Use remote pipelines when you want to share a single Pipeline definition across multiple repositories instead of duplicating it in each `.tekton/` directory.
+This page explains how to reference a Pipeline stored outside your repository using the `pipelinesascode.tekton.dev/pipeline` annotation. Use remote pipelines when you want to share a single Pipeline definition across multiple repositories instead of duplicating it in each `.tekton/` directory. For fetching individual **tasks** from Hub or remote URLs, see [Resolver]({{< relref "_index" >}}).
 
 Only one pipeline annotation (`pipelinesascode.tekton.dev/pipeline`) is allowed per PipelineRun. The value of the annotation must contain exactly one pipeline. Numbered annotations like `pipelinesascode.tekton.dev/pipeline-1` are not supported.
 
@@ -49,7 +49,7 @@ pipelinesascode.tekton.dev/pipeline: "buildpacks:0.1"
 
 ### Custom hub support for Pipelines
 
-If your cluster administrator has [configured]({{< relref "/docs/operations/settings#remote-hub-catalogs" >}}) custom Hub catalogs beyond the default Artifact Hub and Tekton Hub, you can reference them from your template:
+If your cluster administrator has [configured]({{< relref "/docs/api/configmap#hub-configuration" >}}) custom Hub catalogs beyond the default Artifact Hub and Tekton Hub, you can reference them from your template:
 
 ```yaml
 pipelinesascode.tekton.dev/pipeline: "[customcatalog://buildpacks:0.1]" # this will install buildpacks from the custom catalog configured by the cluster administrator as customcatalog
