@@ -17,5 +17,9 @@ After a PipelineRun finishes successfully, Pipelines-as-Code detects this annota
 Pipelines-as-Code skips any PipelineRun in a `Running` or `Pending` state during cleanup. However, it does not skip PipelineRuns with an `Unknown` status.
 
 {{< callout type="info" >}}
-The setting can also be configured globally for a cluster via the [pipelines-as-code ConfigMap]({{< relref "/docs/operations/settings" >}})
+The cleanup limit can also be set globally for all repositories using the
+[`default-max-keep-runs`]({{< relref "/docs/api/configmap#param-default-max-keep-runs" >}})
+ConfigMap field. The
+[`max-keep-run-upper-limit`]({{< relref "/docs/api/configmap#param-max-keep-run-upper-limit" >}})
+field caps the maximum value a user may specify in the annotation.
 {{< /callout >}}

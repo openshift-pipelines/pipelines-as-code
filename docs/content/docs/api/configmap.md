@@ -255,6 +255,10 @@ bitbucket-cloud-additional-source-ip: "192.168.1.0/24, 10.0.0.1"
 
 ### Retention Policies
 
+These settings control the global cleanup defaults. Individual PipelineRuns can
+also set a per-run limit using the `pipelinesascode.tekton.dev/max-keep-runs`
+annotation — see [PipelineRuns Cleanup]({{< relref "/docs/advanced/cleanup" >}}).
+
 {{< param name="max-keep-run-upper-limit" type="integer" id="param-max-keep-run-upper-limit" >}}
 Sets the maximum value that a user can specify in the `max-keep-run` annotation on a PipelineRun. If a user sets a value higher than this limit, Pipelines-as-Code uses the upper limit during cleanup instead.
 
@@ -384,3 +388,13 @@ kubectl apply -f pipelines-as-code-config.yaml
 ```
 
 Most changes take effect immediately. Some settings may require you to restart the Pipelines-as-Code controller.
+
+## See Also
+
+- [Settings]({{< relref "/docs/operations/settings" >}}) - Overview of global and per-repository configuration layers
+- [Configuration]({{< relref "/docs/operations/configuration" >}}) - How to view and apply ConfigMap changes
+- [Repository CR Settings Reference]({{< relref "/docs/api/settings" >}}) - Per-repository overrides
+- [PipelineRuns Cleanup]({{< relref "/docs/advanced/cleanup" >}}) - Per-run retention using annotations
+- [Global Repository Settings]({{< relref "/docs/operations/global-repository-settings" >}}) - Configure default settings for all repositories
+- [Logging Configuration]({{< relref "/docs/operations/logging" >}}) - Configure log levels and debugging
+- [Metrics]({{< relref "/docs/operations/metrics" >}}) - Monitor Pipelines-as-Code with Prometheus

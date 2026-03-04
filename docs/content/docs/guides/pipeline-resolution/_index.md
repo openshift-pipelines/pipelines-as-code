@@ -3,7 +3,7 @@ title: Resolver
 weight: 3
 ---
 
-This page explains how the Pipelines-as-Code resolver processes your `.tekton/` directory and assembles self-contained PipelineRuns. Understanding resolution helps you structure your pipelines, troubleshoot missing task references, and take advantage of remote task fetching.
+This page explains how the Pipelines-as-Code resolver processes your `.tekton/` directory and assembles self-contained PipelineRuns. It covers the overall resolution process and the `pipelinesascode.tekton.dev/task` annotation for fetching tasks from Artifact Hub, HTTP URLs, or your repository. For the `pipelinesascode.tekton.dev/pipeline` annotation that references remote Pipelines, see [Remote Pipelines]({{< relref "remote-pipelines" >}}).
 
 The resolver exists to solve a practical problem: Tekton PipelineRuns can reference external Tasks and Pipelines by name, but those references must be available on the cluster at runtime. Rather than requiring you to pre-install every Task, Pipelines-as-Code resolves all references at submission time and embeds everything into a single PipelineRun. This ensures your pipeline is fully self-contained and portable.
 
@@ -94,7 +94,7 @@ pipelinesascode.tekton.dev/task: "git-clone:0.9.0"
 
 #### Custom hub support for tasks
 
-If your cluster administrator has [configured]({{< relref "/docs/operations/settings#remote-hub-catalogs" >}}) custom Hub catalogs beyond the default Artifact Hub and Tekton Hub, you can reference them from your template:
+If your cluster administrator has [configured]({{< relref "/docs/api/configmap#hub-configuration" >}}) custom Hub catalogs beyond the default Artifact Hub and Tekton Hub, you can reference them from your template:
 
 ```yaml
 pipelinesascode.tekton.dev/task: "[customcatalog://curl]" # this will install curl from the custom catalog configured by the cluster administrator as customcatalog
@@ -134,7 +134,7 @@ Pipelines-as-Code uses the GitHub API with the generated token to fetch that fil
 
 GitHub App tokens are scoped to the owner or organization where the repository is located. If you use the GitHub webhook method instead, you can fetch any private or public repository on any organization where the personal token has access.
 
-You can control this behavior with the `secret-github-app-token-scoped` and `secret-github-app-scope-extra-repos` settings described in the [settings documentation]({{< relref "/docs/operations/settings" >}}).
+You can control this behavior with the `secret-github-app-token-scoped` and `secret-github-app-scope-extra-repos` settings described in the [settings documentation]({{< relref "/docs/api/configmap" >}}).
 
 #### GitLab
 
