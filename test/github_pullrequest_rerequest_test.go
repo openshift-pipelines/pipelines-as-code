@@ -22,9 +22,6 @@ import (
 // TestGithubPullRerequest is a test that will create a pull request and check
 // if we can rerequest a specific check or the full check suite.
 func TestGithubGHEPullRerequest(t *testing.T) {
-	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
-		t.Skip("Skipping test since only enabled for nightly")
-	}
 	ctx := context.TODO()
 	g := &tgithub.PRTest{
 		Label:     "Github Rerequest",

@@ -55,9 +55,6 @@ func TestGithubGHEPullRequest(t *testing.T) {
 }
 
 func TestGithubGHEPullRequestMultiples(t *testing.T) {
-	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
-		t.Skip("Skipping test since only enabled for nightly")
-	}
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label:     "Github multiple PullRequest",
@@ -69,9 +66,6 @@ func TestGithubGHEPullRequestMultiples(t *testing.T) {
 }
 
 func TestGithubGHEPullRequestMatchOnCEL(t *testing.T) {
-	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
-		t.Skip("Skipping test since only enabled for nightly")
-	}
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label:     "Github CEL Match",
@@ -150,19 +144,13 @@ func TestGithubGHEPullRequestCELMatchOnTitle(t *testing.T) {
 	defer g.TearDown(ctx, t)
 }
 
-func TestGithubPullRequestWebhook(t *testing.T) {
-	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
-		t.Skip("Skipping test since only enabled for nightly")
-	}
-	if os.Getenv("TEST_GITHUB_REPO_OWNER_WEBHOOK") == "" {
-		t.Skip("TEST_GITHUB_REPO_OWNER_WEBHOOK is not set")
-		return
-	}
+func TestGithubGHEPullRequestWebhook(t *testing.T) {
 	ctx := context.Background()
 
 	g := &tgithub.PRTest{
 		Label:     "Github PullRequest onWebhook",
 		YamlFiles: []string{"testdata/pipelinerun.yaml"},
+		GHE:       true,
 		Webhook:   true,
 	}
 	g.RunPullRequest(ctx, t)
@@ -665,7 +653,7 @@ func TestGithubGHEPullandPushMatchTriggerOnlyPull(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestGithubDisableCommentsOnPR(t *testing.T) {
+func TestGithubGHEDisableCommentsOnPR(t *testing.T) {
 	if os.Getenv("TEST_GITHUB_REPO_OWNER_WEBHOOK") == "" {
 		t.Skip("TEST_GITHUB_REPO_OWNER_WEBHOOK is not set")
 		return
@@ -675,6 +663,7 @@ func TestGithubDisableCommentsOnPR(t *testing.T) {
 	g := &tgithub.PRTest{
 		Label:     "Github PullRequest onWebhook",
 		YamlFiles: []string{"testdata/pipelinerun.yaml"},
+		GHE:       true,
 		Webhook:   true,
 	}
 

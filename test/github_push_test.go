@@ -11,15 +11,11 @@ import (
 )
 
 func TestGithubPush(t *testing.T) {
-	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
-		t.Skip("Skipping test since only enabled for nightly")
-	}
 	ctx := context.Background()
 	if os.Getenv("TEST_GITHUB_REPO_OWNER_WEBHOOK") == "" {
 		g := &tgithub.PRTest{
 			Label:     "Github push request on Webhook",
 			YamlFiles: []string{"testdata/pipelinerun-on-push.yaml"},
-			GHE:       false,
 			Webhook:   true,
 		}
 		g.RunPushRequest(ctx, t)

@@ -19,20 +19,17 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-// TestGithubCommentStrategyUpdateCELErrorReplacement tests:
+// TestGithubGHECommentStrategyUpdateCELErrorReplacement tests:
 // 1. A CEL error comment is posted for a PLR
 // 2. After fixing the CEL error with a new commit, the same comment is updated with success status
 // 3. Only one comment exists.
-func TestGithubCommentStrategyUpdateCELErrorReplacement(t *testing.T) {
-	if os.Getenv("TEST_GITHUB_REPO_OWNER_WEBHOOK") == "" {
-		t.Skip("TEST_GITHUB_REPO_OWNER_WEBHOOK is not set")
-	}
-
+func TestGithubGHECommentStrategyUpdateCELErrorReplacement(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label:         "Github Comment Strategy CEL Error",
 		YamlFiles:     []string{"testdata/failures/pipelinerun-invalid-cel.yaml"},
 		Webhook:       true,
+		GHE:           true,
 		NoStatusCheck: true,
 	}
 
@@ -141,19 +138,16 @@ func TestGithubCommentStrategyUpdateCELErrorReplacement(t *testing.T) {
 		"Comment should contain success status")
 }
 
-// TestGithubCommentStrategyUpdateMultiplePLRs tests:
+// TestGithubGHECommentStrategyUpdateMultiplePLRs tests:
 // 1. Multiple PLRs in one PR each create their own comment
 // 2. Each PLR only updates its own comment (no cross-updates)
 // 3. Comments are correctly identified by their unique markers.
-func TestGithubCommentStrategyUpdateMultiplePLRs(t *testing.T) {
-	if os.Getenv("TEST_GITHUB_REPO_OWNER_WEBHOOK") == "" {
-		t.Skip("TEST_GITHUB_REPO_OWNER_WEBHOOK is not set")
-	}
-
+func TestGithubGHECommentStrategyUpdateMultiplePLRs(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label:     "Github Comment Strategy Multiple PLRs",
 		YamlFiles: []string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-clone.yaml"},
+		GHE:       true,
 		Webhook:   true,
 	}
 
@@ -249,15 +243,11 @@ func TestGithubCommentStrategyUpdateMultiplePLRs(t *testing.T) {
 	}
 }
 
-// TestGithubCommentStrategyUpdateMarkerMatchingWithRegexChars tests:
+// TestGithubGHECommentStrategyUpdateMarkerMatchingWithRegexChars tests:
 // 1. PLR names containing regex-relevant characters (dots, brackets, etc.) are handled correctly
 // 2. Marker matching remains exact even with special characters
 // 3. No cross-contamination between PLRs with similar names.
-func TestGithubCommentStrategyUpdateMarkerMatchingWithRegexChars(t *testing.T) {
-	if os.Getenv("TEST_GITHUB_REPO_OWNER_WEBHOOK") == "" {
-		t.Skip("TEST_GITHUB_REPO_OWNER_WEBHOOK is not set")
-	}
-
+func TestGithubGHECommentStrategyUpdateMarkerMatchingWithRegexChars(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label: "Github Comment Strategy Regex Chars",
@@ -265,6 +255,7 @@ func TestGithubCommentStrategyUpdateMarkerMatchingWithRegexChars(t *testing.T) {
 			"testdata/pipelinerun-regex-chars-dots.yaml",
 			"testdata/pipelinerun-regex-chars-brackets.yaml",
 		},
+		GHE:     true,
 		Webhook: true,
 	}
 
