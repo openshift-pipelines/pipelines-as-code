@@ -77,7 +77,7 @@ spec:
                 }
                 cd $(git rev-parse --show-toplevel)/docs
                 url="${UPLOADER_PUBLIC_URL}/docs/{{ pull_request_number }}"
-                ${hugobin} --gc --minify --canonifyURLs -d {{ pull_request_number }} -b ${url}
+                ${hugobin} build --gc --minify -d {{ pull_request_number }} -b ${url}
                 echo "Preview URL: ${url}"
             - name: upload-to-static-server
               # it has curl and we already pulled it
