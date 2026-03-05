@@ -122,7 +122,7 @@ spec:
                 - name: target
                   value: oci://image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/cache-go:{{hash}}
                 - name: fetched
-                  value: $(tasks.cached-fetch.results.fetched)
+                  value: $(steps.cache-fetch.results.fetched)
                 - name: cachePath
                   value: $(workspaces.source.path)/go-build-cache
                 - name: workingdir
