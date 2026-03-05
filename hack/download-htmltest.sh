@@ -23,7 +23,7 @@ detect_os_arch() {
 	# Detect OS
 	case "$(uname -s)" in
 	Linux*) os=linux ;;
-	Darwin*) os=darwin ;;
+	Darwin*) os=macos ;;
 	*) os="UNKNOWN" ;;
 	esac
 
