@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2"
+	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v3"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	pacrepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
@@ -16,7 +16,7 @@ const webhookSecretName = "webhook-secret"
 
 // CreateToken creates gitea token with all scopes.
 func CreateToken(topts *TestOpts) (string, error) {
-	token, _, err := topts.GiteaCNX.Client().CreateAccessToken(forgejo.CreateAccessTokenOption{
+	token, _, err := topts.GiteaCNX.Client().CreateAccessToken(topts.Opts.Organization, forgejo.CreateAccessTokenOption{
 		Name:   topts.TargetNS,
 		Scopes: []forgejo.AccessTokenScope{forgejo.AccessTokenScopeAll},
 	})
