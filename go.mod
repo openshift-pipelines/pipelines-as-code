@@ -3,7 +3,7 @@ module github.com/openshift-pipelines/pipelines-as-code
 go 1.25.0
 
 require (
-	codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2 v2.2.0
+	codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v3 v3.0.0
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/bradleyfalzon/ghinstallation/v2 v2.17.0
 	github.com/chzyer/readline v1.5.1
@@ -56,6 +56,8 @@ require (
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.4 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
+	github.com/go-openapi/errors v0.22.6 // indirect
+	github.com/go-openapi/strfmt v0.25.0 // indirect
 	github.com/go-openapi/swag/cmdutils v0.25.4 // indirect
 	github.com/go-openapi/swag/conv v0.25.4 // indirect
 	github.com/go-openapi/swag/fileutils v0.25.4 // indirect
@@ -67,10 +69,13 @@ require (
 	github.com/go-openapi/swag/stringutils v0.25.4 // indirect
 	github.com/go-openapi/swag/typeutils v0.25.4 // indirect
 	github.com/go-openapi/swag/yamlutils v0.25.4 // indirect
+	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
+	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/rickb777/plural v1.4.7 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
+	go.mongodb.org/mongo-driver v1.17.7 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
