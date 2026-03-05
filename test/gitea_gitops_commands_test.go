@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	forgejo "codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2"
+	forgejo "codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v3"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"

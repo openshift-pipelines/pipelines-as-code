@@ -1,9 +1,11 @@
 # cel.dev/expr v0.25.1
 ## explicit; go 1.23.0
 cel.dev/expr
-# codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2 v2.2.0
-## explicit; go 1.23.0
-codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2
+# codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v3 v3.0.0
+## explicit; go 1.25
+codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v3
+codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v3/internal/generated/models
+codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v3/models
 # contrib.go.opencensus.io/exporter/ocagent v0.7.1-0.20200907061046-05415f1de66d
 ## explicit; go 1.13
 contrib.go.opencensus.io/exporter/ocagent
@@ -138,6 +140,9 @@ github.com/go-jose/go-jose/v4/json
 # github.com/go-logr/logr v1.4.3
 ## explicit; go 1.18
 github.com/go-logr/logr
+# github.com/go-openapi/errors v0.22.6
+## explicit; go 1.24.0
+github.com/go-openapi/errors
 # github.com/go-openapi/jsonpointer v0.22.4
 ## explicit; go 1.24.0
 github.com/go-openapi/jsonpointer
@@ -145,6 +150,9 @@ github.com/go-openapi/jsonpointer
 ## explicit; go 1.24.0
 github.com/go-openapi/jsonreference
 github.com/go-openapi/jsonreference/internal
+# github.com/go-openapi/strfmt v0.25.0
+## explicit; go 1.24.0
+github.com/go-openapi/strfmt
 # github.com/go-openapi/swag v0.25.4
 ## explicit; go 1.24.0
 github.com/go-openapi/swag
@@ -184,6 +192,10 @@ github.com/go-openapi/swag/typeutils
 # github.com/go-openapi/swag/yamlutils v0.25.4
 ## explicit; go 1.24.0
 github.com/go-openapi/swag/yamlutils
+# github.com/go-viper/mapstructure/v2 v2.4.0
+## explicit; go 1.18
+github.com/go-viper/mapstructure/v2
+github.com/go-viper/mapstructure/v2/internal/errors
 # github.com/gobwas/glob v0.2.3
 ## explicit
 github.com/gobwas/glob
@@ -341,6 +353,9 @@ github.com/modern-go/reflect2
 # github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822
 ## explicit
 github.com/munnerz/goautoneg
+# github.com/oklog/ulid v1.3.1
+## explicit
+github.com/oklog/ulid
 # github.com/openzipkin/zipkin-go v0.4.3
 ## explicit; go 1.20
 github.com/openzipkin/zipkin-go
@@ -459,6 +474,15 @@ github.com/xlzd/gotp
 # gitlab.com/gitlab-org/api/client-go v1.14.0
 ## explicit; go 1.24.0
 gitlab.com/gitlab-org/api/client-go
+# go.mongodb.org/mongo-driver v1.17.7
+## explicit; go 1.18
+go.mongodb.org/mongo-driver/bson
+go.mongodb.org/mongo-driver/bson/bsoncodec
+go.mongodb.org/mongo-driver/bson/bsonoptions
+go.mongodb.org/mongo-driver/bson/bsonrw
+go.mongodb.org/mongo-driver/bson/bsontype
+go.mongodb.org/mongo-driver/bson/primitive
+go.mongodb.org/mongo-driver/x/bsonx/bsoncore
 # go.opencensus.io v0.24.0
 ## explicit; go 1.13
 go.opencensus.io
