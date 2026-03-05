@@ -1,0 +1,17 @@
+{{/* param shortcode — Green-style API field definition block */}}
+{{ $name     := .Get "name" }}
+{{ $type     := .Get "type" }}
+{{ $required := .Get "required" }}
+{{ $default  := .Get "default" }}
+{{ $id       := .Get "id" | default (printf "param-%s" ($name | urlize)) }}
+
+<div class="pac-param" id="{{ $id }}">
+  <div class="pac-param-header">
+    <a class="pac-param-anchor" href="#{{ $id }}">#</a>
+    <span class="pac-param-name">{{ $name }}</span>
+    {{ with $type }}<span class="pac-param-type">{{ . }}</span>{{ end }}
+    {{ if eq $required "true" }}<span class="pac-param-badge pac-param-required">required</span>{{ end }}
+    {{ with $default }}<span class="pac-param-badge pac-param-default">default: {{ . }}</span>{{ end }}
+  </div>
+  <div class="pac-param-body">{{ .Inner | markdownify }}</div>
+</div>
