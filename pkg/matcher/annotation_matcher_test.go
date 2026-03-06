@@ -1822,14 +1822,14 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		runevent info.Event
 	}
 	tests := []struct {
-		name                          string
-		args                          args
-		wantErr                       bool
-		wantPrName                    string
-		wantLog                       []string
-		logLevel                      int
-		repo                          *v1alpha1.Repository
-		seedData                      *testclient.Data
+		name                            string
+		args                            args
+		wantErr                         bool
+		wantPrName                      string
+		wantLog                         []string
+		logLevel                        int
+		repo                            *v1alpha1.Repository
+		seedData                        *testclient.Data
 		wantErrNoFailedPipelineToRetest bool
 	}{
 		{
@@ -2277,7 +2277,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 					URL:           "https://github.com/org/repo",
 				},
 			},
-			wantErr:                       true,
+			wantErr:                         true,
 			wantErrNoFailedPipelineToRetest: true,
 			repo: &v1alpha1.Repository{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-repo", Namespace: "test-ns"},
