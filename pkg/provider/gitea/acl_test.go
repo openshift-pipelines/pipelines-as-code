@@ -25,6 +25,7 @@ func TestCheckPolicyAllowing(t *testing.T) {
 		name                string
 		allowedTeams        []string
 		listOrgReply        string
+		listOrgStatusCode   int
 		listTeamMemberships string
 		wantAllowed         bool
 		wantReason          string
@@ -58,6 +59,13 @@ func TestCheckPolicyAllowing(t *testing.T) {
 			wantReason:   `error while getting org team, error: invalid character 't' in literal true (expecting 'r')`,
 			listOrgReply: `ttttttaaa`,
 		},
+		{
+			name:              "forbidden when listing org teams",
+			allowedTeams:      []string{"allowedTeam"},
+			listOrgStatusCode: http.StatusForbidden,
+			wantAllowed:       false,
+			wantReason:        "unable to list teams on org myorg: the token used doesn't have permission to list teams in this org, make sure the token owner is a member of the org",
+		},
 	}
 
 	for _, tt := range tests {
@@ -69,8 +77,12 @@ func TestCheckPolicyAllowing(t *testing.T) {
 				Organization: "myorg",
 				Sender:       "allowedUser",
 			}
-			if tt.listOrgReply != "" {
+			if tt.listOrgReply != "" || tt.listOrgStatusCode != 0 {
 				mux.HandleFunc(fmt.Sprintf("/orgs/%s/teams", event.Organization), func(rw http.ResponseWriter, _ *http.Request) {
+					if tt.listOrgStatusCode != 0 {
+						rw.WriteHeader(tt.listOrgStatusCode)
+						return
+					}
 					fmt.Fprint(rw, tt.listOrgReply)
 				})
 			}
