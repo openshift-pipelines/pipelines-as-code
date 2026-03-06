@@ -2,6 +2,7 @@ package gitea
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v3"
@@ -15,8 +16,14 @@ import (
 const webhookSecretName = "webhook-secret"
 
 // CreateToken creates gitea token with all scopes.
+// It creates the token for the authenticated admin user rather than the org,
+// because Forgejo 13+ doesn't allow org tokens to list org teams.
 func CreateToken(topts *TestOpts) (string, error) {
-	token, _, err := topts.GiteaCNX.Client().CreateAccessToken(topts.Opts.Organization, forgejo.CreateAccessTokenOption{
+	userInfo, _, err := topts.GiteaCNX.Client().GetMyUserInfo()
+	if err != nil {
+		return "", fmt.Errorf("failed to get current user info: %w", err)
+	}
+	token, _, err := topts.GiteaCNX.Client().CreateAccessToken(userInfo.UserName, forgejo.CreateAccessTokenOption{
 		Name:   topts.TargetNS,
 		Scopes: []forgejo.AccessTokenScope{forgejo.AccessTokenScopeAll},
 	})
