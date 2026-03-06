@@ -1029,27 +1029,44 @@ func (v *Provider) getUserLogin(ctx context.Context, event *info.Event) error {
 	return nil
 }
 
-// Refer https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/authenticating-as-a-github-app-installation
-func (v *Provider) fetchAppSlug(ctx context.Context, apiURL string) (string, error) {
-	ns := info.GetNS(ctx)
-	applicationID, privateKey, err := v.GetAppIDAndPrivateKey(ctx, ns, v.Run.Clients.Kube)
+// GenerateJWT generates a JWT token for GitHub App.
+// It retrieves the application ID and private key, sets the claims, and signs the token.
+func (v *Provider) GenerateJWT(ctx context.Context, ns string, kube kubernetes.Interface) (string, error) {
+	applicationID, privateKey, err := v.GetAppIDAndPrivateKey(ctx, ns, kube)
 	if err != nil {
 		return "", err
 	}
+
 	parsedPK, err := jwt.ParseRSAPrivateKeyFromPEM(privateKey)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse private key: %w", err)
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, &jwt.RegisteredClaims{
+	// The expirationTime claim identifies the expiration time on or after which the JWT MUST NOT be accepted for processing.
+	// Maximum allowed duration is 10 minutes, we use 5 minutes for safety.
+	// See https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-json-web-token-jwt-for-a-github-app
+	now := time.Now()
+	claims := &jwt.RegisteredClaims{
 		Issuer:    fmt.Sprintf("%d", applicationID),
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(5 * time.Minute)),
-	})
+		IssuedAt:  jwt.NewNumericDate(now),
+		ExpiresAt: jwt.NewNumericDate(now.Add(5 * time.Minute)),
+	}
 
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 	tokenString, err := token.SignedString(parsedPK)
 	if err != nil {
 		return "", fmt.Errorf("failed to sign private key: %w", err)
+	}
+
+	return tokenString, nil
+}
+
+// Fetch the app slug used for identifying the application.
+func (v *Provider) fetchAppSlug(ctx context.Context, apiURL string) (string, error) {
+	ns := info.GetNS(ctx)
+	tokenString, err := v.GenerateJWT(ctx, ns, v.Run.Clients.Kube)
+	if err != nil {
+		return "", err
 	}
 
 	client, _, _ := MakeClient(ctx, apiURL, tokenString)

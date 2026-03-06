@@ -16,7 +16,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github/app"
+	githubprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -66,8 +66,9 @@ func install(ctx context.Context, run *params.Run, ios *cli.IOStreams, apiURL st
 		return err
 	}
 	info := &InstallInfo{run: run, apiURL: apiURL}
-	ip := app.NewInstallation(nil, run, nil, nil, targetNs)
-	if jwtToken, err := ip.GenerateJWT(ctx); err == nil {
+	gh := githubprovider.New()
+	gh.Run = run
+	if jwtToken, err := gh.GenerateJWT(ctx, targetNs, run.Clients.Kube); err == nil {
 		info.jwtToken = jwtToken
 		if err := info.get(ctx); err != nil {
 			return err
