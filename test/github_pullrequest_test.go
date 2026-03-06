@@ -150,7 +150,7 @@ func TestGithubGHEPullRequestCELMatchOnTitle(t *testing.T) {
 	defer g.TearDown(ctx, t)
 }
 
-func TestGithubGHEPullRequestWebhook(t *testing.T) {
+func TestGithubGHEWebhookPullRequest(t *testing.T) {
 	ctx := context.Background()
 
 	g := &tgithub.PRTest{
@@ -659,7 +659,7 @@ func TestGithubGHEPullandPushMatchTriggerOnlyPull(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestGithubGHEDisableCommentsOnPR(t *testing.T) {
+func TestGithubGHEWebhookDisableCommentsOnPR(t *testing.T) {
 	ctx := context.Background()
 
 	g := &tgithub.PRTest{

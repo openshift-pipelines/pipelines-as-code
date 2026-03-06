@@ -42,7 +42,7 @@ func TestGithubGHEPullRequestGitClone(t *testing.T) {
 	defer g.TearDown(ctx, t)
 }
 
-func TestGithubGHEPullRequestPrivateRepositoryOnWebhook(t *testing.T) {
+func TestGithubGHEWebhookPullRequestPrivateRepository(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label:     "Github GHE Rerequest",
