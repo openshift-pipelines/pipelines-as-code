@@ -53,7 +53,7 @@ func TestGithubGHEPullRequestConcurrencyMultiplePR(t *testing.T) {
 	}
 	// set concurrency
 	opts.Concurrency = maxNumberOfConcurrentPipelineRuns
-	err = tgithub.CreateCRD(ctx, t, repoinfo, runcnx, opts, targetNS)
+	err = tgithub.CreateCRD(ctx, t, repoinfo, runcnx, opts, ghcnx, targetNS)
 	assert.NilError(t, err)
 
 	allPullRequests := []tgithub.PRTest{}

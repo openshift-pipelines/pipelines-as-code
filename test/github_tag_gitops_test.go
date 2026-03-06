@@ -27,7 +27,7 @@ func TestGithubGHEGitOpsCommentOnTag(t *testing.T) {
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		t.Errorf("Repository %s not found in %s", opts.Repo, opts.Organization)
 	}
-	err = tgithub.CreateCRD(ctx, t, repoinfo, runcnx, opts, targetNS)
+	err = tgithub.CreateCRD(ctx, t, repoinfo, runcnx, opts, ghcnx, targetNS)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("Repository %s has been created successfully", targetNS)
 

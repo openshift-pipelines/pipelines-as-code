@@ -163,7 +163,7 @@ func (g *PRTest) RunPullRequest(ctx context.Context, t *testing.T) {
 	if g.Options.Settings.Github != nil {
 		opts.Settings = g.Options.Settings
 	}
-	err = CreateCRD(ctx, t, repoinfo, runcnx, opts, targetNS)
+	err = CreateCRD(ctx, t, repoinfo, runcnx, opts, ghcnx, targetNS)
 	assert.NilError(t, err)
 
 	yamlEntries := map[string]string{}
@@ -289,7 +289,7 @@ func (g *PRTest) RunPushRequest(ctx context.Context, t *testing.T) {
 			t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
 		}
 	}
-	err = CreateCRD(ctx, t, repoinfo, runcnx, opts, targetNS)
+	err = CreateCRD(ctx, t, repoinfo, runcnx, opts, ghcnx, targetNS)
 	assert.NilError(t, err)
 
 	yamlEntries := map[string]string{}

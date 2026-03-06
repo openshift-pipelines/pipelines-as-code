@@ -230,7 +230,7 @@ func verifyIncomingWebhook(t *testing.T, randomedString, pipelinerunName string,
 		},
 	}
 
-	err = tgithub.CreateCRDIncoming(ctx, t, repoinfo, runcnx, incoming, opts, randomedString)
+	err = tgithub.CreateCRDIncoming(ctx, t, repoinfo, runcnx, incoming, opts, ghprovider, randomedString)
 	assert.NilError(t, err)
 
 	err = secret.Create(ctx, runcnx, map[string]string{"incoming": incomingSecreteValue}, randomedString, incomingSecretName)

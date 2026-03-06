@@ -246,7 +246,7 @@ func TestGithubGHEPullRequestRetestPullRequestNumberSubstitution(t *testing.T) {
 	if g.Options.Settings.Github != nil {
 		opts.Settings = g.Options.Settings
 	}
-	err = tgithub.CreateCRD(ctx, t, repoinfo, runcnx, opts, targetNS)
+	err = tgithub.CreateCRD(ctx, t, repoinfo, runcnx, opts, ghcnx, targetNS)
 	assert.NilError(t, err)
 
 	tempBaseBranch := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("temp-base-branch")
