@@ -58,10 +58,7 @@ func (g *PRTest) collectGitHubAPICalls(ctx context.Context, _ *testing.T) {
 	if g.GHE {
 		controllerName = "ghe-controller"
 	}
-	ns := g.TargetNamespace
-	if ns == "" {
-		ns = info.GetNS(ctx)
-	}
+	ns := info.GetNS(ctx)
 
 	g.Logger.Infof(
 		"Attempting to collect GitHub API calls from controller: %s in namespace: %s",
