@@ -8,6 +8,7 @@ import (
 	"github.com/google/go-github/v81/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	ghprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/secret"
@@ -15,7 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func CreateCRD(ctx context.Context, t *testing.T, repoinfo *github.Repository, run *params.Run, opts options.E2E, targetNS string) error {
+func CreateCRD(ctx context.Context, t *testing.T, repoinfo *github.Repository, run *params.Run, opts options.E2E, provider *ghprovider.Provider, targetNS string) error {
 	repo := &v1alpha1.Repository{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: targetNS,
@@ -34,16 +35,7 @@ func CreateCRD(ctx context.Context, t *testing.T, repoinfo *github.Repository, r
 	assert.NilError(t, err)
 
 	if opts.DirectWebhook {
-		// Use opts.Token and opts.APIURL if provided (for GHE dynamic repos),
-		// otherwise fall back to environment variables (for public GitHub)
-		token := opts.Token
-		if token == "" {
-			token, _ = os.LookupEnv("TEST_GITHUB_TOKEN")
-		}
-		apiURL := opts.APIURL
-		if apiURL == "" {
-			apiURL, _ = os.LookupEnv("TEST_GITHUB_API_URL")
-		}
+		token, apiURL := getTokenAndURL(provider)
 		webhookSecret, _ := os.LookupEnv("TEST_EL_WEBHOOK_SECRET")
 
 		err := secret.Create(ctx, run,
@@ -74,7 +66,7 @@ func CreateCRD(ctx context.Context, t *testing.T, repoinfo *github.Repository, r
 
 var intPtr = func(val int) *int { return &val }
 
-func CreateCRDIncoming(ctx context.Context, t *testing.T, repoinfo *github.Repository, run *params.Run, incomings *[]v1alpha1.Incoming, opts options.E2E, targetNS string) error {
+func CreateCRDIncoming(ctx context.Context, t *testing.T, repoinfo *github.Repository, run *params.Run, incomings *[]v1alpha1.Incoming, opts options.E2E, provider *ghprovider.Provider, targetNS string) error {
 	repo := &v1alpha1.Repository{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: targetNS,
@@ -93,16 +85,7 @@ func CreateCRDIncoming(ctx context.Context, t *testing.T, repoinfo *github.Repos
 	assert.NilError(t, err)
 
 	if opts.DirectWebhook {
-		// Use opts.Token and opts.APIURL if provided (for GHE dynamic repos),
-		// otherwise fall back to environment variables (for public GitHub)
-		token := opts.Token
-		if token == "" {
-			token, _ = os.LookupEnv("TEST_GITHUB_TOKEN")
-		}
-		apiURL := opts.APIURL
-		if apiURL == "" {
-			apiURL, _ = os.LookupEnv("TEST_GITHUB_API_URL")
-		}
+		token, apiURL := getTokenAndURL(provider)
 		webhookSecret, _ := os.LookupEnv("TEST_EL_WEBHOOK_SECRET")
 
 		err := secret.Create(ctx, run,
@@ -135,4 +118,24 @@ func CreateCRDIncoming(ctx context.Context, t *testing.T, repoinfo *github.Repos
 	err = repository.CreateRepo(ctx, targetNS, run, repo)
 	assert.NilError(t, err)
 	return err
+}
+
+func getTokenAndURL(provider *ghprovider.Provider) (string, string) {
+	token := ""
+	if provider.Token != nil {
+		token = *provider.Token
+	}
+	if token == "" {
+		token, _ = os.LookupEnv("TEST_GITHUB_TOKEN")
+	}
+
+	apiURL := ""
+	if provider.APIURL != nil {
+		apiURL = *provider.APIURL
+	}
+	if apiURL == "" {
+		apiURL, _ = os.LookupEnv("TEST_GITHUB_API_URL")
+	}
+
+	return token, apiURL
 }

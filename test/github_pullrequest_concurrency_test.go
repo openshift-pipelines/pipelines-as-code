@@ -167,7 +167,7 @@ func setupGithubConcurrency(ctx context.Context, t *testing.T, maxNumberOfConcur
 		opts.Concurrency = maxNumberOfConcurrentPipelineRuns
 	}
 
-	err = tgithub.CreateCRD(ctx, t, repoinfo, runcnx, opts, targetNS)
+	err = tgithub.CreateCRD(ctx, t, repoinfo, runcnx, opts, ghcnx, targetNS)
 	assert.NilError(t, err)
 
 	for i := 1; i <= numberOfPipelineRuns; i++ {
