@@ -55,7 +55,18 @@ func ScopeTokenToListOfRepos(ctx context.Context, vcx provider.Interface, pacInf
 			return "", err
 		}
 		for i := range repoListInPerticularNamespace.Items {
-			splitData, err := getURLPathData(repoListInPerticularNamespace.Items[i].Spec.URL)
+			repoItem := &repoListInPerticularNamespace.Items[i]
+
+			if isGitHubRepository(repoItem) {
+				if err := validateGitHubRepoPath(repoItem.Spec.URL); err != nil {
+					msg := fmt.Sprintf("repository %s/%s has invalid GitHub URL format: %v. GitHub URLs must follow org/repo format",
+						repoItem.Namespace, repoItem.Name, err)
+					eventEmitter.EmitMessage(repoItem, zap.ErrorLevel, "InvalidGitHubRepoURL", msg)
+					return "", errors.New(msg)
+				}
+			}
+
+			splitData, err := getURLPathData(repoItem.Spec.URL)
 			if err != nil {
 				return "", err
 			}
@@ -115,5 +126,39 @@ func getURLPathData(urlInfo string) ([]string, error) {
 	if err != nil {
 		return []string{}, err
 	}
+
 	return strings.Split(urlData.Path, "/"), nil
+}
+
+func isGitHubRepository(repo *v1alpha1.Repository) bool {
+	if annotations := repo.GetAnnotations(); annotations != nil {
+		if provider, exists := annotations["pipelinesascode.tekton.dev/git-provider"]; exists {
+			return provider == "github" || provider == "github-enterprise"
+		}
+	}
+
+	if repo.Spec.GitProvider != nil && strings.Contains(repo.Spec.GitProvider.Type, "github") {
+		return true
+	}
+
+	if parsedURL, err := url.Parse(repo.Spec.URL); err == nil && parsedURL.Host == "github.com" {
+		return true
+	}
+
+	return false
+}
+
+func validateGitHubRepoPath(repoURL string) error {
+	parsedURL, err := url.Parse(repoURL)
+	if err != nil {
+		return err
+	}
+
+	// URLs should have path /org/repo: ["", "org", "repo"]
+	pathSegments := strings.Split(parsedURL.Path, "/")
+	if len(pathSegments) != 3 {
+		return fmt.Errorf("GitHub repository URL must follow org/repo format, found %d path segments", len(pathSegments))
+	}
+
+	return nil
 }
