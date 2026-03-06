@@ -19,6 +19,8 @@ type ManagerInterface interface {
 	AddToPendingQueue(repo *v1alpha1.Repository, list []string) error
 	RemoveFromQueue(repoKey, prKey string) bool
 	RemoveAndTakeItemFromQueue(repo *v1alpha1.Repository, run *tektonv1.PipelineRun) string
+	RequeueToPending(repo *v1alpha1.Repository, pr *tektonv1.PipelineRun) bool
+	RequeueToPendingByKey(repoKey, prKey string) bool
 }
 
 func RepoKey(repo *v1alpha1.Repository) string {

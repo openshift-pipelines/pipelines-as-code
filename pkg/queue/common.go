@@ -13,6 +13,7 @@ type Semaphore interface {
 	addToQueue(string, time.Time) bool
 	addToPendingQueue(string, time.Time) bool
 	removeFromQueue(string)
+	requeueToPending(string, time.Time) bool
 	getName() string
 	getLimit() int
 	getCurrentRunning() []string

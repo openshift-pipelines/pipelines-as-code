@@ -185,3 +185,25 @@ func (s *prioritySemaphore) acquire(key string) bool {
 	}
 	return false
 }
+
+func (s *prioritySemaphore) requeueToPending(key string, creationTime time.Time) bool {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	// Only requeue if the pipelinerun is currently in running state.
+	if _, ok := s.running[key]; !ok {
+		return false
+	}
+
+	delete(s.running, key)
+	if len(s.running) < s.limit {
+		s.semaphore.Release(1)
+	}
+
+	if !s.pending.isPending(key) {
+		s.pending.add(key, creationTime.UnixNano())
+		return true
+	}
+
+	return false
+}

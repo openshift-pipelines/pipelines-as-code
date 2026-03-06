@@ -285,3 +285,183 @@ func TestTryAcquireConcurrentAccess(t *testing.T) {
 	assert.Equal(t, acquired3, false)
 	assert.Equal(t, len(repo.getCurrentRunning()), 2)
 }
+
+func TestRequeueToPending(t *testing.T) {
+	repo := newSemaphore("test-requeue", 1)
+	cw := clockwork.NewFakeClock()
+
+	// Add and acquire a key
+	assert.Equal(t, repo.addToQueue("key1", cw.Now()), true)
+	assert.Equal(t, repo.acquireLatest(), "key1")
+	assert.Equal(t, len(repo.getCurrentRunning()), 1)
+	assert.Equal(t, len(repo.getCurrentPending()), 0)
+
+	// Re-queue the running key back to pending
+	result := repo.requeueToPending("key1", cw.Now())
+	assert.Equal(t, result, true)
+	assert.Equal(t, len(repo.getCurrentRunning()), 0)
+	assert.Equal(t, len(repo.getCurrentPending()), 1)
+	assert.Equal(t, repo.getCurrentPending()[0], "key1")
+
+	// Verify it can be acquired again
+	assert.Equal(t, repo.acquireLatest(), "key1")
+	assert.Equal(t, len(repo.getCurrentRunning()), 1)
+	assert.Equal(t, len(repo.getCurrentPending()), 0)
+}
+
+func TestRequeueToPendingNotRunning(t *testing.T) {
+	repo := newSemaphore("test-requeue", 1)
+	cw := clockwork.NewFakeClock()
+
+	// Try to requeue a key that's not running
+	result := repo.requeueToPending("nonexistent", cw.Now())
+	assert.Equal(t, result, false)
+	assert.Equal(t, len(repo.getCurrentRunning()), 0)
+	assert.Equal(t, len(repo.getCurrentPending()), 0)
+}
+
+func TestRequeueToPendingPreservesOrder(t *testing.T) {
+	repo := newSemaphore("test-requeue-order", 2)
+	cw := clockwork.NewFakeClock()
+
+	// Add multiple keys with different timestamps
+	baseTime := cw.Now()
+	assert.Equal(t, repo.addToQueue("key1", baseTime), true)
+	assert.Equal(t, repo.addToQueue("key2", baseTime.Add(1*time.Second)), true)
+	assert.Equal(t, repo.addToQueue("key3", baseTime.Add(2*time.Second)), true)
+
+	// Acquire first two
+	assert.Equal(t, repo.acquireLatest(), "key1")
+	assert.Equal(t, repo.acquireLatest(), "key2")
+	assert.Equal(t, len(repo.getCurrentRunning()), 2)
+	assert.Equal(t, len(repo.getCurrentPending()), 1)
+
+	// Re-queue key2 with its original timestamp
+	result := repo.requeueToPending("key2", baseTime.Add(1*time.Second))
+	assert.Equal(t, result, true)
+	assert.Equal(t, len(repo.getCurrentRunning()), 1)
+	assert.Equal(t, len(repo.getCurrentPending()), 2)
+
+	// Pending queue should maintain order: key1 is still running, so pending should be [key2, key3]
+	pending := repo.getCurrentPending()
+	assert.Equal(t, len(pending), 2)
+	// key2 should come before key3 since it has earlier timestamp
+	assert.Equal(t, pending[0], "key2")
+	assert.Equal(t, pending[1], "key3")
+}
+
+func TestRequeueToPendingReleasesSemaphore(t *testing.T) {
+	repo := newSemaphore("test-requeue-semaphore", 1)
+	cw := clockwork.NewFakeClock()
+
+	// Add and acquire first key
+	assert.Equal(t, repo.addToQueue("key1", cw.Now()), true)
+	assert.Equal(t, repo.acquireLatest(), "key1")
+
+	// Add second key - should go to pending since limit is 1
+	assert.Equal(t, repo.addToQueue("key2", cw.Now().Add(1*time.Second)), true)
+	assert.Equal(t, len(repo.getCurrentPending()), 1)
+
+	// Try to acquire key2 - should fail since semaphore is full
+	assert.Equal(t, repo.acquireLatest(), "")
+
+	// Re-queue key1 back to pending
+	result := repo.requeueToPending("key1", cw.Now())
+	assert.Equal(t, result, true)
+
+	// Now key2 should be acquirable since semaphore slot was released
+	assert.Equal(t, repo.acquireLatest(), "key1") // key1 has earlier timestamp
+	assert.Equal(t, len(repo.getCurrentRunning()), 1)
+	assert.Equal(t, len(repo.getCurrentPending()), 1)
+}
+
+func TestRequeueToPendingWithResize(t *testing.T) {
+	repo := newSemaphore("test-requeue-resize", 2)
+	cw := clockwork.NewFakeClock()
+
+	// Add and acquire two keys
+	assert.Equal(t, repo.addToQueue("key1", cw.Now()), true)
+	assert.Equal(t, repo.addToQueue("key2", cw.Now().Add(1*time.Second)), true)
+	assert.Equal(t, repo.acquireLatest(), "key1")
+	assert.Equal(t, repo.acquireLatest(), "key2")
+	assert.Equal(t, len(repo.getCurrentRunning()), 2)
+
+	// Resize down to 1
+	repo.resize(1)
+	assert.Equal(t, repo.getLimit(), 1)
+
+	// Re-queue key2 - since running count (2) >= limit (1), semaphore should not be released
+	result := repo.requeueToPending("key2", cw.Now().Add(1*time.Second))
+	assert.Equal(t, result, true)
+	assert.Equal(t, len(repo.getCurrentRunning()), 1)
+	assert.Equal(t, len(repo.getCurrentPending()), 1)
+
+	// key1 is still running, and since we're over limit, no new acquisition should work
+	assert.Equal(t, repo.acquireLatest(), "")
+}
+
+func TestRequeueToPendingAlreadyPending(t *testing.T) {
+	repo := newSemaphore("test-requeue-duplicate", 1)
+	cw := clockwork.NewFakeClock()
+
+	// Add and acquire a key
+	assert.Equal(t, repo.addToQueue("key1", cw.Now()), true)
+	assert.Equal(t, repo.acquireLatest(), "key1")
+
+	// Manually add key1 to pending (this shouldn't happen in practice)
+	repo.pending.add("key1", cw.Now().UnixNano())
+
+	// Try to requeue - should fail since it's already pending
+	result := repo.requeueToPending("key1", cw.Now())
+	assert.Equal(t, result, false)
+
+	// key1 should be removed from running but not re-added to pending
+	assert.Equal(t, len(repo.getCurrentRunning()), 0)
+	assert.Equal(t, len(repo.getCurrentPending()), 1)
+}
+
+func TestRequeueToPendingConcurrent(t *testing.T) {
+	repo := newSemaphore("test-requeue-concurrent", 2)
+	cw := clockwork.NewFakeClock()
+
+	// Add and acquire two keys
+	assert.Equal(t, repo.addToQueue("key1", cw.Now()), true)
+	assert.Equal(t, repo.addToQueue("key2", cw.Now().Add(1*time.Second)), true)
+	assert.Equal(t, repo.acquireLatest(), "key1")
+	assert.Equal(t, repo.acquireLatest(), "key2")
+
+	// Channels for synchronization
+	done1 := make(chan bool, 1)
+	done2 := make(chan bool, 1)
+
+	// Concurrently requeue both keys
+	go func() {
+		result := repo.requeueToPending("key1", cw.Now())
+		done1 <- result
+	}()
+
+	go func() {
+		result := repo.requeueToPending("key2", cw.Now().Add(1*time.Second))
+		done2 <- result
+	}()
+
+	// Wait for both with timeout
+	timeout := time.After(3 * time.Second)
+	completed := 0
+	for completed < 2 {
+		select {
+		case result := <-done1:
+			assert.Equal(t, result, true)
+			completed++
+		case result := <-done2:
+			assert.Equal(t, result, true)
+			completed++
+		case <-timeout:
+			t.Fatal("Concurrent requeue operations did not complete within 3 seconds")
+		}
+	}
+
+	// Both should be back in pending
+	assert.Equal(t, len(repo.getCurrentRunning()), 0)
+	assert.Equal(t, len(repo.getCurrentPending()), 2)
+}

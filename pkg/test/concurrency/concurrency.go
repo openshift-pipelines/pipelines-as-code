@@ -48,3 +48,11 @@ func (TestQMI) RemoveAndTakeItemFromQueue(_ *pacv1alpha1.Repository, _ *tektonv1
 	// TODO implement me
 	panic("implement me")
 }
+
+func (TestQMI) RequeueToPending(_ *pacv1alpha1.Repository, _ *tektonv1.PipelineRun) bool {
+	return false
+}
+
+func (TestQMI) RequeueToPendingByKey(_, _ string) bool {
+	return false
+}

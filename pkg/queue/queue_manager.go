@@ -160,6 +160,48 @@ func (qm *Manager) RemoveAndTakeItemFromQueue(repo *v1alpha1.Repository, run *te
 	return ""
 }
 
+func (qm *Manager) RequeueToPending(repo *v1alpha1.Repository, pr *tektonv1.PipelineRun) bool {
+	qm.lock.Lock()
+	defer qm.lock.Unlock()
+
+	repoKey := RepoKey(repo)
+	prKey := PrKey(pr)
+
+	sema, found := qm.queueMap[repoKey]
+	if !found {
+		return false
+	}
+
+	// Use original creation timestamp to maintain queue order.
+	creationTime := pr.GetCreationTimestamp().Time
+	if sema.requeueToPending(prKey, creationTime) {
+		qm.logger.Infof("requeued (%s) to pending for repository (%s) after failure", prKey, repoKey)
+		return true
+	}
+
+	return false
+}
+
+func (qm *Manager) RequeueToPendingByKey(repoKey, prKey string) bool {
+	qm.lock.Lock()
+	defer qm.lock.Unlock()
+
+	sema, found := qm.queueMap[repoKey]
+	if !found {
+		return false
+	}
+
+	// Use current time since we don't have the PR object to get creation timestamp.
+	// This places the PR at the back of the queue, since this is used when we don't
+	// have access to the PR object.
+	if sema.requeueToPending(prKey, time.Now()) {
+		qm.logger.Infof("requeued (%s) to pending for repository (%s) after Get failure", prKey, repoKey)
+		return true
+	}
+
+	return false
+}
+
 // FilterPipelineRunByInProgress filters the given list of PipelineRun names to only include those
 // that are in a "queued" state and have a pending status. It retrieves the PipelineRun objects
 // from the Tekton API and checks their annotations and status to determine if they should be included.

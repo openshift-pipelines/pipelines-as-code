@@ -32,8 +32,10 @@ import (
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/golden"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	knativeapi "knative.dev/pkg/apis"
 	knativeduckv1 "knative.dev/pkg/apis/duck/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
@@ -520,6 +522,87 @@ func TestReconcileKind_SCMReportingLogic(t *testing.T) {
 					assert.Assert(t, !exists, "SCMReportingPLRStarted should not exist when original state is not started")
 				}
 			}
+		})
+	}
+}
+
+func TestIsRetriableError(t *testing.T) {
+	tests := []struct {
+		name      string
+		err       error
+		retriable bool
+	}{
+		{
+			name:      "timeout error should be retriable",
+			err:       fmt.Errorf("cannot update state: %w", apierrors.NewTimeoutError("resource", 30)),
+			retriable: true,
+		},
+		{
+			name:      "server timeout should be retriable",
+			err:       fmt.Errorf("cannot update state: %w", apierrors.NewServerTimeout(schema.GroupResource{Group: "tekton.dev", Resource: "pipelineruns"}, "update", 30)),
+			retriable: true,
+		},
+		{
+			name:      "service unavailable should be retriable",
+			err:       fmt.Errorf("cannot update state: %w", apierrors.NewServiceUnavailable("service temporarily unavailable")),
+			retriable: true,
+		},
+		{
+			name:      "internal error should be retriable",
+			err:       fmt.Errorf("cannot update state: %w", apierrors.NewInternalError(fmt.Errorf("internal server error"))),
+			retriable: true,
+		},
+		{
+			name:      "too many requests should be retriable",
+			err:       fmt.Errorf("cannot update state: %w", apierrors.NewTooManyRequests("rate limited", 30)),
+			retriable: true,
+		},
+		{
+			name:      "conflict error should be retriable",
+			err:       fmt.Errorf("cannot update state: %w", apierrors.NewConflict(schema.GroupResource{Group: "tekton.dev", Resource: "pipelineruns"}, "test-pr", fmt.Errorf("resource version conflict"))),
+			retriable: true,
+		},
+		{
+			name:      "forbidden error should NOT be retriable",
+			err:       fmt.Errorf("cannot update state: %w", apierrors.NewForbidden(schema.GroupResource{Group: "tekton.dev", Resource: "pipelineruns"}, "test-pr", fmt.Errorf("RBAC denied"))),
+			retriable: false,
+		},
+		{
+			name:      "unauthorized error should NOT be retriable",
+			err:       fmt.Errorf("cannot update state: %w", apierrors.NewUnauthorized("unauthorized")),
+			retriable: false,
+		},
+		{
+			name:      "bad request error should NOT be retriable",
+			err:       fmt.Errorf("cannot update state: %w", apierrors.NewBadRequest("invalid configuration")),
+			retriable: false,
+		},
+		{
+			name:      "not found error should NOT be retriable",
+			err:       fmt.Errorf("cannot update state: %w", apierrors.NewNotFound(schema.GroupResource{Group: "tekton.dev", Resource: "pipelineruns"}, "test-pr")),
+			retriable: false,
+		},
+		{
+			name:      "missing secret error should NOT be retriable",
+			err:       fmt.Errorf("cannot initialize git provider client: %w", fmt.Errorf("secret not found")),
+			retriable: false,
+		},
+		{
+			name:      "provider detection error should NOT be retriable",
+			err:       fmt.Errorf("cannot initialize git provider client: %w", fmt.Errorf("cannot detect provider")),
+			retriable: false,
+		},
+		{
+			name:      "generic error should NOT be retriable",
+			err:       fmt.Errorf("some other error"),
+			retriable: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isRetriableError(tt.err)
+			assert.Equal(t, result, tt.retriable, "error: %v", tt.err)
 		})
 	}
 }

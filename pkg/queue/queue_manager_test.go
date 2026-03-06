@@ -338,3 +338,290 @@ func TestFilterPipelineRunByInProgress(t *testing.T) {
 	expected := []string{"test-ns/pr1"}
 	assert.DeepEqual(t, filtered, expected)
 }
+
+func TestQueueManagerRequeueToPending(t *testing.T) {
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observer).Sugar()
+
+	qm := NewManager(logger)
+	repo := newTestRepo(1)
+	cw := clockwork.NewFakeClock()
+
+	// Add and acquire a PR
+	pr := newTestPR("first", cw.Now(), nil, nil, tektonv1.PipelineRunSpec{})
+	started, err := qm.AddListToRunningQueue(repo, []string{PrKey(pr)})
+	assert.NilError(t, err)
+	assert.Equal(t, len(started), 1)
+	assert.Equal(t, len(qm.RunningPipelineRuns(repo)), 1)
+	assert.Equal(t, len(qm.QueuedPipelineRuns(repo)), 0)
+
+	// Re-queue the running PR back to pending
+	result := qm.RequeueToPending(repo, pr)
+	assert.Equal(t, result, true)
+	assert.Equal(t, len(qm.RunningPipelineRuns(repo)), 0)
+	assert.Equal(t, len(qm.QueuedPipelineRuns(repo)), 1)
+	assert.Equal(t, qm.QueuedPipelineRuns(repo)[0], PrKey(pr))
+}
+
+func TestQueueManagerRequeueToPendingNotRunning(t *testing.T) {
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observer).Sugar()
+
+	qm := NewManager(logger)
+	repo := newTestRepo(1)
+	cw := clockwork.NewFakeClock()
+
+	// Try to requeue a PR that was never added
+	pr := newTestPR("nonexistent", cw.Now(), nil, nil, tektonv1.PipelineRunSpec{})
+	result := qm.RequeueToPending(repo, pr)
+	assert.Equal(t, result, false)
+}
+
+func TestQueueManagerRequeueToPendingNoSemaphore(t *testing.T) {
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observer).Sugar()
+
+	qm := NewManager(logger)
+	repo := newTestRepo(1)
+	cw := clockwork.NewFakeClock()
+
+	// Try to requeue without initializing the semaphore
+	pr := newTestPR("test", cw.Now(), nil, nil, tektonv1.PipelineRunSpec{})
+	result := qm.RequeueToPending(repo, pr)
+	assert.Equal(t, result, false)
+}
+
+func TestQueueManagerRequeueToPendingAfterFailure(t *testing.T) {
+	// Skip if we are running on OSX, there is a problem with ordering only happening on arm64
+	skipOnOSX64(t)
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observer).Sugar()
+
+	qm := NewManager(logger)
+	repo := newTestRepo(1)
+	cw := clockwork.NewFakeClock()
+
+	// Add three PRs
+	prFirst := newTestPR("first", cw.Now(), nil, nil, tektonv1.PipelineRunSpec{})
+	prSecond := newTestPR("second", cw.Now().Add(1*time.Second), nil, nil, tektonv1.PipelineRunSpec{})
+	prThird := newTestPR("third", cw.Now().Add(2*time.Second), nil, nil, tektonv1.PipelineRunSpec{})
+
+	started, err := qm.AddListToRunningQueue(repo, []string{PrKey(prFirst), PrKey(prSecond), PrKey(prThird)})
+	assert.NilError(t, err)
+	assert.Equal(t, len(started), 1)
+	assert.Equal(t, started[0], PrKey(prFirst))
+	assert.Equal(t, len(qm.RunningPipelineRuns(repo)), 1)
+	assert.Equal(t, len(qm.QueuedPipelineRuns(repo)), 2)
+
+	// Simulate failure: first PR fails to start, so we requeue it
+	result := qm.RequeueToPending(repo, prFirst)
+	assert.Equal(t, result, true)
+
+	// Now we have all three in pending, ordered by creation time
+	assert.Equal(t, len(qm.RunningPipelineRuns(repo)), 0)
+	assert.Equal(t, len(qm.QueuedPipelineRuns(repo)), 3)
+
+	// Try to start again - first should be at the front
+	started, err = qm.AddListToRunningQueue(repo, []string{PrKey(prFirst), PrKey(prSecond), PrKey(prThird)})
+	assert.NilError(t, err)
+	assert.Equal(t, len(started), 1)
+	assert.Equal(t, started[0], PrKey(prFirst))
+}
+
+func TestQueueManagerRequeueToPendingPreservesOrder(t *testing.T) {
+	// Skip if we are running on OSX, there is a problem with ordering only happening on arm64
+	skipOnOSX64(t)
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observer).Sugar()
+
+	qm := NewManager(logger)
+	repo := newTestRepo(2)
+	cw := clockwork.NewFakeClock()
+
+	// Add three PRs with different timestamps
+	prFirst := newTestPR("first", cw.Now(), nil, nil, tektonv1.PipelineRunSpec{})
+	prSecond := newTestPR("second", cw.Now().Add(1*time.Second), nil, nil, tektonv1.PipelineRunSpec{})
+	prThird := newTestPR("third", cw.Now().Add(2*time.Second), nil, nil, tektonv1.PipelineRunSpec{})
+
+	started, err := qm.AddListToRunningQueue(repo, []string{PrKey(prFirst), PrKey(prSecond), PrKey(prThird)})
+	assert.NilError(t, err)
+	assert.Equal(t, len(started), 2) // Limit is 2
+	assert.Equal(t, len(qm.RunningPipelineRuns(repo)), 2)
+	assert.Equal(t, len(qm.QueuedPipelineRuns(repo)), 1)
+
+	// Re-queue second PR (which has middle timestamp)
+	result := qm.RequeueToPending(repo, prSecond)
+	assert.Equal(t, result, true)
+
+	// Should have first running, second and third pending
+	assert.Equal(t, len(qm.RunningPipelineRuns(repo)), 1)
+	assert.Equal(t, len(qm.QueuedPipelineRuns(repo)), 2)
+
+	// Verify both second and third are in pending (order may vary in heap)
+	pending := qm.QueuedPipelineRuns(repo)
+	assert.Equal(t, len(pending), 2)
+	foundSecond := false
+	foundThird := false
+	for _, pr := range pending {
+		if pr == PrKey(prSecond) {
+			foundSecond = true
+		}
+		if pr == PrKey(prThird) {
+			foundThird = true
+		}
+	}
+	assert.Equal(t, foundSecond, true)
+	assert.Equal(t, foundThird, true)
+
+	// Verify first is still running
+	running := qm.RunningPipelineRuns(repo)
+	assert.Equal(t, len(running), 1)
+	assert.Equal(t, running[0], PrKey(prFirst))
+}
+
+func TestQueueManagerRequeueToPendingIntegrationWithCompletion(t *testing.T) {
+	// Skip if we are running on OSX, there is a problem with ordering only happening on arm64
+	skipOnOSX64(t)
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observer).Sugar()
+
+	qm := NewManager(logger)
+	repo := newTestRepo(1)
+	cw := clockwork.NewFakeClock()
+
+	// Add two PRs
+	prFirst := newTestPR("first", cw.Now(), nil, nil, tektonv1.PipelineRunSpec{})
+	prSecond := newTestPR("second", cw.Now().Add(1*time.Second), nil, nil, tektonv1.PipelineRunSpec{})
+
+	started, err := qm.AddListToRunningQueue(repo, []string{PrKey(prFirst), PrKey(prSecond)})
+	assert.NilError(t, err)
+	assert.Equal(t, len(started), 1)
+	assert.Equal(t, started[0], PrKey(prFirst))
+
+	// Simulate failure and requeue first PR
+	result := qm.RequeueToPending(repo, prFirst)
+	assert.Equal(t, result, true)
+
+	// Both should be pending now
+	assert.Equal(t, len(qm.QueuedPipelineRuns(repo)), 2)
+	assert.Equal(t, len(qm.RunningPipelineRuns(repo)), 0)
+
+	// Manually acquire first from queue (simulating retry)
+	started, err = qm.AddListToRunningQueue(repo, []string{PrKey(prFirst), PrKey(prSecond)})
+	assert.NilError(t, err)
+	assert.Equal(t, len(started), 1)
+	assert.Equal(t, started[0], PrKey(prFirst))
+
+	// Now complete first and verify second starts
+	next := qm.RemoveAndTakeItemFromQueue(repo, prFirst)
+	assert.Equal(t, next, PrKey(prSecond))
+	assert.Equal(t, len(qm.RunningPipelineRuns(repo)), 1)
+	assert.Equal(t, len(qm.QueuedPipelineRuns(repo)), 0)
+}
+
+func TestQueueManagerRequeueToPendingByKey(t *testing.T) {
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observer).Sugar()
+
+	qm := NewManager(logger)
+	repo := newTestRepo(1)
+	cw := clockwork.NewFakeClock()
+
+	// Add and acquire a PR
+	pr := newTestPR("first", cw.Now(), nil, nil, tektonv1.PipelineRunSpec{})
+	started, err := qm.AddListToRunningQueue(repo, []string{PrKey(pr)})
+	assert.NilError(t, err)
+	assert.Equal(t, len(started), 1)
+	assert.Equal(t, len(qm.RunningPipelineRuns(repo)), 1)
+	assert.Equal(t, len(qm.QueuedPipelineRuns(repo)), 0)
+
+	// Re-queue using just the key (simulating Get failure where we don't have PR object)
+	result := qm.RequeueToPendingByKey(RepoKey(repo), PrKey(pr))
+	assert.Equal(t, result, true)
+	assert.Equal(t, len(qm.RunningPipelineRuns(repo)), 0)
+	assert.Equal(t, len(qm.QueuedPipelineRuns(repo)), 1)
+	assert.Equal(t, qm.QueuedPipelineRuns(repo)[0], PrKey(pr))
+}
+
+func TestQueueManagerRequeueToPendingByKeyInvalidRepo(t *testing.T) {
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observer).Sugar()
+
+	qm := NewManager(logger)
+	repo := newTestRepo(1)
+	cw := clockwork.NewFakeClock()
+
+	pr := newTestPR("test", cw.Now(), nil, nil, tektonv1.PipelineRunSpec{})
+
+	// Try to requeue without initializing the semaphore
+	result := qm.RequeueToPendingByKey(RepoKey(repo), PrKey(pr))
+	assert.Equal(t, result, false)
+}
+
+func TestQueueManagerRequeueToPendingByKeyNotRunning(t *testing.T) {
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observer).Sugar()
+
+	qm := NewManager(logger)
+	repo := newTestRepo(1)
+	cw := clockwork.NewFakeClock()
+
+	// Initialize the semaphore by adding a PR to pending
+	pr := newTestPR("first", cw.Now(), nil, nil, tektonv1.PipelineRunSpec{})
+	err := qm.AddToPendingQueue(repo, []string{PrKey(pr)})
+	assert.NilError(t, err)
+
+	// Try to requeue a PR that was never acquired (not in running state)
+	pr2 := newTestPR("second", cw.Now(), nil, nil, tektonv1.PipelineRunSpec{})
+	result := qm.RequeueToPendingByKey(RepoKey(repo), PrKey(pr2))
+	assert.Equal(t, result, false)
+}
+
+func TestRemoveAndTakeItemFromQueueCleansUpOnGetFailure(t *testing.T) {
+	// Test simulates the scenario where RemoveAndTakeItemFromQueue returns a key,
+	// but when we try to Get() the PipelineRun from k8s it fails (e.g., PR was deleted).
+	// We need to ensure the key is removed from the running map to free the semaphore slot.
+	skipOnOSX64(t)
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observer).Sugar()
+
+	qm := NewManager(logger)
+	repo := newTestRepo(1)
+	cw := clockwork.NewFakeClock()
+
+	// Add two PRs
+	prFirst := newTestPR("first", cw.Now(), nil, nil, tektonv1.PipelineRunSpec{})
+	prSecond := newTestPR("second", cw.Now().Add(1*time.Second), nil, nil, tektonv1.PipelineRunSpec{})
+
+	started, err := qm.AddListToRunningQueue(repo, []string{PrKey(prFirst), PrKey(prSecond)})
+	assert.NilError(t, err)
+	assert.Equal(t, len(started), 1)
+	assert.Equal(t, started[0], PrKey(prFirst))
+	assert.Equal(t, len(qm.RunningPipelineRuns(repo)), 1)
+	assert.Equal(t, len(qm.QueuedPipelineRuns(repo)), 1)
+
+	// Complete first PR and get next
+	next := qm.RemoveAndTakeItemFromQueue(repo, prFirst)
+	assert.Equal(t, next, PrKey(prSecond))
+
+	// At this point, second is in running map
+	assert.Equal(t, len(qm.RunningPipelineRuns(repo)), 1)
+	assert.Equal(t, qm.RunningPipelineRuns(repo)[0], PrKey(prSecond))
+
+	// Simulate the scenario: Get() fails (PR was deleted from k8s)
+	// The reconciler should call RemoveFromQueue to clean up
+	// This simulates: _ = r.qm.RemoveFromQueue(queuepkg.RepoKey(repo), next)
+	removed := qm.RemoveFromQueue(RepoKey(repo), next)
+	assert.Equal(t, removed, true)
+
+	// Verify the running map is now empty (semaphore slot freed)
+	assert.Equal(t, len(qm.RunningPipelineRuns(repo)), 0)
+	assert.Equal(t, len(qm.QueuedPipelineRuns(repo)), 0)
+
+	// Add a new PR - should be able to acquire immediately since slot is free
+	prThird := newTestPR("third", cw.Now().Add(2*time.Second), nil, nil, tektonv1.PipelineRunSpec{})
+	started, err = qm.AddListToRunningQueue(repo, []string{PrKey(prThird)})
+	assert.NilError(t, err)
+	assert.Equal(t, len(started), 1)
+	assert.Equal(t, started[0], PrKey(prThird))
+}
