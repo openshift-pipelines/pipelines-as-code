@@ -39,7 +39,7 @@ const (
 
 // ErrNoFailedPipelineToRetest is returned when /retest or /ok-to-test is used
 // but all matching pipelines have already succeeded for this commit.
-var ErrNoFailedPipelineToRetest = errors.New("All PipelineRuns for this commit have already succeeded. Use `/retest <pipeline-name>` to re-run a specific pipeline or `/test` to re-run all pipelines.")
+var ErrNoFailedPipelineToRetest = errors.New("All PipelineRuns for this commit have already succeeded. Use `/retest <pipeline-name>` to re-run a specific pipeline or `/test` to re-run all pipelines.") // nolint:revive,staticcheck
 
 // prunBranch is value from annotations and baseBranch is event.Base value from event.
 func branchMatch(prunBranch, baseBranch string) bool {

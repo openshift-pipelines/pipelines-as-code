@@ -306,16 +306,16 @@ func TestGetPipelineRunsFromRepo(t *testing.T) {
 		TriggerTarget: "pull_request",
 	}
 	retestAllEvent := &info.Event{
-		SHA:                "principale",
-		Organization:       "organizationes",
-		Repository:         "lagaffe",
-		URL:                "https://service/documentation",
-		HeadBranch:         "main",
-		BaseBranch:         "main",
-		Sender:             "fantasio",
-		EventType:          opscomments.RetestAllCommentEventType.String(),
-		TriggerTarget:      "pull_request",
-		PullRequestNumber:  10,
+		SHA:               "principale",
+		Organization:      "organizationes",
+		Repository:        "lagaffe",
+		URL:               "https://service/documentation",
+		HeadBranch:        "main",
+		BaseBranch:        "main",
+		Sender:            "fantasio",
+		EventType:         opscomments.RetestAllCommentEventType.String(),
+		TriggerTarget:     "pull_request",
+		PullRequestNumber: 10,
 	}
 	testExplicitNoMatchPREvent := &info.Event{
 		SHA:           "principale",
