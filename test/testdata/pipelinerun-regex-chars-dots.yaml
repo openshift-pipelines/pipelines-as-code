@@ -5,7 +5,7 @@ metadata:
   name: test.pipeline.v1.0
   annotations:
     pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
-    pipelinesascode.tekton.dev/on-cel-expression: "true"
+    pipelinesascode.tekton.dev/on-event: "[pull_request]"
 spec:
   pipelineSpec:
     tasks:

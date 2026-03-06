@@ -339,7 +339,7 @@ func TestGithubGHEWebhookCommentStrategyUpdateMarkerMatchingWithRegexChars(t *te
 	assert.NilError(t, err)
 	g.Cnx.Clients.Log.Infof("Pushed dummy commit: %s", sha)
 
-	sopt.NumberofPRMatch = 4
+	sopt.NumberofPRMatch = 2
 	sopt.SHA = sha
 	sopt.Title = "test: trigger comment update"
 	twait.Succeeded(ctx, t, g.Cnx, g.Options, sopt)
