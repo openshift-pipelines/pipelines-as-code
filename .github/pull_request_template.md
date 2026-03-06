@@ -9,18 +9,6 @@
 Fixes #
 
 <!-- This is optional, but if you have a Jira ticket related to this PR, please link it here. -->
-## 🚀 Type of Change
-
-<!-- (update the title of the Pull Request accordingly), the lint task checks it -->
-
-- [ ] 🐛 Bug fix (`fix:`)
-- [ ] ✨ New feature (`feat:`)
-- [ ] 💥 Breaking change (`feat!:`, `fix!:`)
-- [ ] 📚 Documentation update (`docs:`)
-- [ ] ⚙️ Chore (`chore:`)
-- [ ] 💅 Refactor (`refactor:`)
-- [ ] 🔧 Enhancement (`enhance:`)
-- [ ] 📦 Dependency update (`deps:`)
 
 ## 🧪 Testing Strategy
 

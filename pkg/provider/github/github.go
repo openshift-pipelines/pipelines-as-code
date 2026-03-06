@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/gobwas/glob"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/go-github/v81/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
@@ -62,6 +63,7 @@ type Provider struct {
 	triggerEvent       string
 	cachedChangedFiles *changedfiles.ChangedFiles
 	commitInfo         *github.Commit
+	pacUserLogin       string // user/bot login used by PAC
 }
 
 type skippedRun struct {
@@ -839,6 +841,18 @@ func responseStatusCode(resp *github.Response) int {
 	return resp.StatusCode
 }
 
+func githubRequestID(resp *github.Response) string {
+	if resp == nil || resp.Response == nil {
+		return ""
+	}
+	return resp.Header.Get("X-GitHub-Request-Id")
+}
+
+func bodyHash(body string) string {
+	sum := sha256.Sum256([]byte(body))
+	return hex.EncodeToString(sum[:4])
+}
+
 func eventID(event *info.Event) string {
 	if event == nil || event.Request == nil {
 		return "unknown"
@@ -907,7 +921,7 @@ func (v *Provider) listCommentsByMarker(
 		return v.Client().Issues.ListComments(ctx, event.Organization, event.Repository, event.PullRequestNumber, &github.IssueListCommentsOptions{
 			ListOptions: github.ListOptions{
 				Page:    1,
-				PerPage: 100,
+				PerPage: v.PaginedNumber,
 			},
 		})
 	})
@@ -919,8 +933,25 @@ func (v *Provider) listCommentsByMarker(
 	matchedComments := make([]*github.IssueComment, 0, len(comments))
 	for _, comment := range comments {
 		if re.MatchString(comment.GetBody()) {
+			if err = v.getUserLogin(ctx, event); err != nil {
+				return nil, fmt.Errorf("unable to fetch user info: %w", err)
+			}
+			// Only edit comments created by this PAC installation's credentials.
+			// Prevents accidentally modifying comments from other users/bots.
+			if comment.GetUser().GetLogin() != v.pacUserLogin {
+				v.Logger.Debugf("This comment was not created by PAC, skipping comment edit :%d, created by user %s, PAC user: %s",
+					comment.GetID(), comment.GetUser().GetLogin(), v.pacUserLogin)
+				continue
+			}
 			matchedComments = append(matchedComments, comment)
 		}
+	}
+
+	if len(comments) == v.PaginedNumber {
+		v.debugCommentPhase(event, trace, phase+"_pagination_warning",
+			"fetched_count", len(comments),
+			"note", "response returned exactly PerPage comments; marker matches beyond page 1 may be missed",
+		)
 	}
 
 	v.debugCommentPhase(event, trace, phase,
@@ -932,75 +963,11 @@ func (v *Provider) listCommentsByMarker(
 	return matchedComments, nil
 }
 
-func (v *Provider) ensureSingleMarkerComment(
-	ctx context.Context,
-	event *info.Event,
-	comments []*github.IssueComment,
-	commit string,
-	trace commentTraceLogContext,
-) error {
-	if len(comments) == 0 {
-		return nil
-	}
-
-	if len(comments) > 1 {
-		v.debugCommentPhase(event, trace, "duplicate_detected", "matched_count", len(comments))
-	}
-
-	primaryComment := comments[0]
-	for _, comment := range comments {
-		if comment.GetBody() == commit {
-			primaryComment = comment
-			break
-		}
-	}
-
-	v.debugCommentPhase(event, trace, "dedup_select_primary",
-		"matched_count", len(comments),
-		"primary_comment_id", primaryComment.GetID(),
-	)
-
-	if primaryComment.GetBody() != commit {
-		if _, _, err := wrapAPI(v, "edit_comment", func() (*github.IssueComment, *github.Response, error) {
-			return v.Client().Issues.EditComment(ctx, event.Organization, event.Repository, primaryComment.GetID(), &github.IssueComment{
-				Body: github.Ptr(commit),
-			})
-		}); err != nil {
-			return err
-		}
-	}
-
-	// Best-effort cleanup to collapse duplicates into a single canonical marker comment.
-	for _, comment := range comments {
-		if comment.GetID() == primaryComment.GetID() {
-			continue
-		}
-
-		v.debugCommentPhase(event, trace, "dedup_delete_attempt", "delete_comment_id", comment.GetID())
-		_, resp, err := wrapAPI(v, "delete_comment", func() (struct{}, *github.Response, error) {
-			resp, err := v.Client().Issues.DeleteComment(ctx, event.Organization, event.Repository, comment.GetID())
-			return struct{}{}, resp, err
-		})
-		v.debugCommentPhase(event, trace, "dedup_delete_done",
-			"delete_comment_id", comment.GetID(),
-			"status_code", responseStatusCode(resp),
-			"delete_error", err != nil,
-		)
-		if err != nil && v.Logger != nil {
-			v.Logger.Warnf("failed to delete duplicate comment %d on %s/%s#%d: %v",
-				comment.GetID(), event.Organization, event.Repository, event.PullRequestNumber, err)
-		}
-	}
-	v.debugCommentPhase(event, trace, "dedup_complete", "final_expected_count", 1)
-	return nil
-}
-
 // CreateComment creates a comment on a Pull Request.
 func (v *Provider) CreateComment(ctx context.Context, event *info.Event, commit, updateMarker string) error {
 	if v.ghClient == nil {
 		return fmt.Errorf("no github client has been initialized")
 	}
-
 	if event.PullRequestNumber == 0 {
 		return fmt.Errorf("create comment only works on pull requests")
 	}
@@ -1014,41 +981,39 @@ func (v *Provider) CreateComment(ctx context.Context, event *info.Event, commit,
 		}
 
 		if len(existingComments) > 1 {
-			v.debugCommentPhase(event, trace, "duplicate_detected", "matched_count", len(existingComments))
+			v.debugCommentPhase(event, trace, "duplicate_detected",
+				"matched_count", len(existingComments),
+				"matched_comments", compactCommentIDs(existingComments),
+			)
 		}
 
 		if len(existingComments) > 0 {
-			return v.ensureSingleMarkerComment(ctx, event, existingComments, commit, trace)
+			comment := existingComments[0]
+			if comment.GetBody() == commit {
+				v.debugCommentPhase(event, trace, "no_edit_needed",
+					"comment_id", comment.GetID(),
+					"body_hash", bodyHash(commit))
+				return nil
+			}
+			v.debugCommentPhase(event, trace, "edit_comment",
+				"comment_id", comment.GetID(),
+				"body_hash", bodyHash(commit))
+			if _, _, err := wrapAPI(v, "edit_comment", func() (*github.IssueComment, *github.Response, error) {
+				return v.Client().Issues.EditComment(ctx, event.Organization, event.Repository, comment.GetID(), &github.IssueComment{
+					Body: github.Ptr(commit),
+				})
+			}); err != nil {
+				return err
+			}
+			return nil
 		}
-
-		//nolint:gosec // No need for crypto/rand here, just reducing timing window
-		jitter := time.Duration(rand.Intn(500)) * time.Millisecond
-		v.debugCommentPhase(event, trace, "jitter_wait", "jitter_ms", jitter.Milliseconds())
-		timer := time.NewTimer(jitter)
-		defer timer.Stop()
-
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-timer.C:
-		}
-
-		// Re-check after jitter in case another processor already created the marker comment.
-		existingComments, err = v.listCommentsByMarker(ctx, event, updateMarker, "post_jitter_list", trace)
-		if err != nil {
-			return err
-		}
-		if len(existingComments) > 1 {
-			v.debugCommentPhase(event, trace, "duplicate_detected", "matched_count", len(existingComments))
-		}
-		if len(existingComments) > 0 {
-			return v.ensureSingleMarkerComment(ctx, event, existingComments, commit, trace)
-		}
-
-		v.debugCommentPhase(event, trace, "pre_create_race_window", "matched_count", len(existingComments))
+	} else {
+		v.debugCommentPhase(event, trace, "no_marker",
+			"body_hash", bodyHash(commit))
 	}
 
-	v.debugCommentPhase(event, trace, "create_comment_start")
+	v.debugCommentPhase(event, trace, "create_comment_start",
+		"body_hash", bodyHash(commit))
 	createdComment, createResp, err := wrapAPI(v, "create_comment", func() (*github.IssueComment, *github.Response, error) {
 		return v.Client().Issues.CreateComment(ctx, event.Organization, event.Repository, event.PullRequestNumber, &github.IssueComment{
 			Body: github.Ptr(commit),
@@ -1057,27 +1022,73 @@ func (v *Provider) CreateComment(ctx context.Context, event *info.Event, commit,
 	if err != nil {
 		v.debugCommentPhase(event, trace, "create_comment_done",
 			"status_code", responseStatusCode(createResp),
+			"github_request_id", githubRequestID(createResp),
 			"create_error", err.Error(),
 		)
 		return err
 	}
 	v.debugCommentPhase(event, trace, "create_comment_done",
 		"status_code", responseStatusCode(createResp),
+		"github_request_id", githubRequestID(createResp),
 		"created_comment_id", createdComment.GetID(),
 	)
+	return nil
+}
 
-	if updateMarker == "" {
+func (v *Provider) getUserLogin(ctx context.Context, event *info.Event) error {
+	if v.pacUserLogin != "" {
 		return nil
 	}
 
-	// Best-effort post-create reconciliation to collapse duplicates created by
-	// concurrent processors handling the same event.
-	matchedComments, listErr := v.listCommentsByMarker(ctx, event, updateMarker, "post_create_list", trace)
-	if listErr != nil {
-		return nil
+	// Get the PAC user/bot login.
+	if event.InstallationID > 0 {
+		// For Apps, get the app slug.
+		slug, err := v.fetchAppSlug(ctx, event.Provider.URL)
+		if err != nil {
+			return fmt.Errorf("failed to fetch app slug: %w", err)
+		}
+
+		v.pacUserLogin = fmt.Sprintf("%s[bot]", slug)
+	} else {
+		// For PATs, get the authenticated user.
+		pacUser, _, err := v.Client().Users.Get(ctx, "")
+		if err != nil {
+			return fmt.Errorf("unable to fetch user info: %w", err)
+		}
+		v.pacUserLogin = pacUser.GetLogin()
 	}
-	if len(matchedComments) > 1 {
-		v.debugCommentPhase(event, trace, "duplicate_detected", "matched_count", len(matchedComments))
+
+	return nil
+}
+
+// Refer https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/authenticating-as-a-github-app-installation
+func (v *Provider) fetchAppSlug(ctx context.Context, apiURL string) (string, error) {
+	ns := info.GetNS(ctx)
+	applicationID, privateKey, err := v.GetAppIDAndPrivateKey(ctx, ns, v.Run.Clients.Kube)
+	if err != nil {
+		return "", err
 	}
-	return v.ensureSingleMarkerComment(ctx, event, matchedComments, commit, trace)
+	parsedPK, err := jwt.ParseRSAPrivateKeyFromPEM(privateKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse private key: %w", err)
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, &jwt.RegisteredClaims{
+		Issuer:    fmt.Sprintf("%d", applicationID),
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(5 * time.Minute)),
+	})
+
+	tokenString, err := token.SignedString(parsedPK)
+	if err != nil {
+		return "", fmt.Errorf("failed to sign private key: %w", err)
+	}
+
+	client, _, _ := MakeClient(ctx, apiURL, tokenString)
+	app, _, err := client.Apps.Get(ctx, "")
+	if err != nil {
+		return "", fmt.Errorf("failed to get app info: %w", err)
+	}
+
+	return app.GetSlug(), nil
 }

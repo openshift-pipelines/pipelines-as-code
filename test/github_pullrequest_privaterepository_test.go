@@ -4,7 +4,6 @@ package test
 
 import (
 	"context"
-	"os"
 	"regexp"
 	"testing"
 
@@ -15,9 +14,6 @@ import (
 )
 
 func TestGithubGHEPullRequestGitCloneTask(t *testing.T) {
-	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
-		t.Skip("Skipping test since only enabled for nightly")
-	}
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label:     "Github GHE - Private Repo with git-clone task",
@@ -29,9 +25,9 @@ func TestGithubGHEPullRequestGitCloneTask(t *testing.T) {
 	ctx, err := cctx.GetControllerCtxInfo(ctx, g.Cnx)
 	assert.NilError(t, err)
 
-	maxLines := int64(1000)
+	sinceSeconds := int64(40)
 	assert.NilError(t, wait.RegexpMatchingInControllerLog(ctx, g.Cnx, *regexp.MustCompile(".*fetched git-clone task"),
-		10, "ghe-controller", &maxLines), "Error while checking the logs of the pipelines-as-code controller pod")
+		10, "ghe-controller", nil, &sinceSeconds), "Error while checking the logs of the pipelines-as-code controller pod")
 	defer g.TearDown(ctx, t)
 }
 
@@ -46,18 +42,16 @@ func TestGithubGHEPullRequestGitClone(t *testing.T) {
 	defer g.TearDown(ctx, t)
 }
 
-func TestGithubPullRequestPrivateRepositoryOnWebhook(t *testing.T) {
-	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
-		t.Skip("Skipping test since only enabled for nightly")
-	}
+func TestGithubGHEPullRequestPrivateRepositoryOnWebhook(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:     "Github Rerequest",
+		Label:     "Github GHE Rerequest",
 		YamlFiles: []string{"testdata/pipelinerun_git_clone_private.yaml"},
+		GHE:       true,
 		Webhook:   true,
 	}
-	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
+	g.RunPullRequest(ctx, t)
 }
 
 // Local Variables:

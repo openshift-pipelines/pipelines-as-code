@@ -96,6 +96,7 @@ func (t *tektonHubClient) GetResource(ctx context.Context, _, resource, kind str
 	return string(data), err
 }
 
+// getSpecificVersion gets a specific version of a resource from the Tekton Hub.
 func (t *tektonHubClient) getSpecificVersion(ctx context.Context, catalogName, resource, kind string) (string, error) {
 	split := strings.Split(resource, ":")
 	version := split[len(split)-1]

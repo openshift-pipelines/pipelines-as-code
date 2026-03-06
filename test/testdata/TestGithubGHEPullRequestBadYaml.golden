@@ -1,6 +1,0 @@
-> [!CAUTION]
-> There are some errors in your PipelineRun template.
-
-| PipelineRun | Error |
-|------|-------|
-| bad-yaml.yaml | `yaml validation error: line 3: could not find expected ':'` |

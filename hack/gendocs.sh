@@ -36,8 +36,7 @@ for i in $output; do
 	git checkout -B gendoc origin/release-$i
 	echo ${allversiontags} >docs/content/ALLVERSIONS
 	find docs/content -name '*.md' -print0 | xargs -0 sed -i 's,/images/,../../../images/,g'
-	sed -i 's,BookLogo = "/,BookLogo = ",' docs/config.toml
-	sed -i 's,window.location =.*https://release-.*.pipelines-as-code.pages.dev".*,window.location = "https://docs.pipelinesascode.com/" + elm.value + "/" + current_page_path.split("/").slice(2).join("/"),' docs/layouts/partials/docs/footer.html
+	sed -i 's#window.location = "https://release-" + elm.value.replace(/\./g, "-") + ".pipelines-as-code.pages.dev" + path;#window.location = "https://docs.pipelinesascode.com/" + elm.value + "/" + path.split("/").slice(2).join("/");#' docs/layouts/_partials/custom/footer.html
 	mkdir -p ${version}
 	hugo -d ${version} -s docs -b https://docs.pipelinesascode.com/$i
 	git reset --hard

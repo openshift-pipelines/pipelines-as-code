@@ -1,50 +1,48 @@
-{{ $gitlabSupported := .Get "gitlab" }} {{ $githubAppSupported := .Get
-"github_app" }} {{ $githubWebhookSupported := .Get "github_webhook" }} {{
-$forgejoSupported := .Get "forgejo" }} {{ $bitbucketCloudSupported := .Get
-"bitbucket_cloud" }} {{ $bitbucketDataCenterSupported := .Get
-"bitbucket_datacenter" }}
+{{/* Support Matrix callout */}}
+{{ $gitlabSupported := .Get "gitlab" }}
+{{ $githubAppSupported := .Get "github_app" }}
+{{ $githubWebhookSupported := .Get "github_webhook" }}
+{{ $forgejoSupported := .Get "forgejo" }}
+{{ $bitbucketCloudSupported := .Get "bitbucket_cloud" }}
+{{ $bitbucketDataCenterSupported := .Get "bitbucket_datacenter" }}
 
-<blockquote class="book-hint warning">
-  <p>This feature is supported on the following providers</p>
-  <table>
-    <thead>
-      <tr>
-        <th>Git Provider</th>
-        <th>Supported</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>GitHub App</td>
-        <td>{{ if eq $githubAppSupported "true" }}✅️{{ else }}❌️{{ end }}</td>
-      </tr>
-      <tr>
-        <td>GitHub Webhook</td>
-        <td>
-          {{ if eq $githubWebhookSupported "true" }}✅️{{ else }}❌️{{ end }}
-        </td>
-      </tr>
-      <tr>
-        <td>Forgejo</td>
-        <td>{{ if eq $forgejoSupported "true" }}✅️{{ else }}❌️{{ end }}</td>
-      </tr>
-      <tr>
-        <td>GitLab</td>
-        <td>{{ if eq $gitlabSupported "true" }}✅️{{ else }}❌️{{ end }}</td>
-      </tr>
-      <tr>
-        <td>Bitbucket Cloud</td>
-        <td>
-          {{ if eq $bitbucketCloudSupported "true" }}✅️{{ else }}❌️{{ end }}
-        </td>
-      </tr>
-      <tr>
-        <td>Bitbucket Data Center</td>
-        <td>
-          {{ if eq $bitbucketDataCenterSupported "true" }}✅️{{ else }}❌️{{ end
-          }}
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</blockquote>
+<div class="pac-support-matrix">
+  <div class="pac-support-matrix-icon">ℹ️</div>
+  <div>
+    <p><strong>This feature is supported on the following providers:</strong></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Git Provider</th>
+          <th>Supported</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>GitHub App</td>
+          <td>{{ if eq $githubAppSupported "true" }}✅{{ else }}❌{{ end }}</td>
+        </tr>
+        <tr>
+          <td>GitHub Webhook</td>
+          <td>{{ if eq $githubWebhookSupported "true" }}✅{{ else }}❌{{ end }}</td>
+        </tr>
+        <tr>
+          <td>Forgejo</td>
+          <td>{{ if eq $forgejoSupported "true" }}✅{{ else }}❌{{ end }}</td>
+        </tr>
+        <tr>
+          <td>GitLab</td>
+          <td>{{ if eq $gitlabSupported "true" }}✅{{ else }}❌{{ end }}</td>
+        </tr>
+        <tr>
+          <td>Bitbucket Cloud</td>
+          <td>{{ if eq $bitbucketCloudSupported "true" }}✅{{ else }}❌{{ end }}</td>
+        </tr>
+        <tr>
+          <td>Bitbucket Data Center</td>
+          <td>{{ if eq $bitbucketDataCenterSupported "true" }}✅{{ else }}❌{{ end }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -65,6 +65,6 @@ func TestBitbucketDataCenterDynamicVariables(t *testing.T) {
 	wait.Succeeded(ctx, t, runcnx, opts, successOpts)
 
 	reg := *regexp.MustCompile(fmt.Sprintf("event: repo:refs_changed, refId: refs/heads/%s, message: %s", targetNS, commitMsg))
-	err = wait.RegexpMatchingInPodLog(ctx, runcnx, targetNS, "pipelinesascode.tekton.dev/original-prname=pipelinerun-dynamic-vars", "step-task", reg, "", 2)
+	err = wait.RegexpMatchingInPodLog(ctx, runcnx, targetNS, "pipelinesascode.tekton.dev/original-prname=pipelinerun-dynamic-vars", "step-task", reg, "", 2, nil)
 	assert.NilError(t, err)
 }

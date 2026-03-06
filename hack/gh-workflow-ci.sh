@@ -5,6 +5,7 @@ set -exufo pipefail
 
 export PAC_API_INSTRUMENTATION_DIR=/tmp/api-instrumentation
 export TEST_GITLAB_API_URL=https://gitlab.pipelinesascode.com
+export TEST_GITLAB_GROUP=pac-e2e-tests
 
 create_pac_github_app_secret() {
   # Read from environment variables instead of arguments
@@ -85,8 +86,13 @@ get_tests() {
     gitea_tests=("${filtered_tests[@]}")
   fi
 
+  local -a ghe_tests=()
+  if [[ "${target}" == github_ghe* ]]; then
+    mapfile -t ghe_tests < <(echo "${all_tests}" | grep -iP 'GithubGHE' 2>/dev/null | grep -ivP 'Concurrency' 2>/dev/null | sort 2>/dev/null)
+  fi
+
   local -a github_tests=()
-  if [[ "${target}" == *"github"* ]] && [[ "${target}" != "github_ghe" ]] && [[ "${target}" != "github_second_controller" ]]; then
+  if [[ "${target}" == *"github"* ]] && [[ "${target}" != github_ghe* ]] && [[ "${target}" != "github_second_controller" ]]; then
     mapfile -t github_tests < <(echo "${all_tests}" | grep -iP '^TestGithub' 2>/dev/null | grep -ivP 'Concurrency|GithubGHE' 2>/dev/null | sort 2>/dev/null)
   fi
 
@@ -95,6 +101,13 @@ get_tests() {
   if [[ ${#gitea_tests[@]} -gt 0 ]]; then
     chunk_size=$((${#gitea_tests[@]} / 3))
     remainder=$((${#gitea_tests[@]} % 3))
+  fi
+
+  # Calculate chunk sizes for splitting GHE tests into 3 parts
+  local ghe_chunk_size ghe_remainder
+  if [[ ${#ghe_tests[@]} -gt 0 ]]; then
+    ghe_chunk_size=$((${#ghe_tests[@]} / 3))
+    ghe_remainder=$((${#ghe_tests[@]} % 3))
   fi
 
   # TODO: revert once the new workflow matrix lands on main.
@@ -135,11 +148,28 @@ get_tests() {
       printf '%s\n' "${github_tests[@]:$((github_chunk_size + github_remainder))}"
     fi
     ;;
-  github_second_controller)
+  # TODO: revert - remove github_second_controller, github_ghe aliases
+  # once the new workflow matrix lands on main. These exist because
+  # pull_request_target runs the workflow YAML from main which still sends old
+  # target names.
+  github_second_controller | github_ghe)
     printf '%s\n' "${all_tests}" | grep -iP 'GithubGHE' | grep -ivP 'Concurrency'
     ;;
-  github_ghe)
-    printf '%s\n' "${all_tests}" | grep -iP 'GithubGHE' | grep -ivP 'Concurrency'
+  github_ghe_1)
+    if [[ ${#ghe_tests[@]} -gt 0 ]]; then
+      printf '%s\n' "${ghe_tests[@]:0:${ghe_chunk_size}}"
+    fi
+    ;;
+  github_ghe_2)
+    if [[ ${#ghe_tests[@]} -gt 0 ]]; then
+      printf '%s\n' "${ghe_tests[@]:${ghe_chunk_size}:${ghe_chunk_size}}"
+    fi
+    ;;
+  github_ghe_3)
+    if [[ ${#ghe_tests[@]} -gt 0 ]]; then
+      local start_idx=$((ghe_chunk_size * 2))
+      printf '%s\n' "${ghe_tests[@]:${start_idx}:$((ghe_chunk_size + ghe_remainder))}"
+    fi
     ;;
   gitlab_bitbucket)
     printf '%s\n' "${all_tests}" | grep -iP 'Gitlab|Bitbucket' | grep -ivP 'Concurrency'
@@ -162,8 +192,8 @@ get_tests() {
     ;;
   *)
     echo "Invalid target: ${target}"
-    echo "supported targets: github_public, github_ghe, gitlab_bitbucket, gitea_1, gitea_2, gitea_3, concurrency, flaky"
-    echo "backward compat aliases: github_1, github_2, github_second_controller"
+    echo "supported targets: github_public, github_ghe_1, github_ghe_2, github_ghe_3, gitlab_bitbucket, gitea_1, gitea_2, gitea_3, concurrency, flaky"
+    echo "backward compat aliases: github_1, github_2, github_second_controller, github_ghe"
     ;;
   esac
 }
@@ -202,6 +232,7 @@ collect_logs() {
   # Read from environment variables (use default empty value for optional vars)
   local test_gitea_smee_url="${TEST_GITEA_SMEEURL:-}"
   local github_ghe_smee_url="${TEST_GITHUB_SECOND_SMEE_URL:-}"
+  local test_gitlab_smee_url="${TEST_GITLAB_SMEEURL:-}"
 
   mkdir -p /tmp/logs
   # Output logs to stdout so we can see via the web interface directly
@@ -215,6 +246,8 @@ collect_logs() {
   [[ -d /tmp/gosmee-replay-ghe ]] && cp -a /tmp/gosmee-replay-ghe /tmp/logs/gosmee/replay-ghe
   [[ -f /tmp/gosmee-main.log ]] && cp /tmp/gosmee-main.log /tmp/logs/gosmee/main.log
   [[ -f /tmp/gosmee-ghe.log ]] && cp /tmp/gosmee-ghe.log /tmp/logs/gosmee/ghe.log
+  [[ -d /tmp/gosmee-replay-gitlab ]] && cp -a /tmp/gosmee-replay-gitlab /tmp/logs/gosmee/replay-gitlab
+  [[ -f /tmp/gosmee-gitlab.log ]] && cp /tmp/gosmee-gitlab.log /tmp/logs/gosmee/gitlab.log
 
   kubectl get pipelineruns -A -o yaml >/tmp/logs/pac-pipelineruns.yaml
   kubectl get repositories.pipelinesascode.tekton.dev -A -o yaml >/tmp/logs/pac-repositories.yaml
@@ -235,7 +268,7 @@ collect_logs() {
     cp -a ${PAC_API_INSTRUMENTATION_DIR} /tmp/logs/$(basename ${PAC_API_INSTRUMENTATION_DIR})
   fi
 
-  for url in "${test_gitea_smee_url}" "${github_ghe_smee_url}"; do
+  for url in "${test_gitea_smee_url}" "${github_ghe_smee_url}" "${test_gitlab_smee_url}"; do
     [[ -z "${url}" ]] && continue
     find /tmp/logs -type f -exec grep -l "${url}" {} \; | xargs -r sed -i "s|${url}|SMEE_URL|g"
   done
@@ -308,7 +341,7 @@ output_logs)
   ;;
 print_tests)
   set +x
-  for target in github_public github_ghe gitlab_bitbucket gitea_1 gitea_2 gitea_3 concurrency flaky; do
+  for target in github_public github_ghe_1 github_ghe_2 github_ghe_3 gitlab_bitbucket gitea_1 gitea_2 gitea_3 concurrency flaky; do
     mapfile -t tests < <(get_tests "${target}")
     echo "Tests for target: ${target} Total: ${#tests[@]}"
     printf '%s\n' "${tests[@]}"
