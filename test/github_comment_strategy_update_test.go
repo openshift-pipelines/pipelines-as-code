@@ -23,7 +23,7 @@ import (
 // 1. A CEL error comment is posted for a PLR
 // 2. After fixing the CEL error with a new commit, the same comment is updated with success status
 // 3. Only one comment exists.
-func TestGithubGHECommentStrategyUpdateCELErrorReplacement(t *testing.T) {
+func TestGithubGHEWebhookCommentStrategyUpdateCELErrorReplacement(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label:         "Github Comment Strategy CEL Error",
@@ -142,7 +142,7 @@ func TestGithubGHECommentStrategyUpdateCELErrorReplacement(t *testing.T) {
 // 1. Multiple PLRs in one PR each create their own comment
 // 2. Each PLR only updates its own comment (no cross-updates)
 // 3. Comments are correctly identified by their unique markers.
-func TestGithubGHECommentStrategyUpdateMultiplePLRs(t *testing.T) {
+func TestGithubGHEWebhookCommentStrategyUpdateMultiplePLRs(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label:     "Github Comment Strategy Multiple PLRs",
@@ -247,7 +247,7 @@ func TestGithubGHECommentStrategyUpdateMultiplePLRs(t *testing.T) {
 // 1. PLR names containing regex-relevant characters (dots, brackets, etc.) are handled correctly
 // 2. Marker matching remains exact even with special characters
 // 3. No cross-contamination between PLRs with similar names.
-func TestGithubGHECommentStrategyUpdateMarkerMatchingWithRegexChars(t *testing.T) {
+func TestGithubGHEWebhookCommentStrategyUpdateMarkerMatchingWithRegexChars(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label: "Github Comment Strategy Regex Chars",

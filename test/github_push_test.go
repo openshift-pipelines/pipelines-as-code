@@ -9,7 +9,7 @@ import (
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 )
 
-func TestGithubGHEPushWebhook(t *testing.T) {
+func TestGithubGHEWebhookPush(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label:     "Github GHE push request on Webhook",
