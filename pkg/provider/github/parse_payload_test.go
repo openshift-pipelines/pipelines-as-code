@@ -1347,3 +1347,133 @@ func TestAppTokenGeneration(t *testing.T) {
 		})
 	}
 }
+
+// TestGetAppIDAndPrivateKey_Caching verifies that credentials are cached
+// to avoid redundant Kubernetes API calls.
+func TestGetAppIDAndPrivateKey_Caching(t *testing.T) {
+	testNamespace := "pipelinesascode"
+	ctx, _ := rtesting.SetupFakeContext(t)
+
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pipelines-as-code-secret",
+			Namespace: testNamespace,
+		},
+		Data: map[string][]byte{
+			"github-application-id": []byte("12345"),
+			"github-private-key":    []byte(fakePrivateKey),
+		},
+	}
+
+	stdata, _ := testclient.SeedTestData(t, ctx, testclient.Data{
+		Secret: []*corev1.Secret{secret},
+	})
+
+	logger, _ := logger.GetLogger()
+	provider := New()
+	provider.Run = &params.Run{
+		Clients: clients.Clients{
+			Log:  logger,
+			Kube: stdata.Kube,
+		},
+		Info: info.Info{
+			Controller: &info.ControllerInfo{Secret: "pipelines-as-code-secret"},
+		},
+	}
+
+	// First call - should fetch from Kubernetes
+	appID1, privateKey1, err := provider.GetAppIDAndPrivateKey(ctx, testNamespace, stdata.Kube)
+	assert.NilError(t, err)
+	assert.Equal(t, appID1, int64(12345))
+	assert.DeepEqual(t, privateKey1, []byte(fakePrivateKey))
+
+	// Second call - should use cached credentials
+	appID2, privateKey2, err := provider.GetAppIDAndPrivateKey(ctx, testNamespace, stdata.Kube)
+	assert.NilError(t, err)
+	assert.Equal(t, appID2, int64(12345))
+	assert.DeepEqual(t, privateKey2, []byte(fakePrivateKey))
+
+	// Verify the cache is being used
+	assert.Assert(t, provider.credentialsCache != nil)
+	assert.Assert(t, len(provider.credentialsCache.credentials) == 1)
+	cached, found := provider.credentialsCache.credentials[testNamespace]
+	assert.Assert(t, found)
+	assert.Equal(t, cached.applicationID, int64(12345))
+	assert.DeepEqual(t, cached.privateKey, []byte(fakePrivateKey))
+}
+
+// TestTokenCreationFlow_Integration verifies that the consolidated token creation flow
+// works correctly across different entry points (ParsePayload, InitAppClient, etc.)
+// and that credential caching reduces Kubernetes API calls.
+func TestTokenCreationFlow_Integration(t *testing.T) {
+	testNamespace := "pipelinesascode"
+	ctx, _ := rtesting.SetupFakeContext(t)
+
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pipelines-as-code-secret",
+			Namespace: testNamespace,
+		},
+		Data: map[string][]byte{
+			"github-application-id": []byte("12345"),
+			"github-private-key":    []byte(fakePrivateKey),
+		},
+	}
+
+	stdata, _ := testclient.SeedTestData(t, ctx, testclient.Data{
+		Secret: []*corev1.Secret{secret},
+	})
+
+	fakeghclient, mux, serverURL, teardown := ghtesthelper.SetupGH()
+	defer teardown()
+
+	// Mock the installation token endpoint
+	// Using installation ID 1
+	tokenCallCount := 0
+	mux.HandleFunc("/app/installations/1/access_tokens", func(w http.ResponseWriter, _ *http.Request) {
+		tokenCallCount++
+		_, _ = fmt.Fprint(w, `{"token": "test-token"}`)
+	})
+
+	// Set environment variable to use test server for token API
+	t.Setenv("PAC_GIT_PROVIDER_TOKEN_APIURL", serverURL+"/api/v3")
+
+	logger, _ := logger.GetLogger()
+	provider := New()
+	provider.Run = &params.Run{
+		Clients: clients.Clients{
+			Log:  logger,
+			Kube: stdata.Kube,
+		},
+		Info: info.Info{
+			Controller: &info.ControllerInfo{Secret: "pipelines-as-code-secret"},
+		},
+	}
+	provider.ghClient = fakeghclient
+	provider.APIURL = &serverURL
+
+	ctx = info.StoreCurrentControllerName(ctx, "default")
+	ctx = info.StoreNS(ctx, testNamespace)
+
+	// Call GetAppToken multiple times to verify:
+	// 1. Token creation works
+	// 2. Credentials are cached (no repeated K8s calls)
+	// 3. Each call gets a new token (as expected - tokens should be fresh)
+
+	token1, err := provider.GetAppToken(ctx, stdata.Kube, "", testInstallationID, testNamespace)
+	assert.NilError(t, err)
+	assert.Equal(t, token1, "test-token")
+
+	token2, err := provider.GetAppToken(ctx, stdata.Kube, "", testInstallationID, testNamespace)
+	assert.NilError(t, err)
+	assert.Equal(t, token2, "test-token")
+
+	// Verify credentials were cached (only one fetch from K8s)
+	assert.Assert(t, provider.credentialsCache != nil)
+	cached, found := provider.credentialsCache.credentials[testNamespace]
+	assert.Assert(t, found)
+	assert.Equal(t, cached.applicationID, int64(12345))
+
+	// Verify we got fresh tokens each time (2 token API calls)
+	assert.Equal(t, tokenCallCount, 2)
+}

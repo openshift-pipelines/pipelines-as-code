@@ -34,7 +34,18 @@ const (
 // GetAppIDAndPrivateKey retrieves the GitHub application ID and private key from a secret in the specified namespace.
 // It takes a context, namespace, and Kubernetes client as input parameters.
 // It returns the application ID (int64), private key ([]byte), and an error if any.
+// Results are cached per namespace to avoid redundant Kubernetes API calls within a request context.
 func (v *Provider) GetAppIDAndPrivateKey(ctx context.Context, ns string, kube kubernetes.Interface) (int64, []byte, error) {
+	if v.credentialsCache != nil {
+		v.credentialsCache.mutex.RLock()
+		cached, found := v.credentialsCache.credentials[ns]
+		v.credentialsCache.mutex.RUnlock()
+
+		if found {
+			return cached.applicationID, cached.privateKey, nil
+		}
+	}
+
 	paramsinfo := &v.Run.Info
 	secret, err := kube.CoreV1().Secrets(ns).Get(ctx, paramsinfo.Controller.Secret, metav1.GetOptions{})
 	if err != nil {
@@ -48,6 +59,17 @@ func (v *Provider) GetAppIDAndPrivateKey(ctx context.Context, ns string, kube ku
 	}
 
 	privateKey := secret.Data[keys.GithubPrivateKey]
+
+	// Store in cache (write lock)
+	if v.credentialsCache != nil {
+		v.credentialsCache.mutex.Lock()
+		v.credentialsCache.credentials[ns] = &cachedAppCredentials{
+			applicationID: applicationID,
+			privateKey:    privateKey,
+		}
+		v.credentialsCache.mutex.Unlock()
+	}
+
 	return applicationID, privateKey, nil
 }
 

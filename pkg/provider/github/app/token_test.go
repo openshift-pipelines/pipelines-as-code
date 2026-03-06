@@ -144,8 +144,9 @@ func Test_GenerateJWT(t *testing.T) {
 				},
 			}
 
-			ip := NewInstallation(httptest.NewRequest(http.MethodGet, "http://localhost", strings.NewReader("")), run, &v1alpha1.Repository{}, &github.Provider{}, tt.namespace.GetName())
-			token, err := ip.GenerateJWT(ctx)
+			gh := github.New()
+			gh.Run = run
+			token, err := gh.GenerateJWT(ctx, tt.namespace.GetName(), stdata.Kube)
 			if tt.wantErr {
 				assert.Assert(t, err != nil)
 				return
@@ -206,8 +207,9 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 	ctx = info.StoreCurrentControllerName(ctx, "default")
 	ctx = info.StoreNS(ctx, testNamespace.GetName())
 
-	ip := NewInstallation(httptest.NewRequest(http.MethodGet, "http://localhost", strings.NewReader("")), run, &v1alpha1.Repository{}, &github.Provider{}, testNamespace.GetName())
-	jwtToken, err := ip.GenerateJWT(ctx)
+	gh := github.New()
+	gh.Run = run
+	jwtToken, err := gh.GenerateJWT(ctx, testNamespace.GetName(), stdata.Kube)
 	assert.NilError(t, err)
 	req := httptest.NewRequest(http.MethodGet, "http://localhost", strings.NewReader(""))
 	repo := &v1alpha1.Repository{
@@ -256,7 +258,7 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 			`{"total_count": 2,"repositories": [{"id":1,"html_url": "https://matched/%s/incoming"},{"id":2,"html_url": "https://anotherrepo/that/would/failit"}]}`,
 			orgName)
 	})
-	ip = NewInstallation(req, run, repo, gprovider, testNamespace.GetName())
+	ip := NewInstallation(req, run, repo, gprovider, testNamespace.GetName())
 	_, token, installationID, err := ip.GetAndUpdateInstallationID(ctx)
 	assert.NilError(t, err)
 	assert.Equal(t, installationID, int64(wantID))
@@ -393,8 +395,9 @@ func TestGetAndUpdateInstallationID_Fallbacks(t *testing.T) {
 			ctx = info.StoreCurrentControllerName(ctx, "default")
 			ctx = info.StoreNS(ctx, testNamespace.GetName())
 
-			ip := NewInstallation(httptest.NewRequest(http.MethodGet, "http://localhost", strings.NewReader("")), run, &v1alpha1.Repository{}, &github.Provider{}, testNamespace.GetName())
-			jwtToken, err := ip.GenerateJWT(ctx)
+			gh := github.New()
+			gh.Run = run
+			jwtToken, err := gh.GenerateJWT(ctx, testNamespace.GetName(), stdata.Kube)
 			assert.NilError(t, err)
 
 			tt.setupMux(mux, jwtToken)
@@ -412,7 +415,7 @@ func TestGetAndUpdateInstallationID_Fallbacks(t *testing.T) {
 			gprovider.SetGithubClient(fakeghclient)
 			t.Setenv("PAC_GIT_PROVIDER_TOKEN_APIURL", serverURL)
 
-			ip = NewInstallation(httptest.NewRequest(http.MethodGet, "http://localhost", strings.NewReader("")), run, repo, gprovider, testNamespace.GetName())
+			ip := NewInstallation(httptest.NewRequest(http.MethodGet, "http://localhost", strings.NewReader("")), run, repo, gprovider, testNamespace.GetName())
 			_, token, installationID, err := ip.GetAndUpdateInstallationID(ctx)
 
 			if tt.wantErr {

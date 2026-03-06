@@ -6,9 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
@@ -43,7 +41,7 @@ func (ip *Install) GetAndUpdateInstallationID(ctx context.Context) (string, stri
 	logger := logging.FromContext(ctx)
 
 	// Generate a JWT token for authentication
-	jwtToken, err := ip.GenerateJWT(ctx)
+	jwtToken, err := ip.ghClient.GenerateJWT(ctx, ip.namespace, ip.run.Clients.Kube)
 	if err != nil {
 		return "", "", 0, err
 	}
@@ -102,46 +100,4 @@ func (ip *Install) GetAndUpdateInstallationID(ctx context.Context) (string, stri
 	}
 
 	return enterpriseHost, token, installationID, nil
-}
-
-// JWTClaim represents the JWT claims for the GitHub App.
-type JWTClaim struct {
-	Issuer int64 `json:"iss"`
-	jwt.RegisteredClaims
-}
-
-// GenerateJWT generates a JWT token for the GitHub App.
-// It retrieves the application ID and private key, sets the claims, and signs the token.
-func (ip *Install) GenerateJWT(ctx context.Context) (string, error) {
-	// TODO: move this out of here
-	gh := github.New()
-	gh.Run = ip.run
-	applicationID, privateKey, err := gh.GetAppIDAndPrivateKey(ctx, ip.namespace, ip.run.Clients.Kube)
-	if err != nil {
-		return "", err
-	}
-
-	// The expirationTime claim identifies the expiration time on or after which the JWT MUST NOT be accepted for processing.
-	// Value cannot be longer duration.
-	// See https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.4
-	expirationTime := time.Now().Add(5 * time.Minute)
-	claims := &JWTClaim{
-		Issuer: applicationID,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expirationTime),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-
-	parsedPK, err := jwt.ParseRSAPrivateKeyFromPEM(privateKey)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse private key: %w", err)
-	}
-
-	tokenString, err := token.SignedString(parsedPK)
-	if err != nil {
-		return "", fmt.Errorf("failed to sign private key: %w", err)
-	}
-	return tokenString, nil
 }
