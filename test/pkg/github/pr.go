@@ -132,7 +132,14 @@ func (g *PRTest) RunPullRequest(ctx context.Context, t *testing.T) {
 	ctx, runcnx, opts, ghcnx, err := Setup(ctx, g.GHE, g.Webhook)
 	assert.NilError(t, err)
 	g.Logger = runcnx.Clients.Log
-
+	g.Cnx = runcnx
+	preSettings := g.Options.Settings
+	g.Options = opts
+	if preSettings.Github != nil {
+		g.Options.Settings = preSettings
+	}
+	g.Provider = ghcnx
+	g.TargetNamespace = targetNS
 	g.CommitTitle = fmt.Sprintf("Testing %s with Github APPS integration on %s", g.Label, targetNS)
 	g.Logger.Info(g.CommitTitle)
 
@@ -149,6 +156,7 @@ func (g *PRTest) RunPullRequest(ctx context.Context, t *testing.T) {
 		assert.NilError(t, err)
 
 		opts.Repo = repoName
+		g.Options.Repo = repoName
 		g.DynamicRepoName = repoName
 	} else {
 		// Use existing pre-configured repo
@@ -177,15 +185,18 @@ func (g *PRTest) RunPullRequest(ctx context.Context, t *testing.T) {
 
 	targetRefName := fmt.Sprintf("refs/heads/%s",
 		names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"))
+	g.TargetRefName = targetRefName
 
 	sha, vref, err := PushFilesToRef(ctx, ghcnx.Client(), g.CommitTitle, repoinfo.GetDefaultBranch(), targetRefName,
 		opts.Organization, opts.Repo, entries)
 	assert.NilError(t, err)
+	g.SHA = sha
 
 	g.Logger.Infof("Commit %s has been created and pushed to %s", sha, vref.GetURL())
 	number, err := PRCreate(ctx, runcnx, ghcnx, opts.Organization,
 		opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), g.CommitTitle)
 	assert.NilError(t, err)
+	g.PRNumber = number
 
 	if !g.NoStatusCheck {
 		sopt := wait.SuccessOpt{
@@ -197,25 +208,20 @@ func (g *PRTest) RunPullRequest(ctx context.Context, t *testing.T) {
 		}
 		wait.Succeeded(ctx, t, runcnx, opts, sopt)
 	}
-	g.Cnx = runcnx
-	g.Options = opts
-	g.Provider = ghcnx
-	g.TargetNamespace = targetNS
-	g.TargetRefName = targetRefName
-	g.PRNumber = number
-	g.SHA = sha
 }
 
 func (g *PRTest) TearDown(ctx context.Context, t *testing.T) {
 	if os.Getenv("TEST_NOCLEANUP") == "true" {
-		g.Logger.Infof("Not cleaning up and closing PR since TEST_NOCLEANUP is set")
+		if g.Logger != nil {
+			g.Logger.Infof("Not cleaning up and closing PR since TEST_NOCLEANUP is set")
+		}
 		return
 	}
 
 	// Collect GitHub API call information from controller logs
 	g.collectGitHubAPICalls(ctx, t)
 
-	if g.PRNumber != -1 {
+	if g.PRNumber != -1 && g.Provider != nil && g.Logger != nil {
 		g.Logger.Infof("Closing PR %d", g.PRNumber)
 		state := "closed"
 		_, _, err := g.Provider.Client().PullRequests.Edit(ctx,
@@ -225,12 +231,12 @@ func (g *PRTest) TearDown(ctx context.Context, t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if g.TargetNamespace != "" {
+	if g.TargetNamespace != "" && g.Cnx != nil {
 		repository.NSTearDown(ctx, t, g.Cnx, g.TargetNamespace)
 	}
 
 	// Skip branch deletion for dynamic repos since we're deleting the entire repo
-	if g.DynamicRepoName == "" && g.TargetRefName != "" && g.TargetRefName != options.MainBranch {
+	if g.DynamicRepoName == "" && g.TargetRefName != "" && g.TargetRefName != options.MainBranch && g.Provider != nil && g.Logger != nil {
 		branch := fmt.Sprintf("heads/%s", filepath.Base(g.TargetRefName))
 		g.Logger.Infof("Deleting Ref %s", branch)
 		_, err := g.Provider.Client().Git.DeleteRef(ctx, g.Options.Organization, g.Options.Repo, branch)
@@ -238,7 +244,7 @@ func (g *PRTest) TearDown(ctx context.Context, t *testing.T) {
 	}
 
 	// Delete dynamic repo if one was created
-	if g.DynamicRepoName != "" {
+	if g.DynamicRepoName != "" && g.Provider != nil && g.Logger != nil {
 		g.Logger.Infof("Deleting dynamic repository %s/%s", g.Options.Organization, g.DynamicRepoName)
 		err := DeleteGHERepo(ctx, g.Provider.Client(), g.Options.Organization, g.DynamicRepoName, g.Logger)
 		assert.NilError(t, err)
@@ -256,6 +262,15 @@ func (g *PRTest) RunPushRequest(ctx context.Context, t *testing.T) {
 	ctx, runcnx, opts, ghcnx, err := Setup(ctx, g.GHE, g.Webhook)
 	assert.NilError(t, err)
 	g.Logger = runcnx.Clients.Log
+	g.Cnx = runcnx
+	preSettings := g.Options.Settings
+	g.Options = opts
+	if preSettings.Github != nil {
+		g.Options.Settings = preSettings
+	}
+	g.Provider = ghcnx
+	g.TargetNamespace = targetNS
+	g.PRNumber = -1
 
 	var logmsg string
 	if g.Webhook {
@@ -279,6 +294,7 @@ func (g *PRTest) RunPushRequest(ctx context.Context, t *testing.T) {
 		assert.NilError(t, err)
 
 		opts.Repo = repoName
+		g.Options.Repo = repoName
 		g.DynamicRepoName = repoName
 	} else {
 		// Use existing pre-configured repo
@@ -288,6 +304,10 @@ func (g *PRTest) RunPushRequest(ctx context.Context, t *testing.T) {
 		if resp != nil && resp.StatusCode == http.StatusNotFound {
 			t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
 		}
+	}
+
+	if g.Options.Settings.Github != nil {
+		opts.Settings = g.Options.Settings
 	}
 	err = CreateCRD(ctx, t, repoinfo, runcnx, opts, ghcnx, targetNS)
 	assert.NilError(t, err)
@@ -302,6 +322,7 @@ func (g *PRTest) RunPushRequest(ctx context.Context, t *testing.T) {
 	assert.NilError(t, err)
 
 	targetRefName := targetBranch
+	g.TargetRefName = targetRefName
 	cloneURL, err := scm.MakeGitCloneURL(repoinfo.GetCloneURL(), "git", *ghcnx.Token)
 	assert.NilError(t, err)
 	scmOpts := scm.Opts{
@@ -316,6 +337,7 @@ func (g *PRTest) RunPushRequest(ctx context.Context, t *testing.T) {
 	branch, _, err := ghcnx.Client().Repositories.GetBranch(ctx, opts.Organization, opts.Repo, targetBranch, 1)
 	assert.NilError(t, err)
 	sha := branch.GetCommit().GetSHA()
+	g.SHA = sha
 	g.Logger.Infof("Commit %s has been created and pushed to %s in branch %s", sha, branch.GetCommit().GetHTMLURL(), branch.GetName())
 	assert.NilError(t, err)
 
@@ -329,14 +351,6 @@ func (g *PRTest) RunPushRequest(ctx context.Context, t *testing.T) {
 		}
 		wait.Succeeded(ctx, t, runcnx, opts, sopt)
 	}
-
-	g.Cnx = runcnx
-	g.Options = opts
-	g.Provider = ghcnx
-	g.TargetNamespace = targetNS
-	g.TargetRefName = targetRefName
-	g.PRNumber = -1
-	g.SHA = sha
 }
 
 func UpdateFilesInRef(ctx context.Context, client *github.Client, owner, repo, branch, commitMessage string, files map[string]string) (string, error) {
