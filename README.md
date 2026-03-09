@@ -1,4 +1,4 @@
-# Pipelines-as-Code
+# Tekton Pipelines-as-Code
 
 [![Latest Release](https://img.shields.io/github/v/release/openshift-pipelines/pipelines-as-code)](https://github.com/openshift-pipelines/pipelines-as-code/releases/latest)
 [![Container Repository on GHCR](https://img.shields.io/badge/GHCR-image-87DCC0.svg?logo=GitHub)](https://github.com/openshift-pipelines/pipelines-as-code/pkgs/container/pipelines-as-code)
@@ -6,7 +6,9 @@
 [![E2E Tests](https://github.com/openshift-pipelines/pipelines-as-code/actions/workflows/e2e.yaml/badge.svg)](https://github.com/openshift-pipelines/pipelines-as-code/actions/workflows/e2e.yaml)
 [![License](https://img.shields.io/github/license/openshift-pipelines/pipelines-as-code)](LICENSE)
 
-Pipelines-as-Code is an opinionated CI/CD solution for Tekton and OpenShift Pipelines that allows you to define and manage your pipelines directly from your source code repository.
+<img src="docs/static/images/pac-logo-with-tagline-small.png" alt="PAC LOGO" width="300" align="right"/>
+
+Pipelines-as-Code is an opinionated CI/CD solution for Tekton that allows you to define and manage your pipelines directly from your source code repository.
 
 ## Overview
 
@@ -418,7 +420,6 @@ Join our vibrant community of developers and DevOps engineers:
 ### **Stay Updated**
 
 - **Releases**: Follow our [releases](https://github.com/openshift-pipelines/pipelines-as-code/releases) for the latest updates
-- **Blog**: Read about new features and use cases on the [OpenShift Pipelines](https://www.redhat.com/en/technologies/cloud-computing/openshift/pipelines) website.
 
 ## License
 

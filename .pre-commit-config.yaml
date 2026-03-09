@@ -1,7 +1,7 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 default_install_hook_types: ["pre-push"]
-exclude: '(^docs/themes/hugo-book|^vendor|.*golden$|^\.vale)'
+exclude: '(^docs/_vendor|^docs/themes/hugo-book|^vendor|.*golden$|^\.vale)'
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -10,6 +10,7 @@ repos:
       - id: check-toml
       - id: check-shebang-scripts-are-executable
       - id: check-json
+        exclude: "^docs/_vendor/"
       - id: check-vcs-permalinks
       - id: detect-private-key
         exclude: ".*_test.go"
@@ -28,7 +29,7 @@ repos:
         types: [go]
         pass_filenames: false
       - id: lint
-        name: "Linting"
+        name: "Go Linting"
         entry: make
         args: ["lint"]
         language: system
@@ -51,4 +52,11 @@ repos:
         language: system
         types: [text]
         args: ["gitlint"]
+      - id: check-links
+        name: "Documentation link check"
+        entry: make
+        args: ["check-links"]
+        language: system
+        files: "^docs/"
+        pass_filenames: false
 # TODO: add a lint-sh when we have the errors fix

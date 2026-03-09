@@ -1,0 +1,35 @@
+DirectoryPath: "tmp/docs-build-test"
+CheckExternal: true
+CheckInternal: true
+CheckInternalHash: true
+CheckMailto: false
+CheckTel: false
+CheckFavicon: false
+IgnoreURLs:
+  # localhost/loopback references are not real external links
+  - "localhost"
+  - "127\\.0\\.0\\.1"
+  # GitHub rate-limits unauthenticated requests; these are template-generated known-valid URLs
+  - "github\\.com/.*/edit/"
+  - "github\\.com/.*/blob/"
+  - "github\\.com/.*/tree/"
+  # Google Fonts are always valid and can be slow to respond
+  - "fonts\\.googleapis\\.com"
+  - "fonts\\.gstatic\\.com"
+  # Placeholder/example URLs used in documentation
+  - "github\\.com/yourusername/"
+  - "github\\.com/my-org/"
+  - "github\\.com/organization/"
+  - "your\\.forgejo\\.domain"
+  # Sites that block automated requests with 403
+  - "developers\\.redhat\\.com"
+  - "platform\\.openai\\.com"
+  # GitLab blocks automated requests
+  - "gitlab\\.com/organization/"
+  # VS Code marketplace returns 404 for automated requests
+  - "marketplace\\.visualstudio\\.com"
+IgnoreDirectoryMissingTrailingSlash: true
+ExternalTimeout: 30
+CacheExpires: "6h"
+OutputDir: "tmp/.htmltest"
+LogLevel: 2

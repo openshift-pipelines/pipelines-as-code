@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2"
+	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v3"
 	"github.com/google/go-github/v81/github"
 	"github.com/tektoncd/pipeline/pkg/names"
 	"gotest.tools/v3/assert"
@@ -554,7 +554,7 @@ func TestGiteaConfigCancelInProgressAfterPRClosed(t *testing.T) {
 	closed := forgejo.StateClosed
 	_, _, err = topts.GiteaCNX.Client().EditPullRequest(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index, forgejo.EditPullRequestOption{
 		State: &closed,
-		Body:  topts.PullRequest.Body,
+		Body:  &topts.PullRequest.Body,
 	})
 	assert.NilError(t, err)
 

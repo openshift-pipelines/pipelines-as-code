@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2"
+	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v3"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/acl"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/policy"
@@ -22,6 +22,10 @@ func (v *Provider) CheckPolicyAllowing(_ context.Context, event *info.Event, all
 	if resp.StatusCode == http.StatusNotFound {
 		// we explicitly disallow the policy when there is no team on org
 		return false, fmt.Sprintf("no teams on org %s", event.Organization)
+	}
+	if resp.StatusCode == http.StatusForbidden {
+		v.Logger.Warnf("policy check: ListOrgTeams returned 403 for org %s, sender %s: %v", event.Organization, event.Sender, err)
+		return false, fmt.Sprintf("unable to list teams on org %s: the token used doesn't have permission to list teams in this org, make sure the token owner is a member of the org", event.Organization)
 	}
 	if err != nil {
 		// probably a 500 or another api error, no need to try again and again with other teams

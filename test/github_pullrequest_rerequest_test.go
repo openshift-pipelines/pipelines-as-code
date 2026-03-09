@@ -22,9 +22,6 @@ import (
 // TestGithubPullRerequest is a test that will create a pull request and check
 // if we can rerequest a specific check or the full check suite.
 func TestGithubGHEPullRerequest(t *testing.T) {
-	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
-		t.Skip("Skipping test since only enabled for nightly")
-	}
 	ctx := context.TODO()
 	g := &tgithub.PRTest{
 		Label:     "Github Rerequest",
@@ -50,7 +47,7 @@ func TestGithubGHEPullRerequest(t *testing.T) {
 		Sender:        g.Options.Organization,
 	}
 
-	installID, err := strconv.ParseInt(os.Getenv("TEST_GITHUB_SECOND_APPLICATION_ID"), 10, 64)
+	installID, err := strconv.ParseInt(os.Getenv("TEST_GITHUB_SECOND_REPO_INSTALLATION_ID"), 10, 64)
 	assert.NilError(t, err)
 	event := github.CheckRunEvent{
 		Action: github.Ptr("rerequested"),
@@ -84,7 +81,7 @@ func TestGithubGHEPullRerequest(t *testing.T) {
 		os.Getenv("TEST_GITHUB_SECOND_EL_URL"),
 		os.Getenv("TEST_GITHUB_SECOND_WEBHOOK_SECRET"),
 		os.Getenv("TEST_GITHUB_SECOND_API_URL"),
-		os.Getenv("TEST_GITHUB_SECOND_APPLICATION_ID"),
+		os.Getenv("TEST_GITHUB_SECOND_REPO_INSTALLATION_ID"),
 		event,
 		"check_run",
 	)
