@@ -5,7 +5,6 @@ package test
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 
