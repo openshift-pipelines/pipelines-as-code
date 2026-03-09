@@ -55,9 +55,6 @@ func TestGithubGHEPullRequest(t *testing.T) {
 }
 
 func TestGithubGHEPullRequestMultiples(t *testing.T) {
-	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
-		t.Skip("Skipping test since only enabled for nightly")
-	}
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label:     "Github multiple PullRequest",
@@ -69,9 +66,6 @@ func TestGithubGHEPullRequestMultiples(t *testing.T) {
 }
 
 func TestGithubGHEPullRequestMatchOnCEL(t *testing.T) {
-	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
-		t.Skip("Skipping test since only enabled for nightly")
-	}
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label:     "Github CEL Match",
