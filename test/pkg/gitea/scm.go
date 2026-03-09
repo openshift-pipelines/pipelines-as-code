@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"testing"
 
-	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2"
+	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v3"
 	"github.com/google/go-github/v81/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	pgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
@@ -112,12 +112,31 @@ func CreateGiteaRepo(giteaClient *forgejo.Client, user, name, defaultBranch, hoo
 	// Create a new repo
 	if onOrg {
 		logger.Infof("Creating org %s", name)
+		adminUser := user
 		user = "org-" + name
 		_, _, err := giteaClient.CreateOrg(forgejo.CreateOrgOption{
 			Name: user,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to create org: %w", err)
+		}
+		// Ensure admin user is in the Owners team so that ListOrgTeams works
+		// with the admin token (Forgejo 13+ requires org membership).
+		teams, _, listErr := giteaClient.ListOrgTeams(user, forgejo.ListTeamsOptions{})
+		if listErr != nil {
+			logger.Warnf("failed to list org teams for %s: %v", user, listErr)
+		} else {
+			for _, team := range teams {
+				if team.Name == "Owners" {
+					_, addErr := giteaClient.AddTeamMember(team.ID, adminUser)
+					if addErr != nil {
+						logger.Warnf("failed to add user %s to Owners team in org %s: %v", adminUser, user, addErr)
+					} else {
+						logger.Infof("added user %s to Owners team in org %s", adminUser, user)
+					}
+					break
+				}
+			}
 		}
 		logger.Infof("Creating gitea repository on org %s", name)
 		repo, _, err = giteaClient.CreateOrgRepo(user, forgejo.CreateRepoOption{
@@ -170,13 +189,16 @@ func GetGiteaRepo(giteaClient *forgejo.Client, user, name string, _ *zap.Sugared
 func CreateTeam(topts *TestOpts, orgName, teamName string) (*forgejo.Team, error) {
 	team, _, err := topts.GiteaCNX.Client().CreateTeam(orgName, forgejo.CreateTeamOption{
 		Permission: forgejo.AccessModeWrite,
-		Units: []forgejo.RepoUnitType{
-			forgejo.RepoUnitPulls,
+		UnitsMap: map[string]string{
+			string(forgejo.RepoUnitPulls): "write",
 		},
 		Name: teamName,
 	})
+	if err != nil {
+		return nil, err
+	}
 	topts.ParamsRun.Clients.Log.Infof("Team %s has been created on Org %s", team.Name, orgName)
-	return team, err
+	return team, nil
 }
 
 func RemoveCommentMatching(topts *TestOpts, commentString *regexp.Regexp) error {

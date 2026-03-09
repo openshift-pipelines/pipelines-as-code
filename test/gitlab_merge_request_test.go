@@ -5,6 +5,7 @@ package test
 import (
 	"context"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -17,6 +18,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	tgitlab "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitlab"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
@@ -766,6 +768,113 @@ func TestGitlabMergeRequestVariableSubs(t *testing.T) {
 		nil,
 	)
 	assert.NilError(t, err, "PipelineRun logs should contain the commit message: %s", commitTitle)
+}
+
+// TestGitlabMergeRequestCommentStrategyUpdateCELErrorReplacement tests:
+// 1. A CEL error comment is posted for a PLR
+// 2. After fixing the CEL error with a new commit, the same comment is updated with success status
+// 3. Only one comment exists.
+func TestGitlabMergeRequestCommentStrategyUpdateCELErrorReplacement(t *testing.T) {
+	topts := &tgitlab.TestOpts{
+		TargetEvent: triggertype.PullRequest.String(),
+		YAMLFiles: map[string]string{
+			".tekton/pipelinerun-invalid-cel.yaml": "testdata/failures/pipelinerun-invalid-cel.yaml",
+		},
+		SkipEventsCheck: true,
+		Settings: &v1alpha1.Settings{
+			Gitlab: &v1alpha1.GitlabSettings{
+				CommentStrategy: provider.UpdateCommentStrategy,
+			},
+		},
+	}
+	ctx, cleanup := tgitlab.TestMR(t, topts)
+	defer cleanup()
+
+	// Poll for the CEL error note
+	topts.ParamsRun.Clients.Log.Infof("Waiting for CEL error comment to be created")
+	var celErrorNoteID int64
+	var pipelineRunName string
+	markerPattern := regexp.MustCompile(`<!-- pac-status-([^\s]+) -->`)
+	maxLoop := 20
+	for i := 0; i < maxLoop; i++ {
+		notes, _, err := topts.GLProvider.Client().Notes.ListMergeRequestNotes(topts.ProjectID, int64(topts.MRNumber), nil)
+		assert.NilError(t, err)
+		for _, note := range notes {
+			if note.System {
+				continue
+			}
+			matches := markerPattern.FindStringSubmatch(note.Body)
+			if len(matches) > 1 {
+				celErrorNoteID = note.ID
+				pipelineRunName = matches[1]
+				break
+			}
+		}
+		if celErrorNoteID != 0 {
+			break
+		}
+		topts.ParamsRun.Clients.Log.Infof("Loop %d/%d: Waiting for CEL error comment...", i+1, maxLoop)
+		time.Sleep(10 * time.Second)
+	}
+	assert.Assert(t, celErrorNoteID != 0, "CEL error comment not found")
+	topts.ParamsRun.Clients.Log.Infof("Found CEL error note ID: %d for PLR: %s", celErrorNoteID, pipelineRunName)
+
+	// Fix the CEL expression and push
+	fixedContentRaw, err := os.ReadFile("testdata/failures/pipelinerun-invalid-cel.yaml")
+	assert.NilError(t, err)
+	fixedContent := strings.ReplaceAll(string(fixedContentRaw), `event == "pull request" |`, `event_type == "Merge Request"`)
+	fixedContent = strings.ReplaceAll(fixedContent, `"\\ .PipelineName //"`, fmt.Sprintf("%q", pipelineRunName))
+	fixedContent = strings.ReplaceAll(fixedContent, `"\\ .TargetNamespace //"`, fmt.Sprintf("%q", topts.TargetNS))
+
+	commitTitle := "fix: replace CEL error with valid pipelinerun"
+	scmOpts := &scm.Opts{
+		GitURL:        topts.GitCloneURL,
+		Log:           topts.ParamsRun.Clients.Log,
+		WebURL:        topts.GitHTMLURL,
+		TargetRefName: topts.TargetRefName,
+		BaseRefName:   topts.TargetRefName,
+		CommitTitle:   commitTitle,
+	}
+	sha := scm.PushFilesToRefGit(t, scmOpts, map[string]string{
+		".tekton/pipelinerun-invalid-cel.yaml": fixedContent,
+	})
+	topts.ParamsRun.Clients.Log.Infof("Pushed fix commit: %s", sha)
+
+	sopt := twait.SuccessOpt{
+		Title:           commitTitle,
+		TargetNS:        topts.TargetNS,
+		NumberofPRMatch: 1,
+		SHA:             sha,
+		OnEvent:         "Merge Request",
+	}
+	twait.Succeeded(ctx, t, topts.ParamsRun, topts.Opts, sopt)
+
+	// Verify commit status is success
+	commitStatuses, _, err := topts.GLProvider.Client().Commits.GetCommitStatuses(topts.ProjectID, sha, &clientGitlab.GetCommitStatusesOptions{})
+	assert.NilError(t, err)
+	assert.Assert(t, len(commitStatuses) > 0, "Expected at least one commit status")
+	for _, cs := range commitStatuses {
+		assert.Equal(t, "success", cs.Status,
+			"Commit status %s should be success, got %s", cs.Name, cs.Status)
+	}
+
+	// Verify the same comment was updated (not recreated)
+	notes, _, err := topts.GLProvider.Client().Notes.ListMergeRequestNotes(topts.ProjectID, int64(topts.MRNumber), nil)
+	assert.NilError(t, err)
+	var updatedNoteID int64
+	for _, note := range notes {
+		if note.System {
+			continue
+		}
+		if markerPattern.MatchString(note.Body) {
+			updatedNoteID = note.ID
+			break
+		}
+	}
+	assert.Assert(t, updatedNoteID != 0, "Updated comment not found")
+	assert.Equal(t, celErrorNoteID, updatedNoteID,
+		"Comment should be updated (ID %d), not a new one created (got ID %d)",
+		celErrorNoteID, updatedNoteID)
 }
 
 // Local Variables:

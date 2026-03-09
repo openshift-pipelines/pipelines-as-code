@@ -53,7 +53,7 @@ To create the GitHub App manually:
 
 - Click on **Create GitHub App**.
 
-- Take note of the **App ID** at the top of the page on the detail's page of the GitHub App you just created.
+- Take note of the **App ID** at the top of the page on the **General** tab, under **About**, for the GitHub App you just created.
 
 - In the **Private keys** section, click on **Generate Private key** to generate a private key for the GitHub app. It downloads automatically. Store the private key in a safe place because you need it in the next section and when reconfiguring this app for a different cluster.
 
