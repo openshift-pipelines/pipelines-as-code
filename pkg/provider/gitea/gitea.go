@@ -61,12 +61,13 @@ type Provider struct {
 	Token            *string
 	giteaInstanceURL string
 	// only exposed for e2e tests
-	Password     string
-	repo         *v1alpha1.Repository
-	eventEmitter *events.EventEmitter
-	run          *params.Run
-	triggerEvent string
-	pacUserID    int64 // user login used by PAC
+	Password           string
+	repo               *v1alpha1.Repository
+	eventEmitter       *events.EventEmitter
+	run                *params.Run
+	triggerEvent       string
+	pacUserID          int64 // user login used by PAC
+	cachedChangedFiles *changedfiles.ChangedFiles
 }
 
 func (v *Provider) Client() *forgejo.Client {
@@ -535,7 +536,19 @@ type PushPayload struct {
 	Commits []forgejo.PayloadCommit `json:"commits,omitempty"`
 }
 
-func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) (changedfiles.ChangedFiles, error) {
+// GetFiles gets and caches the list of files changed by a given event.
+func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) (changedfiles.ChangedFiles, error) {
+	if v.cachedChangedFiles == nil {
+		changes, err := v.fetchChangedFiles(ctx, runevent)
+		if err != nil {
+			return changedfiles.ChangedFiles{}, err
+		}
+		v.cachedChangedFiles = &changes
+	}
+	return *v.cachedChangedFiles, nil
+}
+
+func (v *Provider) fetchChangedFiles(_ context.Context, runevent *info.Event) (changedfiles.ChangedFiles, error) {
 	changedFiles := changedfiles.ChangedFiles{}
 
 	//nolint:exhaustive // we don't need to handle all cases
