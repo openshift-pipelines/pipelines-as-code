@@ -78,7 +78,7 @@ var _ controller.Informer = (*recorderInformer)(nil)
 // Run starts the recorder informer in a goroutine.
 func (ri *recorderInformer) Run(stopCh <-chan struct{}) {
 	// Turn the stopCh into a context for reporting metrics.
-	ctx, cancel := context.WithCancel(ri.ctx)
+	ctx, cancel := context.WithCancel(ri.ctx) // #nosec G118 -- cancel is called in the goroutine below
 	go func() {
 		<-stopCh
 		cancel()
