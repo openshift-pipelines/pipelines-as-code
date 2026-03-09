@@ -864,7 +864,8 @@ func (v *Provider) debugCommentPhase(event *info.Event, trace commentTraceLogCon
 		pr = event.PullRequestNumber
 	}
 
-	baseFields := []any{
+	baseFields := make([]any, 0, 18+len(kv))
+	baseFields = append(baseFields,
 		"phase", phase,
 		"organization", org,
 		"repository", repo,
@@ -874,7 +875,7 @@ func (v *Provider) debugCommentPhase(event *info.Event, trace commentTraceLogCon
 		"marker_hash", trace.markerHash,
 		"marker_len", trace.markerLen,
 		"controller_label", trace.controllerLabel,
-	}
+	)
 	v.Logger.Debugw("github comment dedup flow", append(baseFields, kv...)...)
 }
 
