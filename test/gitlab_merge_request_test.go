@@ -822,7 +822,7 @@ func TestGitlabMergeRequestCommentStrategyUpdateCELErrorReplacement(t *testing.T
 	// Fix the CEL expression and push
 	fixedContentRaw, err := os.ReadFile("testdata/failures/pipelinerun-invalid-cel.yaml")
 	assert.NilError(t, err)
-	fixedContent := strings.ReplaceAll(string(fixedContentRaw), `event == "pull request" |`, `"true"`)
+	fixedContent := strings.ReplaceAll(string(fixedContentRaw), `event == "pull request" |`, `event_type == "Merge Request"`)
 	fixedContent = strings.ReplaceAll(fixedContent, `"\\ .PipelineName //"`, fmt.Sprintf("%q", pipelineRunName))
 	fixedContent = strings.ReplaceAll(fixedContent, `"\\ .TargetNamespace //"`, fmt.Sprintf("%q", topts.TargetNS))
 
