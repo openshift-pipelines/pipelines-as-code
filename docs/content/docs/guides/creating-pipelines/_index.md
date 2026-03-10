@@ -40,7 +40,7 @@ The following table lists all available dynamic variables. The most commonly use
 | sender | The username (or account ID on some providers) of the user who triggered the commit. | `{{sender}}` | johndoe |
 | source_branch | The branch name where the event originates. | `{{source_branch}}` | main |
 | git_tag | The Git tag pushed. Only available for tag push events; otherwise an empty string `""`. | `{{git_tag}}` | v1.0 |
-| source_url | The source repository URL where the event originates. For push events, this equals `repo_url`. | `{{source_url}}` | <https://github.com/openshift-pipelines/pipelines-as-code> |
+| source_url | The source repository URL where the event originates. For push events, this equals `repo_url`. | `{{source_url}}` | <https://github.com/tektoncd/pipelines-as-code> |
 | target_branch | The branch name that the event targets. For push events, this equals `source_branch`. | `{{target_branch}}` | main |
 | target_namespace | The target namespace where the Repository CR matched and where Pipelines-as-Code creates the PipelineRun. | `{{target_namespace}}` | my-namespace |
 | trigger_comment | The comment that triggered the PipelineRun when you use a [GitOps command]({{< relref "/docs/guides/gitops-commands" >}}) (such as `/test` or `/retest`). | `{{trigger_comment}}` | /merge-pr branch |
@@ -105,4 +105,4 @@ There are many ways to match an event to a PipelineRun. See the [event matching]
 
 ## Example
 
-Pipelines-as-Code tests itself using this approach. You can see working examples in its [.tekton](https://github.com/openshift-pipelines/pipelines-as-code/tree/main/.tekton) directory.
+Pipelines-as-Code tests itself using this approach. You can see working examples in its [.tekton](https://github.com/tektoncd/pipelines-as-code/tree/main/.tekton) directory.

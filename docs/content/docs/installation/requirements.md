@@ -108,7 +108,7 @@ brew install openshift-pipelines/pipelines-as-code/tkn-pac
 **Install via Direct Download** (Linux):
 
 ```bash
-curl -L https://github.com/openshift-pipelines/pipelines-as-code/releases/latest/download/tkn-pac-linux-amd64 -o tkn-pac
+curl -L https://github.com/tektoncd/pipelines-as-code/releases/latest/download/tkn-pac-linux-amd64 -o tkn-pac
 chmod +x tkn-pac
 sudo mv tkn-pac /usr/local/bin/
 ```
@@ -116,7 +116,7 @@ sudo mv tkn-pac /usr/local/bin/
 **Install via Direct Download** (macOS):
 
 ```bash
-curl -L https://github.com/openshift-pipelines/pipelines-as-code/releases/latest/download/tkn-pac-darwin-amd64 -o tkn-pac
+curl -L https://github.com/tektoncd/pipelines-as-code/releases/latest/download/tkn-pac-darwin-amd64 -o tkn-pac
 chmod +x tkn-pac
 sudo mv tkn-pac /usr/local/bin/
 ```

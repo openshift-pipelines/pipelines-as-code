@@ -10,7 +10,7 @@ if [[ -d ${dir}/git ]]; then
 	git pull --all
 	git clean -f .
 else
-	git clone --tags https:///github.com/openshift-pipelines/pipelines-as-code.git ${dir}/git
+	git clone --tags https:///github.com/tektoncd/pipelines-as-code.git ${dir}/git
 	cd ${dir}/git
 fi
 

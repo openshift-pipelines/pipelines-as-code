@@ -64,11 +64,11 @@ release:
 
     ### Openshift
     ```shell
-    kubectl apply -f https://github.com/openshift-pipelines/pipelines-as-code/releases/download/{{.Tag}}/release.yaml
+    kubectl apply -f https://github.com/tektoncd/pipelines-as-code/releases/download/{{.Tag}}/release.yaml
     ```
     ### Kubernetes
     ```shell
-    kubectl apply -f https://github.com/openshift-pipelines/pipelines-as-code/releases/download/{{.Tag}}/release.k8s.yaml
+    kubectl apply -f https://github.com/tektoncd/pipelines-as-code/releases/download/{{.Tag}}/release.k8s.yaml
     ```
     ### Documentation
 

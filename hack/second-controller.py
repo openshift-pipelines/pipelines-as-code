@@ -49,7 +49,7 @@ You can define a few env variables to change the behavior:
 • PAC_CONTROLLER_SMEE_URL: the url to use if you want to deploy a gosmee
                            container to this controller. If not set, it won't deploy it.
 • PAC_CONTROLLER_IMAGE: the image name of the controller. use the word "ko" to use ko to build the image
-                       (default: ghcr.io/openshift-pipelines/pipelines-as-code/pipelines-as-code-controller:stable)
+                       (default: ghcr.io/tektoncd/pipelines-as-code/pipelines-as-code-controller:stable)
 """
 
 
@@ -88,7 +88,7 @@ def parse_arguments():
         help="use this image for the controller, instead of the default ones, (use the keyword ko for ko)",
         default=os.environ.get(
             "PAC_CONTROLLER_IMAGE",
-            "ghcr.io/openshift-pipelines/pipelines-as-code/pipelines-as-code-controller:stable",
+            "ghcr.io/tektoncd/pipelines-as-code/pipelines-as-code-controller:stable",
         ),
     )
 

@@ -10,7 +10,7 @@ This page explains how to install the `tkn pac` CLI. You need this tool to boots
 {{< tabs >}}
 {{< tab name="Binary" >}}
 Download the latest binary directly for your operating system from the
-[releases](https://github.com/openshift-pipelines/pipelines-as-code/releases)
+[releases](https://github.com/tektoncd/pipelines-as-code/releases)
 page.
 
 Available operating systems are:
@@ -48,7 +48,7 @@ The `tkn pac` plug-in is compatible with [Homebrew on Linux](https://docs.brew.s
 ```shell
 # use docker
 podman run -e KUBECONFIG=/tmp/kube/config -v ${HOME}/.kube:/tmp/kube \
-     -it  ghcr.io/openshift-pipelines/pipelines-as-code/tkn-pac:stable tkn-pac help
+     -it  ghcr.io/tektoncd/pipelines-as-code/tkn-pac:stable tkn-pac help
 ```
 
 {{< /tab >}}
@@ -57,7 +57,7 @@ podman run -e KUBECONFIG=/tmp/kube/config -v ${HOME}/.kube:/tmp/kube \
 To install from the Git repository:
 
 ```shell
-go install github.com/openshift-pipelines/pipelines-as-code/cmd/tkn-pac
+go install github.com/tektoncd/pipelines-as-code/cmd/tkn-pac
 ```
 
 {{< /tab >}}

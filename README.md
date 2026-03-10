@@ -1,10 +1,10 @@
 # Tekton Pipelines-as-Code
 
-[![Latest Release](https://img.shields.io/github/v/release/openshift-pipelines/pipelines-as-code)](https://github.com/openshift-pipelines/pipelines-as-code/releases/latest)
-[![Container Repository on GHCR](https://img.shields.io/badge/GHCR-image-87DCC0.svg?logo=GitHub)](https://github.com/openshift-pipelines/pipelines-as-code/pkgs/container/pipelines-as-code)
-[![Go Report Card](https://goreportcard.com/badge/openshift-pipelines/pipelines-as-code)](https://goreportcard.com/report/openshift-pipelines/pipelines-as-code)
-[![E2E Tests](https://github.com/openshift-pipelines/pipelines-as-code/actions/workflows/e2e.yaml/badge.svg)](https://github.com/openshift-pipelines/pipelines-as-code/actions/workflows/e2e.yaml)
-[![License](https://img.shields.io/github/license/openshift-pipelines/pipelines-as-code)](LICENSE)
+[![Latest Release](https://img.shields.io/github/v/release/tektoncd/pipelines-as-code)](https://github.com/tektoncd/pipelines-as-code/releases/latest)
+[![Container Repository on GHCR](https://img.shields.io/badge/GHCR-image-87DCC0.svg?logo=GitHub)](https://github.com/tektoncd/pipelines-as-code/pkgs/container/pipelines-as-code)
+[![Go Report Card](https://goreportcard.com/badge/tektoncd/pipelines-as-code)](https://goreportcard.com/report/tektoncd/pipelines-as-code)
+[![E2E Tests](https://github.com/tektoncd/pipelines-as-code/actions/workflows/e2e.yaml/badge.svg)](https://github.com/tektoncd/pipelines-as-code/actions/workflows/e2e.yaml)
+[![License](https://img.shields.io/github/license/tektoncd/pipelines-as-code)](LICENSE)
 
 <img src="docs/static/images/pac-logo-with-tagline-small.png" alt="PAC LOGO" width="300" align="right"/>
 
@@ -294,7 +294,7 @@ Get up and running with Pipelines-as-Code in just a few minutes:
 1. **Install the CLI**:
 
    ```shell
-   brew install openshift-pipelines/pipelines-as-code/tkn-pac
+   brew install tektoncd/pipelines-as-code/tkn-pac
    ```
 
 2. **Bootstrap a new repository** (if you have a GitHub repo):
@@ -334,14 +334,14 @@ Get up and running with Pipelines-as-Code in just a few minutes:
 #### Option 1: Homebrew (macOS/Linux)
 
 ```shell
-brew install openshift-pipelines/pipelines-as-code/tkn-pac
+brew install tektoncd/pipelines-as-code/tkn-pac
 ```
 
 #### Option 2: Direct Download
 
 ```shell
 # Download latest release
-curl -L https://github.com/openshift-pipelines/pipelines-as-code/releases/latest/download/tkn-pac-linux-amd64 -o tkn-pac
+curl -L https://github.com/tektoncd/pipelines-as-code/releases/latest/download/tkn-pac-linux-amd64 -o tkn-pac
 chmod +x tkn-pac
 sudo mv tkn-pac /usr/local/bin/
 ```
@@ -350,7 +350,7 @@ sudo mv tkn-pac /usr/local/bin/
 
 ```shell
 # Install Pipelines-as-Code controller
-kubectl apply -f https://github.com/openshift-pipelines/pipelines-as-code/releases/latest/download/release.yaml
+kubectl apply -f https://github.com/tektoncd/pipelines-as-code/releases/latest/download/release.yaml
 ```
 
 **Verify Installation**:
@@ -381,7 +381,7 @@ We welcome contributions from everyone! Whether you're fixing bugs, adding featu
 ### **Getting Started**
 
 - Read our [development guide](https://pipelinesascode.com/docs/dev/) for setup instructions
-- Check out [good first issues](https://github.com/openshift-pipelines/pipelines-as-code/labels/good%20first%20issue) to get started
+- Check out [good first issues](https://github.com/tektoncd/pipelines-as-code/labels/good%20first%20issue) to get started
 - Review our [Code of Conduct](code-of-conduct.md) to understand our community standards
 
 ### **How to Contribute**
@@ -407,19 +407,19 @@ Join our vibrant community of developers and DevOps engineers:
 
 ### **Getting Help**
 
-- **GitHub Discussions**: Ask questions and get community support in [GitHub Discussions](https://github.com/openshift-pipelines/pipelines-as-code/discussions)
+- **GitHub Discussions**: Ask questions and get community support in [GitHub Discussions](https://github.com/tektoncd/pipelines-as-code/discussions)
 - **Slack**: Join us on the TektonCD Slack in the [#pipelinesascode](https://tektoncd.slack.com/archives/C04URDDJ9MZ) channel ([Join TektonCD Slack](https://github.com/tektoncd/community/blob/main/contact.md#slack))
-- **Issues**: Report bugs and request features via [GitHub Issues](https://github.com/openshift-pipelines/pipelines-as-code/issues)
+- **Issues**: Report bugs and request features via [GitHub Issues](https://github.com/tektoncd/pipelines-as-code/issues)
 
 ### **Contributing**
 
-- **Good First Issues**: Start contributing with [good first issues](https://github.com/openshift-pipelines/pipelines-as-code/labels/good%20first%20issue)
-- **Help Wanted**: Check out [help wanted](https://github.com/openshift-pipelines/pipelines-as-code/labels/help%20wanted) issues
+- **Good First Issues**: Start contributing with [good first issues](https://github.com/tektoncd/pipelines-as-code/labels/good%20first%20issue)
+- **Help Wanted**: Check out [help wanted](https://github.com/tektoncd/pipelines-as-code/labels/help%20wanted) issues
 - **Developer Docs**: See our [development guide](https://pipelinesascode.com/docs/dev/)
 
 ### **Stay Updated**
 
-- **Releases**: Follow our [releases](https://github.com/openshift-pipelines/pipelines-as-code/releases) for the latest updates
+- **Releases**: Follow our [releases](https://github.com/tektoncd/pipelines-as-code/releases) for the latest updates
 
 ## License
 

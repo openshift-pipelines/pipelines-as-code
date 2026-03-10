@@ -259,7 +259,7 @@ make test-e2e
 
 ### Provider-Specific E2E Tests
 
-For GitHub, GitLab, and Bitbucket tests, you need to set up provider-specific environment variables. See the [E2E on kind workflow](https://github.com/openshift-pipelines/pipelines-as-code/blob/main/.github/workflows/kind-e2e-tests.yaml) for the complete list.
+For GitHub, GitLab, and Bitbucket tests, you need to set up provider-specific environment variables. See the [E2E on kind workflow](https://github.com/tektoncd/pipelines-as-code/blob/main/.github/workflows/kind-e2e-tests.yaml) for the complete list.
 
 ### Debugging E2E Tests
 
@@ -364,7 +364,7 @@ git commit -m "test: update golden files for new output format"
 
 ### E2E Golden Files
 
-For E2E test golden files, see [test/README.md](https://github.com/openshift-pipelines/pipelines-as-code/blob/main/test/README.md).
+For E2E test golden files, see [test/README.md](https://github.com/tektoncd/pipelines-as-code/blob/main/test/README.md).
 
 ## Mocking
 
@@ -392,7 +392,7 @@ func (m *mockGitProvider) CreateComment(owner, repo string, number int, comment 
 func TestWithMock(t *testing.T) {
     mock := &mockGitProvider{
         createCommentFunc: func(owner, repo string, number int, comment string) error {
-            assert.Equal(t, owner, "openshift-pipelines")
+            assert.Equal(t, owner, "tektoncd")
             assert.Equal(t, repo, "pipelines-as-code")
             return nil
         },

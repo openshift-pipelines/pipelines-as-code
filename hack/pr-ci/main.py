@@ -382,7 +382,7 @@ def run_jira_create_test() -> None:
         "number": 123,
         "title": "feat: Add webhook controller for GitHub integration",
         "body": "This PR adds a new webhook controller that handles GitHub webhook events for better integration with Pipelines as Code.\n\nThe controller includes:\n- Event processing for push and pull request events\n- Validation of webhook payloads\n- Integration with existing pipeline triggers",
-        "html_url": "https://github.com/openshift-pipelines/pipelines-as-code/pull/123",
+        "html_url": "https://github.com/tektoncd/pipelines-as-code/pull/123",
         "user": {"login": "test-user"},
         "labels": [{"name": "enhancement"}, {"name": "controller"}],
     }
@@ -476,7 +476,7 @@ h2. *Done Checklist*
 
 h2. *Original Pull Request*
 
-[https://github.com/openshift-pipelines/pipelines-as-code/pull/123|https://github.com/openshift-pipelines/pipelines-as-code/pull/123]
+[https://github.com/tektoncd/pipelines-as-code/pull/123|https://github.com/tektoncd/pipelines-as-code/pull/123]
 
 h3. *Original Pull Request Description*
 
