@@ -149,7 +149,7 @@ spec:
           - name: openshift_console_host
             value: "console-openshift-console.apps.paac.openshift-pipelines.devcluster.openshift.com"
           - name: image_url
-            value: "https://github.com/osp-pac.png"
+            value: "https://github.com/tekton-pac-bot.png"
           - name: namespace
           - name: pipelineRun
         when:

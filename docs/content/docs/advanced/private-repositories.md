@@ -88,7 +88,7 @@ tasks:
 ```
 
 - For a complete working example, see the
-  [private repository PipelineRun test data](https://github.com/openshift-pipelines/pipelines-as-code/blob/main/test/testdata/pipelinerun_git_clone_private.yaml).
+  [private repository PipelineRun test data](https://github.com/tektoncd/pipelines-as-code/blob/main/test/testdata/pipelinerun_git_clone_private.yaml).
 
 ## Fetching remote tasks from private repositories
 

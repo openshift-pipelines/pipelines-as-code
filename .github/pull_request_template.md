@@ -66,7 +66,7 @@ If you have used AI assistance, please provide the following details:
       automate these checks.
 - [ ] 📖 I have added or updated documentation for any user-facing changes.
 - [ ] 🧪 I have added sufficient unit tests for my code changes.
-- [ ] 🎁 I have added end-to-end tests where feasible. See [README](https://github.com/openshift-pipelines/pipelines-as-code/blob/main/test/README.md) for more details.
+- [ ] 🎁 I have added end-to-end tests where feasible. See [README](https://github.com/tektoncd/pipelines-as-code/blob/main/test/README.md) for more details.
 - [ ] 🔎 I have addressed any CI test flakiness or provided a clear reason to bypass it.
 - [ ] If adding a provider feature, I have filled in the following and updated the provider documentation:
   - [ ] GitHub App

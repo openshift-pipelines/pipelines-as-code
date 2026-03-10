@@ -103,4 +103,4 @@ If your LLM provider bills are higher than expected, take these steps to reduce 
 
 - [Repository CR Reference]({{< relref "/docs/guides/repository-crd" >}})
 - [CEL Expressions Guide]({{< relref "/docs/guides/event-matching/cel-expressions" >}})
-- [Sample Configurations](https://github.com/openshift-pipelines/pipelines-as-code/tree/main/samples)
+- [Sample Configurations](https://github.com/tektoncd/pipelines-as-code/tree/main/samples)

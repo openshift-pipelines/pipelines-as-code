@@ -35,7 +35,7 @@ Once the tag is pushed, follow the release pipeline on the PAC cluster:
 
 After a while (gorelease takes some time), the new version should appear as a pre-release at:
 
-<https://github.com/openshift-pipelines/pipelines-as-code/releases>
+<https://github.com/tektoncd/pipelines-as-code/releases>
 
 ## Publishing the Release
 
@@ -55,7 +55,7 @@ If you need to re-trigger the release process due to system or other issues:
 
 ```shell
    git tag --force v1.2.3
-   git push --force git@github.com:openshift-pipelines/pipelines-as-code v1.2.3
+   git push --force git@github.com:tektoncd/pipelines-as-code v1.2.3
 ```
 
 Common issues:

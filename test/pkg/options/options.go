@@ -15,7 +15,7 @@ type E2E struct {
 
 var (
 	MainBranch     = "main"
-	RemoteTaskURL  = "https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/main/pkg/pipelineascode/testdata/pull_request/.tekton/task.yaml"
+	RemoteTaskURL  = "https://raw.githubusercontent.com/tektoncd/pipelines-as-code/main/pkg/pipelineascode/testdata/pull_request/.tekton/task.yaml"
 	RemoteTaskName = "task-from-tektondir"
 )
 

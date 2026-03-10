@@ -10,7 +10,7 @@
 # Required env vars:
 #   HUB_TOKEN      - GitHub API token
 #   GEMINI_API_KEY  - Gemini API key
-#   REPO_OWNER      - GitHub org  (e.g. openshift-pipelines)
+#   REPO_OWNER      - GitHub org  (e.g. tektoncd)
 #   REPO_NAME       - GitHub repo (e.g. pipelines-as-code)
 #
 # Optional:

@@ -92,4 +92,4 @@ api_url: "not-a-url"               # Invalid format
 
 ## Complete Configuration Example
 
-For a full configuration with multiple roles, see the [complete example](https://github.com/openshift-pipelines/pipelines-as-code/blob/main/samples/repository-llm.yaml) in the Pipelines-as-Code repository.
+For a full configuration with multiple roles, see the [complete example](https://github.com/tektoncd/pipelines-as-code/blob/main/samples/repository-llm.yaml) in the Pipelines-as-Code repository.

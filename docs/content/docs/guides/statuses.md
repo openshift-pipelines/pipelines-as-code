@@ -75,7 +75,7 @@ Tools like `golangci-lint`, `pylint`, `yamllint`, and many others can
 produce errors in this format.
 
 Refer to the Pipelines-as-Code
-[pull_request.yaml](https://github.com/openshift-pipelines/pipelines-as-code/blob/7c9b16409a1a6c93e9480758f069f881e5a50f05/.tekton/pull-request.yaml#L70)
+[pull_request.yaml](https://github.com/tektoncd/pipelines-as-code/blob/7c9b16409a1a6c93e9480758f069f881e5a50f05/.tekton/pull-request.yaml#L70)
 for an example of linting code and outputting errors in the
 specified format.
 
@@ -113,7 +113,7 @@ The `pipelinerun_status` field in the `Repository` CR is scheduled for deprecati
 ```console
 % kubectl get repo -n pipelines-as-code-ci
 NAME                  URL                                                        NAMESPACE             SUCCEEDED   REASON      STARTTIME   COMPLETIONTIME
-pipelines-as-code-ci   https://github.com/openshift-pipelines/pipelines-as-code   pipelines-as-code-ci   True        Succeeded   59m         56m
+pipelines-as-code-ci   https://github.com/tektoncd/pipelines-as-code   pipelines-as-code-ci   True        Succeeded   59m         56m
 ```
 
 You can use the `tkn pac describe` command from the [CLI]({{< relref "/docs/cli/" >}}) to view
@@ -128,11 +128,11 @@ Pipelines](https://github.com/tektoncd/pipeline/blob/main/docs/pipelines.md#addi
 This feature executes a set of tasks at the end of a
 PipelineRun, regardless of whether it succeeds or fails.
 
-For an example, see the [coverage generation PipelineRun](https://github.com/openshift-pipelines/pipelines-as-code/blob/16596b478f4bce202f9f69de9a4b5a7ca92962c1/.tekton/generate-coverage-release.yaml#L127) in the
+For an example, see the [coverage generation PipelineRun](https://github.com/tektoncd/pipelines-as-code/blob/16596b478f4bce202f9f69de9a4b5a7ca92962c1/.tekton/generate-coverage-release.yaml#L127) in the
 `.tekton/` directory of the Pipelines-as-Code repository. It uses the [finally
 task with the guard
 feature](https://tekton.dev/docs/pipelines/pipelines/#guard-finally-task-execution-using-when-expressions)
 to send a notification to Slack when any failure occurs in the PipelineRun. See
 it in action here:
 
-<https://github.com/openshift-pipelines/pipelines-as-code/blob/16596b478f4bce202f9f69de9a4b5a7ca92962c1/.tekton/generate-coverage-release.yaml#L126>
+<https://github.com/tektoncd/pipelines-as-code/blob/16596b478f4bce202f9f69de9a4b5a7ca92962c1/.tekton/generate-coverage-release.yaml#L126>
