@@ -350,7 +350,6 @@ jobs:
         run: |
           nohup gosmee client --saveDir /tmp/gosmee-replay-gitlab "${TEST_GITLAB_SMEEURL}" "https://${CONTROLLER_DOMAIN_URL}" >> /tmp/gosmee-gitlab.log 2>&1 &
 
-
       - name: Run gosmee for second controller GHE App
         if: startsWith(matrix.provider, 'github_ghe') || matrix.provider == 'concurrency'
         run: |
@@ -379,12 +378,14 @@ jobs:
           KOCACHE: /tmp/ko-cache
           KO_DOCKER_REPO: registry.paac-127-0-0-1.nip.io
           KUBECONFIG: /home/runner/.kube/config.local
+          PYSMEE_URL: ${{ secrets.PYSMEE_URL }}
           TARGET_TEAM_SLUGS: "pipeline-as-code,pipeline-as-code-contributors"
           TEST_EL_URL: https://paac.paac-127-0-0-1.nip.io
           TEST_EL_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
           TEST_PROVIDER: ${{ matrix.provider }}
 
           # GitHub (Public)
+          APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
           TEST_GITHUB_API_URL: api.github.com
           TEST_GITHUB_PRIVATE_TASK_NAME: task-remote
           TEST_GITHUB_PRIVATE_TASK_URL: https://github.com/openshift-pipelines/pipelines-as-code-e2e-tests-private/blob/main/remote_task.yaml
@@ -397,6 +398,7 @@ jobs:
           TEST_GITHUB_SECOND_API_URL: ghe.pipelinesascode.com
           TEST_GITHUB_SECOND_APPLICATION_ID: ${{ vars.TEST_GITHUB_SECOND_APPLICATION_ID }}
           TEST_GITHUB_SECOND_EL_URL: https://ghe.paac-127-0-0-1.nip.io
+          TEST_GITHUB_SECOND_PRIVATE_KEY: ${{ secrets.TEST_GITHUB_SECOND_PRIVATE_KEY }}
           TEST_GITHUB_SECOND_REPO_INSTALLATION_ID: 1
           TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP: pipelines-as-code/e2e
           TEST_GITHUB_SECOND_SMEE_URL: ${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}
@@ -438,13 +440,13 @@ jobs:
       - name: Start installing cluster with startpaac
         env:
           PAC_DIR: ${{ github.workspace }}
-          PAAC_DOMAIN: paac-127-0-0-1.nip.io
         run: |
           mkdir -p ~/secrets
           echo "${{ vars.APPLICATION_ID }}" > ~/secrets/github-application-id
           echo "${{ secrets.APP_PRIVATE_KEY }}" > ~/secrets/github-private-key
           echo "${{ secrets.WEBHOOK_SECRET }}" > ~/secrets/webhook.secret
           echo "${{ secrets.PYSMEE_URL }}" > ~/secrets/smee
+
 
           mkdir -p ~/secrets-second
           echo "${{ vars.TEST_GITHUB_SECOND_APPLICATION_ID }}" > ~/secrets-second/github-application-id
@@ -454,6 +456,8 @@ jobs:
 
           export PAC_SECRET_FOLDER=~/secrets
           export PAC_SECOND_SECRET_FOLDER=~/secrets-second
+          export PAC_WEBHOOK_SECRET="${{secrets.WEBHOOK_SECRET}}"
+          export PAC_DOMAIN=paac-127-0-0-1.nip.io
           export TARGET_HOST=local
 
           cd startpaac
