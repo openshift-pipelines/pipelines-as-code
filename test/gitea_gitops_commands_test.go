@@ -24,6 +24,7 @@ import (
 	"gotest.tools/v3/assert"
 )
 
+// TestGiteaCancelRun will test that we can cancel a pipelinerun with the /cancel comment and that the pipelinerun is properly marked as cancelled.
 func TestGiteaCancelRun(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		TargetEvent: triggertype.PullRequest.String(),
