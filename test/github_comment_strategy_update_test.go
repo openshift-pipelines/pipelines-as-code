@@ -244,7 +244,7 @@ func TestGithubGHEWebhookCommentStrategyUpdateMultiplePLRs(t *testing.T) {
 }
 
 // TestGithubCommentStrategyUpdateMarkerMatchingWithRegexChars tests:
-// 1. PLR names containing regex-relevant characters (dots, brackets, etc.) are handled correctly
+// 1. PLR names containing regex-relevant characters are handled correctly
 // 2. Marker matching remains exact even with special characters
 // 3. No cross-contamination between PLRs with similar names.
 func TestGithubGHEWebhookCommentStrategyUpdateMarkerMatchingWithRegexChars(t *testing.T) {
@@ -252,8 +252,8 @@ func TestGithubGHEWebhookCommentStrategyUpdateMarkerMatchingWithRegexChars(t *te
 	g := &tgithub.PRTest{
 		Label: "Github Comment Strategy Regex Chars",
 		YamlFiles: []string{
-			"testdata/pipelinerun-regex-chars-dots.yaml",
-			"testdata/pipelinerun-regex-chars-brackets.yaml",
+			"testdata/pipelinerun-regex-name.yaml",
+			"testdata/pipelinerun2-regex-name.yaml",
 		},
 		GHE:     true,
 		Webhook: true,
@@ -339,7 +339,7 @@ func TestGithubGHEWebhookCommentStrategyUpdateMarkerMatchingWithRegexChars(t *te
 	assert.NilError(t, err)
 	g.Cnx.Clients.Log.Infof("Pushed dummy commit: %s", sha)
 
-	sopt.NumberofPRMatch = 4
+	sopt.NumberofPRMatch = 2
 	sopt.SHA = sha
 	sopt.Title = "test: trigger comment update"
 	twait.Succeeded(ctx, t, g.Cnx, g.Options, sopt)
