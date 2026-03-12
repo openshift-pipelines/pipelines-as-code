@@ -25,10 +25,13 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/test"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/status"
+	metricsutils "github.com/openshift-pipelines/pipelines-as-code/pkg/test/metricstest"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/golden"
+	"knative.dev/pkg/metrics/metricstest"
+	_ "knative.dev/pkg/metrics/testing"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -277,16 +280,17 @@ func TestProvider_Validate(t *testing.T) {
 	}
 }
 
-func TestProvider_GetFiles(t *testing.T) {
+func TestProviderGetFiles(t *testing.T) {
 	type args struct {
 		runevent *info.Event
 	}
 	tests := []struct {
-		name         string
-		args         args
-		changedFiles string
-		want         changedfiles.ChangedFiles
-		wantErr      bool
+		name                string
+		args                args
+		changedFiles        string
+		want                changedfiles.ChangedFiles
+		wantErr             bool
+		wantAPIRequestCount int64
 	}{
 		{
 			name: "pull_request",
@@ -312,7 +316,8 @@ func TestProvider_GetFiles(t *testing.T) {
 				Modified: []string{"modified.txt"},
 				Renamed:  []string{"renamed.txt"},
 			},
-			changedFiles: `[{"filename":"added.txt","status":"added"},{"filename":"deleted.txt","status":"deleted"},{"filename":"modified.txt","status":"changed"},{"filename":"renamed.txt","status":"renamed"}]`,
+			changedFiles:        `[{"filename":"added.txt","status":"added"},{"filename":"deleted.txt","status":"deleted"},{"filename":"modified.txt","status":"changed"},{"filename":"renamed.txt","status":"renamed"}]`,
+			wantAPIRequestCount: 1,
 		},
 		{
 			name: "push",
@@ -342,12 +347,12 @@ func TestProvider_GetFiles(t *testing.T) {
 				},
 				Deleted:  []string{"deleted.txt"},
 				Modified: []string{"modified.txt"},
-				// Renamed:  []string{"renamed.txt"},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			metricsutils.ResetMetrics()
 			fakeclient, mux, teardown := tgitea.Setup(t)
 			defer teardown()
 
@@ -360,11 +365,17 @@ func TestProvider_GetFiles(t *testing.T) {
 			repo := &v1alpha1.Repository{Spec: v1alpha1.RepositorySpec{
 				Settings: &v1alpha1.Settings{},
 			}}
+			giteaInstanceURL := "https://gitea.example.com"
 			gprovider := Provider{
-				giteaClient: fakeclient,
-				repo:        repo,
-				Logger:      logger,
+				giteaClient:      fakeclient,
+				repo:             repo,
+				Logger:           logger,
+				giteaInstanceURL: giteaInstanceURL,
+				triggerEvent:     string(tt.args.runevent.TriggerTarget),
 			}
+
+			metricsTags := map[string]string{"provider": giteaInstanceURL, "event-type": string(tt.args.runevent.TriggerTarget)}
+			metricstest.CheckStatsNotReported(t, "pipelines_as_code_git_provider_api_request_count")
 
 			got, err := gprovider.GetFiles(ctx, tt.args.runevent)
 
@@ -400,6 +411,24 @@ func TestProvider_GetFiles(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got.Renamed, tt.want.Renamed) {
 				t.Errorf("Provider.GetFiles() Renamed = %v, want %v", got.Renamed, tt.want.Renamed)
+			}
+
+			// Verify metrics from first call
+			if tt.wantAPIRequestCount > 0 {
+				metricstest.CheckCountData(t, "pipelines_as_code_git_provider_api_request_count", metricsTags, tt.wantAPIRequestCount)
+			} else {
+				metricstest.CheckStatsNotReported(t, "pipelines_as_code_git_provider_api_request_count")
+			}
+
+			// Verify caching: second call should return cached result without additional API calls
+			got2, err2 := gprovider.GetFiles(ctx, tt.args.runevent)
+			assert.NilError(t, err2)
+			assert.DeepEqual(t, got, got2)
+
+			if tt.wantAPIRequestCount > 0 {
+				metricstest.CheckCountData(t, "pipelines_as_code_git_provider_api_request_count", metricsTags, tt.wantAPIRequestCount)
+			} else {
+				metricstest.CheckStatsNotReported(t, "pipelines_as_code_git_provider_api_request_count")
 			}
 		})
 	}
