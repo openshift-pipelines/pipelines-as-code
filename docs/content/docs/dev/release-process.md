@@ -39,9 +39,11 @@ After a while (gorelease takes some time), the new version should appear as a pr
 
 ## Publishing the Release
 
-Edit the release notes following the same format as previous releases, with a snippet highlighting the key changes.
-
-If you use AI to draft release notes:
+Using claude (or others) skills you can do `/release-notes` to draft the
+release notes it will guide thru the release notes generation and update the
+release notes in the GitHub release page and a Slack announcement. The release
+notes are generated based on the merged PRs since the last release, so it may
+not be perfect, so you should always:
 
 * Verify the content, as it may contain mistakes.
 * Avoid overusing emojis. Keep the tone professional.

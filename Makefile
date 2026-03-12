@@ -24,9 +24,9 @@ HTMLTEST_BIN := $(TMPDIR)/htmltest/htmltest
 GIT_LS_FILES = git ls-files -z -- $(1) | xargs -0 -r $(2)
 PY_PATTERNS := '*.py' ':!vendor/*'
 SH_PATTERNS := 'hack/*.sh' ':!vendor/*'
-YAML_PATTERNS := '*.yml' '*.yaml' ':!.vale/*' ':!docs/themes/*' ':!vendor/*'
-MD_PATTERNS := '*.md' ':!docs/themes/*' ':!.vale/*' ':!vendor/*'
-MD_YAML_PATTERNS := '*.md' '*.yml' '*.yaml' ':!docs/themes/*' ':!.vale/*' ':!vendor/*' ':!tmp/*'
+YAML_PATTERNS := '*.yml' '*.yaml' ':!.vale/*' ':!docs/themes/*' ':!vendor/*' ':!.claude/skills/*'
+MD_PATTERNS := '*.md' ':!docs/themes/*' ':!.vale/*' ':!vendor/*' ':!.claude/skills/*'
+MD_YAML_PATTERNS := '*.md' '*.yml' '*.yaml' ':!docs/themes/*' ':!.vale/*' ':!vendor/*' ':!tmp/*' ':!.claude/skills/*'
 
 ifeq ($(PAC_VERSION),)
 	PAC_VERSION="$(shell git describe --tags --exact-match 2>/dev/null || echo nightly-`date +'%Y%m%d'`-`git rev-parse --short HEAD`)"
