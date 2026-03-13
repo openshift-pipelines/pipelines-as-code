@@ -63,7 +63,7 @@ shift $((OPTIND - 1))
 
 set -eo pipefail
 
-UPSTREAM_REPO=${GH_UPSTREAM_REPO:-"openshift-pipelines/pipelines-as-code"}
+UPSTREAM_REPO=${GH_UPSTREAM_REPO:-"tektoncd/pipelines-as-code"}
 
 if ! command -v gh &>/dev/null; then
   echo "🛑 Error: GitHub CLI ('gh') is not installed. Please install it to continue."

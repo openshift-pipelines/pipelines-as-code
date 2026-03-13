@@ -19,13 +19,13 @@ Before you begin, ensure that:
 To install the stable release of Pipelines-as-Code, apply the release manifest:
 
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/stable/release.k8s.yaml
+kubectl apply -f https://raw.githubusercontent.com/tektoncd/pipelines-as-code/stable/release.k8s.yaml
 ```
 
 To install the nightly (development) build instead:
 
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/nightly/release.k8s.yaml
+kubectl apply -f https://raw.githubusercontent.com/tektoncd/pipelines-as-code/nightly/release.k8s.yaml
 ```
 
 ## Verify

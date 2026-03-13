@@ -9,7 +9,7 @@ This page describes the Prometheus metrics that Pipelines-as-Code exposes and ho
 Pipelines-as-Code serves its metrics through the `pipelines-as-code-watcher` service on port `9090`.
 
 Pipelines-as-Code supports various exporters, such as Prometheus, Google Stackdriver, and more.
-You can configure these exporters by referring to the [observability configuration](https://github.com/openshift-pipelines/pipelines-as-code/blob/main/config/305-config-observability.yaml).
+You can configure these exporters by referring to the [observability configuration](https://github.com/tektoncd/pipelines-as-code/blob/main/config/305-config-observability.yaml).
 
 ## Available Metrics
 

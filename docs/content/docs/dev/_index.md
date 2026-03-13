@@ -56,7 +56,7 @@ See [Architecture]({{< relref "architecture" >}}) for detailed information.
 
 ## Code of Conduct
 
-Before contributing, read the [Code of Conduct](https://github.com/openshift-pipelines/pipelines-as-code/blob/main/code-of-conduct.md). The project is committed to providing a welcoming and inclusive environment for all contributors.
+Before contributing, read the [Code of Conduct](https://github.com/tektoncd/pipelines-as-code/blob/main/code-of-conduct.md). The project is committed to providing a welcoming and inclusive environment for all contributors.
 
 ## Getting Started
 
@@ -76,7 +76,7 @@ Follow the [Development Setup]({{< relref "setup" >}}) guide to configure your l
 
 Find an issue to work on
 
-Browse [good first issues](https://github.com/openshift-pipelines/pipelines-as-code/labels/good%20first%20issue) or [help wanted](https://github.com/openshift-pipelines/pipelines-as-code/labels/help%20wanted) issues.
+Browse [good first issues](https://github.com/tektoncd/pipelines-as-code/labels/good%20first%20issue) or [help wanted](https://github.com/tektoncd/pipelines-as-code/labels/help%20wanted) issues.
 
 4
 
@@ -183,13 +183,13 @@ PAC targets both **arm64** and **amd64** architectures. When contributing:
 
 ### Getting Help
 
-- **GitHub Discussions**: [Ask questions](https://github.com/openshift-pipelines/pipelines-as-code/discussions)
+- **GitHub Discussions**: [Ask questions](https://github.com/tektoncd/pipelines-as-code/discussions)
 - **Slack**: Join [#pipelinesascode](https://tektoncd.slack.com/archives/C04URDDJ9MZ) on TektonCD Slack
-- **Issues**: [Report bugs](https://github.com/openshift-pipelines/pipelines-as-code/issues)
+- **Issues**: [Report bugs](https://github.com/tektoncd/pipelines-as-code/issues)
 
 ### Staying Updated
 
-- **Releases**: Follow [GitHub releases](https://github.com/openshift-pipelines/pipelines-as-code/releases)
+- **Releases**: Follow [GitHub releases](https://github.com/tektoncd/pipelines-as-code/releases)
 - **Dev docs**: Check [nightly docs](https://nightly.pipelines-as-code.pages.dev/) for latest changes
 
 ## Next Steps

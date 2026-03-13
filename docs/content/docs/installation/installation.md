@@ -31,20 +31,20 @@ appropriate manifest with kubectl:
 ```shell
 # OpenShift
 kubectl patch tektonconfig config --type="merge" -p '{"spec": {"platforms": {"openshift":{"pipelinesAsCode": {"enable": false}}}}}'
-kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/stable/release.yaml
+kubectl apply -f https://raw.githubusercontent.com/tektoncd/pipelines-as-code/stable/release.yaml
 
 # Kubernetes
-kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/stable/release.k8s.yaml
+kubectl apply -f https://raw.githubusercontent.com/tektoncd/pipelines-as-code/stable/release.k8s.yaml
 ```
 
 To install the current development version, apply the nightly manifest:
 
 ```shell
 # OpenShift
-kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/nightly/release.yaml
+kubectl apply -f https://raw.githubusercontent.com/tektoncd/pipelines-as-code/nightly/release.yaml
 
 # Kubernetes
-kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/nightly/release.k8s.yaml
+kubectl apply -f https://raw.githubusercontent.com/tektoncd/pipelines-as-code/nightly/release.k8s.yaml
 ```
 
 Applying the manifest creates the `pipelines-as-code` admin namespace, the required roles, and all other resources.
